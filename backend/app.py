@@ -2,9 +2,11 @@ import os
 import joblib
 import numpy as np
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 from supabase import create_client
 
 app = Flask(__name__)
+CORS(app)
 
 # Load AI models
 rf_model = joblib.load('health_model.pkl')

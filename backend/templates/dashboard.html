@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -23,13 +23,8 @@
     background: #81c784; display: inline-block;
     animation: pulse 2s infinite; margin-right: 8px;
   }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-  }
-  .live-badge {
-    font-size: 13px; color: #81c784;
-    display: flex; align-items: center;
-  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .live-badge { font-size: 13px; color: #81c784; display: flex; align-items: center; }
   .container { padding: 24px 32px; }
   .section-title {
     font-size: 13px; font-weight: 600;
@@ -74,15 +69,8 @@
     border-radius: 12px;
     padding: 20px;
   }
-  .chart-title {
-    font-size: 13px; font-weight: 600;
-    color: #b0bec5; margin-bottom: 16px;
-  }
-  .bottom-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
+  .chart-title { font-size: 13px; font-weight: 600; color: #b0bec5; margin-bottom: 16px; }
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .feed-card {
     background: #0d1225;
     border: 1px solid #1e2d4a;
@@ -136,7 +124,7 @@
   <div class="section-title">Device health overview</div>
   <div class="cards-grid" id="health-cards">
     <div class="card">
-      <div class="card-label">Loading devices...</div>
+      <div class="card-label">Connecting to data stream...</div>
       <div class="card-value" style="color:#4fc3f7">--</div>
     </div>
   </div>
@@ -157,7 +145,7 @@
       <div class="section-title">AI diagnosis feed</div>
       <div id="diagnosis-feed">
         <div class="feed-item">
-          <div class="feed-time">Waiting for data...</div>
+          <div class="feed-time">Waiting for anomalies...</div>
         </div>
       </div>
     </div>
@@ -174,6 +162,8 @@
 </div>
 
 <script>
+const BASE_URL = window.location.origin;
+
 const healthCtx = document.getElementById('healthChart').getContext('2d');
 const predictCtx = document.getElementById('predictChart').getContext('2d');
 
@@ -230,4 +220,109 @@ const predictChart = new Chart(predictCtx, {
     responsive: true,
     plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
     scales: {
-      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { colo
+      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
+      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
+    }
+  }
+});
+
+function getScoreClass(score) {
+  if (score >= 70) return 'good';
+  if (score >= 40) return 'warning';
+  return 'critical';
+}
+
+function getScoreFillClass(score) {
+  if (score >= 70) return 'good-fill';
+  if (score >= 40) return 'warning-fill';
+  return 'critical-fill';
+}
+
+function formatTime(ts) {
+  return new Date(ts).toLocaleTimeString();
+}
+
+async function fetchAndUpdate() {
+  try {
+    const res = await fetch(BASE_URL + '/api/data');
+    const data = await res.json();
+    if (!data || !data.length) return;
+
+    const deviceMap = {};
+    data.forEach(row => {
+      if (!deviceMap[row.device_id]) deviceMap[row.device_id] = row;
+    });
+
+    const cardsEl = document.getElementById('health-cards');
+    cardsEl.innerHTML = '';
+    Object.values(deviceMap).forEach(d => {
+      const score = Math.round(d.health_score);
+      const cls = getScoreClass(score);
+      const fillCls = getScoreFillClass(score);
+      cardsEl.innerHTML += `
+        <div class="card">
+          <div class="card-label">${d.device_id}
+            <span style="color:#7986a3">(${d.device_type})</span>
+            ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
+          </div>
+          <div class="card-value ${cls}">${score}</div>
+          <div class="card-sub">Health score / 100</div>
+          <div class="score-bar">
+            <div class="score-fill ${fillCls}" style="width:${score}%"></div>
+          </div>
+          <div class="card-sub" style="margin-top:8px">
+            Predicted: ${Math.round(d.predicted_score)}
+          </div>
+        </div>`;
+    });
+
+    const recent = data.slice(0, 20).reverse();
+    healthChart.data.labels = recent.map(r => formatTime(r.created_at));
+    healthChart.data.datasets[0].data = recent.map(r => Math.round(r.health_score));
+    healthChart.update();
+
+    predictChart.data.labels = recent.map(r => formatTime(r.created_at));
+    predictChart.data.datasets[0].data = recent.map(r => Math.round(r.health_score));
+    predictChart.data.datasets[1].data = recent.map(r => Math.round(r.predicted_score));
+    predictChart.update();
+
+    const diagFeed = document.getElementById('diagnosis-feed');
+    const diagRows = data.filter(r => r.ai_diagnosis).slice(0, 10);
+    if (diagRows.length) {
+      diagFeed.innerHTML = '';
+      diagRows.forEach(r => {
+        const cls = getScoreClass(r.health_score) === 'critical' ? 'alert' :
+                    getScoreClass(r.health_score) === 'warning' ? 'warning' : '';
+        diagFeed.innerHTML += `
+          <div class="feed-item ${cls}">
+            <div class="feed-time">${formatTime(r.created_at)}</div>
+            <div class="feed-device">${r.device_id} — score ${Math.round(r.health_score)}</div>
+            <div>${r.ai_diagnosis}</div>
+          </div>`;
+      });
+    }
+
+    const autoFeed = document.getElementById('automation-feed');
+    const autoRows = data.filter(r => r.automation_command).slice(0, 10);
+    if (autoRows.length) {
+      autoFeed.innerHTML = '';
+      autoRows.forEach(r => {
+        autoFeed.innerHTML += `
+          <div class="feed-item automation">
+            <div class="feed-time">${formatTime(r.created_at)}</div>
+            <div class="feed-device">${r.device_id}</div>
+            <div>${r.automation_command}</div>
+          </div>`;
+      });
+    }
+
+  } catch(e) {
+    console.error('Dashboard error:', e);
+  }
+}
+
+fetchAndUpdate();
+setInterval(fetchAndUpdate, 10000);
+</script>
+</body>
+</html>

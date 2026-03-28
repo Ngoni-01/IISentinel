@@ -4,3 +4,4 @@ supabase
 joblib
 scikit-learn
 numpy
+flask-cors
