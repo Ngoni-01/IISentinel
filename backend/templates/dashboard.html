@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IISentinel — Intelligent Infrastructure Sentinel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e6f0; font-family: 'Segoe UI', sans-serif; }
+  header {
+    background: #0d1225;
+    border-bottom: 1px solid #1e2d4a;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo { font-size: 22px; font-weight: 700; color: #4fc3f7; letter-spacing: 1px; }
+  .logo span { color: #81c784; }
+  .status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #81c784; display: inline-block;
+    animation: pulse 2s infinite; margin-right: 8px;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+  .live-badge {
+    font-size: 13px; color: #81c784;
+    display: flex; align-items: center;
+  }
+  .container { padding: 24px 32px; }
+  .section-title {
+    font-size: 13px; font-weight: 600;
+    color: #7986a3; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 16px;
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px; margin-bottom: 32px;
+  }
+  .card {
+    background: #0d1225;
+    border: 1px solid #1e2d4a;
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: #4fc3f7; }
+  .card-label { font-size: 12px; color: #7986a3; margin-bottom: 8px; }
+  .card-value { font-size: 32px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: #7986a3; margin-top: 6px; }
+  .score-bar {
+    height: 6px; border-radius: 3px;
+    background: #1e2d4a; margin-top: 10px; overflow: hidden;
+  }
+  .score-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .good { color: #81c784; }
+  .warning { color: #ffb74d; }
+  .critical { color: #ef5350; }
+  .good-fill { background: #81c784; }
+  .warning-fill { background: #ffb74d; }
+  .critical-fill { background: #ef5350; }
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 32px;
+  }
+  .chart-card {
+    background: #0d1225;
+    border: 1px solid #1e2d4a;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 600;
+    color: #b0bec5; margin-bottom: 16px;
+  }
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .feed-card {
+    background: #0d1225;
+    border: 1px solid #1e2d4a;
+    border-radius: 12px;
+    padding: 20px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .feed-item {
+    padding: 12px;
+    border-radius: 8px;
+    background: #111827;
+    margin-bottom: 10px;
+    border-left: 3px solid #4fc3f7;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .feed-item.alert { border-left-color: #ef5350; }
+  .feed-item.warning { border-left-color: #ffb74d; }
+  .feed-item.automation { border-left-color: #ce93d8; }
+  .feed-time { font-size: 11px; color: #7986a3; margin-bottom: 4px; }
+  .feed-device { font-weight: 600; color: #4fc3f7; margin-bottom: 4px; }
+  .anomaly-badge {
+    display: inline-block;
+    background: #ef5350;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    font-weight: 600;
+  }
+  canvas { max-height: 200px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">II<span>Sentinel</span></div>
+  <div style="text-align:center">
+    <div style="font-size:13px;color:#7986a3">Intelligent Infrastructure Sentinel</div>
+    <div style="font-size:11px;color:#7986a3">Network & Industrial Asset Monitoring</div>
+  </div>
+  <div class="live-badge">
+    <span class="status-dot"></span> Live monitoring
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="section-title">Device health overview</div>
+  <div class="cards-grid" id="health-cards">
+    <div class="card">
+      <div class="card-label">Loading devices...</div>
+      <div class="card-value" style="color:#4fc3f7">--</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Health score trend</div>
+      <canvas id="healthChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Predicted vs actual health</div>
+      <canvas id="predictChart"></canvas>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <div class="feed-card">
+      <div class="section-title">AI diagnosis feed</div>
+      <div id="diagnosis-feed">
+        <div class="feed-item">
+          <div class="feed-time">Waiting for data...</div>
+        </div>
+      </div>
+    </div>
+    <div class="feed-card">
+      <div class="section-title">Automation command log</div>
+      <div id="automation-feed">
+        <div class="feed-item">
+          <div class="feed-time">No commands issued yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const healthCtx = document.getElementById('healthChart').getContext('2d');
+const predictCtx = document.getElementById('predictChart').getContext('2d');
+
+const healthChart = new Chart(healthCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Health score',
+      data: [],
+      borderColor: '#4fc3f7',
+      backgroundColor: 'rgba(79,195,247,0.08)',
+      borderWidth: 2,
+      tension: 0.4,
+      fill: true,
+      pointRadius: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
+      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
+    }
+  }
+});
+
+const predictChart = new Chart(predictCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: 'Actual',
+        data: [],
+        borderColor: '#81c784',
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 3,
+      },
+      {
+        label: 'Predicted',
+        data: [],
+        borderColor: '#ffb74d',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        tension: 0.4,
+        pointRadius: 3,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { colo
