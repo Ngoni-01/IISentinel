@@ -2,7 +2,7 @@ import time
 import random
 import requests
 
-API_URL = "https://YOUR-RENDER-URL.onrender.com/api/metrics"
+API_URL = "https://iisentinel-api.onrender.com/api/metrics"
 
 def send(device_type, device_id, metric_name, metric_value, extras={}):
     payload = {
@@ -29,7 +29,7 @@ def send(device_type, device_id, metric_name, metric_value, extras={}):
 if __name__ == '__main__':
     print("IISentinel Network Collector running...")
     while True:
-        # Simulate normal router
+        # Normal router
         send('router', 'core-router-01', 'cpu_load',
              random.uniform(10, 50), {
                  'cpu_load': random.uniform(10, 50),
@@ -41,7 +41,7 @@ if __name__ == '__main__':
                  'signal_strength': random.uniform(75, 100),
              })
 
-        # Simulate congestion event occasionally
+        # Congestion event occasionally
         if random.random() < 0.2:
             send('switch', 'core-switch-01', 'bandwidth_mbps',
                  random.uniform(800, 1000), {
@@ -54,7 +54,7 @@ if __name__ == '__main__':
                      'signal_strength': random.uniform(40, 65),
                  })
 
-        # Simulate critical failure occasionally
+        # Critical failure occasionally
         if random.random() < 0.05:
             send('router', 'edge-router-02', 'packet_loss',
                  random.uniform(10, 20), {
