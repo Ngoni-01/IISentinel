@@ -1,12 +1,15 @@
 import os
 import joblib
 import numpy as np
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
 from supabase import create_client
+from functools import wraps
+import hashlib
 
 app = Flask(__name__)
 CORS(app)
+app.secret_key = os.environ.get('SECRET_KEY', 'iisentinel-secret-2026')
 
 # Load AI models
 rf_model = joblib.load('health_model.pkl')
@@ -20,6 +23,22 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Rolling window for prediction
 reading_window = []
+
+def require_specialist(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = request.headers.get('X-Specialist-Token')
+        if not token:
+            return jsonify({'error': 'Unauthorised'}), 401
+        try:
+            result = supabase.table('specialists')\
+                .select('*').eq('password', token).execute()
+            if not result.data:
+                return jsonify({'error': 'Invalid token'}), 401
+        except:
+            return jsonify({'error': 'Auth error'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 def get_ai_diagnosis(device_id, device_type, metric_name,
                      metric_value, health_score, anomaly):
@@ -68,8 +87,10 @@ def get_ai_diagnosis(device_id, device_type, metric_name,
     action_str = "; ".join(actions).capitalize()
     return f"{issue_str}. Recommended actions: {action_str}."
 
-def get_automation_command(device_id, health_score):
-    if health_score < 20:
+def get_automation_command(device_id, device_type, health_score):
+    if device_type in ['ventilation', 'pump'] and health_score < 20:
+        return f"EMERGENCY: Initiate safety shutdown for {device_id} — underground personnel alert triggered"
+    elif health_score < 20:
         return f"CRITICAL: Initiate emergency restart sequence for {device_id}"
     elif health_score < 35:
         return f"WARNING: Reduce load and isolate {device_id} from network"
@@ -123,10 +144,12 @@ def receive_metrics():
 
     # Automation command
     automation_command = get_automation_command(
-        data.get('device_id', 'unknown'), health_score
+        data.get('device_id', 'unknown'),
+        data.get('device_type', 'unknown'),
+        health_score
     )
 
-    # Store in Supabase
+    # Store in metrics table
     supabase.table('metrics').insert({
         'device_type': data.get('device_type', 'unknown'),
         'device_id': data.get('device_id', 'unknown'),
@@ -138,6 +161,17 @@ def receive_metrics():
         'ai_diagnosis': ai_diagnosis,
         'automation_command': automation_command
     }).execute()
+
+    # Create incident if critical
+    if health_score < 50 or anomaly_flag:
+        supabase.table('incidents').insert({
+            'device_id': data.get('device_id', 'unknown'),
+            'device_type': data.get('device_type', 'unknown'),
+            'health_score': health_score,
+            'ai_diagnosis': ai_diagnosis,
+            'automation_command': automation_command,
+            'status': 'open'
+        }).execute()
 
     return jsonify({
         'status': 'ok',
@@ -153,6 +187,61 @@ def get_data():
     response = supabase.table('metrics').select('*')\
         .order('created_at', desc=True).limit(100).execute()
     return jsonify(response.data)
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    name = data.get('name', '')
+    password = data.get('password', '')
+    try:
+        result = supabase.table('specialists')\
+            .select('*').eq('name', name).eq('password', password).execute()
+        if result.data:
+            specialist = result.data[0]
+            return jsonify({
+                'success': True,
+                'token': password,
+                'name': specialist['name'],
+                'role': specialist['role']
+            })
+        return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/incidents', methods=['GET'])
+@require_specialist
+def get_incidents():
+    status = request.args.get('status', 'open')
+    response = supabase.table('incidents').select('*')\
+        .eq('status', status)\
+        .order('created_at', desc=True).limit(50).execute()
+    return jsonify(response.data)
+
+@app.route('/api/incidents/<incident_id>/assign', methods=['POST'])
+@require_specialist
+def assign_incident(incident_id):
+    data = request.json
+    assigned_to = data.get('assigned_to', '')
+    notes = data.get('notes', '')
+    supabase.table('incidents').update({
+        'assigned_to': assigned_to,
+        'notes': notes,
+        'status': 'assigned'
+    }).eq('id', incident_id).execute()
+    return jsonify({'success': True})
+
+@app.route('/api/incidents/<incident_id>/resolve', methods=['POST'])
+@require_specialist
+def resolve_incident(incident_id):
+    data = request.json
+    resolved_by = data.get('resolved_by', '')
+    notes = data.get('notes', '')
+    supabase.table('incidents').update({
+        'resolved_by': resolved_by,
+        'notes': notes,
+        'status': 'resolved'
+    }).eq('id', incident_id).execute()
+    return jsonify({'success': True})
 
 @app.route('/')
 def dashboard():

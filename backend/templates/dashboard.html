@@ -1,4 +1,4 @@
-<!<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,6 +8,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0a0e1a; color: #e0e6f0; font-family: 'Segoe UI', sans-serif; }
+
   header {
     background: #0d1225;
     border-bottom: 1px solid #1e2d4a;
@@ -23,14 +24,39 @@
     background: #81c784; display: inline-block;
     animation: pulse 2s infinite; margin-right: 8px;
   }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  .live-badge { font-size: 13px; color: #81c784; display: flex; align-items: center; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-badge { font-size: 13px; color: #81c784; display: flex; align-items: center; gap: 8px; }
+
+  .nav-tabs {
+    background: #0d1225;
+    border-bottom: 1px solid #1e2d4a;
+    padding: 0 32px;
+    display: flex;
+    gap: 4px;
+  }
+  .nav-tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #7986a3;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: #e0e6f0; }
+  .nav-tab.active { color: #4fc3f7; border-bottom-color: #4fc3f7; }
+  .nav-tab.specialist-tab { color: #ce93d8; }
+  .nav-tab.specialist-tab.active { color: #ce93d8; border-bottom-color: #ce93d8; }
+
   .container { padding: 24px 32px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
   .section-title {
     font-size: 13px; font-weight: 600;
     color: #7986a3; text-transform: uppercase;
     letter-spacing: 1px; margin-bottom: 16px;
   }
+
   .cards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -47,17 +73,16 @@
   .card-label { font-size: 12px; color: #7986a3; margin-bottom: 8px; }
   .card-value { font-size: 32px; font-weight: 700; }
   .card-sub { font-size: 12px; color: #7986a3; margin-top: 6px; }
-  .score-bar {
-    height: 6px; border-radius: 3px;
-    background: #1e2d4a; margin-top: 10px; overflow: hidden;
-  }
+  .score-bar { height: 6px; border-radius: 3px; background: #1e2d4a; margin-top: 10px; overflow: hidden; }
   .score-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
   .good { color: #81c784; }
   .warning { color: #ffb74d; }
   .critical { color: #ef5350; }
   .good-fill { background: #81c784; }
   .warning-fill { background: #ffb74d; }
   .critical-fill { background: #ef5350; }
+
   .charts-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -70,6 +95,7 @@
     padding: 20px;
   }
   .chart-title { font-size: 13px; font-weight: 600; color: #b0bec5; margin-bottom: 16px; }
+
   .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .feed-card {
     background: #0d1225;
@@ -80,30 +106,117 @@
     overflow-y: auto;
   }
   .feed-item {
-    padding: 12px;
-    border-radius: 8px;
-    background: #111827;
-    margin-bottom: 10px;
+    padding: 12px; border-radius: 8px;
+    background: #111827; margin-bottom: 10px;
     border-left: 3px solid #4fc3f7;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 13px; line-height: 1.5;
   }
   .feed-item.alert { border-left-color: #ef5350; }
   .feed-item.warning { border-left-color: #ffb74d; }
   .feed-item.automation { border-left-color: #ce93d8; }
+  .feed-item.resolved { border-left-color: #81c784; opacity: 0.7; }
   .feed-time { font-size: 11px; color: #7986a3; margin-bottom: 4px; }
   .feed-device { font-weight: 600; color: #4fc3f7; margin-bottom: 4px; }
+
   .anomaly-badge {
-    display: inline-block;
-    background: #ef5350;
-    color: white;
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: 8px;
-    font-weight: 600;
+    display: inline-block; background: #ef5350;
+    color: white; font-size: 10px;
+    padding: 2px 8px; border-radius: 10px;
+    margin-left: 8px; font-weight: 600;
   }
+  .status-badge {
+    display: inline-block; font-size: 10px;
+    padding: 2px 8px; border-radius: 10px;
+    font-weight: 600; margin-left: 8px;
+  }
+  .badge-open { background: #ef5350; color: white; }
+  .badge-assigned { background: #ffb74d; color: #1a1a1a; }
+  .badge-resolved { background: #81c784; color: #1a1a1a; }
+
+  .login-box {
+    max-width: 400px; margin: 60px auto;
+    background: #0d1225;
+    border: 1px solid #1e2d4a;
+    border-radius: 16px;
+    padding: 40px;
+  }
+  .login-title {
+    font-size: 20px; font-weight: 700;
+    color: #ce93d8; margin-bottom: 8px;
+  }
+  .login-sub { font-size: 13px; color: #7986a3; margin-bottom: 32px; }
+  .form-group { margin-bottom: 20px; }
+  .form-label { font-size: 12px; color: #7986a3; margin-bottom: 8px; display: block; }
+  .form-input {
+    width: 100%; padding: 10px 14px;
+    background: #111827; border: 1px solid #1e2d4a;
+    border-radius: 8px; color: #e0e6f0;
+    font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: #ce93d8; }
+  .btn {
+    padding: 10px 20px; border-radius: 8px;
+    border: none; cursor: pointer;
+    font-size: 14px; font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-specialist { background: #ce93d8; color: #1a1a1a; width: 100%; }
+  .btn-action { background: #4fc3f7; color: #1a1a1a; font-size: 12px; padding: 6px 12px; }
+  .btn-resolve { background: #81c784; color: #1a1a1a; font-size: 12px; padding: 6px 12px; }
+  .btn-danger { background: #ef5350; color: white; font-size: 12px; padding: 6px 12px; }
+
+  .specialist-header {
+    background: linear-gradient(90deg, #1a0d2e, #0d1225);
+    border: 1px solid #4a2d6b;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .specialist-name { color: #ce93d8; font-weight: 600; font-size: 15px; }
+  .specialist-role { color: #7986a3; font-size: 12px; }
+
+  .incident-card {
+    background: #111827;
+    border: 1px solid #1e2d4a;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .incident-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .incident-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .assign-input {
+    background: #0d1225; border: 1px solid #1e2d4a;
+    border-radius: 6px; color: #e0e6f0;
+    padding: 6px 10px; font-size: 12px;
+    width: 160px; outline: none;
+  }
+
+  .cost-banner {
+    background: #111827;
+    border: 1px solid #ef5350;
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .cost-label { font-size: 12px; color: #7986a3; }
+  .cost-value { font-size: 24px; font-weight: 700; color: #ef5350; }
+
   canvas { max-height: 200px; }
+
+  .error-msg { color: #ef5350; font-size: 13px; margin-top: 12px; text-align: center; }
 </style>
 </head>
 <body>
@@ -115,73 +228,173 @@
     <div style="font-size:11px;color:#7986a3">Network & Industrial Asset Monitoring</div>
   </div>
   <div class="live-badge">
-    <span class="status-dot"></span> Live monitoring
+    <span class="status-dot"></span>
+    <span id="live-label">Live monitoring</span>
   </div>
 </header>
 
+<div class="nav-tabs">
+  <div class="nav-tab active" onclick="showPage('public')">Live dashboard</div>
+  <div class="nav-tab" onclick="showPage('telecom')">TelecomCo view</div>
+  <div class="nav-tab" onclick="showPage('mining')">MiningCo view</div>
+  <div class="nav-tab specialist-tab" id="specialist-tab" onclick="showPage('specialist')">
+    Specialist access
+  </div>
+</div>
+
 <div class="container">
 
-  <div class="section-title">Device health overview</div>
-  <div class="cards-grid" id="health-cards">
-    <div class="card">
-      <div class="card-label">Connecting to data stream...</div>
-      <div class="card-value" style="color:#4fc3f7">--</div>
+  <!-- PUBLIC DASHBOARD -->
+  <div class="page active" id="page-public">
+    <div class="cost-banner">
+      <div>
+        <div class="cost-label">Estimated infrastructure risk cost</div>
+        <div class="cost-label" style="font-size:10px">Based on current degraded devices</div>
+      </div>
+      <div class="cost-value" id="cost-display">$0</div>
     </div>
-  </div>
 
-  <div class="charts-grid">
-    <div class="chart-card">
-      <div class="chart-title">Health score trend</div>
-      <canvas id="healthChart"></canvas>
+    <div class="section-title">Device health overview — all sectors</div>
+    <div class="cards-grid" id="health-cards">
+      <div class="card">
+        <div class="card-label">Connecting...</div>
+        <div class="card-value" style="color:#4fc3f7">--</div>
+      </div>
     </div>
-    <div class="chart-card">
-      <div class="chart-title">Predicted vs actual health</div>
-      <canvas id="predictChart"></canvas>
-    </div>
-  </div>
 
-  <div class="bottom-grid">
-    <div class="feed-card">
-      <div class="section-title">AI diagnosis feed</div>
-      <div id="diagnosis-feed">
-        <div class="feed-item">
-          <div class="feed-time">Waiting for anomalies...</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Health score trend</div>
+        <canvas id="healthChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Predicted vs actual health</div>
+        <canvas id="predictChart"></canvas>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="feed-card">
+        <div class="section-title">AI diagnosis feed</div>
+        <div id="diagnosis-feed">
+          <div class="feed-item"><div class="feed-time">Waiting for data...</div></div>
+        </div>
+      </div>
+      <div class="feed-card">
+        <div class="section-title">Automation command log</div>
+        <div id="automation-feed">
+          <div class="feed-item"><div class="feed-time">No commands issued yet</div></div>
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- TELECOM VIEW -->
+  <div class="page" id="page-telecom">
+    <div class="section-title">TelecomCo network operations — base stations and towers</div>
+    <div class="cards-grid" id="telecom-cards">
+      <div class="card"><div class="card-label">Loading telecom devices...</div></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:24px">
+      <div class="chart-title">TelecomCo signal strength and bandwidth trend</div>
+      <canvas id="telecomChart"></canvas>
+    </div>
     <div class="feed-card">
-      <div class="section-title">Automation command log</div>
-      <div id="automation-feed">
-        <div class="feed-item">
-          <div class="feed-time">No commands issued yet</div>
-        </div>
+      <div class="section-title">TelecomCo alerts</div>
+      <div id="telecom-feed">
+        <div class="feed-item"><div class="feed-time">No telecom alerts</div></div>
       </div>
     </div>
+  </div>
+
+  <!-- MINING VIEW -->
+  <div class="page" id="page-mining">
+    <div class="section-title">MiningCo underground asset monitoring</div>
+    <div class="cards-grid" id="mining-cards">
+      <div class="card"><div class="card-label">Loading mining devices...</div></div>
+    </div>
+    <div class="chart-card" style="margin-bottom:24px">
+      <div class="chart-title">MiningCo equipment health trend</div>
+      <canvas id="miningChart"></canvas>
+    </div>
+    <div class="feed-card">
+      <div class="section-title">MiningCo safety alerts</div>
+      <div id="mining-feed">
+        <div class="feed-item"><div class="feed-time">No mining alerts</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPECIALIST PAGE -->
+  <div class="page" id="page-specialist">
+
+    <!-- LOGIN FORM -->
+    <div id="login-section">
+      <div class="login-box">
+        <div class="login-title">Specialist access</div>
+        <div class="login-sub">Restricted to authorised engineers and administrators only.</div>
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input class="form-input" type="text" id="login-name" placeholder="Enter your username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" id="login-pass" placeholder="Enter your password">
+        </div>
+        <button class="btn btn-specialist" onclick="doLogin()">Access specialist panel</button>
+        <div class="error-msg" id="login-error"></div>
+      </div>
+    </div>
+
+    <!-- SPECIALIST PANEL -->
+    <div id="specialist-section" style="display:none">
+      <div class="specialist-header">
+        <div>
+          <div class="specialist-name" id="spec-name">Specialist</div>
+          <div class="specialist-role" id="spec-role">Role</div>
+        </div>
+        <button class="btn btn-danger" onclick="doLogout()">Log out</button>
+      </div>
+
+      <div class="cards-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+        <div class="card">
+          <div class="card-label">Open incidents</div>
+          <div class="card-value critical" id="open-count">0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Assigned incidents</div>
+          <div class="card-value warning" id="assigned-count">0</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Resolved today</div>
+          <div class="card-value good" id="resolved-count">0</div>
+        </div>
+      </div>
+
+      <div class="section-title">Open incidents — assign and resolve</div>
+      <div id="incidents-list">
+        <div class="feed-item"><div class="feed-time">Loading incidents...</div></div>
+      </div>
+    </div>
+
   </div>
 
 </div>
 
 <script>
 const BASE_URL = window.location.origin;
+let specialistToken = null;
+let specialistName = null;
 
-const healthCtx = document.getElementById('healthChart').getContext('2d');
-const predictCtx = document.getElementById('predictChart').getContext('2d');
-
-const healthChart = new Chart(healthCtx, {
+// Charts setup
+const healthChart = new Chart(
+  document.getElementById('healthChart').getContext('2d'), {
   type: 'line',
-  data: {
-    labels: [],
-    datasets: [{
-      label: 'Health score',
-      data: [],
-      borderColor: '#4fc3f7',
-      backgroundColor: 'rgba(79,195,247,0.08)',
-      borderWidth: 2,
-      tension: 0.4,
-      fill: true,
-      pointRadius: 3,
-    }]
-  },
+  data: { labels: [], datasets: [{
+    label: 'Health score', data: [],
+    borderColor: '#4fc3f7', backgroundColor: 'rgba(79,195,247,0.08)',
+    borderWidth: 2, tension: 0.4, fill: true, pointRadius: 3
+  }]},
   options: {
     responsive: true,
     plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
@@ -192,30 +405,13 @@ const healthChart = new Chart(healthCtx, {
   }
 });
 
-const predictChart = new Chart(predictCtx, {
+const predictChart = new Chart(
+  document.getElementById('predictChart').getContext('2d'), {
   type: 'line',
-  data: {
-    labels: [],
-    datasets: [
-      {
-        label: 'Actual',
-        data: [],
-        borderColor: '#81c784',
-        borderWidth: 2,
-        tension: 0.4,
-        pointRadius: 3,
-      },
-      {
-        label: 'Predicted',
-        data: [],
-        borderColor: '#ffb74d',
-        borderWidth: 2,
-        borderDash: [5, 5],
-        tension: 0.4,
-        pointRadius: 3,
-      }
-    ]
-  },
+  data: { labels: [], datasets: [
+    { label: 'Actual', data: [], borderColor: '#81c784', borderWidth: 2, tension: 0.4, pointRadius: 3 },
+    { label: 'Predicted', data: [], borderColor: '#ffb74d', borderWidth: 2, borderDash: [5,5], tension: 0.4, pointRadius: 3 }
+  ]},
   options: {
     responsive: true,
     plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
@@ -226,20 +422,59 @@ const predictChart = new Chart(predictCtx, {
   }
 });
 
-function getScoreClass(score) {
-  if (score >= 70) return 'good';
-  if (score >= 40) return 'warning';
-  return 'critical';
+const telecomChart = new Chart(
+  document.getElementById('telecomChart').getContext('2d'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'Health score', data: [], borderColor: '#4fc3f7', borderWidth: 2, tension: 0.4, pointRadius: 3 }
+  ]},
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
+      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
+    }
+  }
+});
+
+const miningChart = new Chart(
+  document.getElementById('miningChart').getContext('2d'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'Health score', data: [], borderColor: '#ffb74d', borderWidth: 2, tension: 0.4, pointRadius: 3 }
+  ]},
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
+      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
+    }
+  }
+});
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
 }
 
-function getScoreFillClass(score) {
-  if (score >= 70) return 'good-fill';
-  if (score >= 40) return 'warning-fill';
-  return 'critical-fill';
-}
+function getScoreClass(s) { return s >= 70 ? 'good' : s >= 40 ? 'warning' : 'critical'; }
+function getScoreFill(s) { return s >= 70 ? 'good-fill' : s >= 40 ? 'warning-fill' : 'critical-fill'; }
+function formatTime(ts) { return new Date(ts).toLocaleTimeString(); }
 
-function formatTime(ts) {
-  return new Date(ts).toLocaleTimeString();
+function calcCost(data) {
+  let cost = 0;
+  const deviceMap = {};
+  data.forEach(r => { if (!deviceMap[r.device_id]) deviceMap[r.device_id] = r; });
+  Object.values(deviceMap).forEach(d => {
+    if (d.health_score < 20) cost += 5000;
+    else if (d.health_score < 35) cost += 2000;
+    else if (d.health_score < 50) cost += 800;
+  });
+  return cost;
 }
 
 async function fetchAndUpdate() {
@@ -249,45 +484,46 @@ async function fetchAndUpdate() {
     if (!data || !data.length) return;
 
     const deviceMap = {};
-    data.forEach(row => {
-      if (!deviceMap[row.device_id]) deviceMap[row.device_id] = row;
-    });
+    data.forEach(r => { if (!deviceMap[r.device_id]) deviceMap[r.device_id] = r; });
 
+    // Cost banner
+    const cost = calcCost(data);
+    document.getElementById('cost-display').textContent =
+      '$' + cost.toLocaleString();
+
+    // Health cards
     const cardsEl = document.getElementById('health-cards');
     cardsEl.innerHTML = '';
     Object.values(deviceMap).forEach(d => {
       const score = Math.round(d.health_score);
-      const cls = getScoreClass(score);
-      const fillCls = getScoreFillClass(score);
       cardsEl.innerHTML += `
         <div class="card">
           <div class="card-label">${d.device_id}
             <span style="color:#7986a3">(${d.device_type})</span>
             ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
           </div>
-          <div class="card-value ${cls}">${score}</div>
+          <div class="card-value ${getScoreClass(score)}">${score}</div>
           <div class="card-sub">Health score / 100</div>
           <div class="score-bar">
-            <div class="score-fill ${fillCls}" style="width:${score}%"></div>
+            <div class="score-fill ${getScoreFill(score)}" style="width:${score}%"></div>
           </div>
-          <div class="card-sub" style="margin-top:8px">
-            Predicted: ${Math.round(d.predicted_score)}
-          </div>
+          <div class="card-sub" style="margin-top:8px">Predicted: ${Math.round(d.predicted_score)}</div>
         </div>`;
     });
 
+    // Main charts
     const recent = data.slice(0, 20).reverse();
     healthChart.data.labels = recent.map(r => formatTime(r.created_at));
     healthChart.data.datasets[0].data = recent.map(r => Math.round(r.health_score));
     healthChart.update();
-
     predictChart.data.labels = recent.map(r => formatTime(r.created_at));
     predictChart.data.datasets[0].data = recent.map(r => Math.round(r.health_score));
     predictChart.data.datasets[1].data = recent.map(r => Math.round(r.predicted_score));
     predictChart.update();
 
-    const diagFeed = document.getElementById('diagnosis-feed');
+    // Diagnosis feed
     const diagRows = data.filter(r => r.ai_diagnosis).slice(0, 10);
+    const diagFeed = document.getElementById('diagnosis-feed');
     if (diagRows.length) {
       diagFeed.innerHTML = '';
       diagRows.forEach(r => {
@@ -302,8 +538,9 @@ async function fetchAndUpdate() {
       });
     }
 
-    const autoFeed = document.getElementById('automation-feed');
+    // Automation feed
     const autoRows = data.filter(r => r.automation_command).slice(0, 10);
+    const autoFeed = document.getElementById('automation-feed');
     if (autoRows.length) {
       autoFeed.innerHTML = '';
       autoRows.forEach(r => {
@@ -316,13 +553,227 @@ async function fetchAndUpdate() {
       });
     }
 
+    // Telecom view
+    const telecomData = data.filter(r =>
+      ['base_station','network_tower','microwave_link'].includes(r.device_type));
+    const telecomMap = {};
+    telecomData.forEach(r => { if (!telecomMap[r.device_id]) telecomMap[r.device_id] = r; });
+    const telecomCards = document.getElementById('telecom-cards');
+    telecomCards.innerHTML = '';
+    if (Object.keys(telecomMap).length === 0) {
+      telecomCards.innerHTML = '<div class="card"><div class="card-label">Run telecom_collector.py to see data</div></div>';
+    } else {
+      Object.values(telecomMap).forEach(d => {
+        const score = Math.round(d.health_score);
+        telecomCards.innerHTML += `
+          <div class="card">
+            <div class="card-label">${d.device_id}
+              <span style="color:#7986a3">(${d.device_type})</span>
+              ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
+            </div>
+            <div class="card-value ${getScoreClass(score)}">${score}</div>
+            <div class="card-sub">Signal health / 100</div>
+            <div class="score-bar">
+              <div class="score-fill ${getScoreFill(score)}" style="width:${score}%"></div>
+            </div>
+          </div>`;
+      });
+    }
+    const recentTelecom = telecomData.slice(0, 20).reverse();
+    telecomChart.data.labels = recentTelecom.map(r => formatTime(r.created_at));
+    telecomChart.data.datasets[0].data = recentTelecom.map(r => Math.round(r.health_score));
+    telecomChart.update();
+    const telecomFeed = document.getElementById('telecom-feed');
+    const telecomAlerts = telecomData.filter(r => r.ai_diagnosis).slice(0, 8);
+    if (telecomAlerts.length) {
+      telecomFeed.innerHTML = '';
+      telecomAlerts.forEach(r => {
+        telecomFeed.innerHTML += `
+          <div class="feed-item ${getScoreClass(r.health_score) === 'critical' ? 'alert' : 'warning'}">
+            <div class="feed-time">${formatTime(r.created_at)}</div>
+            <div class="feed-device">${r.device_id}</div>
+            <div>${r.ai_diagnosis}</div>
+          </div>`;
+      });
+    }
+
+    // Mining view
+    const miningData = data.filter(r =>
+      ['pump','conveyor','ventilation','power_meter','sensor'].includes(r.device_type));
+    const miningMap = {};
+    miningData.forEach(r => { if (!miningMap[r.device_id]) miningMap[r.device_id] = r; });
+    const miningCards = document.getElementById('mining-cards');
+    miningCards.innerHTML = '';
+    if (Object.keys(miningMap).length === 0) {
+      miningCards.innerHTML = '<div class="card"><div class="card-label">Run mining_collector.py to see data</div></div>';
+    } else {
+      Object.values(miningMap).forEach(d => {
+        const score = Math.round(d.health_score);
+        miningCards.innerHTML += `
+          <div class="card">
+            <div class="card-label">${d.device_id}
+              <span style="color:#7986a3">(${d.device_type})</span>
+              ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
+            </div>
+            <div class="card-value ${getScoreClass(score)}">${score}</div>
+            <div class="card-sub">Equipment health / 100</div>
+            <div class="score-bar">
+              <div class="score-fill ${getScoreFill(score)}" style="width:${score}%"></div>
+            </div>
+          </div>`;
+      });
+    }
+    const recentMining = miningData.slice(0, 20).reverse();
+    miningChart.data.labels = recentMining.map(r => formatTime(r.created_at));
+    miningChart.data.datasets[0].data = recentMining.map(r => Math.round(r.health_score));
+    miningChart.update();
+    const miningFeed = document.getElementById('mining-feed');
+    const miningAlerts = miningData.filter(r => r.ai_diagnosis).slice(0, 8);
+    if (miningAlerts.length) {
+      miningFeed.innerHTML = '';
+      miningAlerts.forEach(r => {
+        miningFeed.innerHTML += `
+          <div class="feed-item ${getScoreClass(r.health_score) === 'critical' ? 'alert' : 'warning'}">
+            <div class="feed-time">${formatTime(r.created_at)}</div>
+            <div class="feed-device">${r.device_id}</div>
+            <div>${r.ai_diagnosis}</div>
+            ${r.automation_command ? `<div style="color:#ce93d8;margin-top:6px;font-size:12px">${r.automation_command}</div>` : ''}
+          </div>`;
+      });
+    }
+
   } catch(e) {
-    console.error('Dashboard error:', e);
+    console.error('Update error:', e);
   }
+}
+
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  document.getElementById('login-error').textContent = '';
+  try {
+    const res = await fetch(BASE_URL + '/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, password: pass })
+    });
+    const data = await res.json();
+    if (data.success) {
+      specialistToken = data.token;
+      specialistName = data.name;
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('specialist-section').style.display = 'block';
+      document.getElementById('spec-name').textContent = data.name;
+      document.getElementById('spec-role').textContent = data.role.toUpperCase();
+      document.getElementById('live-label').textContent =
+        'Specialist: ' + data.name;
+      loadIncidents();
+    } else {
+      document.getElementById('login-error').textContent =
+        'Invalid credentials. Access denied.';
+    }
+  } catch(e) {
+    document.getElementById('login-error').textContent = 'Connection error.';
+  }
+}
+
+function doLogout() {
+  specialistToken = null;
+  specialistName = null;
+  document.getElementById('login-section').style.display = 'block';
+  document.getElementById('specialist-section').style.display = 'none';
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('live-label').textContent = 'Live monitoring';
+}
+
+async function loadIncidents() {
+  if (!specialistToken) return;
+  try {
+    const res = await fetch(BASE_URL + '/api/incidents?status=open', {
+      headers: { 'X-Specialist-Token': specialistToken }
+    });
+    const incidents = await res.json();
+    document.getElementById('open-count').textContent = incidents.length;
+
+    const resRes = await fetch(BASE_URL + '/api/incidents?status=resolved', {
+      headers: { 'X-Specialist-Token': specialistToken }
+    });
+    const resolved = await resRes.json();
+    document.getElementById('resolved-count').textContent = resolved.length;
+
+    const assRes = await fetch(BASE_URL + '/api/incidents?status=assigned', {
+      headers: { 'X-Specialist-Token': specialistToken }
+    });
+    const assigned = await assRes.json();
+    document.getElementById('assigned-count').textContent = assigned.length;
+
+    const list = document.getElementById('incidents-list');
+    const all = [...incidents, ...assigned];
+    if (!all.length) {
+      list.innerHTML = '<div class="feed-item good"><div class="feed-time">No open incidents — all systems nominal</div></div>';
+      return;
+    }
+    list.innerHTML = '';
+    all.forEach(inc => {
+      const badgeCls = inc.status === 'open' ? 'badge-open' :
+                       inc.status === 'assigned' ? 'badge-assigned' : 'badge-resolved';
+      list.innerHTML += `
+        <div class="incident-card">
+          <div class="incident-header">
+            <div>
+              <span class="feed-device">${inc.device_id}</span>
+              <span class="status-badge ${badgeCls}">${inc.status.toUpperCase()}</span>
+            </div>
+            <div style="font-size:12px;color:#7986a3">${formatTime(inc.created_at)}</div>
+          </div>
+          <div style="font-size:13px;color:#b0bec5;margin-bottom:8px">
+            Health score: <span class="${getScoreClass(inc.health_score)}">${Math.round(inc.health_score)}</span>
+          </div>
+          ${inc.ai_diagnosis ? `<div style="font-size:12px;color:#7986a3;margin-bottom:8px">${inc.ai_diagnosis}</div>` : ''}
+          ${inc.automation_command ? `<div style="font-size:12px;color:#ce93d8;margin-bottom:8px">${inc.automation_command}</div>` : ''}
+          ${inc.assigned_to ? `<div style="font-size:12px;color:#81c784;margin-bottom:8px">Assigned to: ${inc.assigned_to}</div>` : ''}
+          <div class="incident-actions">
+            <input class="assign-input" id="assign-${inc.id}" placeholder="Assign to engineer...">
+            <button class="btn btn-action" onclick="assignIncident('${inc.id}')">Assign</button>
+            <button class="btn btn-resolve" onclick="resolveIncident('${inc.id}')">Mark resolved</button>
+          </div>
+        </div>`;
+    });
+  } catch(e) {
+    console.error('Incidents error:', e);
+  }
+}
+
+async function assignIncident(id) {
+  const assignTo = document.getElementById('assign-' + id).value.trim();
+  if (!assignTo) return;
+  await fetch(BASE_URL + '/api/incidents/' + id + '/assign', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Specialist-Token': specialistToken
+    },
+    body: JSON.stringify({ assigned_to: assignTo, notes: '' })
+  });
+  loadIncidents();
+}
+
+async function resolveIncident(id) {
+  await fetch(BASE_URL + '/api/incidents/' + id + '/resolve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Specialist-Token': specialistToken
+    },
+    body: JSON.stringify({ resolved_by: specialistName, notes: 'Resolved via dashboard' })
+  });
+  loadIncidents();
 }
 
 fetchAndUpdate();
 setInterval(fetchAndUpdate, 10000);
+setInterval(() => { if (specialistToken) loadIncidents(); }, 15000);
 </script>
 </body>
 </html>
