@@ -2,7 +2,7 @@ import time
 import random
 import requests
 
-API_URL = "https://iisentinel-api.onrender.com/api/metrics"
+API_URL = "https://git-push-origin-main.onrender.com/api/metrics"
 
 def send(device_type, device_id, metric_name, metric_value, extras={}):
     payload = {
