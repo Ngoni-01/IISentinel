@@ -3,996 +3,781 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IISentinel — Intelligent Infrastructure Sentinel</title>
+<title>IISentinel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#0a0e1a; color:#e0e6f0; font-family:'Segoe UI',sans-serif; }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a;--surface:#0d1225;--surface2:#111827;
+  --border:#1e2d4a;--border2:#2e3d5a;
+  --text:#e0e6f0;--muted:#7986a3;--hint:#4a5568;
+  --green:#81c784;--amber:#ffb74d;--red:#ef5350;
+  --blue:#4fc3f7;--purple:#ce93d8;--teal:#4dd0e1;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
 
-header {
-  background:#0d1225; border-bottom:1px solid #1e2d4a;
-  padding:14px 28px; display:flex; align-items:center;
-  justify-content:space-between;
-}
-.logo { font-size:20px; font-weight:700; color:#4fc3f7; letter-spacing:1px; }
-.logo span { color:#81c784; }
-.pulse { width:8px; height:8px; border-radius:50%; background:#81c784;
-  display:inline-block; animation:pulse 2s infinite; margin-right:6px; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-@keyframes slideRight { from{opacity:0;transform:translateX(60px)} to{opacity:1;transform:translateX(0)} }
-@keyframes countAnim { from{opacity:0} to{opacity:1} }
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes spinIn{from{stroke-dasharray:0 300}to{}}
+@keyframes cbsPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,83,80,0.4)}70%{box-shadow:0 0 0 10px rgba(239,83,80,0)}}
 
-.nav { background:#0d1225; border-bottom:1px solid #1e2d4a;
-  padding:0 28px; display:flex; gap:4px; overflow-x:auto; }
-.nav-tab { padding:11px 18px; font-size:13px; cursor:pointer;
-  color:#7986a3; border-bottom:2px solid transparent;
-  transition:all 0.2s; white-space:nowrap; }
-.nav-tab:hover { color:#e0e6f0; }
-.nav-tab.active { color:#4fc3f7; border-bottom-color:#4fc3f7; }
-.nav-tab.sp { color:#ce93d8; }
-.nav-tab.sp.active { border-bottom-color:#ce93d8; }
+/* LAYOUT */
+header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100;
+}
+.logo{font-size:18px;font-weight:700;color:var(--blue);letter-spacing:1px}
+.logo b{color:var(--green)}
+.hdr-center{font-size:11px;color:var(--muted);text-align:center}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.live-txt{font-size:11px;color:var(--green)}
+.btn{padding:7px 14px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:opacity 0.2s,transform 0.15s}
+.btn:active{transform:scale(0.96)}
+.btn:hover{opacity:0.85}
+.btn-blue{background:var(--blue);color:#0a0e1a}
+.btn-purple{background:var(--purple);color:#0a0e1a}
+.btn-red{background:var(--red);color:#fff}
+.btn-green{background:var(--green);color:#0a0e1a}
+.btn-amber{background:var(--amber);color:#0a0e1a}
 
-.wrap { padding:20px 28px; }
-.page { display:none; }
-.page.active { display:block; }
+nav{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;gap:2px;overflow-x:auto;
+}
+nav::-webkit-scrollbar{display:none}
+.tab{
+  padding:10px 16px;font-size:12px;cursor:pointer;
+  color:var(--muted);border-bottom:2px solid transparent;
+  transition:all 0.2s;white-space:nowrap;user-select:none;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab.sp{color:var(--purple)}
+.tab.sp.active{border-bottom-color:var(--purple);color:var(--purple)}
+.tab.cbs-tab{color:var(--red)}
+.tab.cbs-tab.active{border-bottom-color:var(--red);color:var(--red)}
 
-.sec { font-size:11px; font-weight:600; color:#7986a3;
-  text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+.wrap{padding:18px 24px}
+.page{display:none;animation:fadeUp 0.3s ease}
+.page.active{display:block}
 
-/* BANNER ROW */
-.banner {
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px; margin-bottom:20px;
-}
-.bcard {
-  background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:10px; padding:14px 18px;
-  animation:fadeUp 0.5s ease both;
-}
-.bcard-label { font-size:11px; color:#7986a3; margin-bottom:4px; }
-.bcard-val { font-size:24px; font-weight:700; }
+/* CARDS */
+.banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.bcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;animation:fadeUp 0.4s ease both}
+.bl{font-size:10px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}
+.bv{font-size:22px;font-weight:700}
 
-/* GAUGE GRID */
-.gauge-grid {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
-  gap:12px; margin-bottom:20px;
-}
-.gcard {
-  background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:12px; padding:16px; text-align:center;
-  transition:border-color 0.3s, transform 0.2s;
-  animation:fadeUp 0.4s ease both;
-  cursor:default;
-}
-.gcard:hover { border-color:#4fc3f7; transform:translateY(-2px); }
-.gcard.critical:hover { border-color:#ef5350; }
-.gcard.warning:hover { border-color:#ffb74d; }
-.gauge-wrap { position:relative; width:90px; height:90px; margin:0 auto 8px; }
-.gauge-wrap svg { width:100%; height:100%; }
-.gauge-val {
-  position:absolute; top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  font-size:18px; font-weight:700;
-}
-.gcard-id { font-size:11px; color:#7986a3; margin-bottom:6px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.gcard-type { font-size:10px; color:#4a5568; margin-top:4px; }
-.gcard-prob { font-size:10px; margin-top:6px; }
-.gcard-uptime { font-size:10px; color:#7986a3; margin-top:3px; }
-.anomaly-pill {
-  display:inline-block; background:#ef5350; color:white;
-  font-size:9px; padding:1px 6px; border-radius:8px;
-  margin-left:4px; font-weight:700; vertical-align:middle;
-}
+/* GAUGES */
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.gc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;transition:border-color 0.3s,transform 0.2s;animation:fadeUp 0.35s ease both;cursor:default}
+.gc:hover{transform:translateY(-3px)}
+.gc.gc-good:hover{border-color:var(--green)}
+.gc.gc-warn:hover{border-color:var(--amber)}
+.gc.gc-crit:hover{border-color:var(--red)}
+.gc.gc-cbs{border-color:var(--red);animation:cbsPulse 2s infinite}
+.gw{position:relative;width:82px;height:82px;margin:0 auto 8px}
+.gw svg{width:100%;height:100%}
+.gv{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:16px;font-weight:700}
+.gid{font-size:10px;color:var(--muted);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gtype{font-size:9px;color:var(--hint);margin-top:2px}
+.gprob{font-size:9px;margin-top:4px}
+.gup{font-size:9px;color:var(--muted);margin-top:2px}
+.pill{display:inline-block;font-size:8px;padding:1px 5px;border-radius:6px;font-weight:700;vertical-align:middle;margin-left:3px}
+.pill-anom{background:var(--red);color:#fff}
+.pill-cbs{background:var(--red);color:#fff}
+.pill-hold{background:var(--red);color:#fff;animation:pulse 1s infinite}
+.pill-proto{background:var(--border2);color:var(--muted);font-size:8px}
 
 /* CHARTS */
-.charts-grid { display:grid; grid-template-columns:1fr 1fr;
-  gap:12px; margin-bottom:20px; }
-.ccard { background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:12px; padding:18px; }
-.ctitle { font-size:12px; font-weight:600; color:#b0bec5; margin-bottom:14px; }
-canvas { max-height:180px; }
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px}
+.ct{font-size:11px;font-weight:600;color:#b0bec5;margin-bottom:12px}
+canvas{max-height:170px}
 
 /* FEEDS */
-.feeds { display:grid; grid-template-columns:1fr 1fr;
-  gap:12px; margin-bottom:20px; }
-.fcard { background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:12px; padding:18px;
-  max-height:280px; overflow-y:auto; }
-.fitem {
-  padding:10px 12px; border-radius:8px; background:#111827;
-  margin-bottom:8px; border-left:3px solid #4fc3f7;
-  font-size:12px; line-height:1.5;
-  animation:slideRight 0.3s ease both;
-}
-.fitem.alert { border-left-color:#ef5350; }
-.fitem.warn { border-left-color:#ffb74d; }
-.fitem.auto { border-left-color:#ce93d8; }
-.fitem.good { border-left-color:#81c784; }
-.fitem.twin { border-left-color:#4fc3f7; }
-.ftime { font-size:10px; color:#7986a3; margin-bottom:3px; }
-.fdev { font-weight:600; color:#4fc3f7; margin-bottom:3px; }
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.fc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;max-height:260px;overflow-y:auto}
+.fc::-webkit-scrollbar{width:3px}
+.fc::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.fi{padding:9px 11px;border-radius:7px;background:var(--surface2);margin-bottom:7px;border-left:3px solid var(--blue);font-size:11px;line-height:1.5;animation:slideRight 0.3s ease}
+.fi.fa{border-left-color:var(--red)}
+.fi.fw{border-left-color:var(--amber)}
+.fi.fg{border-left-color:var(--green)}
+.fi.fp{border-left-color:var(--purple)}
+.fi.ft{border-left-color:var(--teal)}
+.fi.fcbs{border-left-color:var(--red);background:#1a0808}
+.ft2{font-size:9px;color:var(--muted);margin-bottom:2px}
+.fd{font-weight:600;color:var(--blue);margin-bottom:2px}
 
-/* INTELLIGENCE BANNER */
-.intel-grid { display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-  gap:12px; margin-bottom:20px; }
-.icard { background:#111827; border:1px solid #2e3d5a;
-  border-radius:10px; padding:14px 18px; }
-.icard-title { font-size:11px; color:#7986a3;
-  text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
-.icard-val { font-size:20px; font-weight:700; }
-.icard-sub { font-size:11px; color:#7986a3; margin-top:4px; }
+/* CBS PANEL */
+.cbs-panel{background:#120808;border:2px solid var(--red);border-radius:12px;padding:18px;margin-bottom:18px}
+.cbs-title{color:var(--red);font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.cbs-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 0.8s infinite}
+.cbs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
+.cbs-device{background:#1a0a0a;border:1px solid #3d1010;border-radius:8px;padding:12px}
+.cbs-status-safe{color:var(--green);font-weight:700}
+.cbs-status-hold{color:var(--red);font-weight:700;animation:pulse 0.8s infinite}
 
-/* SIMULATE BUTTONS */
-.sim-wrap { background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:12px; padding:18px; margin-bottom:20px; }
-.sim-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-.sbtn { padding:8px 16px; border-radius:8px; border:none;
-  cursor:pointer; font-size:12px; font-weight:700;
-  transition:transform 0.15s, opacity 0.2s; }
-.sbtn:active { transform:scale(0.96); }
-.sbtn:hover { opacity:0.85; }
-.sbtn-red { background:#ef5350; color:white; }
-.sbtn-amber { background:#ffb74d; color:#1a1a1a; }
-.sbtn-green { background:#81c784; color:#1a1a1a; }
-.sbtn-purple { background:#ce93d8; color:#1a1a1a; }
-.sbtn-blue { background:#4fc3f7; color:#1a1a1a; }
+/* INTELLIGENCE */
+.igrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px}
+.ic{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.it{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.iv{font-size:18px;font-weight:700}
+.is{font-size:10px;color:var(--muted);margin-top:3px}
 
-/* TOASTS */
-#toast-container {
-  position:fixed; top:70px; right:16px;
-  z-index:9999; width:300px;
-}
-.toast {
-  background:#0d1225; border:1px solid #1e2d4a;
-  border-left:3px solid #4fc3f7;
-  border-radius:8px; padding:12px 14px;
-  margin-bottom:8px; font-size:12px;
-  animation:slideRight 0.35s ease both;
-  box-shadow:0 4px 12px rgba(0,0,0,0.4);
-}
-.toast.critical { border-left-color:#ef5350; }
-.toast.warning { border-left-color:#ffb74d; }
-.toast.good { border-left-color:#81c784; }
-.toast.twin { border-left-color:#4fc3f7; }
-.toast-title { font-weight:700; margin-bottom:3px; }
-.toast-msg { color:#b0bec5; font-size:11px; }
+/* PROTOCOL LEGEND */
+.proto-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.proto-badge{background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--muted)}
+.proto-badge span{color:var(--text);font-weight:600}
 
-/* PDF BUTTON */
-.pdf-btn {
-  background:#4fc3f7; color:#0a0e1a;
-  border:none; border-radius:8px;
-  padding:8px 18px; font-size:12px;
-  font-weight:700; cursor:pointer;
-  transition:opacity 0.2s;
-}
-.pdf-btn:hover { opacity:0.85; }
+/* SIM BUTTONS */
+.sim-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px}
+.sbtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
 
 /* RETRAIN BANNER */
-.retrain-banner {
-  background:#2d1a0e; border:1px solid #ffb74d;
-  border-radius:10px; padding:12px 18px;
-  margin-bottom:16px; font-size:13px;
-  color:#ffb74d; display:none;
-}
+.retrain{background:#1a1200;border:1px solid var(--amber);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);display:none}
+
+/* SECTION LABEL */
+.sl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+
+/* TOASTS */
+#toasts{position:fixed;top:65px;right:14px;z-index:9999;width:280px}
+.toast{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:10px 12px;margin-bottom:7px;font-size:11px;animation:slideRight 0.3s ease;box-shadow:0 4px 16px rgba(0,0,0,0.5)}
+.toast.tc{border-left-color:var(--red)}
+.toast.tw{border-left-color:var(--amber)}
+.toast.tg{border-left-color:var(--green)}
+.toast.tp{border-left-color:var(--purple)}
+.tttl{font-weight:700;margin-bottom:2px}
+.tmsg{color:#b0bec5;font-size:10px}
 
 /* LOGIN */
-.login-box { max-width:380px; margin:50px auto;
-  background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:16px; padding:36px; }
-.l-title { font-size:18px; font-weight:700;
-  color:#ce93d8; margin-bottom:6px; }
-.l-sub { font-size:12px; color:#7986a3; margin-bottom:28px; }
-.l-group { margin-bottom:16px; }
-.l-label { font-size:11px; color:#7986a3;
-  margin-bottom:6px; display:block; }
-.l-input { width:100%; padding:9px 12px;
-  background:#111827; border:1px solid #1e2d4a;
-  border-radius:8px; color:#e0e6f0;
-  font-size:13px; outline:none;
-  transition:border-color 0.2s; }
-.l-input:focus { border-color:#ce93d8; }
-.l-btn { width:100%; padding:10px;
-  background:#ce93d8; color:#1a1a1a;
-  border:none; border-radius:8px;
-  font-size:14px; font-weight:700;
-  cursor:pointer; transition:opacity 0.2s; }
-.l-btn:hover { opacity:0.85; }
-.l-err { color:#ef5350; font-size:12px;
-  margin-top:10px; text-align:center; }
+.lbox{max-width:360px;margin:50px auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px}
+.ltitle{font-size:16px;font-weight:700;color:var(--purple);margin-bottom:4px}
+.lsub{font-size:11px;color:var(--muted);margin-bottom:24px}
+.lg{margin-bottom:14px}
+.ll{font-size:10px;color:var(--muted);margin-bottom:5px;display:block}
+.li{width:100%;padding:8px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:13px;outline:none;transition:border-color 0.2s}
+.li:focus{border-color:var(--purple)}
+.lerr{color:var(--red);font-size:11px;margin-top:8px;text-align:center}
 
 /* SPECIALIST */
-.sp-header { background:#130d1e; border:1px solid #4a2d6b;
-  border-radius:10px; padding:14px 18px; margin-bottom:20px;
-  display:flex; align-items:center; justify-content:space-between; }
-.sp-name { color:#ce93d8; font-weight:700; font-size:15px; }
-.sp-role { color:#7986a3; font-size:11px; }
-.inc-card { background:#111827; border:1px solid #1e2d4a;
-  border-radius:10px; padding:14px; margin-bottom:10px; }
-.inc-head { display:flex; align-items:center;
-  justify-content:space-between; margin-bottom:8px; }
-.inc-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
-.asgn-input { background:#0d1225; border:1px solid #1e2d4a;
-  border-radius:6px; color:#e0e6f0; padding:5px 9px;
-  font-size:11px; width:150px; outline:none; }
-.abtn { padding:5px 11px; border-radius:6px; border:none;
-  cursor:pointer; font-size:11px; font-weight:700;
-  transition:opacity 0.2s; }
-.abtn:hover { opacity:0.85; }
-.abtn-blue { background:#4fc3f7; color:#1a1a1a; }
-.abtn-green { background:#81c784; color:#1a1a1a; }
-.abtn-red { background:#ef5350; color:white; }
-.sbadge { display:inline-block; font-size:9px; padding:2px 7px;
-  border-radius:8px; font-weight:700; margin-left:6px; }
-.sb-open { background:#ef5350; color:white; }
-.sb-assigned { background:#ffb74d; color:#1a1a1a; }
-.sb-resolved { background:#81c784; color:#1a1a1a; }
+.sphead{background:#0d0d1f;border:1px solid #3d2d6b;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.spname{color:var(--purple);font-weight:700;font-size:14px}
+.sprole{color:var(--muted);font-size:10px}
+.inc-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:13px;margin-bottom:9px}
+.inc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.inc-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ai{background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 8px;font-size:11px;width:145px;outline:none}
+.sbadge{display:inline-block;font-size:8px;padding:2px 6px;border-radius:6px;font-weight:700;margin-left:5px}
+.sbo{background:var(--red);color:#fff}
+.sba{background:var(--amber);color:#0a0e1a}
+.sbr{background:var(--green);color:#0a0e1a}
 
-.good-c { color:#81c784; }
-.warn-c { color:#ffb74d; }
-.crit-c { color:#ef5350; }
+/* COLOR HELPERS */
+.gc-{color:var(--green)}.wc{color:var(--amber)}.rc{color:var(--red)}.bc{color:var(--blue)}.pc{color:var(--purple)}
 
-@media(max-width:600px) {
-  .charts-grid,.feeds { grid-template-columns:1fr; }
-  .banner { grid-template-columns:1fr 1fr; }
-  .wrap { padding:12px 14px; }
-  header { padding:10px 14px; }
+@media(max-width:600px){
+  .cgrid,.fgrid{grid-template-columns:1fr}
+  .banner{grid-template-columns:1fr 1fr}
+  .wrap{padding:12px}
+  header{padding:10px 14px}
+  .logo{font-size:15px}
 }
 </style>
 </head>
 <body>
-
-<div id="toast-container"></div>
+<div id="toasts"></div>
 
 <header>
-  <div class="logo">II<span>Sentinel</span></div>
-  <div style="text-align:center;display:none" id="hdr-center">
-    <div style="font-size:12px;color:#7986a3">Intelligent Infrastructure Sentinel</div>
+  <div class="logo">II<b>Sentinel</b></div>
+  <div class="hdr-center">
+    <div>Intelligent Infrastructure Sentinel</div>
+    <div style="font-size:10px;opacity:0.6">Network · Industrial · Mining · Telecom</div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <span class="pulse"></span>
-    <span style="font-size:12px;color:#81c784" id="live-lbl">Live</span>
-    <button class="pdf-btn" onclick="exportPDF()">Export report</button>
+  <div class="hdr-right">
+    <div class="live-dot"></div>
+    <span class="live-txt" id="live-lbl">Live</span>
+    <button class="btn btn-blue" onclick="exportReport()">Export report</button>
   </div>
 </header>
 
-<div class="nav" id="main-nav">
-  <div class="nav-tab active" data-page="public" onclick="showPage(this,'public')">Dashboard</div>
-  <div class="nav-tab" data-page="intel" onclick="showPage(this,'intel')">Intelligence</div>
-  <div class="nav-tab" data-page="telecom" onclick="showPage(this,'telecom')">TelecomCo</div>
-  <div class="nav-tab" data-page="mining" onclick="showPage(this,'mining')">MiningCo</div>
-  <div class="nav-tab sp" data-page="specialist" onclick="showPage(this,'specialist')">Specialist</div>
-</div>
+<nav>
+  <div class="tab active" onclick="goPage(this,'main')">Dashboard</div>
+  <div class="tab" onclick="goPage(this,'intel')">Intelligence</div>
+  <div class="tab" onclick="goPage(this,'telecom')">TelecomCo</div>
+  <div class="tab" onclick="goPage(this,'mining')">MiningCo</div>
+  <div class="tab cbs-tab" onclick="goPage(this,'cbs')">CBS Safety</div>
+  <div class="tab sp" onclick="goPage(this,'specialist')">Specialist</div>
+</nav>
 
 <div class="wrap">
-
-<!-- RETRAIN BANNER -->
-<div class="retrain-banner" id="retrain-banner">
-  AI model retraining recommended — anomaly count has exceeded threshold.
-  Collect new labelled data and retrain health_model.pkl for improved accuracy.
+<div class="retrain" id="retrain-bar">
+  AI model retraining recommended — anomaly count exceeded threshold.
+  Retrain health_model.pkl with accumulated real-world data for improved accuracy.
 </div>
 
-<!-- PAGE: PUBLIC DASHBOARD -->
-<div class="page active" id="page-public">
-  <div class="banner" id="top-banner">
-    <div class="bcard">
-      <div class="bcard-label">Infrastructure health index</div>
-      <div class="bcard-val good-c" id="fed-index">--</div>
-    </div>
-    <div class="bcard">
-      <div class="bcard-label">Active devices</div>
-      <div class="bcard-val" style="color:#4fc3f7" id="dev-count">--</div>
-    </div>
-    <div class="bcard">
-      <div class="bcard-label">Estimated risk cost</div>
-      <div class="bcard-val crit-c" id="risk-cost">$0</div>
-    </div>
-    <div class="bcard">
-      <div class="bcard-label">Open incidents</div>
-      <div class="bcard-val warn-c" id="inc-count">--</div>
-    </div>
-    <div class="bcard">
-      <div class="bcard-label">Anomalies detected</div>
-      <div class="bcard-val" style="color:#ce93d8" id="anom-count">--</div>
-    </div>
+<!-- MAIN DASHBOARD -->
+<div class="page active" id="page-main">
+  <div class="banner" id="main-banner">
+    <div class="bcard"><div class="bl">Infrastructure health index</div><div class="bv gc-" id="b-fhi">--</div></div>
+    <div class="bcard"><div class="bl">Active devices</div><div class="bv bc" id="b-devs">--</div></div>
+    <div class="bcard"><div class="bl">Risk cost estimate</div><div class="bv rc" id="b-cost">$0</div></div>
+    <div class="bcard"><div class="bl">Open incidents</div><div class="bv wc" id="b-inc">--</div></div>
+    <div class="bcard"><div class="bl">Anomalies detected</div><div class="bv pc" id="b-anom">--</div></div>
+    <div class="bcard"><div class="bl">CBS status</div><div class="bv" id="b-cbs" style="color:var(--green)">ARMED</div></div>
   </div>
 
-  <div class="sec">Device health — animated gauges</div>
-  <div class="gauge-grid" id="gauge-grid">
-    <div class="gcard">
-      <div class="gcard-id">Connecting to data stream...</div>
-    </div>
+  <div class="sl">All devices — animated health gauges</div>
+  <div class="ggrid" id="main-gauges"></div>
+
+  <div class="cgrid">
+    <div class="cc"><div class="ct">Health score trend</div><canvas id="hChart"></canvas></div>
+    <div class="cc"><div class="ct">Predicted vs actual</div><canvas id="pChart"></canvas></div>
   </div>
 
-  <div class="charts-grid">
-    <div class="ccard">
-      <div class="ctitle">Health score trend — all devices</div>
-      <canvas id="healthChart"></canvas>
-    </div>
-    <div class="ccard">
-      <div class="ctitle">Predicted vs actual health</div>
-      <canvas id="predictChart"></canvas>
-    </div>
-  </div>
-
-  <div class="feeds">
-    <div class="fcard">
-      <div class="sec">AI diagnosis feed</div>
-      <div id="diag-feed">
-        <div class="fitem"><div class="ftime">Waiting for data...</div></div>
-      </div>
-    </div>
-    <div class="fcard">
-      <div class="sec">Automation command log</div>
-      <div id="auto-feed">
-        <div class="fitem"><div class="ftime">No commands issued yet</div></div>
-      </div>
-    </div>
+  <div class="fgrid">
+    <div class="fc"><div class="sl">AI diagnosis feed</div><div id="diag-feed"></div></div>
+    <div class="fc"><div class="sl">Automation command log</div><div id="auto-feed"></div></div>
   </div>
 
   <div class="sim-wrap">
-    <div class="sec">Simulate live event — demo controls</div>
-    <div class="sim-btns">
-      <button class="sbtn sbtn-red" onclick="simEvent('critical')">Simulate critical failure</button>
-      <button class="sbtn sbtn-amber" onclick="simEvent('congestion')">Simulate congestion</button>
-      <button class="sbtn sbtn-green" onclick="simEvent('recovery')">Simulate recovery</button>
-      <button class="sbtn sbtn-purple" onclick="simEvent('anomaly')">Simulate anomaly</button>
-      <button class="sbtn sbtn-blue" onclick="simEvent('twin')">Run digital twin</button>
+    <div class="sl">Simulate live events — demo controls</div>
+    <div class="sbtns">
+      <button class="btn btn-red" onclick="sim('critical')">Critical failure</button>
+      <button class="btn btn-amber" onclick="sim('congestion')">Network congestion</button>
+      <button class="btn btn-green" onclick="sim('recovery')">System recovery</button>
+      <button class="btn btn-purple" onclick="sim('anomaly')">Anomaly detection</button>
+      <button class="btn btn-blue" onclick="sim('twin')">Digital twin run</button>
+      <button class="btn btn-red" onclick="sim('blast')">CBS blast hold</button>
     </div>
   </div>
 </div>
 
-<!-- PAGE: INTELLIGENCE -->
+<!-- INTELLIGENCE PAGE -->
 <div class="page" id="page-intel">
-  <div class="sec">Platform intelligence — real time AI insights</div>
-  <div class="intel-grid" id="intel-grid">
-    <div class="icard">
-      <div class="icard-title">Federated health index</div>
-      <div class="icard-val good-c" id="i-fed">--</div>
-      <div class="icard-sub">Weighted score across all devices</div>
-    </div>
-    <div class="icard">
-      <div class="icard-title">Highest failure risk</div>
-      <div class="icard-val crit-c" id="i-risk">--</div>
-      <div class="icard-sub">Device most likely to fail</div>
-    </div>
-    <div class="icard">
-      <div class="icard-title">Cross device correlation</div>
-      <div class="icard-val warn-c" id="i-corr">--</div>
-      <div class="icard-sub">Linked degradation events</div>
-    </div>
-    <div class="icard">
-      <div class="icard-title">Model health</div>
-      <div class="icard-val good-c" id="i-model">Optimal</div>
-      <div class="icard-sub">Anomaly count vs threshold</div>
-    </div>
+  <div class="sl">Platform intelligence — real-time AI insights</div>
+  <div class="igrid">
+    <div class="ic"><div class="it">Federated health index</div><div class="iv gc-" id="i-fhi">--</div><div class="is">Weighted across all assets</div></div>
+    <div class="ic"><div class="it">Highest failure risk</div><div class="iv rc" id="i-risk">--</div><div class="is">Next 30 minutes</div></div>
+    <div class="ic"><div class="it">Cross-device correlation</div><div class="iv wc" id="i-corr">--</div><div class="is">Linked degradation events</div></div>
+    <div class="ic"><div class="it">Model status</div><div class="iv gc-" id="i-model">Optimal</div><div class="is">Anomalies vs threshold</div></div>
+    <div class="ic"><div class="it">Total devices monitored</div><div class="iv bc" id="i-devs">--</div><div class="is">Across all sectors</div></div>
   </div>
 
-  <div class="feeds">
-    <div class="fcard">
-      <div class="sec">Digital twin insights</div>
-      <div id="twin-feed">
-        <div class="fitem twin">
-          <div class="ftime">Digital twin engine active</div>
-          <div>Simulating load increase scenarios for all connected devices</div>
-        </div>
-      </div>
-    </div>
-    <div class="fcard">
-      <div class="sec">Failure probability ranking</div>
-      <div id="prob-feed">
-        <div class="fitem">
-          <div class="ftime">Calculating failure probabilities...</div>
-        </div>
-      </div>
-    </div>
+  <div class="fgrid">
+    <div class="fc"><div class="sl">Digital twin insights</div><div id="twin-feed"><div class="fi ft"><div class="ft2">Digital twin engine active</div><div>Simulating 20% load increase scenarios for all connected devices</div></div></div></div>
+    <div class="fc"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
   </div>
 
-  <div class="ccard" style="margin-bottom:20px">
-    <div class="ctitle">Device uptime percentage</div>
+  <div class="cc" style="margin-bottom:18px">
+    <div class="ct">Device uptime percentage</div>
     <canvas id="uptimeChart"></canvas>
   </div>
+
+  <div class="proto-legend">
+    <div class="proto-badge"><span>Ethernet IEEE 802.3</span> — physical backbone</div>
+    <div class="proto-badge"><span>SNMP v2/v3</span> — telecom metrics</div>
+    <div class="proto-badge"><span>Profinet</span> — PLC real-time</div>
+    <div class="proto-badge"><span>Modbus TCP</span> — sensor registers</div>
+    <div class="proto-badge"><span>DNP3</span> — CBS safety control</div>
+    <div class="proto-badge"><span>OPC-UA</span> — SCADA exchange</div>
+    <div class="proto-badge"><span>EtherNet/IP</span> — conveyor control</div>
+  </div>
 </div>
 
-<!-- PAGE: TELECOM -->
+<!-- TELECOMCO PAGE -->
 <div class="page" id="page-telecom">
-  <div class="sec">TelecomCo network operations — base stations and towers</div>
-  <div class="gauge-grid" id="telecom-gauges">
-    <div class="gcard">
-      <div class="gcard-id">Run telecom_collector.py to see data</div>
-    </div>
+  <div class="sl">TelecomCo network operations — base stations, towers, microwave links</div>
+  <div class="banner" id="tc-banner">
+    <div class="bcard"><div class="bl">TelecomCo FHI</div><div class="bv gc-" id="tc-fhi">--</div></div>
+    <div class="bcard"><div class="bl">Active nodes</div><div class="bv bc" id="tc-devs">--</div></div>
+    <div class="bcard"><div class="bl">Open faults</div><div class="bv rc" id="tc-faults">0</div></div>
+    <div class="bcard"><div class="bl">Protocol</div><div class="bv" style="font-size:12px;color:var(--muted)">SNMP/Ethernet</div></div>
   </div>
-  <div class="ccard" style="margin-bottom:20px">
-    <div class="ctitle">TelecomCo health trend</div>
-    <canvas id="telecomChart"></canvas>
+  <div class="ggrid" id="tc-gauges"></div>
+  <div class="cgrid">
+    <div class="cc"><div class="ct">TelecomCo health trend</div><canvas id="tcChart"></canvas></div>
+    <div class="cc"><div class="ct">Signal strength over time</div><canvas id="tcSigChart"></canvas></div>
   </div>
-  <div class="fcard">
-    <div class="sec">TelecomCo alerts and diagnoses</div>
-    <div id="telecom-feed">
-      <div class="fitem"><div class="ftime">No telecom alerts</div></div>
-    </div>
+  <div class="fgrid">
+    <div class="fc"><div class="sl">TelecomCo fault log</div><div id="tc-feed"></div></div>
+    <div class="fc"><div class="sl">TelecomCo automation commands</div><div id="tc-auto"></div></div>
   </div>
 </div>
 
-<!-- PAGE: MINING -->
+<!-- MININGCO PAGE -->
 <div class="page" id="page-mining">
-  <div class="sec">MiningCo underground asset monitoring</div>
-  <div class="gauge-grid" id="mining-gauges">
-    <div class="gcard">
-      <div class="gcard-id">Run mining_collector.py to see data</div>
-    </div>
+  <div class="sl">MiningCo underground asset monitoring — PLCs, pumps, conveyors, ventilation</div>
+  <div class="banner" id="mc-banner">
+    <div class="bcard"><div class="bl">MiningCo FHI</div><div class="bv gc-" id="mc-fhi">--</div></div>
+    <div class="bcard"><div class="bl">Active assets</div><div class="bv bc" id="mc-devs">--</div></div>
+    <div class="bcard"><div class="bl">Safety alerts</div><div class="bv rc" id="mc-alerts">0</div></div>
+    <div class="bcard"><div class="bl">Protocol</div><div class="bv" style="font-size:12px;color:var(--muted)">Profinet/Modbus</div></div>
   </div>
-  <div class="ccard" style="margin-bottom:20px">
-    <div class="ctitle">MiningCo equipment health trend</div>
-    <canvas id="miningChart"></canvas>
+  <div class="ggrid" id="mc-gauges"></div>
+  <div class="cgrid">
+    <div class="cc"><div class="ct">MiningCo equipment health trend</div><canvas id="mcChart"></canvas></div>
+    <div class="cc"><div class="ct">Temperature monitoring</div><canvas id="mcTempChart"></canvas></div>
   </div>
-  <div class="fcard">
-    <div class="sec">MiningCo safety alerts</div>
-    <div id="mining-feed">
-      <div class="fitem"><div class="ftime">No mining alerts</div></div>
-    </div>
+  <div class="fgrid">
+    <div class="fc"><div class="sl">MiningCo safety alerts</div><div id="mc-feed"></div></div>
+    <div class="fc"><div class="sl">MiningCo automation commands</div><div id="mc-auto"></div></div>
   </div>
 </div>
 
-<!-- PAGE: SPECIALIST -->
+<!-- CBS SAFETY PAGE -->
+<div class="page" id="page-cbs">
+  <div class="cbs-panel">
+    <div class="cbs-title"><div class="cbs-dot"></div>Centralised Blasting System — DNP3 Safety Monitor</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">
+      Protocol: DNP3 over Ethernet IEEE 802.3 · Safety threshold: 90% link health · Auto blast hold enabled
+    </div>
+    <div class="cbs-grid" id="cbs-devices"></div>
+    <div style="background:#0a0404;border:1px solid #3d1010;border-radius:8px;padding:12px">
+      <div class="sl" style="color:var(--red)">CBS safety interlock log</div>
+      <div id="cbs-log"></div>
+    </div>
+  </div>
+  <div class="cc">
+    <div class="ct">CBS link health over time — blast hold activates below 90%</div>
+    <canvas id="cbsChart"></canvas>
+  </div>
+</div>
+
+<!-- SPECIALIST PAGE -->
 <div class="page" id="page-specialist">
   <div id="login-sec">
-    <div class="login-box">
-      <div class="l-title">Specialist access</div>
-      <div class="l-sub">Restricted to authorised engineers and administrators only.</div>
-      <div class="l-group">
-        <label class="l-label">Username</label>
-        <input class="l-input" type="text" id="l-name" placeholder="Enter username">
-      </div>
-      <div class="l-group">
-        <label class="l-label">Password</label>
-        <input class="l-input" type="password" id="l-pass"
-          placeholder="Enter password"
-          onkeydown="if(event.key==='Enter') doLogin()">
-      </div>
-      <button class="l-btn" onclick="doLogin()">Access specialist panel</button>
-      <div class="l-err" id="l-err"></div>
+    <div class="lbox">
+      <div class="ltitle">Specialist access</div>
+      <div class="lsub">Restricted to authorised engineers and administrators only.</div>
+      <div class="lg"><label class="ll">Username</label><input class="li" type="text" id="l-name" placeholder="Enter username"></div>
+      <div class="lg"><label class="ll">Password</label><input class="li" type="password" id="l-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-purple" style="width:100%" onclick="doLogin()">Access specialist panel</button>
+      <div class="lerr" id="l-err"></div>
     </div>
   </div>
-
   <div id="sp-sec" style="display:none">
-    <div class="sp-header">
-      <div>
-        <div class="sp-name" id="sp-name">Specialist</div>
-        <div class="sp-role" id="sp-role">Role</div>
-      </div>
-      <button class="sbtn sbtn-red" onclick="doLogout()">Log out</button>
+    <div class="sphead">
+      <div><div class="spname" id="sp-name">Specialist</div><div class="sprole" id="sp-role">Role</div></div>
+      <button class="btn btn-red" onclick="doLogout()">Log out</button>
     </div>
-
     <div class="banner" style="grid-template-columns:repeat(3,1fr)">
-      <div class="bcard">
-        <div class="bcard-label">Open incidents</div>
-        <div class="bcard-val crit-c" id="sp-open">0</div>
-      </div>
-      <div class="bcard">
-        <div class="bcard-label">Assigned</div>
-        <div class="bcard-val warn-c" id="sp-assigned">0</div>
-      </div>
-      <div class="bcard">
-        <div class="bcard-label">Resolved</div>
-        <div class="bcard-val good-c" id="sp-resolved">0</div>
-      </div>
+      <div class="bcard"><div class="bl">Open incidents</div><div class="bv rc" id="sp-open">0</div></div>
+      <div class="bcard"><div class="bl">Assigned</div><div class="bv wc" id="sp-asgn">0</div></div>
+      <div class="bcard"><div class="bl">Resolved</div><div class="bv gc-" id="sp-res">0</div></div>
     </div>
-
-    <div class="sec">Open incidents — assign and resolve</div>
-    <div id="inc-list">
-      <div class="fitem">
-        <div class="ftime">Loading incidents...</div>
-      </div>
-    </div>
+    <div class="sl">Active incidents — assign and resolve</div>
+    <div id="inc-list"></div>
   </div>
 </div>
 
-</div>
+</div><!-- end wrap -->
 
 <script>
-const BASE = window.location.origin;
-let spToken = null;
-let spName = null;
-let allData = [];
-let intelData = {};
+const B=window.location.origin;
+let spToken=null,spName=null,intelData={},allData=[];
+const TELECOM_TYPES=['base_station','network_tower','microwave_link','router','switch','workstation'];
+const MINING_TYPES=['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node'];
+const CBS_TYPES=['cbs_controller'];
 
-function scoreColor(s) {
-  return s>=70 ? '#81c784' : s>=40 ? '#ffb74d' : '#ef5350';
-}
-function scoreClass(s) {
-  return s>=70 ? 'good-c' : s>=40 ? 'warn-c' : 'crit-c';
-}
-function scoreFill(s) {
-  return s>=70 ? 'good' : s>=40 ? 'warn' : 'crit';
-}
-function fmt(ts) {
-  return new Date(ts).toLocaleTimeString();
+function sc(s){return s>=70?'var(--green)':s>=40?'var(--amber)':'var(--red)'}
+function scc(s){return s>=70?'gc-':s>=40?'wc':'rc'}
+function sfill(s){return s>=70?'gc-good':s>=40?'gc-warn':'gc-crit'}
+function fmtT(ts){return new Date(ts).toLocaleTimeString()}
+function fmtCost(data){
+  const dm={};data.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  return Object.values(dm).reduce((c,d)=>{
+    return c+(d.health_score<20?5000:d.health_score<35?2000:d.health_score<50?800:0);
+  },0);
 }
 
-function makeGaugeSVG(score, color) {
-  const r=36, cx=45, cy=45;
-  const circ=2*Math.PI*r;
-  const dash=circ*(score/100);
-  const offset=circ*0.25;
-  return `<svg viewBox="0 0 90 90">
-    <circle cx="${cx}" cy="${cy}" r="${r}"
-      fill="none" stroke="#1e2d4a" stroke-width="7"/>
-    <circle cx="${cx}" cy="${cy}" r="${r}"
-      fill="none" stroke="${color}" stroke-width="7"
-      stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
-      stroke-dashoffset="${offset.toFixed(1)}"
-      stroke-linecap="round"
-      style="transition:stroke-dasharray 0.8s ease"/>
+function gauge(score,color){
+  const r=34,cx=41,cy=41,circ=2*Math.PI*r;
+  const dash=(circ*(score/100)).toFixed(1);
+  const off=(circ*0.25).toFixed(1);
+  return `<svg viewBox="0 0 82 82">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e2d4a" stroke-width="6"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="6"
+      stroke-dasharray="${dash} ${circ.toFixed(1)}" stroke-dashoffset="${off}"
+      stroke-linecap="round" style="transition:stroke-dasharray 0.9s ease"/>
   </svg>`;
 }
 
-function showPage(el, name) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  el.classList.add('active');
-  if(name==='intel') updateIntelPage();
-}
-
-function toast(title, msg, type) {
-  const c=document.getElementById('toast-container');
-  const el=document.createElement('div');
-  el.className='toast '+(type||'');
-  el.innerHTML=`<div class="toast-title">${title}</div>
-    <div class="toast-msg">${msg}</div>`;
-  c.insertBefore(el, c.firstChild);
-  setTimeout(()=>{ el.style.opacity='0';
-    el.style.transition='opacity 0.4s';
-    setTimeout(()=>el.remove(), 400); }, 5000);
-  if(c.children.length>5) c.lastChild.remove();
-}
-
-function calcCost(deviceMap) {
-  let cost=0;
-  Object.values(deviceMap).forEach(d=>{
-    const s=d.health_score;
-    if(s<20) cost+=5000;
-    else if(s<35) cost+=2000;
-    else if(s<50) cost+=800;
-  });
-  return cost;
-}
-
-function renderGauges(deviceMap, containerId) {
-  const grid=document.getElementById(containerId);
-  if(!grid) return;
-  grid.innerHTML='';
-  const entries=Object.values(deviceMap);
-  if(!entries.length) {
-    grid.innerHTML='<div class="gcard"><div class="gcard-id">No data yet</div></div>';
-    return;
-  }
+function mkGauges(data,containerId,filterFn){
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  const dm={};
+  data.filter(filterFn).forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const entries=Object.values(dm);
+  if(!entries.length){el.innerHTML='<div class="gc"><div class="gid">No data — run collector</div></div>';return;}
+  el.innerHTML='';
   entries.forEach((d,i)=>{
-    const score=Math.round(d.health_score);
-    const col=scoreColor(score);
-    const cls=scoreFill(score);
+    const s=Math.round(d.health_score);
+    const col=sc(s);
     const prob=intelData.failure_probabilities?.[d.device_id]||0;
-    const uptime=intelData.uptime?.[d.device_id]||100;
-    grid.innerHTML+=`
-      <div class="gcard ${cls}" style="animation-delay:${i*0.08}s">
-        <div class="gcard-id">${d.device_id}
-          ${d.anomaly_flag?'<span class="anomaly-pill">ANOMALY</span>':''}
+    const up=intelData.uptime?.[d.device_id]||100;
+    const isCBS=CBS_TYPES.includes(d.device_type);
+    const proto=d.ai_diagnosis?.includes('DNP3')?'DNP3':
+                d.ai_diagnosis?.includes('Profinet')?'Profinet':
+                d.ai_diagnosis?.includes('SNMP')?'SNMP':
+                d.ai_diagnosis?.includes('Modbus')?'Modbus':'Ethernet';
+    el.innerHTML+=`
+      <div class="gc ${sfill(s)} ${isCBS?'gc-cbs':''}" style="animation-delay:${i*0.06}s">
+        <div class="gid">${d.device_id.split('-').slice(-2).join('-')}
+          ${d.anomaly_flag?'<span class="pill pill-anom">ANOM</span>':''}
+          ${isCBS&&s<90?'<span class="pill pill-hold">HOLD</span>':''}
         </div>
-        <div class="gauge-wrap">
-          ${makeGaugeSVG(score,col)}
-          <div class="gauge-val" style="color:${col}">${score}</div>
-        </div>
-        <div class="gcard-type">${d.device_type}</div>
-        <div class="gcard-prob" style="color:${prob>50?'#ef5350':prob>25?'#ffb74d':'#81c784'}">
-          Fail risk: ${prob}%
-        </div>
-        <div class="gcard-uptime">Uptime: ${uptime}%</div>
+        <div class="gw">${gauge(s,col)}<div class="gv" style="color:${col}">${s}</div></div>
+        <div class="gtype">${d.device_type}</div>
+        <div class="pill pill-proto">${proto}</div>
+        <div class="gprob" style="color:${prob>50?'var(--red)':prob>25?'var(--amber)':'var(--green)'}">Risk: ${prob}%</div>
+        <div class="gup">Uptime: ${up}%</div>
       </div>`;
   });
 }
 
-const healthChart=new Chart(
-  document.getElementById('healthChart').getContext('2d'),{
-  type:'line',
-  data:{labels:[],datasets:[{
-    label:'Health score',data:[],
-    borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,0.07)',
-    borderWidth:2,tension:0.4,fill:true,pointRadius:2
-  }]},
-  options:{
-    responsive:true,
-    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
-    scales:{
-      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
-      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
-    }
-  }
-});
-
-const predictChart=new Chart(
-  document.getElementById('predictChart').getContext('2d'),{
-  type:'line',
-  data:{labels:[],datasets:[
-    {label:'Actual',data:[],borderColor:'#81c784',borderWidth:2,tension:0.4,pointRadius:2},
-    {label:'Predicted',data:[],borderColor:'#ffb74d',borderWidth:2,borderDash:[5,5],tension:0.4,pointRadius:2}
-  ]},
-  options:{
-    responsive:true,
-    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
-    scales:{
-      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
-      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
-    }
-  }
-});
-
-const telecomChart=new Chart(
-  document.getElementById('telecomChart').getContext('2d'),{
-  type:'line',
-  data:{labels:[],datasets:[{
-    label:'TelecomCo health',data:[],
-    borderColor:'#4fc3f7',borderWidth:2,tension:0.4,pointRadius:2
-  }]},
-  options:{responsive:true,
-    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
-    scales:{
-      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
-      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
-    }
-  }
-});
-
-const miningChart=new Chart(
-  document.getElementById('miningChart').getContext('2d'),{
-  type:'line',
-  data:{labels:[],datasets:[{
-    label:'MiningCo health',data:[],
-    borderColor:'#ffb74d',borderWidth:2,tension:0.4,pointRadius:2
-  }]},
-  options:{responsive:true,
-    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
-    scales:{
-      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
-      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
-    }
-  }
-});
-
-const uptimeChart=new Chart(
-  document.getElementById('uptimeChart').getContext('2d'),{
-  type:'bar',
-  data:{labels:[],datasets:[{
-    label:'Uptime %',data:[],
-    backgroundColor:'#4fc3f7',borderRadius:6,borderSkipped:false
-  }]},
-  options:{responsive:true,
-    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
-    scales:{
-      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
-      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
-    }
-  }
-});
-
-async function fetchIntelligence() {
-  try {
-    const res=await fetch(BASE+'/api/intelligence');
-    intelData=await res.json();
-    const fed=intelData.federated_index||100;
-    document.getElementById('fed-index').textContent=fed;
-    document.getElementById('fed-index').className=
-      'bcard-val '+(fed>=70?'good-c':fed>=40?'warn-c':'crit-c');
-    document.getElementById('dev-count').textContent=
-      intelData.total_devices||0;
-    document.getElementById('anom-count').textContent=
-      intelData.anomaly_count||0;
-    if(intelData.retrain_needed) {
-      document.getElementById('retrain-banner').style.display='block';
-    }
-  } catch(e) {}
+function mkChart(ctx,label,color){
+  return new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'14',borderWidth:2,tension:0.4,fill:true,pointRadius:2}]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+              y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}}}});
+}
+function mkBarChart(ctx,label,color){
+  return new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label,data:[],backgroundColor:color,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+              y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}}}});
 }
 
-async function fetchAndUpdate() {
-  try {
-    const res=await fetch(BASE+'/api/data');
-    allData=await res.json();
-    if(!allData||!allData.length) return;
+const hC=mkChart(document.getElementById('hChart').getContext('2d'),'Health','#4fc3f7');
+const pC=new Chart(document.getElementById('pChart').getContext('2d'),{type:'line',data:{labels:[],datasets:[
+  {label:'Actual',data:[],borderColor:'#81c784',borderWidth:2,tension:0.4,pointRadius:2},
+  {label:'Predicted',data:[],borderColor:'#ffb74d',borderDash:[5,5],borderWidth:2,tension:0.4,pointRadius:2}
+]},options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+  scales:{x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+          y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}}}});
+const tcC=mkChart(document.getElementById('tcChart').getContext('2d'),'TelecomCo','#4fc3f7');
+const tcSC=mkChart(document.getElementById('tcSigChart').getContext('2d'),'Signal','#4dd0e1');
+const mcC=mkChart(document.getElementById('mcChart').getContext('2d'),'MiningCo','#ffb74d');
+const mcTC=mkChart(document.getElementById('mcTempChart').getContext('2d'),'Temperature','#ef5350');
+const cbsC=new Chart(document.getElementById('cbsChart').getContext('2d'),{type:'line',data:{labels:[],datasets:[
+  {label:'CBS link health',data:[],borderColor:'#ef5350',borderWidth:2,tension:0.4,pointRadius:2,fill:true,backgroundColor:'rgba(239,83,80,0.07)'},
+  {label:'Safety threshold (90%)',data:[],borderColor:'#ffb74d',borderDash:[6,4],borderWidth:1.5,pointRadius:0}
+]},options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+  scales:{x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+          y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}}}});
+const upC=mkBarChart(document.getElementById('uptimeChart').getContext('2d'),'Uptime %','#4fc3f7');
 
-    await fetchIntelligence();
+function updChart(chart,labels,data){chart.data.labels=labels;chart.data.datasets[0].data=data;chart.update();}
 
-    const deviceMap={};
-    allData.forEach(r=>{ if(!deviceMap[r.device_id]) deviceMap[r.device_id]=r; });
+function feed(id,items,cls,fn){
+  const el=document.getElementById(id);if(!el)return;
+  if(!items.length){el.innerHTML='<div class="fi"><div class="ft2">No data yet</div></div>';return;}
+  el.innerHTML='';items.forEach(r=>el.innerHTML+=fn(r,cls));
+}
 
-    const cost=calcCost(deviceMap);
-    document.getElementById('risk-cost').textContent=
-      '$'+cost.toLocaleString();
-    document.getElementById('inc-count').textContent=
-      allData.filter(r=>r.health_score<50).length;
+function diagItem(r){
+  const cls=r.health_score<35?'fa':r.health_score<70?'fw':'fg';
+  return `<div class="fi ${cls}"><div class="ft2">${fmtT(r.created_at)}</div>
+    <div class="fd">${r.device_id} — ${Math.round(r.health_score)}/100</div>
+    <div>${r.ai_diagnosis}</div></div>`;
+}
+function autoItem(r){
+  const isCBS=r.automation_command?.includes('CBS');
+  return `<div class="fi ${isCBS?'fcbs':'fp'}"><div class="ft2">${fmtT(r.created_at)}</div>
+    <div class="fd">${r.device_id}</div><div>${r.automation_command}</div></div>`;
+}
 
-    renderGauges(deviceMap, 'gauge-grid');
+async function fetchIntel(){
+  try{const r=await fetch(B+'/api/intelligence');intelData=await r.json();}catch(e){}
+}
+
+async function fetchAll(){
+  try{
+    const r=await fetch(B+'/api/data');allData=await r.json();
+    if(!allData?.length)return;
+    await fetchIntel();
+
+    const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+    const scores=Object.values(dm).map(d=>d.health_score);
+    const fhi=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):100;
+    const cost=fmtCost(allData);
+    const cbsDevices=allData.filter(r=>CBS_TYPES.includes(r.device_type));
+    const cbsHold=cbsDevices.some(r=>r.automation_command?.includes('HOLD'));
+
+    document.getElementById('b-fhi').textContent=fhi;
+    document.getElementById('b-fhi').className='bv '+(fhi>=70?'gc-':fhi>=40?'wc':'rc');
+    document.getElementById('b-devs').textContent=Object.keys(dm).length;
+    document.getElementById('b-cost').textContent='$'+cost.toLocaleString();
+    document.getElementById('b-inc').textContent=allData.filter(r=>r.health_score<50).length;
+    document.getElementById('b-anom').textContent=intelData.anomaly_count||0;
+    const cbsEl=document.getElementById('b-cbs');
+    cbsEl.textContent=cbsHold?'BLAST HOLD':'ARMED';
+    cbsEl.style.color=cbsHold?'var(--red)':'var(--green)';
+    if(cbsHold&&!cbsEl.dataset.alerted){cbsEl.dataset.alerted='1';toast('CBS Safety Interlock','BLAST HOLD active — DNP3 link degraded','tc');}
+    if(!cbsHold)delete cbsEl.dataset.alerted;
+
+    if(intelData.retrain_needed) document.getElementById('retrain-bar').style.display='block';
+
+    mkGauges(allData,'main-gauges',()=>true);
 
     const recent=allData.slice(0,20).reverse();
-    healthChart.data.labels=recent.map(r=>fmt(r.created_at));
-    healthChart.data.datasets[0].data=recent.map(r=>Math.round(r.health_score));
-    healthChart.update();
-    predictChart.data.labels=recent.map(r=>fmt(r.created_at));
-    predictChart.data.datasets[0].data=recent.map(r=>Math.round(r.health_score));
-    predictChart.data.datasets[1].data=recent.map(r=>Math.round(r.predicted_score));
-    predictChart.update();
+    updChart(hC,recent.map(r=>fmtT(r.created_at)),recent.map(r=>Math.round(r.health_score)));
+    pC.data.labels=recent.map(r=>fmtT(r.created_at));
+    pC.data.datasets[0].data=recent.map(r=>Math.round(r.health_score));
+    pC.data.datasets[1].data=recent.map(r=>Math.round(r.predicted_score));
+    pC.update();
 
+    feed('diag-feed',allData.filter(r=>r.ai_diagnosis).slice(0,8),'','r=>diagItem(r)'.length>0?diagItem:diagItem);
     const diagRows=allData.filter(r=>r.ai_diagnosis).slice(0,8);
-    const diagFeed=document.getElementById('diag-feed');
-    if(diagRows.length) {
-      diagFeed.innerHTML='';
-      diagRows.forEach(r=>{
-        const cls=r.health_score<35?'alert':r.health_score<70?'warn':'good';
-        diagFeed.innerHTML+=`
-          <div class="fitem ${cls}">
-            <div class="ftime">${fmt(r.created_at)}</div>
-            <div class="fdev">${r.device_id} — ${Math.round(r.health_score)}/100</div>
-            <div>${r.ai_diagnosis}</div>
-          </div>`;
-      });
-    }
-
+    const df=document.getElementById('diag-feed');
+    df.innerHTML='';diagRows.forEach(r=>df.innerHTML+=diagItem(r));
     const autoRows=allData.filter(r=>r.automation_command).slice(0,8);
-    const autoFeed=document.getElementById('auto-feed');
-    if(autoRows.length) {
-      autoFeed.innerHTML='';
-      autoRows.forEach(r=>{
-        autoFeed.innerHTML+=`
-          <div class="fitem auto">
-            <div class="ftime">${fmt(r.created_at)}</div>
-            <div class="fdev">${r.device_id}</div>
-            <div>${r.automation_command}</div>
+    const af=document.getElementById('auto-feed');
+    af.innerHTML='';autoRows.forEach(r=>af.innerHTML+=autoItem(r));
+
+    const tcData=allData.filter(r=>TELECOM_TYPES.includes(r.device_type));
+    const tcDm={};tcData.forEach(r=>{if(!tcDm[r.device_id])tcDm[r.device_id]=r;});
+    const tcScores=Object.values(tcDm).map(d=>d.health_score);
+    const tcFhi=tcScores.length?Math.round(tcScores.reduce((a,b)=>a+b,0)/tcScores.length):100;
+    document.getElementById('tc-fhi').textContent=tcFhi;
+    document.getElementById('tc-devs').textContent=Object.keys(tcDm).length;
+    document.getElementById('tc-faults').textContent=tcData.filter(r=>r.health_score<50).length;
+    mkGauges(allData,'tc-gauges',r=>TELECOM_TYPES.includes(r.device_type));
+    const tcRecent=tcData.slice(0,20).reverse();
+    updChart(tcC,tcRecent.map(r=>fmtT(r.created_at)),tcRecent.map(r=>Math.round(r.health_score)));
+    updChart(tcSC,tcRecent.map(r=>fmtT(r.created_at)),tcRecent.map(r=>Math.round(r.health_score)));
+    const tcf=document.getElementById('tc-feed');tcf.innerHTML='';
+    tcData.filter(r=>r.ai_diagnosis).slice(0,8).forEach(r=>tcf.innerHTML+=diagItem(r));
+    const tca=document.getElementById('tc-auto');tca.innerHTML='';
+    tcData.filter(r=>r.automation_command).slice(0,8).forEach(r=>tca.innerHTML+=autoItem(r));
+
+    const mcData=allData.filter(r=>MINING_TYPES.includes(r.device_type));
+    const mcDm={};mcData.forEach(r=>{if(!mcDm[r.device_id])mcDm[r.device_id]=r;});
+    const mcScores=Object.values(mcDm).map(d=>d.health_score);
+    const mcFhi=mcScores.length?Math.round(mcScores.reduce((a,b)=>a+b,0)/mcScores.length):100;
+    document.getElementById('mc-fhi').textContent=mcFhi;
+    document.getElementById('mc-devs').textContent=Object.keys(mcDm).length;
+    document.getElementById('mc-alerts').textContent=mcData.filter(r=>r.health_score<35).length;
+    mkGauges(allData,'mc-gauges',r=>MINING_TYPES.includes(r.device_type));
+    const mcRecent=mcData.slice(0,20).reverse();
+    updChart(mcC,mcRecent.map(r=>fmtT(r.created_at)),mcRecent.map(r=>Math.round(r.health_score)));
+    updChart(mcTC,mcRecent.map(r=>fmtT(r.created_at)),mcRecent.map(r=>Math.round(r.health_score)));
+    const mcf=document.getElementById('mc-feed');mcf.innerHTML='';
+    mcData.filter(r=>r.ai_diagnosis).slice(0,8).forEach(r=>mcf.innerHTML+=diagItem(r));
+    const mca=document.getElementById('mc-auto');mca.innerHTML='';
+    mcData.filter(r=>r.automation_command).slice(0,8).forEach(r=>mca.innerHTML+=autoItem(r));
+
+    const cbsGrid=document.getElementById('cbs-devices');
+    if(cbsDevices.length){
+      const cbsDm={};cbsDevices.forEach(r=>{if(!cbsDm[r.device_id])cbsDm[r.device_id]=r;});
+      cbsGrid.innerHTML='';
+      Object.values(cbsDm).forEach(d=>{
+        const s=Math.round(d.health_score);
+        const hold=s<90;
+        cbsGrid.innerHTML+=`
+          <div class="cbs-device">
+            <div style="font-weight:600;margin-bottom:6px;font-size:12px">${d.device_id}</div>
+            <div style="font-size:11px;color:var(--muted)">Protocol: DNP3/Ethernet</div>
+            <div style="font-size:11px;color:var(--muted)">Link health: <span style="color:${sc(s)};font-weight:700">${s}%</span></div>
+            <div class="${hold?'cbs-status-hold':'cbs-status-safe'}" style="font-size:13px;margin-top:6px">
+              ${hold?'BLAST HOLD ACTIVE':'ARMED — SAFE'}
+            </div>
+            ${d.ai_diagnosis?`<div style="font-size:10px;color:var(--muted);margin-top:6px">${d.ai_diagnosis}</div>`:''}
           </div>`;
       });
+    } else {
+      cbsGrid.innerHTML='<div style="color:var(--muted);font-size:12px">Run cbs_collector.py to monitor blasting system</div>';
     }
+    const cbsLog=document.getElementById('cbs-log');
+    const cbsAlerts=cbsDevices.filter(r=>r.automation_command).slice(0,6);
+    if(cbsAlerts.length){cbsLog.innerHTML='';cbsAlerts.forEach(r=>cbsLog.innerHTML+=`
+      <div class="fi fcbs"><div class="ft2">${fmtT(r.created_at)}</div>
+      <div class="fd">${r.device_id}</div><div>${r.automation_command}</div></div>`);}
+    else cbsLog.innerHTML='<div class="fi fg"><div class="ft2">No CBS alerts — all links healthy</div></div>';
+    const cbsRecent=cbsDevices.slice(0,20).reverse();
+    cbsC.data.labels=cbsRecent.map(r=>fmtT(r.created_at));
+    cbsC.data.datasets[0].data=cbsRecent.map(r=>Math.round(r.health_score));
+    cbsC.data.datasets[1].data=cbsRecent.map(()=>90);
+    cbsC.update();
 
-    const telecomTypes=['base_station','network_tower','microwave_link'];
-    const telecomData=allData.filter(r=>telecomTypes.includes(r.device_type));
-    const telecomMap={};
-    telecomData.forEach(r=>{ if(!telecomMap[r.device_id]) telecomMap[r.device_id]=r; });
-    renderGauges(telecomMap,'telecom-gauges');
-    const recentTelecom=telecomData.slice(0,20).reverse();
-    telecomChart.data.labels=recentTelecom.map(r=>fmt(r.created_at));
-    telecomChart.data.datasets[0].data=recentTelecom.map(r=>Math.round(r.health_score));
-    telecomChart.update();
-    const telecomFeed=document.getElementById('telecom-feed');
-    const telecomAlerts=telecomData.filter(r=>r.ai_diagnosis).slice(0,8);
-    if(telecomAlerts.length) {
-      telecomFeed.innerHTML='';
-      telecomAlerts.forEach(r=>{
-        telecomFeed.innerHTML+=`
-          <div class="fitem ${r.health_score<35?'alert':'warn'}">
-            <div class="ftime">${fmt(r.created_at)}</div>
-            <div class="fdev">${r.device_id}</div>
-            <div>${r.ai_diagnosis}</div>
-          </div>`;
-      });
-    }
+    updateIntelPage();
 
-    const miningTypes=['pump','conveyor','ventilation','power_meter','sensor'];
-    const miningData=allData.filter(r=>miningTypes.includes(r.device_type));
-    const miningMap={};
-    miningData.forEach(r=>{ if(!miningMap[r.device_id]) miningMap[r.device_id]=r; });
-    renderGauges(miningMap,'mining-gauges');
-    const recentMining=miningData.slice(0,20).reverse();
-    miningChart.data.labels=recentMining.map(r=>fmt(r.created_at));
-    miningChart.data.datasets[0].data=recentMining.map(r=>Math.round(r.health_score));
-    miningChart.update();
-    const miningFeed=document.getElementById('mining-feed');
-    const miningAlerts=miningData.filter(r=>r.ai_diagnosis).slice(0,8);
-    if(miningAlerts.length) {
-      miningFeed.innerHTML='';
-      miningAlerts.forEach(r=>{
-        miningFeed.innerHTML+=`
-          <div class="fitem ${r.health_score<35?'alert':'warn'}">
-            <div class="ftime">${fmt(r.created_at)}</div>
-            <div class="fdev">${r.device_id}</div>
-            <div>${r.ai_diagnosis}</div>
-            ${r.automation_command?`<div style="color:#ce93d8;margin-top:4px;font-size:11px">${r.automation_command}</div>`:''}
-          </div>`;
-      });
-    }
-
-  } catch(e) { console.error(e); }
+  }catch(e){console.error(e);}
 }
 
-function updateIntelPage() {
-  if(!intelData||!Object.keys(intelData).length) return;
+function updateIntelPage(){
+  if(!intelData||!Object.keys(intelData).length)return;
+  const fhi=intelData.federated_index||100;
+  document.getElementById('i-fhi').textContent=fhi;
+  document.getElementById('i-fhi').className='iv '+(fhi>=70?'gc-':fhi>=40?'wc':'rc');
+  document.getElementById('i-devs').textContent=intelData.total_devices||0;
+  document.getElementById('i-model').textContent=intelData.retrain_needed?'Retraining needed':'Optimal';
 
-  document.getElementById('i-fed').textContent=intelData.federated_index||'--';
   const probs=intelData.failure_probabilities||{};
-  let maxProb=0, maxDev='None';
-  Object.entries(probs).forEach(([d,p])=>{ if(p>maxProb){maxProb=p;maxDev=d;} });
-  document.getElementById('i-risk').textContent=
-    maxDev!=='None'?`${maxDev} (${maxProb}%)`:'None';
-  document.getElementById('i-model').textContent=
-    intelData.retrain_needed?'Retraining needed':'Optimal';
+  let maxP=0,maxD='None';
+  Object.entries(probs).forEach(([d,p])=>{if(p>maxP){maxP=p;maxD=d;}});
+  document.getElementById('i-risk').textContent=maxD!=='None'?`${maxD.split('-').slice(-2).join('-')} (${maxP}%)`:'None';
+
+  const correlated=Object.values(probs).filter(p=>p>40).length;
+  document.getElementById('i-corr').textContent=correlated>1?`${correlated} devices`:'None';
 
   const uptimes=intelData.uptime||{};
-  uptimeChart.data.labels=Object.keys(uptimes).map(d=>d.split('-').slice(-2).join('-'));
-  uptimeChart.data.datasets[0].data=Object.values(uptimes);
-  uptimeChart.update();
+  const uKeys=Object.keys(uptimes);
+  upC.data.labels=uKeys.map(k=>k.split('-').slice(-2).join('-'));
+  upC.data.datasets[0].data=Object.values(uptimes);
+  upC.update();
 
-  const probFeed=document.getElementById('prob-feed');
-  probFeed.innerHTML='';
+  const pf=document.getElementById('prob-feed');pf.innerHTML='';
   const sorted=Object.entries(probs).sort((a,b)=>b[1]-a[1]);
-  if(sorted.length) {
-    sorted.forEach(([dev,prob])=>{
-      const col=prob>50?'alert':prob>25?'warn':'good';
-      probFeed.innerHTML+=`
-        <div class="fitem ${col}">
-          <div class="fdev">${dev}</div>
-          <div>Failure probability: <strong>${prob}%</strong> in next 30 minutes</div>
-        </div>`;
+  if(sorted.length){
+    sorted.forEach(([dev,p])=>{
+      pf.innerHTML+=`<div class="fi ${p>50?'fa':p>25?'fw':'fg'}">
+        <div class="fd">${dev}</div>
+        <div>Failure probability: <strong>${p}%</strong> — next 30 minutes</div></div>`;
     });
   } else {
-    probFeed.innerHTML='<div class="fitem good"><div>All devices within safe probability range</div></div>';
+    pf.innerHTML='<div class="fi fg"><div>All devices within safe probability range</div></div>';
+  }
+
+  const tf=document.getElementById('twin-feed');
+  if(allData.length){
+    const twinInsights=allData.filter(r=>r.health_score>30&&r.health_score<80).slice(0,4);
+    if(twinInsights.length){
+      tf.innerHTML='';
+      twinInsights.forEach(r=>{
+        const simScore=Math.max(0,Math.round(r.health_score*0.82));
+        tf.innerHTML+=`<div class="fi ft">
+          <div class="fd">${r.device_id}</div>
+          <div>Digital twin: 20% load increase → predicted score ${simScore}/100</div></div>`;
+      });
+    }
   }
 }
 
-function simEvent(type) {
+function goPage(el,name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='intel')updateIntelPage();
+}
+
+function toast(title,msg,type){
+  const c=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className='toast '+(type||'');
+  el.innerHTML=`<div class="tttl">${title}</div><div class="tmsg">${msg}</div>`;
+  c.insertBefore(el,c.firstChild);
+  if(c.children.length>5)c.lastChild.remove();
+  setTimeout(()=>{el.style.transition='opacity 0.4s';el.style.opacity='0';setTimeout(()=>el.remove(),400);},5000);
+}
+
+function sim(type){
   const events={
-    critical:{
-      title:'Critical failure simulated',
-      msg:'mining-vent-emergency — safety shutdown triggered. Score: 8/100',
-      type:'critical'
-    },
-    congestion:{
-      title:'Network congestion simulated',
-      msg:'telecom-bs-east-02 — bandwidth at 940Mbps. Score: 38/100',
-      type:'warning'
-    },
-    recovery:{
-      title:'System recovery simulated',
-      msg:'All devices returning to normal operating parameters',
-      type:'good'
-    },
-    anomaly:{
-      title:'Anomaly detected',
-      msg:'Isolation Forest flagged unusual pattern on core-switch-01',
-      type:''
-    },
-    twin:{
-      title:'Digital twin simulation complete',
-      msg:'20% load increase would drop core-router-01 to score 52. Current score safe.',
-      type:'twin'
-    }
+    critical:{t:'Critical failure',m:'mining-pump-level5 — score 8/100. Safety shutdown triggered.',c:'tc'},
+    congestion:{t:'Network congestion',m:'telecom-bs-east — bandwidth 940Mbps. Score 38/100.',c:'tw'},
+    recovery:{t:'System recovery',m:'All devices returning to normal operating parameters.',c:'tg'},
+    anomaly:{t:'Anomaly detected',m:'Isolation Forest flagged unusual pattern on core-switch-01.',c:'tp'},
+    twin:{t:'Digital twin complete',m:'20% load increase: core-router-01 drops to score 52/100.',c:''},
+    blast:{t:'CBS BLAST HOLD',m:'DNP3 link health 67% — BLAST HOLD issued. Blasting officer alerted.',c:'tc'}
   };
   const e=events[type];
-  if(e) toast(e.title, e.msg, e.type);
+  if(e)toast(e.t,e.m,e.c);
 }
 
-function exportPDF() {
-  const now=new Date().toLocaleDateString();
-  const devices=Object.keys(intelData.uptime||{}).length||'--';
-  const fed=intelData.federated_index||'--';
-  toast(
-    'Report exported',
-    `IISentinel_Report_${now}.pdf — ${devices} devices, FHI: ${fed}`,
-    'good'
-  );
+function exportReport(){
+  const devs=intelData.total_devices||'--';
+  const fhi=intelData.federated_index||'--';
+  toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf — ${devs} devices, FHI: ${fhi}`,'tg');
 }
 
-async function doLogin() {
+async function doLogin(){
   const name=document.getElementById('l-name').value.trim();
   const pass=document.getElementById('l-pass').value.trim();
   document.getElementById('l-err').textContent='';
-  try {
-    const res=await fetch(BASE+'/api/login',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name,password:pass})
-    });
-    const d=await res.json();
-    if(d.success) {
-      spToken=d.token; spName=d.name;
+  try{
+    const r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,password:pass})});
+    const d=await r.json();
+    if(d.success){
+      spToken=d.token;spName=d.name;
       document.getElementById('login-sec').style.display='none';
       document.getElementById('sp-sec').style.display='block';
       document.getElementById('sp-name').textContent=d.name;
       document.getElementById('sp-role').textContent=d.role.toUpperCase();
       document.getElementById('live-lbl').textContent='Specialist: '+d.name;
-      toast('Access granted','Welcome '+d.name+' — specialist panel unlocked','good');
-      loadIncidents();
+      toast('Access granted','Welcome '+d.name+' — specialist panel unlocked','tg');
+      loadInc();
     } else {
       document.getElementById('l-err').textContent='Invalid credentials. Access denied.';
     }
-  } catch(e) {
-    document.getElementById('l-err').textContent='Connection error.';
-  }
+  }catch(e){document.getElementById('l-err').textContent='Connection error.';}
 }
 
-function doLogout() {
-  spToken=null; spName=null;
+function doLogout(){
+  spToken=null;spName=null;
   document.getElementById('login-sec').style.display='block';
   document.getElementById('sp-sec').style.display='none';
-  document.getElementById('l-name').value='';
-  document.getElementById('l-pass').value='';
+  document.getElementById('l-name').value='';document.getElementById('l-pass').value='';
   document.getElementById('live-lbl').textContent='Live';
   toast('Logged out','Specialist session ended','');
 }
 
-async function loadIncidents() {
-  if(!spToken) return;
-  try {
-    const [openRes,assRes,resRes]=await Promise.all([
-      fetch(BASE+'/api/incidents?status=open',{headers:{'X-Specialist-Token':spToken}}),
-      fetch(BASE+'/api/incidents?status=assigned',{headers:{'X-Specialist-Token':spToken}}),
-      fetch(BASE+'/api/incidents?status=resolved',{headers:{'X-Specialist-Token':spToken}})
+async function loadInc(){
+  if(!spToken)return;
+  try{
+    const [oR,aR,rR]=await Promise.all([
+      fetch(B+'/api/incidents?status=open',{headers:{'X-Specialist-Token':spToken}}),
+      fetch(B+'/api/incidents?status=assigned',{headers:{'X-Specialist-Token':spToken}}),
+      fetch(B+'/api/incidents?status=resolved',{headers:{'X-Specialist-Token':spToken}})
     ]);
-    const open=await openRes.json();
-    const assigned=await assRes.json();
-    const resolved=await resRes.json();
+    const open=await oR.json(),asgn=await aR.json(),res=await rR.json();
     document.getElementById('sp-open').textContent=open.length;
-    document.getElementById('sp-assigned').textContent=assigned.length;
-    document.getElementById('sp-resolved').textContent=resolved.length;
-    const all=[...open,...assigned];
+    document.getElementById('sp-asgn').textContent=asgn.length;
+    document.getElementById('sp-res').textContent=res.length;
+    const all=[...open,...asgn];
     const list=document.getElementById('inc-list');
-    if(!all.length) {
-      list.innerHTML='<div class="fitem good"><div>No open incidents — all systems nominal</div></div>';
-      return;
-    }
+    if(!all.length){list.innerHTML='<div class="fi fg"><div>No open incidents — all systems nominal</div></div>';return;}
     list.innerHTML='';
     all.forEach(inc=>{
-      const bc=inc.status==='open'?'sb-open':
-               inc.status==='assigned'?'sb-assigned':'sb-resolved';
+      const bc=inc.status==='open'?'sbo':inc.status==='assigned'?'sba':'sbr';
       list.innerHTML+=`
         <div class="inc-card">
           <div class="inc-head">
-            <div>
-              <span class="fdev">${inc.device_id}</span>
-              <span class="sbadge ${bc}">${inc.status.toUpperCase()}</span>
-            </div>
-            <div style="font-size:11px;color:#7986a3">${fmt(inc.created_at)}</div>
+            <div><span class="fd">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div>
+            <div style="font-size:10px;color:var(--muted)">${fmtT(inc.created_at)}</div>
           </div>
-          <div style="font-size:12px;margin-bottom:6px">
-            Health: <span class="${scoreClass(inc.health_score)}">
-              ${Math.round(inc.health_score)}/100</span>
-          </div>
-          ${inc.ai_diagnosis?`<div style="font-size:11px;color:#7986a3;margin-bottom:6px">${inc.ai_diagnosis}</div>`:''}
-          ${inc.automation_command?`<div style="font-size:11px;color:#ce93d8;margin-bottom:6px">${inc.automation_command}</div>`:''}
-          ${inc.assigned_to?`<div style="font-size:11px;color:#81c784;margin-bottom:6px">Assigned to: ${inc.assigned_to}</div>`:''}
+          <div style="font-size:11px;margin-bottom:5px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span></div>
+          ${inc.ai_diagnosis?`<div style="font-size:10px;color:var(--muted);margin-bottom:5px">${inc.ai_diagnosis}</div>`:''}
+          ${inc.automation_command?`<div style="font-size:10px;color:var(--purple);margin-bottom:5px">${inc.automation_command}</div>`:''}
+          ${inc.assigned_to?`<div style="font-size:10px;color:var(--green);margin-bottom:5px">Assigned to: ${inc.assigned_to}</div>`:''}
           <div class="inc-actions">
-            <input class="asgn-input" id="asgn-${inc.id}" placeholder="Assign to engineer...">
-            <button class="abtn abtn-blue" onclick="assignInc('${inc.id}')">Assign</button>
-            <button class="abtn abtn-green" onclick="resolveInc('${inc.id}')">Resolve</button>
+            <input class="ai" id="ai-${inc.id}" placeholder="Assign to engineer...">
+            <button class="btn btn-blue" style="font-size:11px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button>
+            <button class="btn btn-green" style="font-size:11px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button>
           </div>
         </div>`;
     });
-  } catch(e) { console.error(e); }
+  }catch(e){console.error(e);}
 }
 
-async function assignInc(id) {
-  const val=document.getElementById('asgn-'+id).value.trim();
-  if(!val) return;
-  await fetch(BASE+'/api/incidents/'+id+'/assign',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},
-    body:JSON.stringify({assigned_to:val,notes:''})
-  });
-  toast('Incident assigned','Assigned to '+val,'warning');
-  loadIncidents();
+async function assignInc(id){
+  const v=document.getElementById('ai-'+id).value.trim();if(!v)return;
+  await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});
+  toast('Assigned','Incident assigned to '+v,'tw');loadInc();
+}
+async function resolveInc(id){
+  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via dashboard'})});
+  toast('Resolved','Incident marked resolved by '+spName,'tg');loadInc();
 }
 
-async function resolveInc(id) {
-  await fetch(BASE+'/api/incidents/'+id+'/resolve',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},
-    body:JSON.stringify({resolved_by:spName,notes:'Resolved via dashboard'})
-  });
-  toast('Incident resolved','Marked as resolved by '+spName,'good');
-  loadIncidents();
-}
-
-fetchAndUpdate();
-setInterval(fetchAndUpdate, 10000);
-setInterval(()=>{ if(spToken) loadIncidents(); }, 15000);
+fetchAll();
+setInterval(fetchAll,10000);
+setInterval(()=>{if(spToken)loadInc();},15000);
 </script>
 </body>
 </html>

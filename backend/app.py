@@ -6,27 +6,36 @@ from flask_cors import CORS
 from supabase import create_client
 from functools import wraps
 from datetime import datetime, timezone
+from autonomous_trainer import start_autonomous_trainer, ingest_reading
 
 app = Flask(__name__)
 CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'iisentinel-secret-2026')
 
-# Load AI models
 rf_model = joblib.load('health_model.pkl')
 iso_model = joblib.load('anomaly_model.pkl')
 scaler = joblib.load('scaler.pkl')
 
-# Supabase setup
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# In-memory stores
 reading_window = []
 device_history = {}
 device_uptime = {}
 anomaly_count = 0
 RETRAIN_THRESHOLD = 50
+CBS_SAFETY_THRESHOLD = 90.0
+
+TELECOM_TYPES = ['base_station', 'network_tower', 'microwave_link', 'router', 'switch']
+MINING_TYPES = ['pump', 'conveyor', 'ventilation', 'power_meter', 'sensor',
+                'plc', 'scada_node', 'cbs_controller']
+PROTOCOL_MAP = {
+    'SNMP/Ethernet-802.3': 'SNMP over IEEE 802.3 Ethernet',
+    'Profinet/EtherNet-IP': 'Profinet real-time industrial Ethernet',
+    'DNP3/Ethernet': 'DNP3 safety-critical control protocol',
+    'Modbus-TCP/OPC-UA': 'Modbus TCP with OPC-UA data exchange',
+}
 
 def require_specialist(f):
     @wraps(f)
@@ -53,92 +62,131 @@ def get_failure_probability(device_id, current_score):
     if trend >= 0:
         return max(0.0, round((100 - current_score) * 0.05, 1))
     decline_rate = abs(trend) / len(recent)
-    prob = min(99.0, round(decline_rate * 3 + (100 - current_score) * 0.3, 1))
-    return prob
+    return min(99.0, round(decline_rate * 3 + (100 - current_score) * 0.3, 1))
 
 def get_cross_correlation(device_id, current_score, all_recent):
-    correlations = []
-    for other_id, other_score in all_recent.items():
-        if other_id != device_id and other_score < 50 and current_score < 50:
-            correlations.append(other_id)
+    correlations = [
+        oid for oid, oscore in all_recent.items()
+        if oid != device_id and oscore < 50 and current_score < 50
+    ]
     if correlations:
-        return f"Correlated degradation detected across: {', '.join(correlations[:3])}. Possible shared root cause — check common infrastructure."
+        return (f"Correlated degradation across: {', '.join(correlations[:3])}. "
+                f"Possible shared root cause — inspect common network segment.")
     return None
 
 def get_federated_health_index(all_scores):
     if not all_scores:
         return 100.0
-    weights = []
-    for score in all_scores:
-        if score < 20:
-            weights.append(score * 0.5)
-        elif score < 50:
-            weights.append(score * 0.8)
-        else:
-            weights.append(score)
+    weights = [s * 0.5 if s < 20 else s * 0.8 if s < 50 else s for s in all_scores]
     return round(sum(weights) / len(weights), 1)
 
-def get_digital_twin_simulation(device_id, device_type, current_score, features):
-    simulations = []
+def get_digital_twin_simulation(device_id, features, current_score):
     load_increase = features.copy()
     load_increase[0] = min(100, features[0] * 1.2)
     load_increase[1] = min(1000, features[1] * 1.2)
-    sim_features = np.array([load_increase])
-    sim_score = float(rf_model.predict(sim_features)[0])
+    sim_score = float(rf_model.predict(np.array([load_increase]))[0])
     sim_score = max(0, min(100, sim_score))
     if sim_score < current_score - 10:
-        simulations.append(
-            f"Digital twin predicts score drops to {sim_score:.0f} "
-            f"if load increases 20%"
-        )
-    return simulations[0] if simulations else None
+        return (f"Digital twin: 20% load increase would drop health score "
+                f"to {sim_score:.0f}/100 — preemptive action recommended.")
+    return None
 
-def get_ai_diagnosis(device_id, device_type, metric_name,
-                     metric_value, health_score, anomaly):
+def get_protocol_diagnosis(device_type, protocol, metric_name,
+                           metric_value, health_score, anomaly):
     issues = []
     actions = []
+    proto_label = PROTOCOL_MAP.get(protocol, protocol or 'Ethernet')
+
     if health_score < 20:
         issues.append("critical system failure detected")
         actions.append("immediate intervention required")
     elif health_score < 35:
         issues.append("severe performance degradation")
-        actions.append("escalate to network operations team")
+        actions.append("escalate to operations team")
     elif health_score < 50:
-        issues.append("moderate performance issues detected")
+        issues.append("moderate performance degradation")
         actions.append("schedule maintenance within 24 hours")
-    if 'cpu' in metric_name.lower() and metric_value > 80:
-        issues.append(f"CPU load at {metric_value:.1f}% exceeding safe threshold")
-        actions.append("check for runaway processes or schedule reboot")
-    if 'latency' in metric_name.lower() and metric_value > 100:
-        issues.append(f"network latency at {metric_value:.1f}ms indicating congestion")
-        actions.append("inspect routing tables and bandwidth allocation")
-    if 'packet' in metric_name.lower() and metric_value > 2:
-        issues.append(f"packet loss at {metric_value:.1f}% suggesting link instability")
-        actions.append("inspect physical connections and switch ports")
-    if 'temperature' in metric_name.lower() and metric_value > 75:
-        issues.append(f"device temperature at {metric_value:.1f}C approaching thermal limit")
-        actions.append("check cooling systems and reduce load immediately")
-    if 'bandwidth' in metric_name.lower() and metric_value > 800:
-        issues.append(f"bandwidth utilisation at {metric_value:.1f}Mbps near capacity")
-        actions.append("implement QoS policies and identify high-traffic sources")
+
+    if device_type in TELECOM_TYPES:
+        if 'latency' in metric_name and metric_value > 100:
+            issues.append(f"SNMP reports {metric_value:.1f}ms latency on backhaul link")
+            actions.append("inspect BGP routing tables and check fibre link integrity")
+        if 'packet' in metric_name and metric_value > 2:
+            issues.append(f"packet loss {metric_value:.1f}% detected on {proto_label}")
+            actions.append("run BERT test on physical layer and check SFP modules")
+        if 'bandwidth' in metric_name and metric_value > 800:
+            issues.append(f"bandwidth at {metric_value:.1f}Mbps approaching capacity")
+            actions.append("implement NetFlow analysis and consider QoS reprioritisation")
+        if 'signal' in metric_name and metric_value < 40:
+            issues.append(f"signal strength at {metric_value:.1f}% — link degraded")
+            actions.append("inspect microwave alignment or antenna orientation")
+
+    elif device_type in MINING_TYPES:
+        if 'temperature' in metric_name and metric_value > 75:
+            issues.append(
+                f"Profinet reports {metric_value:.1f}C on PLC thermal sensor — "
+                f"approaching shutdown threshold")
+            actions.append(
+                "check cooling fan status via EtherNet/IP diagnostic register "
+                "and reduce duty cycle")
+        if 'motor' in metric_name and metric_value < 500:
+            issues.append(
+                f"motor speed at {metric_value:.0f}RPM via Modbus register 101 — "
+                f"below minimum operating threshold")
+            actions.append(
+                "inspect variable frequency drive parameters and check for "
+                "overcurrent protection trip")
+        if 'vibration' in metric_name and metric_value > 3:
+            issues.append(
+                f"vibration at {metric_value:.2f}g via OPC-UA node — "
+                f"bearing wear indicated")
+            actions.append(
+                "schedule predictive maintenance inspection within 4 hours")
+        if 'pressure' in metric_name and metric_value > 8:
+            issues.append(
+                f"pressure at {metric_value:.1f}bar via Modbus — "
+                f"above safe operating limit")
+            actions.append(
+                "open bypass valve and alert hydraulics engineer immediately")
+
+    if device_type == 'cbs_controller':
+        if health_score < CBS_SAFETY_THRESHOLD:
+            issues.append(
+                f"CBS DNP3 link health at {health_score:.1f}% — "
+                f"below blast safety threshold {CBS_SAFETY_THRESHOLD}%")
+            actions.append(
+                "BLAST HOLD maintained — notify blasting officer and "
+                "inspect DNP3 communication link integrity")
+
     if anomaly:
-        issues.append("statistical anomaly detected by Isolation Forest model")
-        actions.append("cross-reference with historical baseline data")
+        issues.append(
+            f"Isolation Forest anomaly on {proto_label} — "
+            f"pattern deviates from learned baseline")
+        actions.append("cross-reference with device event log")
+
     if not issues:
-        return (f"Device {device_id} operating within normal parameters. "
-                f"Health score {health_score:.1f}/100. Continue routine monitoring.")
+        return (f"Device operating within normal parameters via {proto_label}. "
+                f"Health score {health_score:.1f}/100.")
+
     return (f"{'; '.join(issues).capitalize()}. "
             f"Recommended actions: {'; '.join(actions).capitalize()}.")
 
-def get_automation_command(device_id, device_type, health_score):
+def get_automation_command(device_id, device_type, health_score,
+                           blast_hold=False, automation_override=None):
+    if automation_override:
+        return automation_override
+    if device_type == 'cbs_controller' and health_score < CBS_SAFETY_THRESHOLD:
+        return (f"CBS SAFETY INTERLOCK ACTIVE: BLAST HOLD on {device_id} — "
+                f"DNP3 link health {health_score:.1f}% below threshold. "
+                f"All detonation circuits locked.")
     if device_type in ['ventilation', 'pump'] and health_score < 20:
-        return (f"EMERGENCY: Initiate safety shutdown for {device_id} "
-                f"— underground personnel alert triggered")
-    elif health_score < 20:
-        return f"CRITICAL: Initiate emergency restart sequence for {device_id}"
-    elif health_score < 35:
-        return f"WARNING: Reduce load and isolate {device_id} from network"
-    elif health_score < 50:
+        return (f"EMERGENCY: Safety shutdown initiated for {device_id} — "
+                f"underground personnel evacuation alert triggered via PA system")
+    if health_score < 20:
+        return f"CRITICAL: Emergency restart sequence for {device_id}"
+    if health_score < 35:
+        return f"WARNING: Isolate {device_id} from network and reduce load"
+    if health_score < 50:
         return f"CAUTION: Schedule maintenance check for {device_id}"
     return None
 
@@ -150,9 +198,7 @@ def update_uptime(device_id, health_score):
         device_uptime[device_id]['healthy'] += 1
 
 def get_uptime_pct(device_id):
-    if device_id not in device_uptime:
-        return 100.0
-    d = device_uptime[device_id]
+    d = device_uptime.get(device_id, {'total': 0, 'healthy': 0})
     if d['total'] == 0:
         return 100.0
     return round((d['healthy'] / d['total']) * 100, 1)
@@ -163,6 +209,9 @@ def receive_metrics():
     data = request.json
     device_id = data.get('device_id', 'unknown')
     device_type = data.get('device_type', 'unknown')
+    protocol = data.get('protocol', 'Ethernet')
+    blast_hold = data.get('blast_hold', False)
+    automation_override = data.get('automation_override', None)
 
     features = [
         data.get('cpu_load', 50),
@@ -175,24 +224,23 @@ def receive_metrics():
     ]
     features_arr = np.array([features])
 
-    # Model 1: Health score
     health_score = float(rf_model.predict(features_arr)[0])
     health_score = max(0, min(100, health_score))
 
-    # Model 2: Anomaly detection
+    if device_type == 'cbs_controller':
+        health_score = min(health_score, data.get('signal_strength', 100))
+
     anomaly_result = iso_model.predict(features_arr)[0]
     anomaly_flag = bool(anomaly_result == -1)
     if anomaly_flag:
         anomaly_count += 1
 
-    # Update device history
     if device_id not in device_history:
         device_history[device_id] = []
     device_history[device_id].append(health_score)
     if len(device_history[device_id]) > 20:
         device_history[device_id].pop(0)
 
-    # Predictive score
     reading_window.append(health_score)
     if len(reading_window) > 10:
         reading_window.pop(0)
@@ -202,51 +250,34 @@ def receive_metrics():
     else:
         predicted_score = health_score
 
-    # Failure probability
     failure_prob = get_failure_probability(device_id, health_score)
 
-    # Digital twin simulation
-    digital_twin_insight = get_digital_twin_simulation(
-        device_id, device_type, health_score, features
-    )
+    digital_twin = get_digital_twin_simulation(device_id, features, health_score)
 
-    # Cross device correlation
     recent_scores = {
-        did: hist[-1]
-        for did, hist in device_history.items()
-        if hist
+        did: hist[-1] for did, hist in device_history.items() if hist
     }
-    correlation_alert = get_cross_correlation(
-        device_id, health_score, recent_scores
-    )
+    correlation = get_cross_correlation(device_id, health_score, recent_scores)
 
-    # Federated health index
-    all_scores = list(recent_scores.values())
-    federated_index = get_federated_health_index(all_scores)
+    federated_index = get_federated_health_index(list(recent_scores.values()))
 
-    # Uptime tracking
     update_uptime(device_id, health_score)
     uptime_pct = get_uptime_pct(device_id)
 
-    # Auto retrain flag
-    retrain_needed = anomaly_count >= RETRAIN_THRESHOLD
-
-    # AI diagnosis
     ai_diagnosis = None
-    if anomaly_flag or health_score < 50:
-        ai_diagnosis = get_ai_diagnosis(
-            device_id, device_type,
+    if anomaly_flag or health_score < 50 or device_type == 'cbs_controller':
+        ai_diagnosis = get_protocol_diagnosis(
+            device_type, protocol,
             data.get('metric_name', 'unknown'),
             data.get('metric_value', 0),
             health_score, anomaly_flag
         )
 
-    # Automation command
     automation_command = get_automation_command(
-        device_id, device_type, health_score
+        device_id, device_type, health_score,
+        blast_hold, automation_override
     )
 
-    # Store in Supabase
     supabase.table('metrics').insert({
         'device_type': device_type,
         'device_id': device_id,
@@ -259,8 +290,7 @@ def receive_metrics():
         'automation_command': automation_command
     }).execute()
 
-    # Create incident if needed
-    if health_score < 50 or anomaly_flag:
+    if health_score < 50 or anomaly_flag or blast_hold:
         supabase.table('incidents').insert({
             'device_id': device_id,
             'device_type': device_type,
@@ -269,7 +299,7 @@ def receive_metrics():
             'automation_command': automation_command,
             'status': 'open'
         }).execute()
-
+    ingest_reading(data)
     return jsonify({
         'status': 'ok',
         'health_score': round(health_score, 1),
@@ -278,30 +308,36 @@ def receive_metrics():
         'failure_probability': failure_prob,
         'ai_diagnosis': ai_diagnosis,
         'automation_command': automation_command,
-        'digital_twin_insight': digital_twin_insight,
-        'correlation_alert': correlation_alert,
+        'digital_twin_insight': digital_twin,
+        'correlation_alert': correlation,
         'federated_index': federated_index,
         'uptime_pct': uptime_pct,
-        'retrain_needed': retrain_needed,
-        'anomaly_count': anomaly_count
+        'retrain_needed': anomaly_count >= RETRAIN_THRESHOLD,
+        'anomaly_count': anomaly_count,
+        'protocol': protocol,
+        'blast_hold': blast_hold
     })
 
 @app.route('/api/data', methods=['GET'])
 def get_data():
-    response = supabase.table('metrics').select('*')\
-        .order('created_at', desc=True).limit(100).execute()
-    return jsonify(response.data)
+    sector = request.args.get('sector', None)
+    query = supabase.table('metrics').select('*')\
+        .order('created_at', desc=True).limit(200)
+    response = query.execute()
+    data = response.data
+    if sector == 'telecom':
+        data = [r for r in data if r['device_type'] in TELECOM_TYPES]
+    elif sector == 'mining':
+        data = [r for r in data if r['device_type'] in MINING_TYPES]
+    return jsonify(data[:100])
 
 @app.route('/api/intelligence', methods=['GET'])
 def get_intelligence():
     recent_scores = {
-        did: hist[-1]
-        for did, hist in device_history.items()
-        if hist
+        did: hist[-1] for did, hist in device_history.items() if hist
     }
-    all_scores = list(recent_scores.values())
     return jsonify({
-        'federated_index': get_federated_health_index(all_scores),
+        'federated_index': get_federated_health_index(list(recent_scores.values())),
         'device_scores': recent_scores,
         'uptime': {did: get_uptime_pct(did) for did in device_uptime},
         'failure_probabilities': {
@@ -310,26 +346,28 @@ def get_intelligence():
         },
         'retrain_needed': anomaly_count >= RETRAIN_THRESHOLD,
         'anomaly_count': anomaly_count,
-        'total_devices': len(device_history)
+        'total_devices': len(device_history),
+        'cbs_devices': [
+            did for did, hist in device_history.items()
+            if hist and did.startswith('cbs')
+        ]
     })
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    name = data.get('name', '')
-    password = data.get('password', '')
     try:
         result = supabase.table('specialists')\
-            .select('*').eq('name', name).eq('password', password).execute()
+            .select('*')\
+            .eq('name', data.get('name', ''))\
+            .eq('password', data.get('password', '')).execute()
         if result.data:
-            specialist = result.data[0]
+            s = result.data[0]
             return jsonify({
-                'success': True,
-                'token': password,
-                'name': specialist['name'],
-                'role': specialist['role']
+                'success': True, 'token': data.get('password'),
+                'name': s['name'], 'role': s['role']
             })
-        return jsonify({'success': False, 'error': 'Invalid credentials'}), 401
+        return jsonify({'success': False}), 401
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -367,6 +405,7 @@ def resolve_incident(incident_id):
 @app.route('/')
 def dashboard():
     return render_template('dashboard.html')
+start_autonomous_trainer()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
