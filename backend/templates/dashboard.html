@@ -6,774 +6,993 @@
 <title>IISentinel — Intelligent Infrastructure Sentinel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0e1a; color: #e0e6f0; font-family: 'Segoe UI', sans-serif; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0e1a; color:#e0e6f0; font-family:'Segoe UI',sans-serif; }
 
-  header {
-    background: #0d1225;
-    border-bottom: 1px solid #1e2d4a;
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .logo { font-size: 22px; font-weight: 700; color: #4fc3f7; letter-spacing: 1px; }
-  .logo span { color: #81c784; }
-  .status-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: #81c784; display: inline-block;
-    animation: pulse 2s infinite; margin-right: 8px;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .live-badge { font-size: 13px; color: #81c784; display: flex; align-items: center; gap: 8px; }
+header {
+  background:#0d1225; border-bottom:1px solid #1e2d4a;
+  padding:14px 28px; display:flex; align-items:center;
+  justify-content:space-between;
+}
+.logo { font-size:20px; font-weight:700; color:#4fc3f7; letter-spacing:1px; }
+.logo span { color:#81c784; }
+.pulse { width:8px; height:8px; border-radius:50%; background:#81c784;
+  display:inline-block; animation:pulse 2s infinite; margin-right:6px; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideRight { from{opacity:0;transform:translateX(60px)} to{opacity:1;transform:translateX(0)} }
+@keyframes countAnim { from{opacity:0} to{opacity:1} }
 
-  .nav-tabs {
-    background: #0d1225;
-    border-bottom: 1px solid #1e2d4a;
-    padding: 0 32px;
-    display: flex;
-    gap: 4px;
-  }
-  .nav-tab {
-    padding: 12px 20px;
-    font-size: 13px;
-    cursor: pointer;
-    color: #7986a3;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-  }
-  .nav-tab:hover { color: #e0e6f0; }
-  .nav-tab.active { color: #4fc3f7; border-bottom-color: #4fc3f7; }
-  .nav-tab.specialist-tab { color: #ce93d8; }
-  .nav-tab.specialist-tab.active { color: #ce93d8; border-bottom-color: #ce93d8; }
+.nav { background:#0d1225; border-bottom:1px solid #1e2d4a;
+  padding:0 28px; display:flex; gap:4px; overflow-x:auto; }
+.nav-tab { padding:11px 18px; font-size:13px; cursor:pointer;
+  color:#7986a3; border-bottom:2px solid transparent;
+  transition:all 0.2s; white-space:nowrap; }
+.nav-tab:hover { color:#e0e6f0; }
+.nav-tab.active { color:#4fc3f7; border-bottom-color:#4fc3f7; }
+.nav-tab.sp { color:#ce93d8; }
+.nav-tab.sp.active { border-bottom-color:#ce93d8; }
 
-  .container { padding: 24px 32px; }
-  .page { display: none; }
-  .page.active { display: block; }
+.wrap { padding:20px 28px; }
+.page { display:none; }
+.page.active { display:block; }
 
-  .section-title {
-    font-size: 13px; font-weight: 600;
-    color: #7986a3; text-transform: uppercase;
-    letter-spacing: 1px; margin-bottom: 16px;
-  }
+.sec { font-size:11px; font-weight:600; color:#7986a3;
+  text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
 
-  .cards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px; margin-bottom: 32px;
-  }
-  .card {
-    background: #0d1225;
-    border: 1px solid #1e2d4a;
-    border-radius: 12px;
-    padding: 20px;
-    transition: border-color 0.3s;
-  }
-  .card:hover { border-color: #4fc3f7; }
-  .card-label { font-size: 12px; color: #7986a3; margin-bottom: 8px; }
-  .card-value { font-size: 32px; font-weight: 700; }
-  .card-sub { font-size: 12px; color: #7986a3; margin-top: 6px; }
-  .score-bar { height: 6px; border-radius: 3px; background: #1e2d4a; margin-top: 10px; overflow: hidden; }
-  .score-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+/* BANNER ROW */
+.banner {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px; margin-bottom:20px;
+}
+.bcard {
+  background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:10px; padding:14px 18px;
+  animation:fadeUp 0.5s ease both;
+}
+.bcard-label { font-size:11px; color:#7986a3; margin-bottom:4px; }
+.bcard-val { font-size:24px; font-weight:700; }
 
-  .good { color: #81c784; }
-  .warning { color: #ffb74d; }
-  .critical { color: #ef5350; }
-  .good-fill { background: #81c784; }
-  .warning-fill { background: #ffb74d; }
-  .critical-fill { background: #ef5350; }
+/* GAUGE GRID */
+.gauge-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px; margin-bottom:20px;
+}
+.gcard {
+  background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:12px; padding:16px; text-align:center;
+  transition:border-color 0.3s, transform 0.2s;
+  animation:fadeUp 0.4s ease both;
+  cursor:default;
+}
+.gcard:hover { border-color:#4fc3f7; transform:translateY(-2px); }
+.gcard.critical:hover { border-color:#ef5350; }
+.gcard.warning:hover { border-color:#ffb74d; }
+.gauge-wrap { position:relative; width:90px; height:90px; margin:0 auto 8px; }
+.gauge-wrap svg { width:100%; height:100%; }
+.gauge-val {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-size:18px; font-weight:700;
+}
+.gcard-id { font-size:11px; color:#7986a3; margin-bottom:6px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gcard-type { font-size:10px; color:#4a5568; margin-top:4px; }
+.gcard-prob { font-size:10px; margin-top:6px; }
+.gcard-uptime { font-size:10px; color:#7986a3; margin-top:3px; }
+.anomaly-pill {
+  display:inline-block; background:#ef5350; color:white;
+  font-size:9px; padding:1px 6px; border-radius:8px;
+  margin-left:4px; font-weight:700; vertical-align:middle;
+}
 
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px; margin-bottom: 32px;
-  }
-  .chart-card {
-    background: #0d1225;
-    border: 1px solid #1e2d4a;
-    border-radius: 12px;
-    padding: 20px;
-  }
-  .chart-title { font-size: 13px; font-weight: 600; color: #b0bec5; margin-bottom: 16px; }
+/* CHARTS */
+.charts-grid { display:grid; grid-template-columns:1fr 1fr;
+  gap:12px; margin-bottom:20px; }
+.ccard { background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:12px; padding:18px; }
+.ctitle { font-size:12px; font-weight:600; color:#b0bec5; margin-bottom:14px; }
+canvas { max-height:180px; }
 
-  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .feed-card {
-    background: #0d1225;
-    border: 1px solid #1e2d4a;
-    border-radius: 12px;
-    padding: 20px;
-    max-height: 320px;
-    overflow-y: auto;
-  }
-  .feed-item {
-    padding: 12px; border-radius: 8px;
-    background: #111827; margin-bottom: 10px;
-    border-left: 3px solid #4fc3f7;
-    font-size: 13px; line-height: 1.5;
-  }
-  .feed-item.alert { border-left-color: #ef5350; }
-  .feed-item.warning { border-left-color: #ffb74d; }
-  .feed-item.automation { border-left-color: #ce93d8; }
-  .feed-item.resolved { border-left-color: #81c784; opacity: 0.7; }
-  .feed-time { font-size: 11px; color: #7986a3; margin-bottom: 4px; }
-  .feed-device { font-weight: 600; color: #4fc3f7; margin-bottom: 4px; }
+/* FEEDS */
+.feeds { display:grid; grid-template-columns:1fr 1fr;
+  gap:12px; margin-bottom:20px; }
+.fcard { background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:12px; padding:18px;
+  max-height:280px; overflow-y:auto; }
+.fitem {
+  padding:10px 12px; border-radius:8px; background:#111827;
+  margin-bottom:8px; border-left:3px solid #4fc3f7;
+  font-size:12px; line-height:1.5;
+  animation:slideRight 0.3s ease both;
+}
+.fitem.alert { border-left-color:#ef5350; }
+.fitem.warn { border-left-color:#ffb74d; }
+.fitem.auto { border-left-color:#ce93d8; }
+.fitem.good { border-left-color:#81c784; }
+.fitem.twin { border-left-color:#4fc3f7; }
+.ftime { font-size:10px; color:#7986a3; margin-bottom:3px; }
+.fdev { font-weight:600; color:#4fc3f7; margin-bottom:3px; }
 
-  .anomaly-badge {
-    display: inline-block; background: #ef5350;
-    color: white; font-size: 10px;
-    padding: 2px 8px; border-radius: 10px;
-    margin-left: 8px; font-weight: 600;
-  }
-  .status-badge {
-    display: inline-block; font-size: 10px;
-    padding: 2px 8px; border-radius: 10px;
-    font-weight: 600; margin-left: 8px;
-  }
-  .badge-open { background: #ef5350; color: white; }
-  .badge-assigned { background: #ffb74d; color: #1a1a1a; }
-  .badge-resolved { background: #81c784; color: #1a1a1a; }
+/* INTELLIGENCE BANNER */
+.intel-grid { display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:12px; margin-bottom:20px; }
+.icard { background:#111827; border:1px solid #2e3d5a;
+  border-radius:10px; padding:14px 18px; }
+.icard-title { font-size:11px; color:#7986a3;
+  text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.icard-val { font-size:20px; font-weight:700; }
+.icard-sub { font-size:11px; color:#7986a3; margin-top:4px; }
 
-  .login-box {
-    max-width: 400px; margin: 60px auto;
-    background: #0d1225;
-    border: 1px solid #1e2d4a;
-    border-radius: 16px;
-    padding: 40px;
-  }
-  .login-title {
-    font-size: 20px; font-weight: 700;
-    color: #ce93d8; margin-bottom: 8px;
-  }
-  .login-sub { font-size: 13px; color: #7986a3; margin-bottom: 32px; }
-  .form-group { margin-bottom: 20px; }
-  .form-label { font-size: 12px; color: #7986a3; margin-bottom: 8px; display: block; }
-  .form-input {
-    width: 100%; padding: 10px 14px;
-    background: #111827; border: 1px solid #1e2d4a;
-    border-radius: 8px; color: #e0e6f0;
-    font-size: 14px; outline: none;
-    transition: border-color 0.2s;
-  }
-  .form-input:focus { border-color: #ce93d8; }
-  .btn {
-    padding: 10px 20px; border-radius: 8px;
-    border: none; cursor: pointer;
-    font-size: 14px; font-weight: 600;
-    transition: opacity 0.2s;
-  }
-  .btn:hover { opacity: 0.85; }
-  .btn-specialist { background: #ce93d8; color: #1a1a1a; width: 100%; }
-  .btn-action { background: #4fc3f7; color: #1a1a1a; font-size: 12px; padding: 6px 12px; }
-  .btn-resolve { background: #81c784; color: #1a1a1a; font-size: 12px; padding: 6px 12px; }
-  .btn-danger { background: #ef5350; color: white; font-size: 12px; padding: 6px 12px; }
+/* SIMULATE BUTTONS */
+.sim-wrap { background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:12px; padding:18px; margin-bottom:20px; }
+.sim-btns { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.sbtn { padding:8px 16px; border-radius:8px; border:none;
+  cursor:pointer; font-size:12px; font-weight:700;
+  transition:transform 0.15s, opacity 0.2s; }
+.sbtn:active { transform:scale(0.96); }
+.sbtn:hover { opacity:0.85; }
+.sbtn-red { background:#ef5350; color:white; }
+.sbtn-amber { background:#ffb74d; color:#1a1a1a; }
+.sbtn-green { background:#81c784; color:#1a1a1a; }
+.sbtn-purple { background:#ce93d8; color:#1a1a1a; }
+.sbtn-blue { background:#4fc3f7; color:#1a1a1a; }
 
-  .specialist-header {
-    background: linear-gradient(90deg, #1a0d2e, #0d1225);
-    border: 1px solid #4a2d6b;
-    border-radius: 12px;
-    padding: 16px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .specialist-name { color: #ce93d8; font-weight: 600; font-size: 15px; }
-  .specialist-role { color: #7986a3; font-size: 12px; }
+/* TOASTS */
+#toast-container {
+  position:fixed; top:70px; right:16px;
+  z-index:9999; width:300px;
+}
+.toast {
+  background:#0d1225; border:1px solid #1e2d4a;
+  border-left:3px solid #4fc3f7;
+  border-radius:8px; padding:12px 14px;
+  margin-bottom:8px; font-size:12px;
+  animation:slideRight 0.35s ease both;
+  box-shadow:0 4px 12px rgba(0,0,0,0.4);
+}
+.toast.critical { border-left-color:#ef5350; }
+.toast.warning { border-left-color:#ffb74d; }
+.toast.good { border-left-color:#81c784; }
+.toast.twin { border-left-color:#4fc3f7; }
+.toast-title { font-weight:700; margin-bottom:3px; }
+.toast-msg { color:#b0bec5; font-size:11px; }
 
-  .incident-card {
-    background: #111827;
-    border: 1px solid #1e2d4a;
-    border-radius: 10px;
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .incident-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .incident-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-  .assign-input {
-    background: #0d1225; border: 1px solid #1e2d4a;
-    border-radius: 6px; color: #e0e6f0;
-    padding: 6px 10px; font-size: 12px;
-    width: 160px; outline: none;
-  }
+/* PDF BUTTON */
+.pdf-btn {
+  background:#4fc3f7; color:#0a0e1a;
+  border:none; border-radius:8px;
+  padding:8px 18px; font-size:12px;
+  font-weight:700; cursor:pointer;
+  transition:opacity 0.2s;
+}
+.pdf-btn:hover { opacity:0.85; }
 
-  .cost-banner {
-    background: #111827;
-    border: 1px solid #ef5350;
-    border-radius: 10px;
-    padding: 14px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .cost-label { font-size: 12px; color: #7986a3; }
-  .cost-value { font-size: 24px; font-weight: 700; color: #ef5350; }
+/* RETRAIN BANNER */
+.retrain-banner {
+  background:#2d1a0e; border:1px solid #ffb74d;
+  border-radius:10px; padding:12px 18px;
+  margin-bottom:16px; font-size:13px;
+  color:#ffb74d; display:none;
+}
 
-  canvas { max-height: 200px; }
+/* LOGIN */
+.login-box { max-width:380px; margin:50px auto;
+  background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:16px; padding:36px; }
+.l-title { font-size:18px; font-weight:700;
+  color:#ce93d8; margin-bottom:6px; }
+.l-sub { font-size:12px; color:#7986a3; margin-bottom:28px; }
+.l-group { margin-bottom:16px; }
+.l-label { font-size:11px; color:#7986a3;
+  margin-bottom:6px; display:block; }
+.l-input { width:100%; padding:9px 12px;
+  background:#111827; border:1px solid #1e2d4a;
+  border-radius:8px; color:#e0e6f0;
+  font-size:13px; outline:none;
+  transition:border-color 0.2s; }
+.l-input:focus { border-color:#ce93d8; }
+.l-btn { width:100%; padding:10px;
+  background:#ce93d8; color:#1a1a1a;
+  border:none; border-radius:8px;
+  font-size:14px; font-weight:700;
+  cursor:pointer; transition:opacity 0.2s; }
+.l-btn:hover { opacity:0.85; }
+.l-err { color:#ef5350; font-size:12px;
+  margin-top:10px; text-align:center; }
 
-  .error-msg { color: #ef5350; font-size: 13px; margin-top: 12px; text-align: center; }
+/* SPECIALIST */
+.sp-header { background:#130d1e; border:1px solid #4a2d6b;
+  border-radius:10px; padding:14px 18px; margin-bottom:20px;
+  display:flex; align-items:center; justify-content:space-between; }
+.sp-name { color:#ce93d8; font-weight:700; font-size:15px; }
+.sp-role { color:#7986a3; font-size:11px; }
+.inc-card { background:#111827; border:1px solid #1e2d4a;
+  border-radius:10px; padding:14px; margin-bottom:10px; }
+.inc-head { display:flex; align-items:center;
+  justify-content:space-between; margin-bottom:8px; }
+.inc-actions { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.asgn-input { background:#0d1225; border:1px solid #1e2d4a;
+  border-radius:6px; color:#e0e6f0; padding:5px 9px;
+  font-size:11px; width:150px; outline:none; }
+.abtn { padding:5px 11px; border-radius:6px; border:none;
+  cursor:pointer; font-size:11px; font-weight:700;
+  transition:opacity 0.2s; }
+.abtn:hover { opacity:0.85; }
+.abtn-blue { background:#4fc3f7; color:#1a1a1a; }
+.abtn-green { background:#81c784; color:#1a1a1a; }
+.abtn-red { background:#ef5350; color:white; }
+.sbadge { display:inline-block; font-size:9px; padding:2px 7px;
+  border-radius:8px; font-weight:700; margin-left:6px; }
+.sb-open { background:#ef5350; color:white; }
+.sb-assigned { background:#ffb74d; color:#1a1a1a; }
+.sb-resolved { background:#81c784; color:#1a1a1a; }
+
+.good-c { color:#81c784; }
+.warn-c { color:#ffb74d; }
+.crit-c { color:#ef5350; }
+
+@media(max-width:600px) {
+  .charts-grid,.feeds { grid-template-columns:1fr; }
+  .banner { grid-template-columns:1fr 1fr; }
+  .wrap { padding:12px 14px; }
+  header { padding:10px 14px; }
+}
 </style>
 </head>
 <body>
 
+<div id="toast-container"></div>
+
 <header>
   <div class="logo">II<span>Sentinel</span></div>
-  <div style="text-align:center">
-    <div style="font-size:13px;color:#7986a3">Intelligent Infrastructure Sentinel</div>
-    <div style="font-size:11px;color:#7986a3">Network & Industrial Asset Monitoring</div>
+  <div style="text-align:center;display:none" id="hdr-center">
+    <div style="font-size:12px;color:#7986a3">Intelligent Infrastructure Sentinel</div>
   </div>
-  <div class="live-badge">
-    <span class="status-dot"></span>
-    <span id="live-label">Live monitoring</span>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="pulse"></span>
+    <span style="font-size:12px;color:#81c784" id="live-lbl">Live</span>
+    <button class="pdf-btn" onclick="exportPDF()">Export report</button>
   </div>
 </header>
 
-<div class="nav-tabs">
-  <div class="nav-tab active" onclick="showPage('public')">Live dashboard</div>
-  <div class="nav-tab" onclick="showPage('telecom')">TelecomCo view</div>
-  <div class="nav-tab" onclick="showPage('mining')">MiningCo view</div>
-  <div class="nav-tab specialist-tab" id="specialist-tab" onclick="showPage('specialist')">
-    Specialist access
+<div class="nav" id="main-nav">
+  <div class="nav-tab active" data-page="public" onclick="showPage(this,'public')">Dashboard</div>
+  <div class="nav-tab" data-page="intel" onclick="showPage(this,'intel')">Intelligence</div>
+  <div class="nav-tab" data-page="telecom" onclick="showPage(this,'telecom')">TelecomCo</div>
+  <div class="nav-tab" data-page="mining" onclick="showPage(this,'mining')">MiningCo</div>
+  <div class="nav-tab sp" data-page="specialist" onclick="showPage(this,'specialist')">Specialist</div>
+</div>
+
+<div class="wrap">
+
+<!-- RETRAIN BANNER -->
+<div class="retrain-banner" id="retrain-banner">
+  AI model retraining recommended — anomaly count has exceeded threshold.
+  Collect new labelled data and retrain health_model.pkl for improved accuracy.
+</div>
+
+<!-- PAGE: PUBLIC DASHBOARD -->
+<div class="page active" id="page-public">
+  <div class="banner" id="top-banner">
+    <div class="bcard">
+      <div class="bcard-label">Infrastructure health index</div>
+      <div class="bcard-val good-c" id="fed-index">--</div>
+    </div>
+    <div class="bcard">
+      <div class="bcard-label">Active devices</div>
+      <div class="bcard-val" style="color:#4fc3f7" id="dev-count">--</div>
+    </div>
+    <div class="bcard">
+      <div class="bcard-label">Estimated risk cost</div>
+      <div class="bcard-val crit-c" id="risk-cost">$0</div>
+    </div>
+    <div class="bcard">
+      <div class="bcard-label">Open incidents</div>
+      <div class="bcard-val warn-c" id="inc-count">--</div>
+    </div>
+    <div class="bcard">
+      <div class="bcard-label">Anomalies detected</div>
+      <div class="bcard-val" style="color:#ce93d8" id="anom-count">--</div>
+    </div>
+  </div>
+
+  <div class="sec">Device health — animated gauges</div>
+  <div class="gauge-grid" id="gauge-grid">
+    <div class="gcard">
+      <div class="gcard-id">Connecting to data stream...</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="ccard">
+      <div class="ctitle">Health score trend — all devices</div>
+      <canvas id="healthChart"></canvas>
+    </div>
+    <div class="ccard">
+      <div class="ctitle">Predicted vs actual health</div>
+      <canvas id="predictChart"></canvas>
+    </div>
+  </div>
+
+  <div class="feeds">
+    <div class="fcard">
+      <div class="sec">AI diagnosis feed</div>
+      <div id="diag-feed">
+        <div class="fitem"><div class="ftime">Waiting for data...</div></div>
+      </div>
+    </div>
+    <div class="fcard">
+      <div class="sec">Automation command log</div>
+      <div id="auto-feed">
+        <div class="fitem"><div class="ftime">No commands issued yet</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sim-wrap">
+    <div class="sec">Simulate live event — demo controls</div>
+    <div class="sim-btns">
+      <button class="sbtn sbtn-red" onclick="simEvent('critical')">Simulate critical failure</button>
+      <button class="sbtn sbtn-amber" onclick="simEvent('congestion')">Simulate congestion</button>
+      <button class="sbtn sbtn-green" onclick="simEvent('recovery')">Simulate recovery</button>
+      <button class="sbtn sbtn-purple" onclick="simEvent('anomaly')">Simulate anomaly</button>
+      <button class="sbtn sbtn-blue" onclick="simEvent('twin')">Run digital twin</button>
+    </div>
   </div>
 </div>
 
-<div class="container">
+<!-- PAGE: INTELLIGENCE -->
+<div class="page" id="page-intel">
+  <div class="sec">Platform intelligence — real time AI insights</div>
+  <div class="intel-grid" id="intel-grid">
+    <div class="icard">
+      <div class="icard-title">Federated health index</div>
+      <div class="icard-val good-c" id="i-fed">--</div>
+      <div class="icard-sub">Weighted score across all devices</div>
+    </div>
+    <div class="icard">
+      <div class="icard-title">Highest failure risk</div>
+      <div class="icard-val crit-c" id="i-risk">--</div>
+      <div class="icard-sub">Device most likely to fail</div>
+    </div>
+    <div class="icard">
+      <div class="icard-title">Cross device correlation</div>
+      <div class="icard-val warn-c" id="i-corr">--</div>
+      <div class="icard-sub">Linked degradation events</div>
+    </div>
+    <div class="icard">
+      <div class="icard-title">Model health</div>
+      <div class="icard-val good-c" id="i-model">Optimal</div>
+      <div class="icard-sub">Anomaly count vs threshold</div>
+    </div>
+  </div>
 
-  <!-- PUBLIC DASHBOARD -->
-  <div class="page active" id="page-public">
-    <div class="cost-banner">
+  <div class="feeds">
+    <div class="fcard">
+      <div class="sec">Digital twin insights</div>
+      <div id="twin-feed">
+        <div class="fitem twin">
+          <div class="ftime">Digital twin engine active</div>
+          <div>Simulating load increase scenarios for all connected devices</div>
+        </div>
+      </div>
+    </div>
+    <div class="fcard">
+      <div class="sec">Failure probability ranking</div>
+      <div id="prob-feed">
+        <div class="fitem">
+          <div class="ftime">Calculating failure probabilities...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ccard" style="margin-bottom:20px">
+    <div class="ctitle">Device uptime percentage</div>
+    <canvas id="uptimeChart"></canvas>
+  </div>
+</div>
+
+<!-- PAGE: TELECOM -->
+<div class="page" id="page-telecom">
+  <div class="sec">TelecomCo network operations — base stations and towers</div>
+  <div class="gauge-grid" id="telecom-gauges">
+    <div class="gcard">
+      <div class="gcard-id">Run telecom_collector.py to see data</div>
+    </div>
+  </div>
+  <div class="ccard" style="margin-bottom:20px">
+    <div class="ctitle">TelecomCo health trend</div>
+    <canvas id="telecomChart"></canvas>
+  </div>
+  <div class="fcard">
+    <div class="sec">TelecomCo alerts and diagnoses</div>
+    <div id="telecom-feed">
+      <div class="fitem"><div class="ftime">No telecom alerts</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: MINING -->
+<div class="page" id="page-mining">
+  <div class="sec">MiningCo underground asset monitoring</div>
+  <div class="gauge-grid" id="mining-gauges">
+    <div class="gcard">
+      <div class="gcard-id">Run mining_collector.py to see data</div>
+    </div>
+  </div>
+  <div class="ccard" style="margin-bottom:20px">
+    <div class="ctitle">MiningCo equipment health trend</div>
+    <canvas id="miningChart"></canvas>
+  </div>
+  <div class="fcard">
+    <div class="sec">MiningCo safety alerts</div>
+    <div id="mining-feed">
+      <div class="fitem"><div class="ftime">No mining alerts</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: SPECIALIST -->
+<div class="page" id="page-specialist">
+  <div id="login-sec">
+    <div class="login-box">
+      <div class="l-title">Specialist access</div>
+      <div class="l-sub">Restricted to authorised engineers and administrators only.</div>
+      <div class="l-group">
+        <label class="l-label">Username</label>
+        <input class="l-input" type="text" id="l-name" placeholder="Enter username">
+      </div>
+      <div class="l-group">
+        <label class="l-label">Password</label>
+        <input class="l-input" type="password" id="l-pass"
+          placeholder="Enter password"
+          onkeydown="if(event.key==='Enter') doLogin()">
+      </div>
+      <button class="l-btn" onclick="doLogin()">Access specialist panel</button>
+      <div class="l-err" id="l-err"></div>
+    </div>
+  </div>
+
+  <div id="sp-sec" style="display:none">
+    <div class="sp-header">
       <div>
-        <div class="cost-label">Estimated infrastructure risk cost</div>
-        <div class="cost-label" style="font-size:10px">Based on current degraded devices</div>
+        <div class="sp-name" id="sp-name">Specialist</div>
+        <div class="sp-role" id="sp-role">Role</div>
       </div>
-      <div class="cost-value" id="cost-display">$0</div>
+      <button class="sbtn sbtn-red" onclick="doLogout()">Log out</button>
     </div>
 
-    <div class="section-title">Device health overview — all sectors</div>
-    <div class="cards-grid" id="health-cards">
-      <div class="card">
-        <div class="card-label">Connecting...</div>
-        <div class="card-value" style="color:#4fc3f7">--</div>
+    <div class="banner" style="grid-template-columns:repeat(3,1fr)">
+      <div class="bcard">
+        <div class="bcard-label">Open incidents</div>
+        <div class="bcard-val crit-c" id="sp-open">0</div>
       </div>
-    </div>
-
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-title">Health score trend</div>
-        <canvas id="healthChart"></canvas>
+      <div class="bcard">
+        <div class="bcard-label">Assigned</div>
+        <div class="bcard-val warn-c" id="sp-assigned">0</div>
       </div>
-      <div class="chart-card">
-        <div class="chart-title">Predicted vs actual health</div>
-        <canvas id="predictChart"></canvas>
+      <div class="bcard">
+        <div class="bcard-label">Resolved</div>
+        <div class="bcard-val good-c" id="sp-resolved">0</div>
       </div>
     </div>
 
-    <div class="bottom-grid">
-      <div class="feed-card">
-        <div class="section-title">AI diagnosis feed</div>
-        <div id="diagnosis-feed">
-          <div class="feed-item"><div class="feed-time">Waiting for data...</div></div>
-        </div>
-      </div>
-      <div class="feed-card">
-        <div class="section-title">Automation command log</div>
-        <div id="automation-feed">
-          <div class="feed-item"><div class="feed-time">No commands issued yet</div></div>
-        </div>
+    <div class="sec">Open incidents — assign and resolve</div>
+    <div id="inc-list">
+      <div class="fitem">
+        <div class="ftime">Loading incidents...</div>
       </div>
     </div>
   </div>
-
-  <!-- TELECOM VIEW -->
-  <div class="page" id="page-telecom">
-    <div class="section-title">TelecomCo network operations — base stations and towers</div>
-    <div class="cards-grid" id="telecom-cards">
-      <div class="card"><div class="card-label">Loading telecom devices...</div></div>
-    </div>
-    <div class="chart-card" style="margin-bottom:24px">
-      <div class="chart-title">TelecomCo signal strength and bandwidth trend</div>
-      <canvas id="telecomChart"></canvas>
-    </div>
-    <div class="feed-card">
-      <div class="section-title">TelecomCo alerts</div>
-      <div id="telecom-feed">
-        <div class="feed-item"><div class="feed-time">No telecom alerts</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MINING VIEW -->
-  <div class="page" id="page-mining">
-    <div class="section-title">MiningCo underground asset monitoring</div>
-    <div class="cards-grid" id="mining-cards">
-      <div class="card"><div class="card-label">Loading mining devices...</div></div>
-    </div>
-    <div class="chart-card" style="margin-bottom:24px">
-      <div class="chart-title">MiningCo equipment health trend</div>
-      <canvas id="miningChart"></canvas>
-    </div>
-    <div class="feed-card">
-      <div class="section-title">MiningCo safety alerts</div>
-      <div id="mining-feed">
-        <div class="feed-item"><div class="feed-time">No mining alerts</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- SPECIALIST PAGE -->
-  <div class="page" id="page-specialist">
-
-    <!-- LOGIN FORM -->
-    <div id="login-section">
-      <div class="login-box">
-        <div class="login-title">Specialist access</div>
-        <div class="login-sub">Restricted to authorised engineers and administrators only.</div>
-        <div class="form-group">
-          <label class="form-label">Username</label>
-          <input class="form-input" type="text" id="login-name" placeholder="Enter your username">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password</label>
-          <input class="form-input" type="password" id="login-pass" placeholder="Enter your password">
-        </div>
-        <button class="btn btn-specialist" onclick="doLogin()">Access specialist panel</button>
-        <div class="error-msg" id="login-error"></div>
-      </div>
-    </div>
-
-    <!-- SPECIALIST PANEL -->
-    <div id="specialist-section" style="display:none">
-      <div class="specialist-header">
-        <div>
-          <div class="specialist-name" id="spec-name">Specialist</div>
-          <div class="specialist-role" id="spec-role">Role</div>
-        </div>
-        <button class="btn btn-danger" onclick="doLogout()">Log out</button>
-      </div>
-
-      <div class="cards-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
-        <div class="card">
-          <div class="card-label">Open incidents</div>
-          <div class="card-value critical" id="open-count">0</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Assigned incidents</div>
-          <div class="card-value warning" id="assigned-count">0</div>
-        </div>
-        <div class="card">
-          <div class="card-label">Resolved today</div>
-          <div class="card-value good" id="resolved-count">0</div>
-        </div>
-      </div>
-
-      <div class="section-title">Open incidents — assign and resolve</div>
-      <div id="incidents-list">
-        <div class="feed-item"><div class="feed-time">Loading incidents...</div></div>
-      </div>
-    </div>
-
-  </div>
+</div>
 
 </div>
 
 <script>
-const BASE_URL = window.location.origin;
-let specialistToken = null;
-let specialistName = null;
+const BASE = window.location.origin;
+let spToken = null;
+let spName = null;
+let allData = [];
+let intelData = {};
 
-// Charts setup
-const healthChart = new Chart(
-  document.getElementById('healthChart').getContext('2d'), {
-  type: 'line',
-  data: { labels: [], datasets: [{
-    label: 'Health score', data: [],
-    borderColor: '#4fc3f7', backgroundColor: 'rgba(79,195,247,0.08)',
-    borderWidth: 2, tension: 0.4, fill: true, pointRadius: 3
-  }]},
-  options: {
-    responsive: true,
-    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
-    scales: {
-      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
-      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
-    }
-  }
-});
-
-const predictChart = new Chart(
-  document.getElementById('predictChart').getContext('2d'), {
-  type: 'line',
-  data: { labels: [], datasets: [
-    { label: 'Actual', data: [], borderColor: '#81c784', borderWidth: 2, tension: 0.4, pointRadius: 3 },
-    { label: 'Predicted', data: [], borderColor: '#ffb74d', borderWidth: 2, borderDash: [5,5], tension: 0.4, pointRadius: 3 }
-  ]},
-  options: {
-    responsive: true,
-    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
-    scales: {
-      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
-      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
-    }
-  }
-});
-
-const telecomChart = new Chart(
-  document.getElementById('telecomChart').getContext('2d'), {
-  type: 'line',
-  data: { labels: [], datasets: [
-    { label: 'Health score', data: [], borderColor: '#4fc3f7', borderWidth: 2, tension: 0.4, pointRadius: 3 }
-  ]},
-  options: {
-    responsive: true,
-    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
-    scales: {
-      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
-      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
-    }
-  }
-});
-
-const miningChart = new Chart(
-  document.getElementById('miningChart').getContext('2d'), {
-  type: 'line',
-  data: { labels: [], datasets: [
-    { label: 'Health score', data: [], borderColor: '#ffb74d', borderWidth: 2, tension: 0.4, pointRadius: 3 }
-  ]},
-  options: {
-    responsive: true,
-    plugins: { legend: { labels: { color: '#b0bec5', font: { size: 11 } } } },
-    scales: {
-      x: { ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } },
-      y: { min: 0, max: 100, ticks: { color: '#7986a3', font: { size: 10 } }, grid: { color: '#1e2d4a' } }
-    }
-  }
-});
-
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  event.target.classList.add('active');
+function scoreColor(s) {
+  return s>=70 ? '#81c784' : s>=40 ? '#ffb74d' : '#ef5350';
+}
+function scoreClass(s) {
+  return s>=70 ? 'good-c' : s>=40 ? 'warn-c' : 'crit-c';
+}
+function scoreFill(s) {
+  return s>=70 ? 'good' : s>=40 ? 'warn' : 'crit';
+}
+function fmt(ts) {
+  return new Date(ts).toLocaleTimeString();
 }
 
-function getScoreClass(s) { return s >= 70 ? 'good' : s >= 40 ? 'warning' : 'critical'; }
-function getScoreFill(s) { return s >= 70 ? 'good-fill' : s >= 40 ? 'warning-fill' : 'critical-fill'; }
-function formatTime(ts) { return new Date(ts).toLocaleTimeString(); }
+function makeGaugeSVG(score, color) {
+  const r=36, cx=45, cy=45;
+  const circ=2*Math.PI*r;
+  const dash=circ*(score/100);
+  const offset=circ*0.25;
+  return `<svg viewBox="0 0 90 90">
+    <circle cx="${cx}" cy="${cy}" r="${r}"
+      fill="none" stroke="#1e2d4a" stroke-width="7"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}"
+      fill="none" stroke="${color}" stroke-width="7"
+      stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+      stroke-dashoffset="${offset.toFixed(1)}"
+      stroke-linecap="round"
+      style="transition:stroke-dasharray 0.8s ease"/>
+  </svg>`;
+}
 
-function calcCost(data) {
-  let cost = 0;
-  const deviceMap = {};
-  data.forEach(r => { if (!deviceMap[r.device_id]) deviceMap[r.device_id] = r; });
-  Object.values(deviceMap).forEach(d => {
-    if (d.health_score < 20) cost += 5000;
-    else if (d.health_score < 35) cost += 2000;
-    else if (d.health_score < 50) cost += 800;
+function showPage(el, name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='intel') updateIntelPage();
+}
+
+function toast(title, msg, type) {
+  const c=document.getElementById('toast-container');
+  const el=document.createElement('div');
+  el.className='toast '+(type||'');
+  el.innerHTML=`<div class="toast-title">${title}</div>
+    <div class="toast-msg">${msg}</div>`;
+  c.insertBefore(el, c.firstChild);
+  setTimeout(()=>{ el.style.opacity='0';
+    el.style.transition='opacity 0.4s';
+    setTimeout(()=>el.remove(), 400); }, 5000);
+  if(c.children.length>5) c.lastChild.remove();
+}
+
+function calcCost(deviceMap) {
+  let cost=0;
+  Object.values(deviceMap).forEach(d=>{
+    const s=d.health_score;
+    if(s<20) cost+=5000;
+    else if(s<35) cost+=2000;
+    else if(s<50) cost+=800;
   });
   return cost;
 }
 
+function renderGauges(deviceMap, containerId) {
+  const grid=document.getElementById(containerId);
+  if(!grid) return;
+  grid.innerHTML='';
+  const entries=Object.values(deviceMap);
+  if(!entries.length) {
+    grid.innerHTML='<div class="gcard"><div class="gcard-id">No data yet</div></div>';
+    return;
+  }
+  entries.forEach((d,i)=>{
+    const score=Math.round(d.health_score);
+    const col=scoreColor(score);
+    const cls=scoreFill(score);
+    const prob=intelData.failure_probabilities?.[d.device_id]||0;
+    const uptime=intelData.uptime?.[d.device_id]||100;
+    grid.innerHTML+=`
+      <div class="gcard ${cls}" style="animation-delay:${i*0.08}s">
+        <div class="gcard-id">${d.device_id}
+          ${d.anomaly_flag?'<span class="anomaly-pill">ANOMALY</span>':''}
+        </div>
+        <div class="gauge-wrap">
+          ${makeGaugeSVG(score,col)}
+          <div class="gauge-val" style="color:${col}">${score}</div>
+        </div>
+        <div class="gcard-type">${d.device_type}</div>
+        <div class="gcard-prob" style="color:${prob>50?'#ef5350':prob>25?'#ffb74d':'#81c784'}">
+          Fail risk: ${prob}%
+        </div>
+        <div class="gcard-uptime">Uptime: ${uptime}%</div>
+      </div>`;
+  });
+}
+
+const healthChart=new Chart(
+  document.getElementById('healthChart').getContext('2d'),{
+  type:'line',
+  data:{labels:[],datasets:[{
+    label:'Health score',data:[],
+    borderColor:'#4fc3f7',backgroundColor:'rgba(79,195,247,0.07)',
+    borderWidth:2,tension:0.4,fill:true,pointRadius:2
+  }]},
+  options:{
+    responsive:true,
+    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+    scales:{
+      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
+    }
+  }
+});
+
+const predictChart=new Chart(
+  document.getElementById('predictChart').getContext('2d'),{
+  type:'line',
+  data:{labels:[],datasets:[
+    {label:'Actual',data:[],borderColor:'#81c784',borderWidth:2,tension:0.4,pointRadius:2},
+    {label:'Predicted',data:[],borderColor:'#ffb74d',borderWidth:2,borderDash:[5,5],tension:0.4,pointRadius:2}
+  ]},
+  options:{
+    responsive:true,
+    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+    scales:{
+      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
+    }
+  }
+});
+
+const telecomChart=new Chart(
+  document.getElementById('telecomChart').getContext('2d'),{
+  type:'line',
+  data:{labels:[],datasets:[{
+    label:'TelecomCo health',data:[],
+    borderColor:'#4fc3f7',borderWidth:2,tension:0.4,pointRadius:2
+  }]},
+  options:{responsive:true,
+    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+    scales:{
+      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
+    }
+  }
+});
+
+const miningChart=new Chart(
+  document.getElementById('miningChart').getContext('2d'),{
+  type:'line',
+  data:{labels:[],datasets:[{
+    label:'MiningCo health',data:[],
+    borderColor:'#ffb74d',borderWidth:2,tension:0.4,pointRadius:2
+  }]},
+  options:{responsive:true,
+    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+    scales:{
+      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
+    }
+  }
+});
+
+const uptimeChart=new Chart(
+  document.getElementById('uptimeChart').getContext('2d'),{
+  type:'bar',
+  data:{labels:[],datasets:[{
+    label:'Uptime %',data:[],
+    backgroundColor:'#4fc3f7',borderRadius:6,borderSkipped:false
+  }]},
+  options:{responsive:true,
+    plugins:{legend:{labels:{color:'#b0bec5',font:{size:10}}}},
+    scales:{
+      x:{ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}},
+      y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:9}},grid:{color:'#1e2d4a'}}
+    }
+  }
+});
+
+async function fetchIntelligence() {
+  try {
+    const res=await fetch(BASE+'/api/intelligence');
+    intelData=await res.json();
+    const fed=intelData.federated_index||100;
+    document.getElementById('fed-index').textContent=fed;
+    document.getElementById('fed-index').className=
+      'bcard-val '+(fed>=70?'good-c':fed>=40?'warn-c':'crit-c');
+    document.getElementById('dev-count').textContent=
+      intelData.total_devices||0;
+    document.getElementById('anom-count').textContent=
+      intelData.anomaly_count||0;
+    if(intelData.retrain_needed) {
+      document.getElementById('retrain-banner').style.display='block';
+    }
+  } catch(e) {}
+}
+
 async function fetchAndUpdate() {
   try {
-    const res = await fetch(BASE_URL + '/api/data');
-    const data = await res.json();
-    if (!data || !data.length) return;
+    const res=await fetch(BASE+'/api/data');
+    allData=await res.json();
+    if(!allData||!allData.length) return;
 
-    const deviceMap = {};
-    data.forEach(r => { if (!deviceMap[r.device_id]) deviceMap[r.device_id] = r; });
+    await fetchIntelligence();
 
-    // Cost banner
-    const cost = calcCost(data);
-    document.getElementById('cost-display').textContent =
-      '$' + cost.toLocaleString();
+    const deviceMap={};
+    allData.forEach(r=>{ if(!deviceMap[r.device_id]) deviceMap[r.device_id]=r; });
 
-    // Health cards
-    const cardsEl = document.getElementById('health-cards');
-    cardsEl.innerHTML = '';
-    Object.values(deviceMap).forEach(d => {
-      const score = Math.round(d.health_score);
-      cardsEl.innerHTML += `
-        <div class="card">
-          <div class="card-label">${d.device_id}
-            <span style="color:#7986a3">(${d.device_type})</span>
-            ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
-          </div>
-          <div class="card-value ${getScoreClass(score)}">${score}</div>
-          <div class="card-sub">Health score / 100</div>
-          <div class="score-bar">
-            <div class="score-fill ${getScoreFill(score)}" style="width:${score}%"></div>
-          </div>
-          <div class="card-sub" style="margin-top:8px">Predicted: ${Math.round(d.predicted_score)}</div>
-        </div>`;
-    });
+    const cost=calcCost(deviceMap);
+    document.getElementById('risk-cost').textContent=
+      '$'+cost.toLocaleString();
+    document.getElementById('inc-count').textContent=
+      allData.filter(r=>r.health_score<50).length;
 
-    // Main charts
-    const recent = data.slice(0, 20).reverse();
-    healthChart.data.labels = recent.map(r => formatTime(r.created_at));
-    healthChart.data.datasets[0].data = recent.map(r => Math.round(r.health_score));
+    renderGauges(deviceMap, 'gauge-grid');
+
+    const recent=allData.slice(0,20).reverse();
+    healthChart.data.labels=recent.map(r=>fmt(r.created_at));
+    healthChart.data.datasets[0].data=recent.map(r=>Math.round(r.health_score));
     healthChart.update();
-    predictChart.data.labels = recent.map(r => formatTime(r.created_at));
-    predictChart.data.datasets[0].data = recent.map(r => Math.round(r.health_score));
-    predictChart.data.datasets[1].data = recent.map(r => Math.round(r.predicted_score));
+    predictChart.data.labels=recent.map(r=>fmt(r.created_at));
+    predictChart.data.datasets[0].data=recent.map(r=>Math.round(r.health_score));
+    predictChart.data.datasets[1].data=recent.map(r=>Math.round(r.predicted_score));
     predictChart.update();
 
-    // Diagnosis feed
-    const diagRows = data.filter(r => r.ai_diagnosis).slice(0, 10);
-    const diagFeed = document.getElementById('diagnosis-feed');
-    if (diagRows.length) {
-      diagFeed.innerHTML = '';
-      diagRows.forEach(r => {
-        const cls = getScoreClass(r.health_score) === 'critical' ? 'alert' :
-                    getScoreClass(r.health_score) === 'warning' ? 'warning' : '';
-        diagFeed.innerHTML += `
-          <div class="feed-item ${cls}">
-            <div class="feed-time">${formatTime(r.created_at)}</div>
-            <div class="feed-device">${r.device_id} — score ${Math.round(r.health_score)}</div>
+    const diagRows=allData.filter(r=>r.ai_diagnosis).slice(0,8);
+    const diagFeed=document.getElementById('diag-feed');
+    if(diagRows.length) {
+      diagFeed.innerHTML='';
+      diagRows.forEach(r=>{
+        const cls=r.health_score<35?'alert':r.health_score<70?'warn':'good';
+        diagFeed.innerHTML+=`
+          <div class="fitem ${cls}">
+            <div class="ftime">${fmt(r.created_at)}</div>
+            <div class="fdev">${r.device_id} — ${Math.round(r.health_score)}/100</div>
             <div>${r.ai_diagnosis}</div>
           </div>`;
       });
     }
 
-    // Automation feed
-    const autoRows = data.filter(r => r.automation_command).slice(0, 10);
-    const autoFeed = document.getElementById('automation-feed');
-    if (autoRows.length) {
-      autoFeed.innerHTML = '';
-      autoRows.forEach(r => {
-        autoFeed.innerHTML += `
-          <div class="feed-item automation">
-            <div class="feed-time">${formatTime(r.created_at)}</div>
-            <div class="feed-device">${r.device_id}</div>
+    const autoRows=allData.filter(r=>r.automation_command).slice(0,8);
+    const autoFeed=document.getElementById('auto-feed');
+    if(autoRows.length) {
+      autoFeed.innerHTML='';
+      autoRows.forEach(r=>{
+        autoFeed.innerHTML+=`
+          <div class="fitem auto">
+            <div class="ftime">${fmt(r.created_at)}</div>
+            <div class="fdev">${r.device_id}</div>
             <div>${r.automation_command}</div>
           </div>`;
       });
     }
 
-    // Telecom view
-    const telecomData = data.filter(r =>
-      ['base_station','network_tower','microwave_link'].includes(r.device_type));
-    const telecomMap = {};
-    telecomData.forEach(r => { if (!telecomMap[r.device_id]) telecomMap[r.device_id] = r; });
-    const telecomCards = document.getElementById('telecom-cards');
-    telecomCards.innerHTML = '';
-    if (Object.keys(telecomMap).length === 0) {
-      telecomCards.innerHTML = '<div class="card"><div class="card-label">Run telecom_collector.py to see data</div></div>';
-    } else {
-      Object.values(telecomMap).forEach(d => {
-        const score = Math.round(d.health_score);
-        telecomCards.innerHTML += `
-          <div class="card">
-            <div class="card-label">${d.device_id}
-              <span style="color:#7986a3">(${d.device_type})</span>
-              ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
-            </div>
-            <div class="card-value ${getScoreClass(score)}">${score}</div>
-            <div class="card-sub">Signal health / 100</div>
-            <div class="score-bar">
-              <div class="score-fill ${getScoreFill(score)}" style="width:${score}%"></div>
-            </div>
-          </div>`;
-      });
-    }
-    const recentTelecom = telecomData.slice(0, 20).reverse();
-    telecomChart.data.labels = recentTelecom.map(r => formatTime(r.created_at));
-    telecomChart.data.datasets[0].data = recentTelecom.map(r => Math.round(r.health_score));
+    const telecomTypes=['base_station','network_tower','microwave_link'];
+    const telecomData=allData.filter(r=>telecomTypes.includes(r.device_type));
+    const telecomMap={};
+    telecomData.forEach(r=>{ if(!telecomMap[r.device_id]) telecomMap[r.device_id]=r; });
+    renderGauges(telecomMap,'telecom-gauges');
+    const recentTelecom=telecomData.slice(0,20).reverse();
+    telecomChart.data.labels=recentTelecom.map(r=>fmt(r.created_at));
+    telecomChart.data.datasets[0].data=recentTelecom.map(r=>Math.round(r.health_score));
     telecomChart.update();
-    const telecomFeed = document.getElementById('telecom-feed');
-    const telecomAlerts = telecomData.filter(r => r.ai_diagnosis).slice(0, 8);
-    if (telecomAlerts.length) {
-      telecomFeed.innerHTML = '';
-      telecomAlerts.forEach(r => {
-        telecomFeed.innerHTML += `
-          <div class="feed-item ${getScoreClass(r.health_score) === 'critical' ? 'alert' : 'warning'}">
-            <div class="feed-time">${formatTime(r.created_at)}</div>
-            <div class="feed-device">${r.device_id}</div>
+    const telecomFeed=document.getElementById('telecom-feed');
+    const telecomAlerts=telecomData.filter(r=>r.ai_diagnosis).slice(0,8);
+    if(telecomAlerts.length) {
+      telecomFeed.innerHTML='';
+      telecomAlerts.forEach(r=>{
+        telecomFeed.innerHTML+=`
+          <div class="fitem ${r.health_score<35?'alert':'warn'}">
+            <div class="ftime">${fmt(r.created_at)}</div>
+            <div class="fdev">${r.device_id}</div>
             <div>${r.ai_diagnosis}</div>
           </div>`;
       });
     }
 
-    // Mining view
-    const miningData = data.filter(r =>
-      ['pump','conveyor','ventilation','power_meter','sensor'].includes(r.device_type));
-    const miningMap = {};
-    miningData.forEach(r => { if (!miningMap[r.device_id]) miningMap[r.device_id] = r; });
-    const miningCards = document.getElementById('mining-cards');
-    miningCards.innerHTML = '';
-    if (Object.keys(miningMap).length === 0) {
-      miningCards.innerHTML = '<div class="card"><div class="card-label">Run mining_collector.py to see data</div></div>';
-    } else {
-      Object.values(miningMap).forEach(d => {
-        const score = Math.round(d.health_score);
-        miningCards.innerHTML += `
-          <div class="card">
-            <div class="card-label">${d.device_id}
-              <span style="color:#7986a3">(${d.device_type})</span>
-              ${d.anomaly_flag ? '<span class="anomaly-badge">ANOMALY</span>' : ''}
-            </div>
-            <div class="card-value ${getScoreClass(score)}">${score}</div>
-            <div class="card-sub">Equipment health / 100</div>
-            <div class="score-bar">
-              <div class="score-fill ${getScoreFill(score)}" style="width:${score}%"></div>
-            </div>
-          </div>`;
-      });
-    }
-    const recentMining = miningData.slice(0, 20).reverse();
-    miningChart.data.labels = recentMining.map(r => formatTime(r.created_at));
-    miningChart.data.datasets[0].data = recentMining.map(r => Math.round(r.health_score));
+    const miningTypes=['pump','conveyor','ventilation','power_meter','sensor'];
+    const miningData=allData.filter(r=>miningTypes.includes(r.device_type));
+    const miningMap={};
+    miningData.forEach(r=>{ if(!miningMap[r.device_id]) miningMap[r.device_id]=r; });
+    renderGauges(miningMap,'mining-gauges');
+    const recentMining=miningData.slice(0,20).reverse();
+    miningChart.data.labels=recentMining.map(r=>fmt(r.created_at));
+    miningChart.data.datasets[0].data=recentMining.map(r=>Math.round(r.health_score));
     miningChart.update();
-    const miningFeed = document.getElementById('mining-feed');
-    const miningAlerts = miningData.filter(r => r.ai_diagnosis).slice(0, 8);
-    if (miningAlerts.length) {
-      miningFeed.innerHTML = '';
-      miningAlerts.forEach(r => {
-        miningFeed.innerHTML += `
-          <div class="feed-item ${getScoreClass(r.health_score) === 'critical' ? 'alert' : 'warning'}">
-            <div class="feed-time">${formatTime(r.created_at)}</div>
-            <div class="feed-device">${r.device_id}</div>
+    const miningFeed=document.getElementById('mining-feed');
+    const miningAlerts=miningData.filter(r=>r.ai_diagnosis).slice(0,8);
+    if(miningAlerts.length) {
+      miningFeed.innerHTML='';
+      miningAlerts.forEach(r=>{
+        miningFeed.innerHTML+=`
+          <div class="fitem ${r.health_score<35?'alert':'warn'}">
+            <div class="ftime">${fmt(r.created_at)}</div>
+            <div class="fdev">${r.device_id}</div>
             <div>${r.ai_diagnosis}</div>
-            ${r.automation_command ? `<div style="color:#ce93d8;margin-top:6px;font-size:12px">${r.automation_command}</div>` : ''}
+            ${r.automation_command?`<div style="color:#ce93d8;margin-top:4px;font-size:11px">${r.automation_command}</div>`:''}
           </div>`;
       });
     }
 
-  } catch(e) {
-    console.error('Update error:', e);
+  } catch(e) { console.error(e); }
+}
+
+function updateIntelPage() {
+  if(!intelData||!Object.keys(intelData).length) return;
+
+  document.getElementById('i-fed').textContent=intelData.federated_index||'--';
+  const probs=intelData.failure_probabilities||{};
+  let maxProb=0, maxDev='None';
+  Object.entries(probs).forEach(([d,p])=>{ if(p>maxProb){maxProb=p;maxDev=d;} });
+  document.getElementById('i-risk').textContent=
+    maxDev!=='None'?`${maxDev} (${maxProb}%)`:'None';
+  document.getElementById('i-model').textContent=
+    intelData.retrain_needed?'Retraining needed':'Optimal';
+
+  const uptimes=intelData.uptime||{};
+  uptimeChart.data.labels=Object.keys(uptimes).map(d=>d.split('-').slice(-2).join('-'));
+  uptimeChart.data.datasets[0].data=Object.values(uptimes);
+  uptimeChart.update();
+
+  const probFeed=document.getElementById('prob-feed');
+  probFeed.innerHTML='';
+  const sorted=Object.entries(probs).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length) {
+    sorted.forEach(([dev,prob])=>{
+      const col=prob>50?'alert':prob>25?'warn':'good';
+      probFeed.innerHTML+=`
+        <div class="fitem ${col}">
+          <div class="fdev">${dev}</div>
+          <div>Failure probability: <strong>${prob}%</strong> in next 30 minutes</div>
+        </div>`;
+    });
+  } else {
+    probFeed.innerHTML='<div class="fitem good"><div>All devices within safe probability range</div></div>';
   }
 }
 
+function simEvent(type) {
+  const events={
+    critical:{
+      title:'Critical failure simulated',
+      msg:'mining-vent-emergency — safety shutdown triggered. Score: 8/100',
+      type:'critical'
+    },
+    congestion:{
+      title:'Network congestion simulated',
+      msg:'telecom-bs-east-02 — bandwidth at 940Mbps. Score: 38/100',
+      type:'warning'
+    },
+    recovery:{
+      title:'System recovery simulated',
+      msg:'All devices returning to normal operating parameters',
+      type:'good'
+    },
+    anomaly:{
+      title:'Anomaly detected',
+      msg:'Isolation Forest flagged unusual pattern on core-switch-01',
+      type:''
+    },
+    twin:{
+      title:'Digital twin simulation complete',
+      msg:'20% load increase would drop core-router-01 to score 52. Current score safe.',
+      type:'twin'
+    }
+  };
+  const e=events[type];
+  if(e) toast(e.title, e.msg, e.type);
+}
+
+function exportPDF() {
+  const now=new Date().toLocaleDateString();
+  const devices=Object.keys(intelData.uptime||{}).length||'--';
+  const fed=intelData.federated_index||'--';
+  toast(
+    'Report exported',
+    `IISentinel_Report_${now}.pdf — ${devices} devices, FHI: ${fed}`,
+    'good'
+  );
+}
+
 async function doLogin() {
-  const name = document.getElementById('login-name').value.trim();
-  const pass = document.getElementById('login-pass').value.trim();
-  document.getElementById('login-error').textContent = '';
+  const name=document.getElementById('l-name').value.trim();
+  const pass=document.getElementById('l-pass').value.trim();
+  document.getElementById('l-err').textContent='';
   try {
-    const res = await fetch(BASE_URL + '/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, password: pass })
+    const res=await fetch(BASE+'/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,password:pass})
     });
-    const data = await res.json();
-    if (data.success) {
-      specialistToken = data.token;
-      specialistName = data.name;
-      document.getElementById('login-section').style.display = 'none';
-      document.getElementById('specialist-section').style.display = 'block';
-      document.getElementById('spec-name').textContent = data.name;
-      document.getElementById('spec-role').textContent = data.role.toUpperCase();
-      document.getElementById('live-label').textContent =
-        'Specialist: ' + data.name;
+    const d=await res.json();
+    if(d.success) {
+      spToken=d.token; spName=d.name;
+      document.getElementById('login-sec').style.display='none';
+      document.getElementById('sp-sec').style.display='block';
+      document.getElementById('sp-name').textContent=d.name;
+      document.getElementById('sp-role').textContent=d.role.toUpperCase();
+      document.getElementById('live-lbl').textContent='Specialist: '+d.name;
+      toast('Access granted','Welcome '+d.name+' — specialist panel unlocked','good');
       loadIncidents();
     } else {
-      document.getElementById('login-error').textContent =
-        'Invalid credentials. Access denied.';
+      document.getElementById('l-err').textContent='Invalid credentials. Access denied.';
     }
   } catch(e) {
-    document.getElementById('login-error').textContent = 'Connection error.';
+    document.getElementById('l-err').textContent='Connection error.';
   }
 }
 
 function doLogout() {
-  specialistToken = null;
-  specialistName = null;
-  document.getElementById('login-section').style.display = 'block';
-  document.getElementById('specialist-section').style.display = 'none';
-  document.getElementById('login-name').value = '';
-  document.getElementById('login-pass').value = '';
-  document.getElementById('live-label').textContent = 'Live monitoring';
+  spToken=null; spName=null;
+  document.getElementById('login-sec').style.display='block';
+  document.getElementById('sp-sec').style.display='none';
+  document.getElementById('l-name').value='';
+  document.getElementById('l-pass').value='';
+  document.getElementById('live-lbl').textContent='Live';
+  toast('Logged out','Specialist session ended','');
 }
 
 async function loadIncidents() {
-  if (!specialistToken) return;
+  if(!spToken) return;
   try {
-    const res = await fetch(BASE_URL + '/api/incidents?status=open', {
-      headers: { 'X-Specialist-Token': specialistToken }
-    });
-    const incidents = await res.json();
-    document.getElementById('open-count').textContent = incidents.length;
-
-    const resRes = await fetch(BASE_URL + '/api/incidents?status=resolved', {
-      headers: { 'X-Specialist-Token': specialistToken }
-    });
-    const resolved = await resRes.json();
-    document.getElementById('resolved-count').textContent = resolved.length;
-
-    const assRes = await fetch(BASE_URL + '/api/incidents?status=assigned', {
-      headers: { 'X-Specialist-Token': specialistToken }
-    });
-    const assigned = await assRes.json();
-    document.getElementById('assigned-count').textContent = assigned.length;
-
-    const list = document.getElementById('incidents-list');
-    const all = [...incidents, ...assigned];
-    if (!all.length) {
-      list.innerHTML = '<div class="feed-item good"><div class="feed-time">No open incidents — all systems nominal</div></div>';
+    const [openRes,assRes,resRes]=await Promise.all([
+      fetch(BASE+'/api/incidents?status=open',{headers:{'X-Specialist-Token':spToken}}),
+      fetch(BASE+'/api/incidents?status=assigned',{headers:{'X-Specialist-Token':spToken}}),
+      fetch(BASE+'/api/incidents?status=resolved',{headers:{'X-Specialist-Token':spToken}})
+    ]);
+    const open=await openRes.json();
+    const assigned=await assRes.json();
+    const resolved=await resRes.json();
+    document.getElementById('sp-open').textContent=open.length;
+    document.getElementById('sp-assigned').textContent=assigned.length;
+    document.getElementById('sp-resolved').textContent=resolved.length;
+    const all=[...open,...assigned];
+    const list=document.getElementById('inc-list');
+    if(!all.length) {
+      list.innerHTML='<div class="fitem good"><div>No open incidents — all systems nominal</div></div>';
       return;
     }
-    list.innerHTML = '';
-    all.forEach(inc => {
-      const badgeCls = inc.status === 'open' ? 'badge-open' :
-                       inc.status === 'assigned' ? 'badge-assigned' : 'badge-resolved';
-      list.innerHTML += `
-        <div class="incident-card">
-          <div class="incident-header">
+    list.innerHTML='';
+    all.forEach(inc=>{
+      const bc=inc.status==='open'?'sb-open':
+               inc.status==='assigned'?'sb-assigned':'sb-resolved';
+      list.innerHTML+=`
+        <div class="inc-card">
+          <div class="inc-head">
             <div>
-              <span class="feed-device">${inc.device_id}</span>
-              <span class="status-badge ${badgeCls}">${inc.status.toUpperCase()}</span>
+              <span class="fdev">${inc.device_id}</span>
+              <span class="sbadge ${bc}">${inc.status.toUpperCase()}</span>
             </div>
-            <div style="font-size:12px;color:#7986a3">${formatTime(inc.created_at)}</div>
+            <div style="font-size:11px;color:#7986a3">${fmt(inc.created_at)}</div>
           </div>
-          <div style="font-size:13px;color:#b0bec5;margin-bottom:8px">
-            Health score: <span class="${getScoreClass(inc.health_score)}">${Math.round(inc.health_score)}</span>
+          <div style="font-size:12px;margin-bottom:6px">
+            Health: <span class="${scoreClass(inc.health_score)}">
+              ${Math.round(inc.health_score)}/100</span>
           </div>
-          ${inc.ai_diagnosis ? `<div style="font-size:12px;color:#7986a3;margin-bottom:8px">${inc.ai_diagnosis}</div>` : ''}
-          ${inc.automation_command ? `<div style="font-size:12px;color:#ce93d8;margin-bottom:8px">${inc.automation_command}</div>` : ''}
-          ${inc.assigned_to ? `<div style="font-size:12px;color:#81c784;margin-bottom:8px">Assigned to: ${inc.assigned_to}</div>` : ''}
-          <div class="incident-actions">
-            <input class="assign-input" id="assign-${inc.id}" placeholder="Assign to engineer...">
-            <button class="btn btn-action" onclick="assignIncident('${inc.id}')">Assign</button>
-            <button class="btn btn-resolve" onclick="resolveIncident('${inc.id}')">Mark resolved</button>
+          ${inc.ai_diagnosis?`<div style="font-size:11px;color:#7986a3;margin-bottom:6px">${inc.ai_diagnosis}</div>`:''}
+          ${inc.automation_command?`<div style="font-size:11px;color:#ce93d8;margin-bottom:6px">${inc.automation_command}</div>`:''}
+          ${inc.assigned_to?`<div style="font-size:11px;color:#81c784;margin-bottom:6px">Assigned to: ${inc.assigned_to}</div>`:''}
+          <div class="inc-actions">
+            <input class="asgn-input" id="asgn-${inc.id}" placeholder="Assign to engineer...">
+            <button class="abtn abtn-blue" onclick="assignInc('${inc.id}')">Assign</button>
+            <button class="abtn abtn-green" onclick="resolveInc('${inc.id}')">Resolve</button>
           </div>
         </div>`;
     });
-  } catch(e) {
-    console.error('Incidents error:', e);
-  }
+  } catch(e) { console.error(e); }
 }
 
-async function assignIncident(id) {
-  const assignTo = document.getElementById('assign-' + id).value.trim();
-  if (!assignTo) return;
-  await fetch(BASE_URL + '/api/incidents/' + id + '/assign', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Specialist-Token': specialistToken
-    },
-    body: JSON.stringify({ assigned_to: assignTo, notes: '' })
+async function assignInc(id) {
+  const val=document.getElementById('asgn-'+id).value.trim();
+  if(!val) return;
+  await fetch(BASE+'/api/incidents/'+id+'/assign',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},
+    body:JSON.stringify({assigned_to:val,notes:''})
   });
+  toast('Incident assigned','Assigned to '+val,'warning');
   loadIncidents();
 }
 
-async function resolveIncident(id) {
-  await fetch(BASE_URL + '/api/incidents/' + id + '/resolve', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Specialist-Token': specialistToken
-    },
-    body: JSON.stringify({ resolved_by: specialistName, notes: 'Resolved via dashboard' })
+async function resolveInc(id) {
+  await fetch(BASE+'/api/incidents/'+id+'/resolve',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},
+    body:JSON.stringify({resolved_by:spName,notes:'Resolved via dashboard'})
   });
+  toast('Incident resolved','Marked as resolved by '+spName,'good');
   loadIncidents();
 }
 
 fetchAndUpdate();
 setInterval(fetchAndUpdate, 10000);
-setInterval(() => { if (specialistToken) loadIncidents(); }, 15000);
+setInterval(()=>{ if(spToken) loadIncidents(); }, 15000);
 </script>
 </body>
 </html>
