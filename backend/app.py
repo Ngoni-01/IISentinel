@@ -27,7 +27,8 @@ anomaly_count = 0
 RETRAIN_THRESHOLD = 50
 CBS_SAFETY_THRESHOLD = 90.0
 
-TELECOM_TYPES = ['base_station', 'network_tower', 'microwave_link', 'router', 'switch']
+NETWORK_TYPES = ['router', 'switch', 'firewall', 'wan_link', 'workstation']
+TELECOM_TYPES = ['base_station', 'network_tower', 'microwave_link']
 MINING_TYPES = ['pump', 'conveyor', 'ventilation', 'power_meter', 'sensor',
                 'plc', 'scada_node', 'cbs_controller']
 PROTOCOL_MAP = {
