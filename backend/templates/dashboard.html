@@ -2,304 +2,637 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>IISentinel — Intelligent Infrastructure Sentinel</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+/* ══════════════════════════════════════════════════════════
+   RESET + FONTS
+══════════════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
 :root{
-  --bg:#0a0e1a;--sur:#0d1225;--sur2:#111827;
-  --bdr:#1e2d4a;--bdr2:#2e3d5a;
-  --txt:#e0e6f0;--mut:#7986a3;--hint:#4a5568;
-  --grn:#81c784;--amb:#ffb74d;--red:#ef5350;
-  --blu:#4fc3f7;--pur:#ce93d8;--tel:#4dd0e1;
-  --acc:var(--blu);
+  --bg:#07080f;--s1:#0b0d18;--s2:#0f1120;--s3:#131526;
+  --b1:rgba(255,255,255,0.06);--b2:rgba(255,255,255,0.10);--b3:rgba(255,255,255,0.16);
+  --txt:#e8ecf4;--mut:#8892a4;--dim:#4a526a;
+  --grn:#22d97a;--grn2:#0fba62;--grna:rgba(34,217,122,0.15);
+  --amb:#f5a623;--amba:rgba(245,166,35,0.15);
+  --red:#ff4757;--reda:rgba(255,71,87,0.15);
+  --blu:#38bdf8;--blua:rgba(56,189,248,0.12);
+  --pur:#a78bfa;--pura:rgba(167,139,250,0.15);
+  --tel:#06d6d6;--tela:rgba(6,214,214,0.12);
+  --acc:var(--blu);--acca:var(--blua);
+  --r1:10px;--r2:14px;--r3:20px;
+  --glow-grn:0 0 20px rgba(34,217,122,0.25);
+  --glow-red:0 0 20px rgba(255,71,87,0.3);
+  --glow-blu:0 0 20px rgba(56,189,248,0.2);
+  --glow-amb:0 0 20px rgba(245,166,35,0.25);
+  --glow-pur:0 0 20px rgba(167,139,250,0.2);
+}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  font-size:13px;min-height:100vh;
+  transition:background-color 0.7s,background-image 0.7s;
 }
 
-/* ENVIRONMENT THEMES */
-body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;transition:background 0.8s ease}
+/* ══════════════════════════════════════════════════════════
+   ENVIRONMENT THEMES — each page gets its own world
+══════════════════════════════════════════════════════════ */
+body.env-net{
+  --acc:var(--tel);--acca:var(--tela);
+  background-color:#030c0c;
+  background-image:
+    radial-gradient(ellipse 800px 300px at 50% 0,rgba(6,214,214,0.07) 0,transparent 100%),
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(6,214,214,0.022) 39px,rgba(6,214,214,0.022) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(6,214,214,0.022) 39px,rgba(6,214,214,0.022) 40px);
+}
+body.env-tc{
+  --acc:#60c8ff;--acca:rgba(96,200,255,0.12);
+  background-color:#030810;
+  background-image:
+    radial-gradient(ellipse 900px 500px at 50% 110%,rgba(56,189,248,0.11) 0,transparent 100%),
+    radial-gradient(ellipse 500px 300px at 15% 60%,rgba(56,100,248,0.06) 0,transparent 70%),
+    radial-gradient(ellipse 400px 250px at 85% 30%,rgba(96,200,255,0.05) 0,transparent 70%);
+}
+body.env-tc.loc-byo{
+  background-image:
+    radial-gradient(ellipse 900px 500px at 25% 110%,rgba(56,160,255,0.13) 0,transparent 100%),
+    radial-gradient(ellipse 400px 250px at 10% 50%,rgba(30,80,200,0.08) 0,transparent 60%);
+}
+body.env-tc.loc-hre{
+  background-image:
+    radial-gradient(ellipse 900px 500px at 50% 110%,rgba(56,189,248,0.12) 0,transparent 100%),
+    radial-gradient(ellipse 300px 200px at 70% 40%,rgba(80,180,255,0.06) 0,transparent 50%);
+}
+body.env-tc.loc-mut{
+  background-image:
+    radial-gradient(ellipse 900px 500px at 78% 110%,rgba(6,200,200,0.13) 0,transparent 100%),
+    radial-gradient(ellipse 350px 220px at 85% 55%,rgba(6,180,180,0.07) 0,transparent 60%);
+}
+body.env-mc{
+  --acc:#ffb347;--acca:rgba(255,179,71,0.12);
+  background-color:#090500;
+  background-image:
+    repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(200,100,20,0.028) 22px,rgba(200,100,20,0.028) 23px),
+    repeating-linear-gradient(-38deg,transparent,transparent 22px,rgba(140,70,10,0.022) 22px,rgba(140,70,10,0.022) 23px),
+    radial-gradient(ellipse 700px 400px at 50% 120%,rgba(200,80,10,0.09) 0,transparent 80%);
+}
+body.env-mc.sec-shaft1{
+  background-image:
+    repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(255,100,30,0.032) 22px,rgba(255,100,30,0.032) 23px),
+    radial-gradient(ellipse 700px 400px at 50% 120%,rgba(255,60,20,0.14) 0,transparent 70%);
+}
+body.env-mc.sec-shaft2{
+  background-image:
+    repeating-linear-gradient(38deg,transparent,transparent 18px,rgba(255,60,20,0.038) 18px,rgba(255,60,20,0.038) 19px),
+    radial-gradient(ellipse 700px 350px at 50% 120%,rgba(255,40,10,0.18) 0,transparent 65%);
+}
+body.env-mc.sec-plant{
+  --acc:#ffc060;
+  background-image:
+    repeating-linear-gradient(-45deg,transparent,transparent 24px,rgba(255,160,40,0.025) 24px,rgba(255,160,40,0.025) 25px);
+}
+body.env-mc.sec-surface{
+  --acc:#a0e060;
+  background-image:
+    linear-gradient(180deg,rgba(100,200,60,0.04) 0,transparent 50%),
+    repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(100,180,40,0.018) 22px,rgba(100,180,40,0.018) 23px);
+}
 
-body.t-net{
-  --bg:#060f0f;--sur:#091414;--sur2:#0d1a1a;--bdr:#0e2424;--bdr2:#1a3535;--acc:#4dd0e1;
-  background:#060f0f;
-  background-image:
-    linear-gradient(rgba(77,208,225,0.04) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(77,208,225,0.04) 1px,transparent 1px);
-  background-size:40px 40px;
-}
+/* ══════════════════════════════════════════════════════════
+   KEYFRAMES
+══════════════════════════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideR{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes spin{to{stroke-dashoffset:0}}
+@keyframes cbsBlink{0%,100%{box-shadow:0 0 0 0 var(--reda)}60%{box-shadow:0 0 0 10px rgba(255,71,87,0)}}
+@keyframes countUp{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+@keyframes borderFlow{0%,100%{border-color:rgba(255,255,255,0.06)}50%{border-color:var(--acc)}}
 
-body.t-tc{
-  --bg:#05081a;--sur:#080d28;--sur2:#0c1230;--bdr:#101840;--bdr2:#1a2555;--acc:#4fc3f7;
-  background:#05081a;
-  background-image:radial-gradient(ellipse at 50% 120%,rgba(79,195,247,0.12) 0%,transparent 65%);
-}
-body.t-tc.loc-byo{
-  background-image:radial-gradient(ellipse at 20% 110%,rgba(79,195,247,0.14) 0%,rgba(100,180,255,0.06) 40%,transparent 65%);
-}
-body.t-tc.loc-hre{
-  background-image:radial-gradient(ellipse at 50% 110%,rgba(79,195,247,0.13) 0%,transparent 65%),
-                   radial-gradient(ellipse at 80% 90%,rgba(79,195,247,0.05) 0%,transparent 40%);
-}
-body.t-tc.loc-mut{
-  background-image:radial-gradient(ellipse at 80% 105%,rgba(77,208,225,0.14) 0%,rgba(79,195,247,0.06) 40%,transparent 65%);
-}
-
-body.t-mc{
-  --bg:#100a04;--sur:#180e06;--sur2:#1f1208;--bdr:#2d1a08;--bdr2:#3d2410;--acc:#ffb74d;
-  background:#100a04;
-  background-image:
-    repeating-linear-gradient(35deg,transparent,transparent 18px,rgba(255,183,77,0.025) 18px,rgba(255,183,77,0.025) 19px),
-    repeating-linear-gradient(-35deg,transparent,transparent 18px,rgba(139,90,43,0.03) 18px,rgba(139,90,43,0.03) 19px);
-}
-body.t-mc.sec-shaft1{
-  background-image:
-    repeating-linear-gradient(35deg,transparent,transparent 18px,rgba(255,183,77,0.035) 18px,rgba(255,183,77,0.035) 19px),
-    radial-gradient(ellipse at 50% 150%,rgba(239,83,80,0.18) 0%,transparent 55%);
-}
-body.t-mc.sec-shaft2{
-  background-image:
-    repeating-linear-gradient(35deg,transparent,transparent 18px,rgba(255,100,50,0.04) 18px,rgba(255,100,50,0.04) 19px),
-    radial-gradient(ellipse at 50% 150%,rgba(239,83,80,0.22) 0%,transparent 50%);
-}
-body.t-mc.sec-plant{
-  background-image:
-    repeating-linear-gradient(-45deg,transparent,transparent 20px,rgba(255,183,77,0.03) 20px,rgba(255,183,77,0.03) 21px);
-}
-body.t-mc.sec-surface{
-  background-image:
-    linear-gradient(rgba(129,193,132,0.04) 0%,transparent 60%),
-    repeating-linear-gradient(35deg,transparent,transparent 18px,rgba(129,193,132,0.02) 18px,rgba(129,193,132,0.02) 19px);
-}
-
-/* ANIMATIONS */
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes slideR{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-@keyframes cbsPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,83,80,0.4)}70%{box-shadow:0 0 0 8px rgba(239,83,80,0)}}
-@keyframes envFade{from{opacity:0}to{opacity:1}}
-.env-anim{animation:envFade 0.6s ease}
-
-/* LAYOUT */
+/* ══════════════════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════════════════ */
 header{
-  background:var(--sur);border-bottom:1px solid var(--bdr);
-  padding:12px 22px;display:flex;align-items:center;
-  justify-content:space-between;position:sticky;top:0;z-index:100;
-  transition:background 0.8s,border-color 0.8s;
+  background:rgba(11,13,24,0.92);
+  border-bottom:1px solid var(--b1);
+  padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  transition:background 0.6s,border-color 0.6s;
 }
-.logo{font-size:17px;font-weight:700;color:var(--acc);letter-spacing:1px;transition:color 0.5s}
+.logo{
+  font-size:17px;font-weight:700;
+  color:var(--acc);letter-spacing:1.5px;
+  transition:color 0.5s;
+  text-shadow:0 0 30px var(--acca);
+}
 .logo b{color:var(--grn)}
-.hdr-mid{text-align:center;font-size:10px;color:var(--mut)}
-.hdr-r{display:flex;align-items:center;gap:8px}
-.ldot{width:7px;height:7px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
-.ltxt{font-size:11px;color:var(--grn)}
-.btn{padding:6px 13px;border-radius:7px;border:none;cursor:pointer;font-size:11px;font-weight:700;transition:opacity 0.2s,transform 0.15s}
-.btn:active{transform:scale(0.96)}.btn:hover{opacity:0.85}
-.btn-acc{background:var(--acc);color:#0a0e1a}
-.btn-pur{background:var(--pur);color:#0a0e1a}
+.hctr{text-align:center}
+.hctr-main{font-size:12px;color:var(--mut);font-weight:500}
+.hctr-sub{font-size:10px;color:var(--dim);margin-top:2px}
+.hrgt{display:flex;align-items:center;gap:10px}
+
+/* Live indicator */
+.live-wrap{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--grna);border-radius:20px;border:1px solid rgba(34,217,122,0.2)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
+.live-txt{font-size:10px;font-weight:700;color:var(--grn);letter-spacing:.5px}
+
+/* Buttons */
+.btn{
+  padding:7px 14px;border-radius:8px;border:none;
+  cursor:pointer;font-size:11px;font-weight:700;
+  letter-spacing:.3px;transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .2s}
+.btn:hover::after{background:rgba(255,255,255,0.1)}
+.btn:active{transform:scale(0.95)}
+.btn-acc{background:var(--acc);color:#050810}
+.btn-pur{background:var(--pur);color:#1a0f3a;width:100%;padding:10px}
 .btn-red{background:var(--red);color:#fff}
-.btn-grn{background:var(--grn);color:#0a0e1a}
-.btn-amb{background:var(--amb);color:#0a0e1a}
+.btn-grn{background:var(--grn);color:#031a0e}
+.btn-amb{background:var(--amb);color:#1a0e00}
 
-nav{background:var(--sur);border-bottom:1px solid var(--bdr);padding:0 22px;display:flex;gap:2px;overflow-x:auto;transition:background 0.8s}
-nav::-webkit-scrollbar{display:none}
-.tab{padding:9px 14px;font-size:11px;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;user-select:none}
-.tab:hover{color:var(--txt)}
-.tab.active{color:var(--acc);border-bottom-color:var(--acc)}
-.tab.sp{color:var(--pur)}.tab.sp.active{border-bottom-color:var(--pur);color:var(--pur)}
-.tab.cbs-t{color:var(--red)}.tab.cbs-t.active{border-bottom-color:var(--red);color:var(--red)}
+/* ══════════════════════════════════════════════════════════
+   MAIN NAV
+══════════════════════════════════════════════════════════ */
+nav.mnav{
+  background:rgba(11,13,24,0.85);
+  border-bottom:1px solid var(--b1);
+  padding:0 20px;display:flex;gap:0;
+  overflow-x:auto;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  transition:background 0.6s;
+}
+nav.mnav::-webkit-scrollbar{display:none}
+.ntab{
+  padding:11px 15px;font-size:11px;font-weight:600;
+  cursor:pointer;color:var(--dim);
+  border-bottom:2px solid transparent;
+  transition:all .25s;white-space:nowrap;
+  user-select:none;letter-spacing:.2px;
+  position:relative;
+}
+.ntab:hover{color:var(--mut);background:rgba(255,255,255,0.03)}
+.ntab.active{color:var(--acc);border-bottom-color:var(--acc)}
+.ntab.active::before{
+  content:'';position:absolute;bottom:-1px;left:0;right:0;
+  height:2px;background:var(--acc);
+  box-shadow:0 0 12px var(--acc),0 0 4px var(--acc);
+}
+.ntab.t-sp{color:var(--dim)}.ntab.t-sp.active{color:var(--pur);border-bottom-color:var(--pur)}
+.ntab.t-sp.active::before{background:var(--pur);box-shadow:0 0 12px var(--pur)}
+.ntab.t-cbs{color:var(--dim)}.ntab.t-cbs.active{color:var(--red);border-bottom-color:var(--red)}
+.ntab.t-cbs.active::before{background:var(--red);box-shadow:0 0 12px var(--red)}
 
-/* SUBLOCATION TABS */
-.subloc{background:var(--sur2);border-bottom:1px solid var(--bdr);padding:0 22px;display:none;gap:2px;transition:background 0.8s}
-.subloc.visible{display:flex}
-.sloc-tab{padding:7px 12px;font-size:10px;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;border-radius:4px 4px 0 0}
-.sloc-tab:hover{color:var(--txt);background:rgba(255,255,255,0.03)}
-.sloc-tab.active{color:var(--acc);border-bottom-color:var(--acc);font-weight:700}
-.env-label{padding:7px 0;font-size:10px;color:var(--mut);display:flex;align-items:center;margin-right:8px}
+/* ══════════════════════════════════════════════════════════
+   SUB-LOCATION TABS
+══════════════════════════════════════════════════════════ */
+.subloc{
+  background:rgba(10,11,20,0.7);
+  border-bottom:1px solid var(--b1);
+  padding:8px 20px;display:none;
+  gap:6px;align-items:center;flex-wrap:wrap;
+  backdrop-filter:blur(12px);
+}
+.subloc.vis{display:flex;animation:fadeIn .25s ease}
+.sl-label{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-right:4px}
+.stab{
+  padding:5px 13px;border-radius:20px;
+  border:1px solid var(--b1);background:transparent;
+  color:var(--dim);cursor:pointer;font-size:10px;font-weight:700;
+  transition:all .2s;white-space:nowrap;letter-spacing:.2px;
+}
+.stab:hover{color:var(--txt);border-color:var(--b2);background:var(--s2)}
+.stab.active{
+  background:var(--acc);color:#050810;
+  border-color:var(--acc);
+  box-shadow:0 0 14px var(--acca);
+}
 
-.wrap{padding:16px 22px}
-.page{display:none;animation:fadeUp 0.3s ease}
-.page.active{display:block}
-.sl{font-size:10px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+/* ══════════════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════════════ */
+.wrap{padding:16px 20px;min-height:calc(100vh - 130px)}
+.page{display:none}
+.page.active{display:block;animation:fadeUp .32s ease}
+.sl{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px}
 
-/* ENVIRONMENT HEADER CARD */
-.env-header{border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;transition:all 0.5s}
-.env-header.net{background:linear-gradient(135deg,#091414,#0d1f1f);border-color:#1a3535}
-.env-header.tc{background:linear-gradient(135deg,#080d28,#0c1535);border-color:#1a2555}
-.env-header.mc{background:linear-gradient(135deg,#180e06,#221408);border-color:#3d2410}
-.env-title{font-size:16px;font-weight:700;color:var(--acc)}
-.env-sub{font-size:11px;color:var(--mut);margin-top:3px}
-.env-proto{font-size:10px;background:var(--bdr2);border-radius:5px;padding:3px 8px;color:var(--mut)}
+/* ══════════════════════════════════════════════════════════
+   GLASSMORPHISM CARD BASE
+══════════════════════════════════════════════════════════ */
+.glass{
+  background:rgba(15,17,32,0.7);
+  border:1px solid var(--b1);border-radius:var(--r2);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  transition:border-color .3s,box-shadow .3s,transform .25s;
+}
+.glass:hover{border-color:var(--b2);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
 
-/* BANNER */
-.banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:16px}
-.bc{background:var(--sur);border:1px solid var(--bdr);border-radius:9px;padding:12px 14px;animation:fadeUp 0.4s ease both;transition:background 0.8s,border-color 0.8s}
-.bl{font-size:9px;color:var(--mut);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.4px}
-.bv{font-size:20px;font-weight:700}
+/* ══════════════════════════════════════════════════════════
+   ENVIRONMENT HEADER CARD
+══════════════════════════════════════════════════════════ */
+.env-hdr{
+  border-radius:var(--r2);padding:16px 20px;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;
+  border:1px solid var(--b1);
+  transition:all .5s;position:relative;overflow:hidden;
+}
+.env-hdr::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);
+  opacity:.6;transition:opacity .5s;
+}
+.env-hdr.e-net{background:linear-gradient(135deg,rgba(6,214,214,0.06),rgba(3,12,12,0.95));border-color:rgba(6,214,214,0.2)}
+.env-hdr.e-tc{background:linear-gradient(135deg,rgba(56,189,248,0.07),rgba(3,8,16,0.95));border-color:rgba(56,189,248,0.2)}
+.env-hdr.e-mc{background:linear-gradient(135deg,rgba(245,166,35,0.07),rgba(9,5,0,0.95));border-color:rgba(245,166,35,0.2)}
+.env-name{font-size:15px;font-weight:700;color:var(--acc);letter-spacing:.3px}
+.env-sub{font-size:11px;color:var(--mut);margin-top:4px;line-height:1.5}
+.env-proto{
+  font-size:10px;padding:4px 10px;border-radius:6px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--b1);
+  color:var(--mut);white-space:nowrap;font-weight:600;
+}
 
-/* GAUGES */
-.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:9px;margin-bottom:16px}
-.gc{background:var(--sur);border:1px solid var(--bdr);border-radius:11px;padding:13px;text-align:center;transition:border-color 0.3s,transform 0.2s,background 0.8s;animation:fadeUp 0.35s ease both;cursor:default}
-.gc:hover{transform:translateY(-2px)}
-.gc.gg{border-color:var(--grn)}.gc.gw{border-color:var(--amb)}.gc.gr{border-color:var(--red)}
-.gc.gcbs{border:1px solid var(--red);animation:cbsPulse 2s infinite}
-.gw2{position:relative;width:78px;height:78px;margin:0 auto 7px}
-.gw2 svg{width:100%;height:100%}
-.gval{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:15px;font-weight:700}
-.gid{font-size:10px;color:var(--mut);margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gtype{font-size:9px;color:var(--hint);margin-top:2px}
-.gprob{font-size:9px;margin-top:3px}
-.gup{font-size:9px;color:var(--mut);margin-top:2px}
-.gpill{display:inline-block;font-size:8px;padding:1px 5px;border-radius:5px;font-weight:700;vertical-align:middle;margin-left:2px}
-.p-anom{background:var(--red);color:#fff}
-.p-hold{background:var(--red);color:#fff;animation:pulse 0.8s infinite}
-.p-proto{background:var(--bdr2);color:var(--mut)}
-.p-loc{background:rgba(79,195,247,0.15);color:var(--acc);border:1px solid rgba(79,195,247,0.2)}
+/* ══════════════════════════════════════════════════════════
+   BANNER / SUMMARY CARDS
+══════════════════════════════════════════════════════════ */
+.banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:14px}
+.bcard{
+  background:rgba(15,17,32,0.75);
+  border:1px solid var(--b1);border-radius:var(--r1);
+  padding:13px 15px;cursor:default;
+  transition:all .28s;position:relative;overflow:hidden;
+  animation:fadeUp .4s ease both;
+}
+.bcard::before{
+  content:'';position:absolute;top:0;left:0;width:3px;height:100%;
+  background:var(--acc);opacity:.5;border-radius:3px 0 0 3px;
+  transition:opacity .3s;
+}
+.bcard:hover{
+  border-color:var(--b2);transform:translateY(-2px);
+  box-shadow:0 10px 28px rgba(0,0,0,0.5);
+}
+.bcard:hover::before{opacity:1}
+.bl{font-size:9px;color:var(--dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.bv{font-size:22px;font-weight:700;line-height:1;transition:all .4s}
+.bsub{font-size:9px;color:var(--dim);margin-top:4px}
 
-/* CHARTS */
-.cg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
-.cc{background:var(--sur);border:1px solid var(--bdr);border-radius:11px;padding:15px;transition:background 0.8s,border-color 0.8s}
-.ct{font-size:11px;font-weight:600;color:#b0bec5;margin-bottom:11px}
-canvas{max-height:160px}
+/* ══════════════════════════════════════════════════════════
+   GAUGE GRID — THE MAIN STAR
+══════════════════════════════════════════════════════════ */
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px;margin-bottom:14px}
 
-/* FEEDS */
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
-.fc2{background:var(--sur);border:1px solid var(--bdr);border-radius:11px;padding:15px;max-height:250px;overflow-y:auto;transition:background 0.8s,border-color 0.8s}
-.fc2::-webkit-scrollbar{width:3px}
-.fc2::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:2px}
-.fi{padding:8px 10px;border-radius:6px;background:var(--sur2);margin-bottom:6px;border-left:3px solid var(--acc);font-size:11px;line-height:1.5;animation:slideR 0.3s ease}
-.fi.fa{border-left-color:var(--red)}.fi.fw{border-left-color:var(--amb)}
-.fi.fg2{border-left-color:var(--grn)}.fi.fp{border-left-color:var(--pur)}
-.fi.ft{border-left-color:var(--tel)}.fi.fcbs{border-left-color:var(--red);background:#1a0808}
-.ft2{font-size:9px;color:var(--mut);margin-bottom:2px}
-.fd{font-weight:600;color:var(--acc);margin-bottom:2px}
+.gcard{
+  background:rgba(14,16,28,0.8);
+  border:1px solid var(--b1);border-radius:var(--r2);
+  padding:14px 12px;text-align:center;
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:all .3s;
+  animation:fadeUp .35s ease both;
+}
+.gcard::after{
+  content:'';position:absolute;inset:0;border-radius:var(--r2);
+  background:radial-gradient(circle at 50% 50%,rgba(255,255,255,0.04),transparent 70%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.gcard:hover{transform:translateY(-4px) scale(1.01);border-color:var(--b2)}
+.gcard:hover::after{opacity:1}
+.gcard.g-ok:hover{border-color:rgba(34,217,122,.4);box-shadow:0 8px 28px rgba(34,217,122,.12),0 0 0 1px rgba(34,217,122,.15)}
+.gcard.g-warn:hover{border-color:rgba(245,166,35,.4);box-shadow:0 8px 28px rgba(245,166,35,.12),0 0 0 1px rgba(245,166,35,.15)}
+.gcard.g-crit:hover{border-color:rgba(255,71,87,.4);box-shadow:0 8px 28px rgba(255,71,87,.12),0 0 0 1px rgba(255,71,87,.15)}
+.gcard.g-cbs{border-color:rgba(255,71,87,.3);animation:cbsBlink 2.2s infinite,fadeUp .35s ease both}
 
-/* LOCATION SECTION CARDS */
-.loc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:16px}
-.loc-card{background:var(--sur);border:1px solid var(--bdr);border-radius:11px;padding:15px;transition:border-color 0.3s}
-.loc-card:hover{border-color:var(--acc)}
-.loc-title{font-size:13px;font-weight:700;color:var(--acc);margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.loc-sub{font-size:10px;color:var(--mut);margin-bottom:10px}
-.loc-stat{display:flex;justify-content:space-between;margin-bottom:6px;font-size:11px}
-.loc-bar{height:4px;background:var(--bdr);border-radius:2px;overflow:hidden;margin-top:3px}
-.loc-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+/* Tooltip that appears on hover */
+.gcard .gtip{
+  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:rgba(10,12,22,0.97);border:1px solid var(--b2);
+  border-radius:9px;padding:10px 13px;
+  font-size:10px;color:var(--txt);text-align:left;
+  white-space:nowrap;z-index:300;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+  box-shadow:0 8px 24px rgba(0,0,0,.7);
+  min-width:180px;
+}
+.gcard .gtip::before{
+  content:'';position:absolute;top:-5px;left:50%;transform:translateX(-50%);
+  width:9px;height:9px;background:rgba(10,12,22,0.97);
+  border-left:1px solid var(--b2);border-top:1px solid var(--b2);
+  transform:translateX(-50%) rotate(45deg);
+}
+.gcard:hover .gtip{opacity:1}
+.gtip-row{display:flex;justify-content:space-between;gap:16px;margin-bottom:4px}
+.gtip-row:last-child{margin-bottom:0}
+.gtip-lbl{color:var(--dim)}
+.gtip-val{font-weight:700}
 
-/* CBS */
-.cbs-panel{background:#120808;border:2px solid var(--red);border-radius:11px;padding:16px;margin-bottom:16px}
-.cbs-title{color:var(--red);font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:7px}
-.cbsdot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 0.8s infinite}
-.cbs-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:9px;margin-bottom:12px}
-.cbs-dev{background:#1a0a0a;border:1px solid #3d1010;border-radius:8px;padding:11px}
-.cbs-safe{color:var(--grn);font-weight:700}
-.cbs-hold{color:var(--red);font-weight:700;animation:pulse 0.8s infinite}
+.gwrap{position:relative;width:76px;height:76px;margin:0 auto 8px}
+.gwrap svg{width:100%;height:100%}
+.gval{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:16px;font-weight:700;line-height:1;
+}
+.gsub{font-size:9px;color:var(--dim);margin-top:1px}
+.gid{font-size:10px;color:var(--mut);margin-bottom:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.gtype{font-size:9px;color:var(--dim);margin-top:3px}
+.gproto-pill{
+  display:inline-block;font-size:8px;padding:2px 6px;
+  border-radius:5px;background:rgba(255,255,255,0.05);
+  border:1px solid var(--b1);color:var(--dim);margin-top:4px;font-weight:700;
+}
+.gprob{font-size:9px;margin-top:4px;font-weight:600}
+.gup{font-size:9px;color:var(--dim);margin-top:2px}
 
-/* INTELLIGENCE */
-.ig{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:9px;margin-bottom:16px}
-.ic{background:var(--sur2);border:1px solid var(--bdr);border-radius:9px;padding:13px 15px}
-.it{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px}
-.iv{font-size:17px;font-weight:700}
-.is{font-size:9px;color:var(--mut);margin-top:3px}
+/* Gauge ring animation */
+.gring{
+  stroke-dashoffset:0;
+  transition:stroke-dasharray .9s cubic-bezier(.4,0,.2,1),stroke .4s;
+}
+.gtrack{stroke:rgba(255,255,255,0.04)}
 
-/* PROTOCOL LEGEND */
-.proto-leg{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
-.pb{background:var(--sur2);border:1px solid var(--bdr2);border-radius:5px;padding:3px 9px;font-size:9px;color:var(--mut)}
-.pb span{color:var(--txt);font-weight:600}
+/* Status pills */
+.pill{
+  display:inline-block;font-size:8px;padding:2px 6px;
+  border-radius:6px;font-weight:800;vertical-align:middle;
+  margin-left:3px;letter-spacing:.3px;
+}
+.p-anom{background:rgba(255,71,87,.2);color:var(--red);border:1px solid rgba(255,71,87,.3)}
+.p-hold{background:rgba(255,71,87,.2);color:var(--red);border:1px solid rgba(255,71,87,.3);animation:pulse .8s infinite}
+.p-loc{background:rgba(56,189,248,.1);color:var(--blu);border:1px solid rgba(56,189,248,.2)}
 
-/* RETRAIN */
-.retrain{background:#1a1200;border:1px solid var(--amb);border-radius:7px;padding:9px 13px;margin-bottom:13px;font-size:11px;color:var(--amb);display:none}
+/* ══════════════════════════════════════════════════════════
+   LOCATION SUMMARY CARDS (TC + MC section cards)
+══════════════════════════════════════════════════════════ */
+.locgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:14px}
+.lcard{
+  background:rgba(14,16,28,0.8);border:1px solid var(--b1);
+  border-radius:var(--r2);padding:15px 17px;
+  transition:all .28s;cursor:default;position:relative;overflow:hidden;
+}
+.lcard::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--acc);border-radius:3px 0 0 3px;
+  transition:all .3s;
+}
+.lcard:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,.5)}
+.lcard:hover::before{box-shadow:0 0 12px var(--acc)}
+.lcard-title{font-size:13px;font-weight:700;color:var(--acc);margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.lcard-sub{font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.5}
+.lstat{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:11px}
+.lstat-l{color:var(--mut)}
+.lstat-v{font-weight:700}
+.lbar{height:4px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:5px;overflow:hidden}
+.lbar-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
 
-/* SIM */
-.sim{background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:13px;margin-bottom:16px}
-.sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+/* ══════════════════════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════════════════════ */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.ccard{
+  background:rgba(14,16,28,0.8);border:1px solid var(--b1);
+  border-radius:var(--r2);padding:15px;
+  transition:border-color .3s;
+}
+.ccard:hover{border-color:var(--b2)}
+.ctitle{font-size:11px;font-weight:600;color:var(--mut);margin-bottom:12px;letter-spacing:.2px}
+canvas{max-height:160px!important}
 
-/* TOASTS */
-#toasts{position:fixed;top:62px;right:13px;z-index:9999;width:270px}
-.toast{background:var(--sur);border:1px solid var(--bdr);border-left:3px solid var(--acc);border-radius:7px;padding:9px 11px;margin-bottom:6px;font-size:11px;animation:slideR 0.3s ease;box-shadow:0 4px 14px rgba(0,0,0,0.5)}
-.toast.tc{border-left-color:var(--red)}.toast.tw{border-left-color:var(--amb)}
-.toast.tg{border-left-color:var(--grn)}.toast.tp{border-left-color:var(--pur)}
-.tttl{font-weight:700;margin-bottom:2px}.tmsg{color:#b0bec5;font-size:10px}
+/* ══════════════════════════════════════════════════════════
+   FEEDS
+══════════════════════════════════════════════════════════ */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.fcard{
+  background:rgba(14,16,28,0.8);border:1px solid var(--b1);
+  border-radius:var(--r2);padding:15px;
+  max-height:260px;overflow-y:auto;
+}
+.fcard::-webkit-scrollbar{width:3px}
+.fcard::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.fcard::-webkit-scrollbar-track{background:transparent}
+.fitem{
+  padding:9px 11px;border-radius:8px;
+  background:rgba(255,255,255,0.025);
+  margin-bottom:7px;border-left:3px solid var(--acc);
+  font-size:11px;line-height:1.5;
+  animation:slideR .3s ease;
+  transition:background .2s;
+}
+.fitem:hover{background:rgba(255,255,255,0.04)}
+.fitem.fi-ok{border-left-color:var(--grn)}
+.fitem.fi-warn{border-left-color:var(--amb)}
+.fitem.fi-crit{border-left-color:var(--red)}
+.fitem.fi-pur{border-left-color:var(--pur)}
+.fitem.fi-tel{border-left-color:var(--tel)}
+.fitem.fi-cbs{border-left-color:var(--red);background:rgba(255,71,87,.04)}
+.fitem.fi-cbs:hover{background:rgba(255,71,87,.07)}
+.ftime{font-size:9px;color:var(--dim);margin-bottom:2px}
+.fdev{font-weight:700;color:var(--acc);margin-bottom:2px;transition:color .4s}
 
-/* LOGIN */
-.lbox{max-width:340px;margin:45px auto;background:var(--sur);border:1px solid var(--bdr);border-radius:13px;padding:30px}
-.ltitle{font-size:15px;font-weight:700;color:var(--pur);margin-bottom:4px}
-.lsub{font-size:11px;color:var(--mut);margin-bottom:22px}
+/* ══════════════════════════════════════════════════════════
+   INTELLIGENCE CARDS
+══════════════════════════════════════════════════════════ */
+.igrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:9px;margin-bottom:14px}
+.icard{
+  background:rgba(14,16,28,0.85);border:1px solid var(--b1);
+  border-radius:var(--r1);padding:13px 15px;
+  transition:all .28s;
+}
+.icard:hover{border-color:var(--b2);transform:translateY(-2px)}
+.ititle{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;font-weight:700}
+.ival{font-size:20px;font-weight:700;line-height:1;animation:countUp .4s ease}
+.isub{font-size:9px;color:var(--dim);margin-top:4px}
+
+/* ══════════════════════════════════════════════════════════
+   CBS PANEL
+══════════════════════════════════════════════════════════ */
+.cbs-outer{
+  background:rgba(30,8,8,0.7);border:1.5px solid rgba(255,71,87,.35);
+  border-radius:var(--r2);padding:16px;margin-bottom:14px;
+  position:relative;overflow:hidden;
+}
+.cbs-outer::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,71,87,.5),transparent);
+}
+.cbs-title{color:var(--red);font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cbsdot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse .8s infinite;flex-shrink:0}
+.cbsdesc{font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.6}
+.cbsgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px;margin-bottom:12px}
+.cbsdev{
+  background:rgba(20,8,8,0.7);border:1px solid rgba(255,71,87,.2);
+  border-radius:9px;padding:12px;transition:all .25s;
+}
+.cbsdev:hover{border-color:rgba(255,71,87,.4);box-shadow:0 4px 16px rgba(255,71,87,.1)}
+.cbs-safe{color:var(--grn);font-weight:700;font-size:11px}
+.cbs-hold{color:var(--red);font-weight:700;font-size:11px;animation:pulse .8s infinite}
+
+/* ══════════════════════════════════════════════════════════
+   SIM BUTTONS
+══════════════════════════════════════════════════════════ */
+.sim-wrap{
+  background:rgba(14,16,28,0.8);border:1px solid var(--b1);
+  border-radius:var(--r2);padding:14px;margin-bottom:14px;
+}
+.sbtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+
+/* ══════════════════════════════════════════════════════════
+   PROTOCOL LEGEND
+══════════════════════════════════════════════════════════ */
+.protos{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.ptag{
+  font-size:9px;padding:4px 10px;border-radius:6px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--b1);
+  color:var(--dim);font-weight:600;transition:all .2s;
+}
+.ptag:hover{border-color:var(--b2);color:var(--mut)}
+.ptag b{color:var(--txt)}
+
+/* ══════════════════════════════════════════════════════════
+   TOASTS
+══════════════════════════════════════════════════════════ */
+#toasts{position:fixed;top:68px;right:14px;z-index:9999;width:275px}
+.toast{
+  background:rgba(11,13,24,0.96);border:1px solid var(--b2);
+  border-left:3px solid var(--acc);border-radius:10px;
+  padding:11px 13px;margin-bottom:8px;font-size:11px;
+  animation:slideR .3s ease;
+  box-shadow:0 8px 28px rgba(0,0,0,.7);
+  backdrop-filter:blur(20px);
+}
+.toast.tc{border-left-color:var(--red);box-shadow:0 8px 28px rgba(0,0,0,.7),0 0 20px rgba(255,71,87,.1)}
+.toast.tw{border-left-color:var(--amb)}
+.toast.tg{border-left-color:var(--grn);box-shadow:0 8px 28px rgba(0,0,0,.7),0 0 20px rgba(34,217,122,.08)}
+.toast.tp{border-left-color:var(--pur)}
+.ttitle{font-weight:700;margin-bottom:2px;font-size:12px}
+.tmsg{color:var(--mut);font-size:10px;line-height:1.4}
+
+/* ══════════════════════════════════════════════════════════
+   RETRAIN BANNER
+══════════════════════════════════════════════════════════ */
+.retrain{
+  background:rgba(26,18,0,.6);border:1px solid rgba(245,166,35,.3);
+  border-radius:9px;padding:10px 14px;margin-bottom:13px;
+  font-size:11px;color:var(--amb);display:none;line-height:1.5;
+}
+
+/* ══════════════════════════════════════════════════════════
+   LOGIN + SPECIALIST
+══════════════════════════════════════════════════════════ */
+.lbox{
+  max-width:340px;margin:44px auto;
+  background:rgba(14,16,28,0.9);border:1px solid var(--b1);
+  border-radius:var(--r3);padding:32px;
+  backdrop-filter:blur(20px);
+}
+.ltitle{font-size:16px;font-weight:700;color:var(--pur);margin-bottom:4px}
+.lsub{font-size:11px;color:var(--dim);margin-bottom:24px;line-height:1.5}
 .lg{margin-bottom:13px}
-.ll{font-size:9px;color:var(--mut);margin-bottom:5px;display:block}
-.li{width:100%;padding:8px 10px;background:var(--sur2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt);font-size:12px;outline:none;transition:border-color 0.2s}
-.li:focus{border-color:var(--pur)}
-.lerr{color:var(--red);font-size:10px;margin-top:7px;text-align:center}
-
-/* SPECIALIST */
-.sphead{background:rgba(13,13,31,0.8);border:1px solid #3d2d6b;border-radius:9px;padding:11px 15px;margin-bottom:15px;display:flex;align-items:center;justify-content:space-between}
+.ll{font-size:9px;color:var(--dim);margin-bottom:6px;display:block;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.li{
+  width:100%;padding:9px 12px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--b1);border-radius:8px;
+  color:var(--txt);font-size:13px;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+.li:focus{border-color:rgba(167,139,250,.5);box-shadow:0 0 0 3px rgba(167,139,250,.1)}
+.lerr{color:var(--red);font-size:10px;margin-top:9px;text-align:center}
+.sphead{
+  background:rgba(13,10,26,.6);border:1px solid rgba(167,139,250,.2);
+  border-radius:10px;padding:12px 16px;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;
+}
 .spname{color:var(--pur);font-weight:700;font-size:13px}
-.sprole{color:var(--mut);font-size:9px}
-.inc{background:var(--sur2);border:1px solid var(--bdr);border-radius:8px;padding:12px;margin-bottom:8px}
-.inch{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.inca{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
-.ai{background:var(--sur);border:1px solid var(--bdr);border-radius:5px;color:var(--txt);padding:4px 8px;font-size:10px;width:140px;outline:none}
-.sb{display:inline-block;font-size:8px;padding:2px 5px;border-radius:5px;font-weight:700;margin-left:4px}
-.sbo{background:var(--red);color:#fff}.sba{background:var(--amb);color:#0a0e1a}.sbr{background:var(--grn);color:#0a0e1a}
+.sprole{color:var(--dim);font-size:9px;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+.inccard{
+  background:rgba(14,16,28,0.8);border:1px solid var(--b1);
+  border-radius:10px;padding:13px;margin-bottom:9px;
+  transition:border-color .2s;
+}
+.inccard:hover{border-color:var(--b2)}
+.inch{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.inca{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.ainput{
+  background:rgba(255,255,255,0.04);border:1px solid var(--b1);
+  border-radius:6px;color:var(--txt);padding:5px 9px;
+  font-size:10px;width:145px;outline:none;transition:border-color .2s;
+}
+.ainput:focus{border-color:var(--b2)}
+.sbadge{display:inline-block;font-size:8px;padding:2px 6px;border-radius:6px;font-weight:800;margin-left:5px;letter-spacing:.3px}
+.sb-o{background:var(--reda);color:var(--red);border:1px solid rgba(255,71,87,.3)}
+.sb-a{background:var(--amba);color:var(--amb);border:1px solid rgba(245,166,35,.3)}
+.sb-r{background:var(--grna);color:var(--grn);border:1px solid rgba(34,217,122,.3)}
 
-/* COLOR HELPERS */
-.gc_{color:var(--grn)}.wc{color:var(--amb)}.rc{color:var(--red)}.bc{color:var(--acc)}.pc{color:var(--pur)}
+/* ══════════════════════════════════════════════════════════
+   COLOR HELPERS
+══════════════════════════════════════════════════════════ */
+.cg{color:var(--grn)}.cw{color:var(--amb)}.cr{color:var(--red)}.cb{color:var(--blu)}.ca{color:var(--acc)}.cp{color:var(--pur)}
 
-@media(max-width:600px){
-  .cg,.fg{grid-template-columns:1fr}
+@media(max-width:640px){
+  .cgrid,.fgrid{grid-template-columns:1fr}
   .banner{grid-template-columns:1fr 1fr}
   .wrap{padding:10px 12px}
-  header{padding:9px 12px}
+  header{padding:8px 12px}
+  .ggrid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
 }
 </style>
 </head>
 <body>
+
 <div id="toasts"></div>
 
 <header>
   <div class="logo">II<b>Sentinel</b></div>
-  <div class="hdr-mid">
-    <div>Intelligent Infrastructure Sentinel</div>
-    <div style="font-size:9px;opacity:0.6">Network · Telecom · Mining · CBS Safety</div>
+  <div class="hctr">
+    <div class="hctr-main">Intelligent Infrastructure Sentinel</div>
+    <div class="hctr-sub">Network · Telecom · Mining · CBS Safety</div>
   </div>
-  <div class="hdr-r">
-    <div class="ldot"></div>
-    <span class="ltxt" id="live-lbl">Live</span>
-    <button class="btn btn-acc" onclick="exportReport()">Export report</button>
+  <div class="hrgt">
+    <div class="live-wrap">
+      <div class="live-dot"></div>
+      <span class="live-txt" id="live-lbl">LIVE</span>
+    </div>
+    <button class="btn btn-acc" onclick="exportReport()">Export PDF</button>
   </div>
 </header>
 
-<nav>
-  <div class="tab active" onclick="goPage(this,'main')">Dashboard</div>
-  <div class="tab" onclick="goPage(this,'net')">Network infra</div>
-  <div class="tab" onclick="goPage(this,'telecom')">TelecomCo</div>
-  <div class="tab" onclick="goPage(this,'mining')">MiningCo</div>
-  <div class="tab" onclick="goPage(this,'intel')">Intelligence</div>
-  <div class="tab cbs-t" onclick="goPage(this,'cbs')">CBS Safety</div>
-  <div class="tab sp" onclick="goPage(this,'specialist')">Specialist</div>
+<nav class="mnav">
+  <div class="ntab active" onclick="goPage(this,'main')">Dashboard</div>
+  <div class="ntab" onclick="goPage(this,'net')">Network infra</div>
+  <div class="ntab" onclick="goPage(this,'tc')">TelecomCo</div>
+  <div class="ntab" onclick="goPage(this,'mc')">MiningCo</div>
+  <div class="ntab" onclick="goPage(this,'intel')">Intelligence</div>
+  <div class="ntab t-cbs" onclick="goPage(this,'cbs')">CBS Safety</div>
+  <div class="ntab t-sp" onclick="goPage(this,'sp')">Specialist</div>
 </nav>
 
-<!-- SUBLOCATION BARS -->
 <div class="subloc" id="sub-net">
-  <div class="env-label">Network layer:</div>
-  <div class="sloc-tab active" onclick="setLoc('net','all',this)">All sites</div>
-  <div class="sloc-tab" onclick="setLoc('net','byo',this)">Bulawayo HQ</div>
-  <div class="sloc-tab" onclick="setLoc('net','hre',this)">Harare</div>
-  <div class="sloc-tab" onclick="setLoc('net','mut',this)">Mutare</div>
+  <span class="sl-label">Network layer</span>
+  <button class="stab active" onclick="setSub('net','all',this)">All sites</button>
+  <button class="stab" onclick="setSub('net','byo',this)">Bulawayo HQ</button>
+  <button class="stab" onclick="setSub('net','hre',this)">Harare</button>
+  <button class="stab" onclick="setSub('net','mut',this)">Mutare</button>
 </div>
-
-<div class="subloc" id="sub-telecom">
-  <div class="env-label">TelecomCo site:</div>
-  <div class="sloc-tab active" onclick="setLoc('tc','all',this)">All sites</div>
-  <div class="sloc-tab" onclick="setLoc('tc','byo',this)">Bulawayo HQ</div>
-  <div class="sloc-tab" onclick="setLoc('tc','hre',this)">Harare</div>
-  <div class="sloc-tab" onclick="setLoc('tc','mut',this)">Mutare</div>
+<div class="subloc" id="sub-tc">
+  <span class="sl-label">TelecomCo site</span>
+  <button class="stab active" onclick="setSub('tc','all',this)">All sites</button>
+  <button class="stab" onclick="setSub('tc','byo',this)">Bulawayo HQ</button>
+  <button class="stab" onclick="setSub('tc','hre',this)">Harare</button>
+  <button class="stab" onclick="setSub('tc','mut',this)">Mutare</button>
 </div>
-
-<div class="subloc" id="sub-mining">
-  <div class="env-label">MiningCo section:</div>
-  <div class="sloc-tab active" onclick="setLoc('mc','all',this)">All sections</div>
-  <div class="sloc-tab" onclick="setLoc('mc','shaft1',this)">Shaft 1</div>
-  <div class="sloc-tab" onclick="setLoc('mc','shaft2',this)">Shaft 2</div>
-  <div class="sloc-tab" onclick="setLoc('mc','plant',this)">Processing plant</div>
-  <div class="sloc-tab" onclick="setLoc('mc','surface',this)">Surface infra</div>
+<div class="subloc" id="sub-mc">
+  <span class="sl-label">MiningCo section</span>
+  <button class="stab active" onclick="setSub('mc','all',this)">All sections</button>
+  <button class="stab" onclick="setSub('mc','shaft1',this)">Shaft 1</button>
+  <button class="stab" onclick="setSub('mc','shaft2',this)">Shaft 2</button>
+  <button class="stab" onclick="setSub('mc','plant',this)">Processing plant</button>
+  <button class="stab" onclick="setSub('mc','surface',this)">Surface infra</button>
 </div>
 
 <div class="wrap">
@@ -310,172 +643,151 @@ canvas{max-height:160px}
 <!-- MAIN DASHBOARD -->
 <div class="page active" id="page-main">
   <div class="banner" id="main-banner">
-    <div class="bc"><div class="bl">Infrastructure health index</div><div class="bv gc_" id="b-fhi">--</div></div>
-    <div class="bc"><div class="bl">Active devices</div><div class="bv bc" id="b-devs">--</div></div>
-    <div class="bc"><div class="bl">Risk cost estimate</div><div class="bv rc" id="b-cost">$0</div></div>
-    <div class="bc"><div class="bl">Open incidents</div><div class="bv wc" id="b-inc">--</div></div>
-    <div class="bc"><div class="bl">Anomalies</div><div class="bv pc" id="b-anom">--</div></div>
-    <div class="bc"><div class="bl">CBS status</div><div class="bv gc_" id="b-cbs">ARMED</div></div>
+    <div class="bcard"><div class="bl">Infrastructure health</div><div class="bv cg" id="b-fhi">--</div><div class="bsub">Federated index</div></div>
+    <div class="bcard"><div class="bl">Active devices</div><div class="bv ca" id="b-devs">--</div><div class="bsub">All sectors</div></div>
+    <div class="bcard"><div class="bl">Risk cost estimate</div><div class="bv cr" id="b-cost">$0</div><div class="bsub">Current exposure</div></div>
+    <div class="bcard"><div class="bl">Open incidents</div><div class="bv cw" id="b-inc">--</div><div class="bsub">Score below 50</div></div>
+    <div class="bcard"><div class="bl">Anomalies</div><div class="bv cp" id="b-anom">--</div><div class="bsub">Isolation Forest</div></div>
+    <div class="bcard"><div class="bl">CBS status</div><div class="bv cg" id="b-cbs">ARMED</div><div class="bsub">DNP3 link health</div></div>
   </div>
-  <div class="sl">All devices — health gauges</div>
-  <div class="gg" id="main-gauges"></div>
-  <div class="cg">
-    <div class="cc"><div class="ct">Health score trend</div><canvas id="hChart"></canvas></div>
-    <div class="cc"><div class="ct">Predicted vs actual</div><canvas id="pChart"></canvas></div>
+  <div class="sl">All devices — hover any gauge for detail</div>
+  <div class="ggrid" id="main-gauges"></div>
+  <div class="cgrid">
+    <div class="ccard"><div class="ctitle">Health score trend — all sectors</div><canvas id="cMain"></canvas></div>
+    <div class="ccard"><div class="ctitle">Predicted vs actual health</div><canvas id="cPred"></canvas></div>
   </div>
-  <div class="fg">
-    <div class="fc2"><div class="sl">AI diagnosis feed</div><div id="diag-feed"></div></div>
-    <div class="fc2"><div class="sl">Automation log</div><div id="auto-feed"></div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="sl">AI diagnosis feed</div><div id="f-diag"></div></div>
+    <div class="fcard"><div class="sl">Automation command log</div><div id="f-auto"></div></div>
   </div>
-  <div class="sim">
-    <div class="sl">Simulate live events</div>
+  <div class="sim-wrap">
+    <div class="sl">Simulate live events — demo controls</div>
     <div class="sbtns">
       <button class="btn btn-red" onclick="sim('critical')">Critical failure</button>
-      <button class="btn btn-amb" onclick="sim('congestion')">Congestion</button>
-      <button class="btn btn-grn" onclick="sim('recovery')">Recovery</button>
-      <button class="btn btn-pur" onclick="sim('anomaly')">Anomaly</button>
-      <button class="btn btn-acc" onclick="sim('twin')">Digital twin</button>
+      <button class="btn btn-amb" onclick="sim('congestion')">Congestion event</button>
+      <button class="btn btn-grn" onclick="sim('recovery')">System recovery</button>
+      <button class="btn btn-pur" style="background:var(--pur);color:#1a0f3a" onclick="sim('anomaly')">Anomaly detect</button>
+      <button class="btn btn-acc" onclick="sim('twin')">Digital twin run</button>
       <button class="btn btn-red" onclick="sim('blast')">CBS blast hold</button>
     </div>
   </div>
 </div>
 
-<!-- NETWORK INFRA PAGE -->
+<!-- NETWORK INFRA -->
 <div class="page" id="page-net">
-  <div class="env-header net env-anim">
-    <div>
-      <div class="env-title">Network Infrastructure</div>
-      <div class="env-sub">Routers · Switches · Firewalls · WAN links — Ethernet IEEE 802.3 backbone</div>
-    </div>
-    <div class="env-proto">SNMP · BGP/OSPF · ICMP · NetFlow</div>
+  <div class="env-hdr e-net"><div><div class="env-name">Network Infrastructure</div><div class="env-sub">Core routers · Distribution switches · Firewalls · WAN links<br>Protocol: SNMP v2/v3 over Ethernet IEEE 802.3</div></div><div class="env-proto">SNMP · BGP · OSPF · NetFlow</div></div>
+  <div class="banner">
+    <div class="bcard"><div class="bl">Network FHI</div><div class="bv ca" id="net-fhi">--</div></div>
+    <div class="bcard"><div class="bl">Active nodes</div><div class="bv ca" id="net-devs">--</div></div>
+    <div class="bcard"><div class="bl">Network faults</div><div class="bv cr" id="net-faults">0</div></div>
+    <div class="bcard"><div class="bl">Avg latency</div><div class="bv cw" id="net-lat">--ms</div></div>
   </div>
-  <div class="banner" id="net-banner">
-    <div class="bc"><div class="bl">Network FHI</div><div class="bv bc" id="net-fhi">--</div></div>
-    <div class="bc"><div class="bl">Active nodes</div><div class="bv bc" id="net-devs">--</div></div>
-    <div class="bc"><div class="bl">Network faults</div><div class="bv rc" id="net-faults">0</div></div>
-    <div class="bc"><div class="bl">Avg latency</div><div class="bv wc" id="net-lat">--ms</div></div>
+  <div class="sl">Network device health gauges</div>
+  <div class="ggrid" id="net-gauges"></div>
+  <div class="cgrid">
+    <div class="ccard"><div class="ctitle">Network health trend</div><canvas id="cNet"></canvas></div>
+    <div class="ccard"><div class="ctitle">Latency over time (ms)</div><canvas id="cNetL"></canvas></div>
   </div>
-  <div class="sl">Network device gauges — routers, switches, firewalls</div>
-  <div class="gg" id="net-gauges"></div>
-  <div class="cg">
-    <div class="cc"><div class="ct">Network health trend</div><canvas id="netHChart"></canvas></div>
-    <div class="cc"><div class="ct">Latency over time</div><canvas id="netLChart"></canvas></div>
-  </div>
-  <div class="fg">
-    <div class="fc2"><div class="sl">Network fault log</div><div id="net-feed"></div></div>
-    <div class="fc2"><div class="sl">Network automation</div><div id="net-auto"></div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="sl">Network fault log</div><div id="net-feed"></div></div>
+    <div class="fcard"><div class="sl">Network automation commands</div><div id="net-auto"></div></div>
   </div>
 </div>
 
-<!-- TELECOMCO PAGE -->
-<div class="page" id="page-telecom">
-  <div class="env-header tc env-anim">
-    <div>
-      <div class="env-title" id="tc-env-title">TelecomCo — All Sites</div>
-      <div class="env-sub">Base stations · Network towers · Microwave backhaul links</div>
-    </div>
-    <div class="env-proto">SNMP · BGP · Microwave · LTE backhaul</div>
+<!-- TELECOMCO -->
+<div class="page" id="page-tc">
+  <div class="env-hdr e-tc"><div><div class="env-name" id="tc-envname">TelecomCo — All Sites</div><div class="env-sub">Base stations · Network towers · Microwave backhaul links<br>Bulawayo HQ · Harare · Mutare border relay</div></div><div class="env-proto">SNMP · MW backhaul · LTE · IEEE 802.3</div></div>
+  <div class="banner">
+    <div class="bcard"><div class="bl">Site health index</div><div class="bv ca" id="tc-fhi">--</div></div>
+    <div class="bcard"><div class="bl">Active nodes</div><div class="bv ca" id="tc-devs">--</div></div>
+    <div class="bcard"><div class="bl">Open faults</div><div class="bv cr" id="tc-faults">0</div></div>
+    <div class="bcard"><div class="bl">Avg signal</div><div class="bv cg" id="tc-sig">--%</div></div>
   </div>
-  <div class="banner" id="tc-banner">
-    <div class="bc"><div class="bl">Site FHI</div><div class="bv bc" id="tc-fhi">--</div></div>
-    <div class="bc"><div class="bl">Active nodes</div><div class="bv bc" id="tc-devs">--</div></div>
-    <div class="bc"><div class="bl">Open faults</div><div class="bv rc" id="tc-faults">0</div></div>
-    <div class="bc"><div class="bl">Signal avg</div><div class="bv gc_" id="tc-sig">--%</div></div>
+  <div class="locgrid" id="tc-loccards"></div>
+  <div class="sl" id="tc-gl">TelecomCo device gauges</div>
+  <div class="ggrid" id="tc-gauges"></div>
+  <div class="cgrid">
+    <div class="ccard"><div class="ctitle">TelecomCo health trend</div><canvas id="cTcH"></canvas></div>
+    <div class="ccard"><div class="ctitle">Signal strength over time</div><canvas id="cTcS"></canvas></div>
   </div>
-
-  <div class="loc-grid" id="tc-loc-cards"></div>
-
-  <div class="sl" id="tc-gauge-label">TelecomCo device gauges</div>
-  <div class="gg" id="tc-gauges"></div>
-  <div class="cg">
-    <div class="cc"><div class="ct">TelecomCo health trend</div><canvas id="tcChart"></canvas></div>
-    <div class="cc"><div class="ct">Signal strength trend</div><canvas id="tcSigChart"></canvas></div>
-  </div>
-  <div class="fg">
-    <div class="fc2"><div class="sl">Fault log</div><div id="tc-feed"></div></div>
-    <div class="fc2"><div class="sl">Automation commands</div><div id="tc-auto"></div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="sl">TelecomCo fault log</div><div id="tc-feed"></div></div>
+    <div class="fcard"><div class="sl">TelecomCo automation commands</div><div id="tc-auto"></div></div>
   </div>
 </div>
 
-<!-- MININGCO PAGE -->
-<div class="page" id="page-mining">
-  <div class="env-header mc env-anim">
-    <div>
-      <div class="env-title" id="mc-env-title">MiningCo — All Sections</div>
-      <div class="env-sub">PLCs · Pumps · Conveyors · Ventilation · Power meters</div>
-    </div>
-    <div class="env-proto">Profinet · Modbus TCP · EtherNet/IP · OPC-UA</div>
+<!-- MININGCO -->
+<div class="page" id="page-mc">
+  <div class="env-hdr e-mc"><div><div class="env-name" id="mc-envname">MiningCo — All Sections</div><div class="env-sub">PLCs · Pumps · Conveyors · Ventilation · CBS controller<br>Shaft 1 · Shaft 2 · Processing Plant · Surface Ops</div></div><div class="env-proto">Profinet · Modbus TCP · OPC-UA · DNP3</div></div>
+  <div class="banner">
+    <div class="bcard"><div class="bl">Section health</div><div class="bv cw" id="mc-fhi">--</div></div>
+    <div class="bcard"><div class="bl">Active assets</div><div class="bv ca" id="mc-devs">--</div></div>
+    <div class="bcard"><div class="bl">Safety alerts</div><div class="bv cr" id="mc-alerts">0</div></div>
+    <div class="bcard"><div class="bl">Critical assets</div><div class="bv cr" id="mc-crit">0</div></div>
   </div>
-  <div class="banner" id="mc-banner">
-    <div class="bc"><div class="bl">Section FHI</div><div class="bv wc" id="mc-fhi">--</div></div>
-    <div class="bc"><div class="bl">Active assets</div><div class="bv bc" id="mc-devs">--</div></div>
-    <div class="bc"><div class="bl">Safety alerts</div><div class="bv rc" id="mc-alerts">0</div></div>
-    <div class="bc"><div class="bl">Critical assets</div><div class="bv rc" id="mc-crit">0</div></div>
+  <div class="locgrid" id="mc-seccards"></div>
+  <div class="sl" id="mc-gl">MiningCo asset gauges</div>
+  <div class="ggrid" id="mc-gauges"></div>
+  <div class="cgrid">
+    <div class="ccard"><div class="ctitle">Equipment health trend</div><canvas id="cMcH"></canvas></div>
+    <div class="ccard"><div class="ctitle">Temperature monitoring (°C)</div><canvas id="cMcT"></canvas></div>
   </div>
-
-  <div class="loc-grid" id="mc-sec-cards"></div>
-
-  <div class="sl" id="mc-gauge-label">MiningCo asset gauges</div>
-  <div class="gg" id="mc-gauges"></div>
-  <div class="cg">
-    <div class="cc"><div class="ct">Equipment health trend</div><canvas id="mcChart"></canvas></div>
-    <div class="cc"><div class="ct">Temperature monitoring</div><canvas id="mcTempChart"></canvas></div>
-  </div>
-  <div class="fg">
-    <div class="fc2"><div class="sl">Safety alerts</div><div id="mc-feed"></div></div>
-    <div class="fc2"><div class="sl">Automation commands</div><div id="mc-auto"></div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="sl">Safety alerts — selected section</div><div id="mc-feed"></div></div>
+    <div class="fcard"><div class="sl">MiningCo automation commands</div><div id="mc-auto"></div></div>
   </div>
 </div>
 
-<!-- INTELLIGENCE PAGE -->
+<!-- INTELLIGENCE -->
 <div class="page" id="page-intel">
   <div class="sl">Platform intelligence — real-time AI insights</div>
-  <div class="ig">
-    <div class="ic"><div class="it">Federated health index</div><div class="iv gc_" id="i-fhi">--</div><div class="is">Weighted all assets</div></div>
-    <div class="ic"><div class="it">Highest failure risk</div><div class="iv rc" id="i-risk">--</div><div class="is">Next 30 minutes</div></div>
-    <div class="ic"><div class="it">Cross-device correlation</div><div class="iv wc" id="i-corr">--</div><div class="is">Linked degradation</div></div>
-    <div class="ic"><div class="it">Model status</div><div class="iv gc_" id="i-model">Optimal</div><div class="is">Anomalies vs threshold</div></div>
-    <div class="ic"><div class="it">Total devices</div><div class="iv bc" id="i-devs">--</div><div class="is">Across all sectors</div></div>
+  <div class="igrid">
+    <div class="icard"><div class="ititle">Federated health index</div><div class="ival cg" id="i-fhi">--</div><div class="isub">Weighted across all assets</div></div>
+    <div class="icard"><div class="ititle">Highest failure risk</div><div class="ival cr" id="i-risk">--</div><div class="isub">Next 30 minutes</div></div>
+    <div class="icard"><div class="ititle">Correlated events</div><div class="ival cw" id="i-corr">--</div><div class="isub">Linked degradation</div></div>
+    <div class="icard"><div class="ititle">Model status</div><div class="ival cg" id="i-model">Optimal</div><div class="isub">Anomalies vs threshold</div></div>
+    <div class="icard"><div class="ititle">Total devices</div><div class="ival ca" id="i-devs">--</div><div class="isub">All sectors combined</div></div>
+    <div class="icard"><div class="ititle">Anomaly count</div><div class="ival cp" id="i-anom">--</div><div class="isub">Isolation Forest flags</div></div>
   </div>
-  <div class="fg">
-    <div class="fc2"><div class="sl">Digital twin insights</div><div id="twin-feed"></div></div>
-    <div class="fc2"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="sl">Digital twin insights</div><div id="twin-feed"><div class="fitem fi-tel"><div class="ftime">Engine active</div><div>Simulating 20% load increase across all connected devices</div></div></div></div>
+    <div class="fcard"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
   </div>
-  <div class="cc" style="margin-bottom:16px"><div class="ct">Device uptime percentage</div><canvas id="uptimeChart"></canvas></div>
-  <div class="proto-leg">
-    <div class="pb"><span>IEEE 802.3</span> — Ethernet backbone</div>
-    <div class="pb"><span>SNMP v2/v3</span> — device metrics</div>
-    <div class="pb"><span>Profinet</span> — PLC real-time</div>
-    <div class="pb"><span>Modbus TCP</span> — sensor registers</div>
-    <div class="pb"><span>EtherNet/IP</span> — conveyor control</div>
-    <div class="pb"><span>DNP3</span> — CBS safety</div>
-    <div class="pb"><span>OPC-UA</span> — SCADA exchange</div>
+  <div class="ccard" style="margin-bottom:14px"><div class="ctitle">Device uptime percentage — all assets</div><canvas id="cUp"></canvas></div>
+  <div class="protos">
+    <div class="ptag"><b>IEEE 802.3</b> — Ethernet backbone</div>
+    <div class="ptag"><b>SNMP v2/v3</b> — device metrics</div>
+    <div class="ptag"><b>Profinet</b> — PLC real-time</div>
+    <div class="ptag"><b>Modbus TCP</b> — sensor registers</div>
+    <div class="ptag"><b>EtherNet/IP</b> — conveyor control</div>
+    <div class="ptag"><b>DNP3</b> — CBS safety protocol</div>
+    <div class="ptag"><b>OPC-UA</b> — SCADA exchange</div>
   </div>
 </div>
 
-<!-- CBS PAGE -->
+<!-- CBS SAFETY -->
 <div class="page" id="page-cbs">
-  <div class="cbs-panel">
+  <div class="cbs-outer">
     <div class="cbs-title"><div class="cbsdot"></div>Centralised Blasting System — DNP3 Safety Monitor</div>
-    <div style="font-size:10px;color:var(--mut);margin-bottom:12px">Protocol: DNP3 over Ethernet IEEE 802.3 · Safety threshold: 90% · Auto blast hold enabled</div>
-    <div class="cbs-g" id="cbs-devs"></div>
-    <div style="background:#0a0404;border:1px solid #3d1010;border-radius:7px;padding:11px">
-      <div class="sl" style="color:var(--red)">CBS interlock log</div>
+    <div class="cbsdesc">Protocol: DNP3 over Ethernet IEEE 802.3 · Safety threshold: 90% link health · Auto blast hold enabled<br>Mine section: Surface Ops · All detonation circuits monitored in real time</div>
+    <div class="cbsgrid" id="cbs-devs"></div>
+    <div style="background:rgba(10,4,4,0.6);border:1px solid rgba(255,71,87,.15);border-radius:9px;padding:12px">
+      <div class="sl" style="color:var(--red)">CBS safety interlock log</div>
       <div id="cbs-log"></div>
     </div>
   </div>
-  <div class="cc"><div class="ct">CBS link health — blast hold triggers below 90%</div><canvas id="cbsChart"></canvas></div>
+  <div class="ccard"><div class="ctitle">CBS link health over time — blast hold triggers at 90%</div><canvas id="cCbs"></canvas></div>
 </div>
 
-<!-- SPECIALIST PAGE -->
-<div class="page" id="page-specialist">
+<!-- SPECIALIST -->
+<div class="page" id="page-sp">
   <div id="login-sec">
     <div class="lbox">
       <div class="ltitle">Specialist access</div>
-      <div class="lsub">Restricted to authorised engineers and administrators only.</div>
-      <div class="lg"><label class="ll">Username</label><input class="li" type="text" id="l-name" placeholder="Enter username"></div>
-      <div class="lg"><label class="ll">Password</label><input class="li" type="password" id="l-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <button class="btn btn-pur" style="width:100%;padding:9px" onclick="doLogin()">Access specialist panel</button>
+      <div class="lsub">Restricted to authorised engineers and administrators only. All access is logged and audited.</div>
+      <div class="lg"><label class="ll">Username</label><input class="li" id="l-name" type="text" placeholder="Enter username"></div>
+      <div class="lg"><label class="ll">Password</label><input class="li" id="l-pass" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-pur" onclick="doLogin()">Access specialist panel</button>
       <div class="lerr" id="l-err"></div>
     </div>
   </div>
@@ -485,402 +797,426 @@ canvas{max-height:160px}
       <button class="btn btn-red" onclick="doLogout()">Log out</button>
     </div>
     <div class="banner" style="grid-template-columns:repeat(3,1fr)">
-      <div class="bc"><div class="bl">Open incidents</div><div class="bv rc" id="sp-open">0</div></div>
-      <div class="bc"><div class="bl">Assigned</div><div class="bv wc" id="sp-asgn">0</div></div>
-      <div class="bc"><div class="bl">Resolved</div><div class="bv gc_" id="sp-res">0</div></div>
+      <div class="bcard"><div class="bl">Open incidents</div><div class="bv cr" id="sp-open">0</div></div>
+      <div class="bcard"><div class="bl">Assigned</div><div class="bv cw" id="sp-asgn">0</div></div>
+      <div class="bcard"><div class="bl">Resolved</div><div class="bv cg" id="sp-res">0</div></div>
     </div>
-    <div class="sl">Active incidents</div>
+    <div class="sl">Active incidents — assign and resolve</div>
     <div id="inc-list"></div>
   </div>
 </div>
-
 </div>
 
 <script>
 const B=window.location.origin;
 let spToken=null,spName=null,intel={},allData=[];
-let curNetLoc='all',curTcLoc='all',curMcSec='all';
+let curNet='all',curTc='all',curMc='all';
 
 const NET_TYPES=['router','switch','firewall','wan_link','workstation'];
 const TC_TYPES=['base_station','network_tower','microwave_link'];
 const MC_TYPES=['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node'];
 const CBS_TYPES=['cbs_controller'];
 
-const TC_LOCS={
-  all:{label:'All Sites',sub:'Bulawayo · Harare · Mutare'},
-  byo:{label:'Bulawayo HQ',sub:'Home base — Matabeleland operations centre'},
-  hre:{label:'Harare',sub:'Capital city operations — Mashonaland hub'},
-  mut:{label:'Mutare',sub:'Eastern Highlands relay — border coverage'}
+const TC_META={
+  all:{name:'All Sites',sub:'Bulawayo HQ · Harare · Mutare'},
+  byo:{name:'Bulawayo HQ',sub:'Home base — Matabeleland operations centre'},
+  hre:{name:'Harare',sub:'Capital city — Mashonaland hub operations'},
+  mut:{name:'Mutare',sub:'Eastern Highlands relay — border coverage'},
 };
-const MC_SECS={
-  all:{label:'All Sections',sub:'Full mine overview'},
-  shaft1:{label:'Shaft 1',sub:'Level 3–7 underground — primary extraction'},
-  shaft2:{label:'Shaft 2',sub:'Level 5–10 underground — secondary extraction'},
-  plant:{label:'Processing Plant',sub:'Surface — ore processing and beneficiation'},
-  surface:{label:'Surface Infrastructure',sub:'Workshops, power, water treatment'}
+const MC_META={
+  all:{name:'All Sections',sub:'Full mine overview'},
+  shaft1:{name:'Shaft 1 — Level 3–7',sub:'Primary extraction — underground heat +30%'},
+  shaft2:{name:'Shaft 2 — Level 5–10',sub:'Secondary extraction — deepest section'},
+  plant:{name:'Processing Plant',sub:'Surface — ore processing and beneficiation'},
+  surface:{name:'Surface Infrastructure',sub:'Power, water, CBS detonator control'},
 };
 
+/* ── Helpers ── */
 function sc(s){return s>=70?'var(--grn)':s>=40?'var(--amb)':'var(--red)'}
-function scc(s){return s>=70?'gc_':s>=40?'wc':'rc'}
-function fmtT(ts){return new Date(ts).toLocaleTimeString()}
-function fmtCost(dm){
-  return Object.values(dm).reduce((c,d)=>c+(d.health_score<20?5000:d.health_score<35?2000:d.health_score<50?800:0),0);
-}
-function fhi(scores){
-  if(!scores.length)return 100;
-  const w=scores.map(s=>s<20?s*0.5:s<50?s*0.8:s);
+function scc(s){return s>=70?'cg':s>=40?'cw':'cr'}
+function fmt(ts){return new Date(ts).toLocaleTimeString()}
+function fhi(arr){
+  if(!arr.length)return 100;
+  const w=arr.map(s=>s<20?s*.5:s<50?s*.8:s);
   return Math.round(w.reduce((a,b)=>a+b,0)/w.length);
 }
-function gauge(s,col){
-  const r=32,cx=39,cy=39,ci=2*Math.PI*r;
-  const d=(ci*(s/100)).toFixed(1),o=(ci*0.25).toFixed(1);
-  return `<svg viewBox="0 0 78 78"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1e2d4a" stroke-width="6"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="6" stroke-dasharray="${d} ${ci.toFixed(1)}" stroke-dashoffset="${o}" stroke-linecap="round" style="transition:stroke-dasharray 0.9s ease"/></svg>`;
+function cost(dm){
+  return Object.values(dm).reduce((c,d)=>c+(d.health_score<20?5000:d.health_score<35?2000:d.health_score<50?800:0),0);
+}
+function sid(id){const p=id.split('-');return p.slice(-2).join('-')}
+function loc(id){return id.split('-')[1]||''}
+function getProto(d){
+  if(d.device_id.includes('cbs')) return 'DNP3';
+  if(d.device_type==='plc'||d.device_id.includes('profinet')) return 'Profinet';
+  if(d.device_type==='scada_node'||d.device_id.includes('modbus')) return 'Modbus';
+  if(TC_TYPES.includes(d.device_type)||NET_TYPES.includes(d.device_type)) return 'SNMP';
+  return 'Ethernet';
+}
+function isNet(r){return NET_TYPES.includes(r.device_type)}
+function isTc(r){return TC_TYPES.includes(r.device_type)}
+function isMc(r){return MC_TYPES.includes(r.device_type)}
+function isCbs(r){return CBS_TYPES.includes(r.device_type)||r.device_id.startsWith('cbs')}
+
+function filterLoc(data,fn,loc){
+  const b=data.filter(fn);
+  return loc==='all'?b:b.filter(r=>r.device_id.includes('-'+loc+'-'));
 }
 
-function mkGauges(data,cid,filterFn,locFilter){
+/* ── Gauge SVG ── */
+function gaugeSVG(s,col){
+  const r=32,cx=38,cy=38,ci=2*Math.PI*r;
+  const d=(ci*(s/100)).toFixed(2),o=(ci*.25).toFixed(2);
+  return `<svg viewBox="0 0 76 76">
+    <circle class="gtrack" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke-width="7"/>
+    <circle class="gring" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="7"
+      stroke-dasharray="${d} ${ci.toFixed(2)}" stroke-dashoffset="${o}"
+      stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ── Gauge grid builder with full hover tooltip ── */
+function mkGauges(data,cid,fn,locFilter){
   const el=document.getElementById(cid);if(!el)return;
   const dm={};
-  data.filter(r=>filterFn(r)&&(locFilter?r.device_id.includes('-'+locFilter+'-'):true))
-      .forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  (locFilter?filterLoc(data,fn,locFilter):data.filter(fn))
+    .forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
   const entries=Object.values(dm);
-  if(!entries.length){el.innerHTML='<div class="gc"><div class="gid">No data — run collector</div></div>';return;}
+  if(!entries.length){el.innerHTML='<div class="gcard" style="cursor:default"><div class="gid">Run collector — awaiting data</div></div>';return;}
   el.innerHTML='';
   entries.forEach((d,i)=>{
     const s=Math.round(d.health_score);
     const col=sc(s);
+    const isCbs_=isCbs(d);
     const prob=intel.failure_probabilities?.[d.device_id]||0;
-    const up=intel.uptime?.[d.device_id]||100;
-    const isCBS=CBS_TYPES.includes(d.device_type);
-    const proto=d.ai_diagnosis?.includes('DNP3')?'DNP3':
-                d.ai_diagnosis?.includes('Profinet')?'Profinet':
-                d.ai_diagnosis?.includes('SNMP')?'SNMP':
-                d.ai_diagnosis?.includes('Modbus')?'Modbus':'Eth';
-    const parts=d.device_id.split('-');
-    const locPart=parts[1]||'';
+    const up=Math.round(intel.uptime?.[d.device_id]||100);
+    const proto=getProto(d);
+    const locPart=loc(d.device_id);
+    const gclass=(s>=70?'g-ok':s>=40?'g-warn':'g-crit')+(isCbs_?' g-cbs':'');
+
+    /* Tooltip rows */
+    const tipProb=`<div class="gtip-row"><span class="gtip-lbl">Fail risk</span><span class="gtip-val" style="color:${prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'}">${prob}%</span></div>`;
+    const tipUp=`<div class="gtip-row"><span class="gtip-lbl">Uptime</span><span class="gtip-val" style="color:var(--grn)">${up}%</span></div>`;
+    const tipProto=`<div class="gtip-row"><span class="gtip-lbl">Protocol</span><span class="gtip-val">${proto}</span></div>`;
+    const tipPred=`<div class="gtip-row"><span class="gtip-lbl">Predicted</span><span class="gtip-val" style="color:var(--amb)">${Math.round(d.predicted_score||s)}/100</span></div>`;
+    const tipAnom=d.anomaly_flag?`<div class="gtip-row"><span class="gtip-lbl">Anomaly</span><span class="gtip-val" style="color:var(--red)">Flagged</span></div>`:'';
+    const tipCmd=d.automation_command?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.06);font-size:9px;color:var(--amb);line-height:1.4">${d.automation_command.substring(0,80)}${d.automation_command.length>80?'…':''}</div>`:'';
+
     el.innerHTML+=`
-      <div class="gc ${s>=70?'gg':s>=40?'gw':'gr'} ${isCBS?'gcbs':''}" style="animation-delay:${i*0.05}s">
-        <div class="gid">${parts.slice(-2).join('-')}
-          ${d.anomaly_flag?'<span class="gpill p-anom">ANOM</span>':''}
-          ${isCBS&&s<90?'<span class="gpill p-hold">HOLD</span>':''}
-          ${locPart&&locPart!==parts[0]?`<span class="gpill p-loc">${locPart.toUpperCase()}</span>`:''}
+      <div class="gcard ${gclass}" style="animation-delay:${i*.05}s">
+        <div class="gid">${sid(d.device_id)}
+          ${d.anomaly_flag?'<span class="pill p-anom">ANOM</span>':''}
+          ${isCbs_&&s<90?'<span class="pill p-hold">HOLD</span>':''}
+          ${locPart&&locPart!==d.device_id.split('-')[0]?`<span class="pill p-loc">${locPart.toUpperCase()}</span>`:''}
         </div>
-        <div class="gw2">${gauge(s,col)}<div class="gval" style="color:${col}">${s}</div></div>
+        <div class="gwrap">
+          ${gaugeSVG(s,col)}
+          <div class="gval" style="color:${col}">${s}</div>
+        </div>
+        <div class="gsub" style="color:${col};">/100</div>
         <div class="gtype">${d.device_type}</div>
-        <div class="gpill p-proto">${proto}</div>
+        <div class="gproto-pill">${proto}</div>
         <div class="gprob" style="color:${prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'}">Risk: ${prob}%</div>
         <div class="gup">Uptime: ${up}%</div>
+        <div class="gtip">
+          <div style="font-weight:700;margin-bottom:7px;font-size:11px;color:var(--acc)">${d.device_id}</div>
+          <div class="gtip-row"><span class="gtip-lbl">Health</span><span class="gtip-val" style="color:${col}">${s}/100</span></div>
+          ${tipPred}${tipProb}${tipUp}${tipProto}${tipAnom}${tipCmd}
+        </div>
       </div>`;
   });
 }
 
-function mkChart(ctx,label,color){
-  return new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label,data:[],borderColor:color,backgroundColor:color+'12',borderWidth:2,tension:0.4,fill:true,pointRadius:2}]},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:9}}}},
-      scales:{x:{ticks:{color:'#7986a3',font:{size:8}},grid:{color:'var(--bdr)'}},y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:8}},grid:{color:'var(--bdr)'}}}}});
-}
-function mkBarChart(ctx,label,color){
-  return new Chart(ctx,{type:'bar',data:{labels:[],datasets:[{label,data:[],backgroundColor:color,borderRadius:4,borderSkipped:false}]},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:9}}}},
-      scales:{x:{ticks:{color:'#7986a3',font:{size:8}},grid:{color:'var(--bdr)'}},y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:8}},grid:{color:'var(--bdr)'}}}}});
-}
-function mkDualChart(ctx,l1,c1,l2,c2){
-  return new Chart(ctx,{type:'line',data:{labels:[],datasets:[
-    {label:l1,data:[],borderColor:c1,borderWidth:2,tension:0.4,pointRadius:2},
-    {label:l2,data:[],borderColor:c2,borderDash:[5,5],borderWidth:2,tension:0.4,pointRadius:2}
-  ]},options:{responsive:true,plugins:{legend:{labels:{color:'#b0bec5',font:{size:9}}}},
-    scales:{x:{ticks:{color:'#7986a3',font:{size:8}},grid:{color:'var(--bdr)'}},y:{min:0,max:100,ticks:{color:'#7986a3',font:{size:8}},grid:{color:'var(--bdr)'}}}}});
-}
-
-const hC=mkChart(document.getElementById('hChart').getContext('2d'),'Health','#4fc3f7');
-const pC=mkDualChart(document.getElementById('pChart').getContext('2d'),'Actual','#81c784','Predicted','#ffb74d');
-const netHC=mkChart(document.getElementById('netHChart').getContext('2d'),'Health','#4dd0e1');
-const netLC=mkChart(document.getElementById('netLChart').getContext('2d'),'Latency','#ffb74d');
-const tcC=mkChart(document.getElementById('tcChart').getContext('2d'),'TelecomCo','#4fc3f7');
-const tcSC=mkChart(document.getElementById('tcSigChart').getContext('2d'),'Signal','#4dd0e1');
-const mcC=mkChart(document.getElementById('mcChart').getContext('2d'),'MiningCo','#ffb74d');
-const mcTC2=mkChart(document.getElementById('mcTempChart').getContext('2d'),'Temp','#ef5350');
-const cbsC=mkDualChart(document.getElementById('cbsChart').getContext('2d'),'CBS health','#ef5350','Threshold','#ffb74d');
-const upC=mkBarChart(document.getElementById('uptimeChart').getContext('2d'),'Uptime %','#4fc3f7');
-
-function updC(chart,labels,data){chart.data.labels=labels;chart.data.datasets[0].data=data;chart.update();}
-function updDual(chart,labels,d1,d2){chart.data.labels=labels;chart.data.datasets[0].data=d1;chart.data.datasets[1].data=d2;chart.update();}
-
-function diagItem(r){
-  const cls=r.health_score<35?'fa':r.health_score<70?'fw':'fg2';
-  return `<div class="fi ${cls}"><div class="ft2">${fmtT(r.created_at)}</div><div class="fd">${r.device_id.split('-').slice(-2).join('-')} — ${Math.round(r.health_score)}/100</div><div>${r.ai_diagnosis}</div></div>`;
-}
-function autoItem(r){
-  const isCBS=r.automation_command?.includes('CBS');
-  return `<div class="fi ${isCBS?'fcbs':'fp'}"><div class="ft2">${fmtT(r.created_at)}</div><div class="fd">${r.device_id.split('-').slice(-2).join('-')}</div><div>${r.automation_command}</div></div>`;
-}
-
-function mkLocCards(data,containerId,locs,filterFn,locKey,fhiId){
-  const el=document.getElementById(containerId);if(!el)return;
+/* ── Location summary cards ── */
+function mkLocCards(data,cid,meta,filterFn){
+  const el=document.getElementById(cid);if(!el)return;
   el.innerHTML='';
-  Object.entries(locs).filter(([k])=>k!=='all').forEach(([k,info])=>{
-    const locData=data.filter(r=>filterFn(r)&&r.device_id.includes('-'+k+'-'));
-    const dm={};locData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-    const scores=Object.values(dm).map(d=>d.health_score);
-    const f=scores.length?fhi(scores):100;
-    const faults=locData.filter(r=>r.health_score<50).length;
+  Object.entries(meta).filter(([k])=>k!=='all').forEach(([k,info])=>{
+    const rd=data.filter(r=>filterFn(r)&&r.device_id.includes('-'+k+'-'));
+    const dm={};rd.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+    const sc2=Object.values(dm).map(d=>d.health_score);
+    const f=sc2.length?fhi(sc2):100;
+    const faults=rd.filter(r=>r.health_score<50).length;
     const col=sc(f);
     el.innerHTML+=`
-      <div class="loc-card">
-        <div class="loc-title" style="color:${col}">${info.label}<span style="font-size:10px;color:var(--mut);font-weight:400">${scores.length} devices</span></div>
-        <div class="loc-sub">${info.sub}</div>
-        <div class="loc-stat"><span>Health index</span><span style="color:${col};font-weight:700">${f}/100</span></div>
-        <div class="loc-bar"><div class="loc-fill" style="width:${f}%;background:${col}"></div></div>
-        <div class="loc-stat" style="margin-top:8px"><span>Open faults</span><span style="color:${faults>0?'var(--red)':'var(--grn)'};font-weight:700">${faults}</span></div>
+      <div class="lcard">
+        <div class="lcard-title" style="color:${col}">${info.name}<span style="font-size:9px;color:var(--dim);font-weight:400">${sc2.length} devices</span></div>
+        <div class="lcard-sub">${info.sub}</div>
+        <div class="lstat"><span class="lstat-l">Health index</span><span class="lstat-v" style="color:${col}">${f}/100</span></div>
+        <div class="lbar"><div class="lbar-fill" style="width:${f}%;background:${col}"></div></div>
+        <div class="lstat" style="margin-top:9px"><span class="lstat-l">Open faults</span><span class="lstat-v" style="color:${faults>0?'var(--red)':'var(--grn)'}">${faults}</span></div>
       </div>`;
   });
 }
 
+/* ── Chart factory ── */
+const co={responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#8892a4',font:{size:9},boxWidth:10}}},
+  scales:{x:{ticks:{color:'#4a526a',font:{size:8}},grid:{color:'rgba(255,255,255,0.03)'}},
+          y:{min:0,max:100,ticks:{color:'#4a526a',font:{size:8}},grid:{color:'rgba(255,255,255,0.03)'}}}};
+function mkLine(id,lbl,col){
+  return new Chart(document.getElementById(id),{type:'line',
+    data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col+'18',borderWidth:2,tension:.4,fill:true,pointRadius:2,pointHoverRadius:5}]},
+    options:{...co}});
+}
+function mkDual(id,l1,c1,l2,c2){
+  return new Chart(document.getElementById(id),{type:'line',
+    data:{labels:[],datasets:[
+      {label:l1,data:[],borderColor:c1,borderWidth:2,tension:.4,pointRadius:2,pointHoverRadius:5},
+      {label:l2,data:[],borderColor:c2,borderDash:[5,5],borderWidth:2,tension:.4,pointRadius:2,pointHoverRadius:5}
+    ]},options:{...co}});
+}
+function mkBar(id,lbl,col){
+  const oc={...co};oc.scales.y={...oc.scales.y};
+  return new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:[],datasets:[{label:lbl,data:[],backgroundColor:col+'aa',borderRadius:5,borderSkipped:false,hoverBackgroundColor:col}]},
+    options:{...oc}});
+}
+function updLine(ch,labels,data){ch.data.labels=labels;ch.data.datasets[0].data=data;ch.update('none')}
+function updDual(ch,labels,d1,d2){ch.data.labels=labels;ch.data.datasets[0].data=d1;ch.data.datasets[1].data=d2;ch.update('none')}
+
+const cMain=mkLine('cMain','Health','#38bdf8');
+const cPred=mkDual('cPred','Actual','#22d97a','Predicted','#f5a623');
+const cNet=mkLine('cNet','Network health','#06d6d6');
+const cNetL=mkLine('cNetL','Latency ms','#f5a623');cNetL.options.scales.y={min:0,max:500,ticks:{color:'#4a526a',font:{size:8}},grid:{color:'rgba(255,255,255,0.03)'}};cNetL.update();
+const cTcH=mkLine('cTcH','TelecomCo','#38bdf8');
+const cTcS=mkLine('cTcS','Signal %','#06d6d6');
+const cMcH=mkLine('cMcH','MiningCo','#f5a623');
+const cMcT=mkLine('cMcT','Temp °C','#ff4757');cMcT.options.scales.y={min:0,max:120,ticks:{color:'#4a526a',font:{size:8}},grid:{color:'rgba(255,255,255,0.03)'}};cMcT.update();
+const cCbs=mkDual('cCbs','CBS link health','#ff4757','Threshold 90%','#f5a623');
+const cUp=mkBar('cUp','Uptime %','#38bdf8');
+
+/* ── Feed builders ── */
+function diagItem(r){
+  const cls=r.health_score<35?'fi-crit':r.health_score<70?'fi-warn':'fi-ok';
+  return `<div class="fitem ${cls}"><div class="ftime">${fmt(r.created_at)}</div><div class="fdev">${sid(r.device_id)} — ${Math.round(r.health_score)}/100</div><div>${r.ai_diagnosis}</div></div>`;
+}
+function autoItem(r){
+  const cbs=r.automation_command?.includes('CBS');
+  return `<div class="fitem ${cbs?'fi-cbs':'fi-pur'}"><div class="ftime">${fmt(r.created_at)}</div><div class="fdev">${sid(r.device_id)}</div><div>${r.automation_command}</div></div>`;
+}
+function setFeed(id,rows,fn){
+  const el=document.getElementById(id);if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="fitem fi-ok"><div class="ftime">No data yet — run collector</div></div>';return;}
+  el.innerHTML='';rows.forEach(r=>el.innerHTML+=fn(r));
+}
+
+/* ── Main fetch ── */
 async function fetchIntel(){
   try{const r=await fetch(B+'/api/intelligence');intel=await r.json();}catch(e){}
 }
 
 async function fetchAll(){
   try{
-    const r=await fetch(B+'/api/data');allData=await r.json();
+    const r=await fetch(B+'/api/data');
+    allData=await r.json();
     if(!allData?.length)return;
     await fetchIntel();
 
     const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
     const scores=Object.values(dm).map(d=>d.health_score);
-    const f=fhi(scores);
-    const cost=fmtCost(dm);
-    const cbsData=allData.filter(r=>CBS_TYPES.includes(r.device_type));
-    const cbsHold=cbsData.some(r=>r.automation_command?.includes('HOLD'));
+    const f=fhi(scores),c=cost(dm);
+    const cbsd=allData.filter(isCbs);
+    const hold=cbsd.some(r=>r.automation_command?.includes('HOLD'));
 
-    document.getElementById('b-fhi').textContent=f;
-    document.getElementById('b-fhi').className='bv '+scc(f);
-    document.getElementById('b-devs').textContent=Object.keys(dm).length;
-    document.getElementById('b-cost').textContent='$'+cost.toLocaleString();
-    document.getElementById('b-inc').textContent=allData.filter(r=>r.health_score<50).length;
-    document.getElementById('b-anom').textContent=intel.anomaly_count||0;
+    /* Banner */
+    setVal('b-fhi',f,scc(f));setVal('b-devs',Object.keys(dm).length,'ca');
+    document.getElementById('b-cost').textContent='$'+c.toLocaleString();
+    setVal('b-inc',allData.filter(r=>r.health_score<50).length,'cw');
+    setVal('b-anom',intel.anomaly_count||0,'cp');
     const cbsEl=document.getElementById('b-cbs');
-    cbsEl.textContent=cbsHold?'BLAST HOLD':'ARMED';
-    cbsEl.style.color=cbsHold?'var(--red)':'var(--grn)';
-    if(cbsHold&&!cbsEl.dataset.al){cbsEl.dataset.al='1';toast('CBS Safety Interlock','BLAST HOLD active — DNP3 link degraded','tc');}
-    if(!cbsHold)delete cbsEl.dataset.al;
+    cbsEl.textContent=hold?'BLAST HOLD':'ARMED';
+    cbsEl.className='bv '+(hold?'cr':'cg');
+    if(hold&&!cbsEl._al){cbsEl._al=1;toast('CBS Safety Interlock','BLAST HOLD active — DNP3 link degraded','tc');}
+    if(!hold)delete cbsEl._al;
     if(intel.retrain_needed)document.getElementById('retrain-bar').style.display='block';
 
-    mkGauges(allData,'main-gauges',()=>true,null);
-    const recent=allData.slice(0,20).reverse();
-    updC(hC,recent.map(r=>fmtT(r.created_at)),recent.map(r=>Math.round(r.health_score)));
-    updDual(pC,recent.map(r=>fmtT(r.created_at)),recent.map(r=>Math.round(r.health_score)),recent.map(r=>Math.round(r.predicted_score)));
+    /* Main gauges + charts */
+    mkGauges(allData,'main-gauges',()=>true,'all');
+    const rec=allData.slice(0,20).reverse();
+    updLine(cMain,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)));
+    updDual(cPred,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)),rec.map(r=>Math.round(r.predicted_score||r.health_score)));
+    setFeed('f-diag',allData.filter(r=>r.ai_diagnosis).slice(0,8),diagItem);
+    setFeed('f-auto',allData.filter(r=>r.automation_command).slice(0,8),autoItem);
 
-    const df2=document.getElementById('diag-feed');df2.innerHTML='';
-    allData.filter(r=>r.ai_diagnosis).slice(0,8).forEach(r=>df2.innerHTML+=diagItem(r));
-    const af2=document.getElementById('auto-feed');af2.innerHTML='';
-    allData.filter(r=>r.automation_command).slice(0,8).forEach(r=>af2.innerHTML+=autoItem(r));
-
-    updateNetPage();
-    updateTcPage();
-    updateMcPage();
-    updateCbsPage(cbsData);
-    updateIntelPage();
-
+    updNetPage();updTcPage();updMcPage();updCbsPage(cbsd);updIntelPage();
   }catch(e){console.error(e);}
 }
 
-function updateNetPage(){
-  const nd=allData.filter(r=>NET_TYPES.includes(r.device_type));
-  const locNd=curNetLoc==='all'?nd:nd.filter(r=>r.device_id.includes('-'+curNetLoc+'-'));
-  const dm={};locNd.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-  const scores=Object.values(dm).map(d=>d.health_score);
-  const f=fhi(scores);
-  const lats=locNd.filter(r=>r.metric_name==='latency_ms').map(r=>r.metric_value);
-  const avgLat=lats.length?Math.round(lats.reduce((a,b)=>a+b,0)/lats.length):0;
-  document.getElementById('net-fhi').textContent=f;
-  document.getElementById('net-fhi').className='bv '+scc(f);
-  document.getElementById('net-devs').textContent=Object.keys(dm).length;
-  document.getElementById('net-faults').textContent=locNd.filter(r=>r.health_score<50).length;
-  document.getElementById('net-lat').textContent=avgLat+'ms';
-  mkGauges(allData,'net-gauges',r=>NET_TYPES.includes(r.device_type),curNetLoc==='all'?null:curNetLoc);
-  const rec=locNd.slice(0,20).reverse();
-  updC(netHC,rec.map(r=>fmtT(r.created_at)),rec.map(r=>Math.round(r.health_score)));
-  updC(netLC,rec.map(r=>fmtT(r.created_at)),rec.map(r=>Math.min(100,Math.round(r.metric_value||0))));
-  const nf=document.getElementById('net-feed');nf.innerHTML='';
-  locNd.filter(r=>r.ai_diagnosis).slice(0,8).forEach(r=>nf.innerHTML+=diagItem(r));
-  const na=document.getElementById('net-auto');na.innerHTML='';
-  locNd.filter(r=>r.automation_command).slice(0,8).forEach(r=>na.innerHTML+=autoItem(r));
+function setVal(id,v,cls){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=v;if(cls)el.className='bv '+cls;
 }
 
-function updateTcPage(){
-  const td=allData.filter(r=>TC_TYPES.includes(r.device_type));
-  const loc=curTcLoc==='all'?td:td.filter(r=>r.device_id.includes('-'+curTcLoc+'-'));
-  const dm={};loc.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-  const scores=Object.values(dm).map(d=>d.health_score);
-  const f=fhi(scores);
-  const sigs=Object.values(dm).map(d=>d.health_score);
-  const avgSig=sigs.length?Math.round(sigs.reduce((a,b)=>a+b,0)/sigs.length):0;
-  document.getElementById('tc-fhi').textContent=f;
-  document.getElementById('tc-fhi').className='bv '+scc(f);
-  document.getElementById('tc-devs').textContent=Object.keys(dm).length;
-  document.getElementById('tc-faults').textContent=loc.filter(r=>r.health_score<50).length;
+function updNetPage(){
+  const nd=allData.filter(isNet);
+  const ld=curNet==='all'?nd:nd.filter(r=>r.device_id.includes('-'+curNet+'-'));
+  const dm={};ld.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const sc2=Object.values(dm).map(d=>d.health_score);const f=fhi(sc2);
+  const lats=ld.filter(r=>r.metric_name==='latency_ms').map(r=>r.metric_value);
+  const al=lats.length?Math.round(lats.reduce((a,b)=>a+b,0)/lats.length):0;
+  setVal('net-fhi',f,scc(f));document.getElementById('net-devs').textContent=Object.keys(dm).length;
+  document.getElementById('net-faults').textContent=ld.filter(r=>r.health_score<50).length;
+  document.getElementById('net-lat').textContent=al+'ms';
+  mkGauges(allData,'net-gauges',isNet,curNet==='all'?'all':curNet);
+  const rec=ld.slice(0,20).reverse();
+  updLine(cNet,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)));
+  updLine(cNetL,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.min(499,Math.round(r.metric_value||0))));
+  setFeed('net-feed',ld.filter(r=>r.ai_diagnosis).slice(0,8),diagItem);
+  setFeed('net-auto',ld.filter(r=>r.automation_command).slice(0,8),autoItem);
+}
+
+function updTcPage(){
+  const td=allData.filter(isTc);
+  const ld=curTc==='all'?td:td.filter(r=>r.device_id.includes('-'+curTc+'-'));
+  const dm={};ld.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const sc2=Object.values(dm).map(d=>d.health_score);const f=fhi(sc2);
+  const avgSig=sc2.length?Math.round(sc2.reduce((a,b)=>a+b,0)/sc2.length):0;
+  setVal('tc-fhi',f,scc(f));document.getElementById('tc-devs').textContent=Object.keys(dm).length;
+  document.getElementById('tc-faults').textContent=ld.filter(r=>r.health_score<50).length;
   document.getElementById('tc-sig').textContent=avgSig+'%';
-  const info=TC_LOCS[curTcLoc];
-  document.getElementById('tc-env-title').textContent='TelecomCo — '+info.label;
-  document.getElementById('tc-gauge-label').textContent='TelecomCo devices — '+info.label;
-  mkLocCards(allData,'tc-loc-cards',TC_LOCS,r=>TC_TYPES.includes(r.device_type),'tc');
-  mkGauges(allData,'tc-gauges',r=>TC_TYPES.includes(r.device_type),curTcLoc==='all'?null:curTcLoc);
-  const rec=loc.slice(0,20).reverse();
-  updC(tcC,rec.map(r=>fmtT(r.created_at)),rec.map(r=>Math.round(r.health_score)));
-  updC(tcSC,rec.map(r=>fmtT(r.created_at)),rec.map(r=>Math.round(r.health_score)));
-  const tf=document.getElementById('tc-feed');tf.innerHTML='';
-  loc.filter(r=>r.ai_diagnosis).slice(0,8).forEach(r=>tf.innerHTML+=diagItem(r));
-  const ta=document.getElementById('tc-auto');ta.innerHTML='';
-  loc.filter(r=>r.automation_command).slice(0,8).forEach(r=>ta.innerHTML+=autoItem(r));
+  document.getElementById('tc-envname').textContent='TelecomCo — '+TC_META[curTc].name;
+  document.getElementById('tc-gl').textContent='TelecomCo devices — '+TC_META[curTc].name;
+  mkLocCards(allData,'tc-loccards',TC_META,isTc);
+  mkGauges(allData,'tc-gauges',isTc,curTc==='all'?'all':curTc);
+  const rec=ld.slice(0,20).reverse();
+  updLine(cTcH,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)));
+  updLine(cTcS,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)));
+  setFeed('tc-feed',ld.filter(r=>r.ai_diagnosis).slice(0,8),diagItem);
+  setFeed('tc-auto',ld.filter(r=>r.automation_command).slice(0,8),autoItem);
 }
 
-function updateMcPage(){
-  const md=allData.filter(r=>MC_TYPES.includes(r.device_type));
-  const sec=curMcSec==='all'?md:md.filter(r=>r.device_id.includes('-'+curMcSec+'-'));
-  const dm={};sec.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-  const scores=Object.values(dm).map(d=>d.health_score);
-  const f=fhi(scores);
-  document.getElementById('mc-fhi').textContent=f;
-  document.getElementById('mc-fhi').className='bv '+scc(f);
-  document.getElementById('mc-devs').textContent=Object.keys(dm).length;
-  document.getElementById('mc-alerts').textContent=sec.filter(r=>r.health_score<35).length;
-  document.getElementById('mc-crit').textContent=sec.filter(r=>r.health_score<20).length;
-  const info=MC_SECS[curMcSec];
-  document.getElementById('mc-env-title').textContent='MiningCo — '+info.label;
-  document.getElementById('mc-gauge-label').textContent='MiningCo assets — '+info.label;
-  mkLocCards(allData,'mc-sec-cards',MC_SECS,r=>MC_TYPES.includes(r.device_type),'mc');
-  mkGauges(allData,'mc-gauges',r=>MC_TYPES.includes(r.device_type),curMcSec==='all'?null:curMcSec);
-  const rec=sec.slice(0,20).reverse();
-  updC(mcC,rec.map(r=>fmtT(r.created_at)),rec.map(r=>Math.round(r.health_score)));
-  updC(mcTC2,rec.map(r=>fmtT(r.created_at)),rec.map(r=>Math.round(r.metric_value||0)));
-  const mf=document.getElementById('mc-feed');mf.innerHTML='';
-  sec.filter(r=>r.ai_diagnosis).slice(0,8).forEach(r=>mf.innerHTML+=diagItem(r));
-  const ma=document.getElementById('mc-auto');ma.innerHTML='';
-  sec.filter(r=>r.automation_command).slice(0,8).forEach(r=>ma.innerHTML+=autoItem(r));
+function updMcPage(){
+  const md=allData.filter(r=>isMc(r)||isCbs(r));
+  const ld=curMc==='all'?md:md.filter(r=>r.device_id.includes('-'+curMc+'-'));
+  const dm={};ld.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const sc2=Object.values(dm).map(d=>d.health_score);const f=fhi(sc2);
+  setVal('mc-fhi',f,scc(f));document.getElementById('mc-devs').textContent=Object.keys(dm).length;
+  document.getElementById('mc-alerts').textContent=ld.filter(r=>r.health_score<35).length;
+  document.getElementById('mc-crit').textContent=ld.filter(r=>r.health_score<20).length;
+  document.getElementById('mc-envname').textContent='MiningCo — '+MC_META[curMc].name;
+  document.getElementById('mc-gl').textContent='MiningCo assets — '+MC_META[curMc].name;
+  mkLocCards(allData,'mc-seccards',MC_META,isMc);
+  mkGauges(allData,'mc-gauges',r=>isMc(r)||isCbs(r),curMc==='all'?'all':curMc);
+  const rec=ld.slice(0,20).reverse();
+  updLine(cMcH,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)));
+  updLine(cMcT,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.min(119,Math.round(r.metric_value||0))));
+  setFeed('mc-feed',ld.filter(r=>r.ai_diagnosis).slice(0,8),diagItem);
+  setFeed('mc-auto',ld.filter(r=>r.automation_command).slice(0,8),autoItem);
 }
 
-function updateCbsPage(cbsData){
-  const cg=document.getElementById('cbs-devs');
-  if(cbsData.length){
-    const dm={};cbsData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-    cg.innerHTML='';
+function updCbsPage(cbsd){
+  const dm={};cbsd.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const grid=document.getElementById('cbs-devs');
+  if(!Object.keys(dm).length){
+    grid.innerHTML='<div style="color:var(--dim);font-size:11px">Run cbs_collector.py to monitor blasting system</div>';
+  } else {
+    grid.innerHTML='';
     Object.values(dm).forEach(d=>{
-      const s=Math.round(d.health_score);const hold=s<90;
-      cg.innerHTML+=`<div class="cbs-dev">
-        <div style="font-weight:600;margin-bottom:5px;font-size:11px">${d.device_id}</div>
-        <div style="font-size:10px;color:var(--mut)">Protocol: DNP3/Ethernet</div>
-        <div style="font-size:10px;color:var(--mut)">Link health: <span style="color:${sc(s)};font-weight:700">${s}%</span></div>
-        <div class="${hold?'cbs-hold':'cbs-safe'}" style="font-size:12px;margin-top:5px">${hold?'BLAST HOLD ACTIVE':'ARMED — SAFE'}</div>
-        ${d.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-top:5px">${d.ai_diagnosis}</div>`:''}
+      const s=Math.round(d.health_score),hold=s<90;
+      grid.innerHTML+=`<div class="cbsdev"><div style="font-weight:700;margin-bottom:5px;font-size:11px">${d.device_id}</div>
+        <div style="font-size:10px;color:var(--dim)">Protocol: DNP3/Ethernet · Link: <span style="color:${sc(s)};font-weight:700">${s}%</span></div>
+        <div class="${hold?'cbs-hold':'cbs-safe'}" style="margin-top:6px">${hold?'BLAST HOLD ACTIVE':'ARMED — SAFE'}</div>
+        ${d.ai_diagnosis?`<div style="font-size:9px;color:var(--dim);margin-top:6px;line-height:1.4">${d.ai_diagnosis}</div>`:''}
       </div>`;
     });
-  } else {
-    cg.innerHTML='<div style="color:var(--mut);font-size:11px">Run cbs_collector.py to monitor blasting system</div>';
   }
-  const cl=document.getElementById('cbs-log');
-  const alerts=cbsData.filter(r=>r.automation_command).slice(0,5);
-  if(alerts.length){cl.innerHTML='';alerts.forEach(r=>cl.innerHTML+=`<div class="fi fcbs"><div class="ft2">${fmtT(r.created_at)}</div><div class="fd">${r.device_id}</div><div>${r.automation_command}</div></div>`);}
-  else cl.innerHTML='<div class="fi fg2"><div class="ft2">No CBS alerts — all links healthy</div></div>';
-  const rec=cbsData.slice(0,20).reverse();
-  cbsC.data.labels=rec.map(r=>fmtT(r.created_at));
-  cbsC.data.datasets[0].data=rec.map(r=>Math.round(r.health_score));
-  cbsC.data.datasets[1].data=rec.map(()=>90);
-  cbsC.update();
+  const log=document.getElementById('cbs-log');
+  const alerts=cbsd.filter(r=>r.automation_command).slice(0,5);
+  if(alerts.length){log.innerHTML='';alerts.forEach(r=>log.innerHTML+=`<div class="fitem fi-cbs"><div class="ftime">${fmt(r.created_at)}</div><div class="fdev">${sid(r.device_id)}</div><div>${r.automation_command}</div></div>`);}
+  else log.innerHTML='<div class="fitem fi-ok"><div class="ftime">No CBS alerts — all links healthy</div></div>';
+  const rec=cbsd.slice(0,20).reverse();
+  updDual(cCbs,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)),rec.map(()=>90));
 }
 
-function updateIntelPage(){
-  if(!intel||!Object.keys(intel).length)return;
+function updIntelPage(){
+  if(!Object.keys(intel).length)return;
   const f=intel.federated_index||100;
-  document.getElementById('i-fhi').textContent=f;
-  document.getElementById('i-fhi').className='iv '+scc(f);
-  document.getElementById('i-devs').textContent=intel.total_devices||0;
+  setVal('i-fhi',f,scc(f));
+  setVal('i-devs',intel.total_devices||0,'ca');
+  setVal('i-anom',intel.anomaly_count||0,'cp');
   document.getElementById('i-model').textContent=intel.retrain_needed?'Retraining needed':'Optimal';
   const probs=intel.failure_probabilities||{};
-  let maxP=0,maxD='None';
-  Object.entries(probs).forEach(([d,p])=>{if(p>maxP){maxP=p;maxD=d;}});
-  document.getElementById('i-risk').textContent=maxD!=='None'?`${maxD.split('-').slice(-2).join('-')} (${maxP}%)`:'None';
-  const corr=Object.values(probs).filter(p=>p>40).length;
-  document.getElementById('i-corr').textContent=corr>1?`${corr} devices`:'None';
-  const uptimes=intel.uptime||{};
-  upC.data.labels=Object.keys(uptimes).map(k=>k.split('-').slice(-2).join('-'));
-  upC.data.datasets[0].data=Object.values(uptimes);
-  upC.update();
+  let mp=0,md='None';
+  Object.entries(probs).forEach(([d,p])=>{if(p>mp){mp=p;md=d;}});
+  document.getElementById('i-risk').textContent=md!=='None'?`${sid(md)} (${mp}%)`:'None';
+  document.getElementById('i-corr').textContent=Object.values(probs).filter(p=>p>40).length||'None';
+  const up=intel.uptime||{};
+  cUp.data.labels=Object.keys(up).map(k=>sid(k));
+  cUp.data.datasets[0].data=Object.values(up).map(v=>Math.round(v));
+  cUp.update('none');
   const pf=document.getElementById('prob-feed');pf.innerHTML='';
   Object.entries(probs).sort((a,b)=>b[1]-a[1]).forEach(([dev,p])=>{
-    pf.innerHTML+=`<div class="fi ${p>50?'fa':p>25?'fw':'fg2'}"><div class="fd">${dev}</div><div>Failure probability: <strong>${p}%</strong> — next 30 min</div></div>`;
+    pf.innerHTML+=`<div class="fitem ${p>50?'fi-crit':p>25?'fi-warn':'fi-ok'}"><div class="fdev">${dev}</div><div>Failure probability: <strong>${p}%</strong> — next 30 min</div></div>`;
   });
-  if(!Object.keys(probs).length)pf.innerHTML='<div class="fi fg2"><div>All devices within safe range</div></div>';
-  const tf2=document.getElementById('twin-feed');tf2.innerHTML='';
-  allData.filter(r=>r.health_score>30&&r.health_score<80).slice(0,4).forEach(r=>{
-    const sim=Math.max(0,Math.round(r.health_score*0.82));
-    tf2.innerHTML+=`<div class="fi ft"><div class="fd">${r.device_id.split('-').slice(-2).join('-')}</div><div>20% load increase → predicted score ${sim}/100</div></div>`;
-  });
-  if(!tf2.innerHTML)tf2.innerHTML='<div class="fi ft"><div class="ft2">Waiting for data...</div></div>';
+  if(!Object.keys(probs).length)pf.innerHTML='<div class="fitem fi-ok"><div>All devices within safe probability range</div></div>';
+  const tf=document.getElementById('twin-feed');
+  const ins=allData.filter(r=>r.health_score>30&&r.health_score<80).slice(0,4);
+  if(ins.length){tf.innerHTML='';ins.forEach(r=>{
+    const sim=Math.max(0,Math.round(r.health_score*.82));
+    tf.innerHTML+=`<div class="fitem fi-tel"><div class="fdev">${sid(r.device_id)}</div><div>20% load increase → predicted score ${sim}/100</div></div>`;
+  });}
 }
 
+/* ── Page navigation + theming ── */
 function goPage(el,name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   el.classList.add('active');
-  document.querySelectorAll('.subloc').forEach(s=>s.classList.remove('visible'));
+  document.querySelectorAll('.subloc').forEach(s=>s.classList.remove('vis'));
   document.body.className='';
-  if(name==='net'){document.getElementById('sub-net').classList.add('visible');document.body.className='t-net';}
-  else if(name==='telecom'){document.getElementById('sub-telecom').classList.add('visible');applyTcTheme();}
-  else if(name==='mining'){document.getElementById('sub-mining').classList.add('visible');applyMcTheme();}
-  else if(name==='intel')updateIntelPage();
+  if(name==='net'){document.getElementById('sub-net').classList.add('vis');document.body.className='env-net';}
+  else if(name==='tc'){document.getElementById('sub-tc').classList.add('vis');applyTcTheme();}
+  else if(name==='mc'){document.getElementById('sub-mc').classList.add('vis');applyMcTheme();}
+  if(name==='intel')updIntelPage();
+  if(name==='tc')updTcPage();
+  if(name==='mc')updMcPage();
+  if(name==='net')updNetPage();
 }
-
 function applyTcTheme(){
-  document.body.className='t-tc'+(curTcLoc!=='all'?' loc-'+curTcLoc:'');
+  document.body.className='env-tc'+(curTc!=='all'?' loc-'+curTc:'');
 }
 function applyMcTheme(){
-  const secMap={shaft1:'sec-shaft1',shaft2:'sec-shaft2',plant:'sec-plant',surface:'sec-surface'};
-  document.body.className='t-mc'+(curMcSec!=='all'&&secMap[curMcSec]?' '+secMap[curMcSec]:'');
+  const m={shaft1:'sec-shaft1',shaft2:'sec-shaft2',plant:'sec-plant',surface:'sec-surface'};
+  document.body.className='env-mc'+(curMc!=='all'&&m[curMc]?' '+m[curMc]:'');
 }
-
-function setLoc(sector,loc,el){
-  const parent=el.closest('.subloc');
-  parent.querySelectorAll('.sloc-tab').forEach(t=>t.classList.remove('active'));
+function setSub(sec,val,el){
+  el.closest('.subloc').querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  if(sector==='net'){curNetLoc=loc;updateNetPage();}
-  else if(sector==='tc'){curTcLoc=loc;applyTcTheme();updateTcPage();}
-  else if(sector==='mc'){curMcSec=loc;applyMcTheme();updateMcPage();}
+  if(sec==='net'){curNet=val;updNetPage();}
+  else if(sec==='tc'){curTc=val;applyTcTheme();updTcPage();}
+  else if(sec==='mc'){curMc=val;applyMcTheme();updMcPage();}
 }
 
+/* ── Toasts ── */
 function toast(title,msg,type){
   const c=document.getElementById('toasts');
   const el=document.createElement('div');
   el.className='toast '+(type||'');
-  el.innerHTML=`<div class="tttl">${title}</div><div class="tmsg">${msg}</div>`;
+  el.innerHTML=`<div class="ttitle">${title}</div><div class="tmsg">${msg}</div>`;
   c.insertBefore(el,c.firstChild);
   if(c.children.length>5)c.lastChild.remove();
-  setTimeout(()=>{el.style.transition='opacity 0.4s';el.style.opacity='0';setTimeout(()=>el.remove(),400);},5000);
+  setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400);},5500);
 }
 
-function sim(type){
-  const e={
-    critical:{t:'Critical failure',m:'mc-shaft1-pump-03 — score 8/100. Safety shutdown triggered.',c:'tc'},
-    congestion:{t:'Network congestion',m:'tc-byo-tower-01 — bandwidth 940Mbps. Score 38/100.',c:'tw'},
-    recovery:{t:'System recovery',m:'All devices returning to normal parameters.',c:'tg'},
-    anomaly:{t:'Anomaly detected',m:'Isolation Forest flagged net-hre-switch-02.',c:'tp'},
-    twin:{t:'Digital twin complete',m:'20% load: net-byo-router-01 drops to 52/100.',c:''},
-    blast:{t:'CBS BLAST HOLD',m:'cbs-dnp3-shaft2-det — link 67%, HOLD issued.',c:'tc'}
-  };const v=e[type];if(v)toast(v.t,v.m,v.c);
-}
+/* ── Sim events ── */
+const SIMS={
+  critical:{t:'Critical failure',m:'mc-shaft1-pump-03 — score 6/100. Safety shutdown triggered.',c:'tc'},
+  congestion:{t:'Network congestion',m:'tc-byo-tower-01 — bandwidth 940Mbps. Score 38/100.',c:'tw'},
+  recovery:{t:'System recovery',m:'All devices returning to normal operating parameters.',c:'tg'},
+  anomaly:{t:'Anomaly detected',m:'Isolation Forest flagged unusual pattern on net-hre-switch-02.',c:'tp'},
+  twin:{t:'Digital twin complete',m:'20% load increase: net-byo-router-01 drops to score 52/100.',c:''},
+  blast:{t:'CBS BLAST HOLD',m:'mc-surf-cbs-01 — DNP3 link 64%. HOLD issued. Blasting officer alerted.',c:'tc'}
+};
+function sim(t){const e=SIMS[t];if(e)toast(e.t,e.m,e.c);}
+function exportReport(){toast('Report exported',`IISentinel_${new Date().toLocaleDateString()}.pdf — ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
 
-function exportReport(){
-  const devs=intel.total_devices||'--';
-  const f=intel.federated_index||'--';
-  toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf — ${devs} devices, FHI: ${f}`,'tg');
-}
-
+/* ── Specialist ── */
 async function doLogin(){
-  const name=document.getElementById('l-name').value.trim();
-  const pass=document.getElementById('l-pass').value.trim();
+  const n=document.getElementById('l-name').value.trim(),p=document.getElementById('l-pass').value.trim();
   document.getElementById('l-err').textContent='';
   try{
-    const r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,password:pass})});
+    const r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:p})});
     const d=await r.json();
     if(d.success){
       spToken=d.token;spName=d.name;
@@ -888,26 +1224,28 @@ async function doLogin(){
       document.getElementById('sp-sec').style.display='block';
       document.getElementById('sp-name').textContent=d.name;
       document.getElementById('sp-role').textContent=d.role.toUpperCase();
-      document.getElementById('live-lbl').textContent='Specialist: '+d.name;
-      toast('Access granted','Welcome '+d.name,'tg');loadInc();
-    } else document.getElementById('l-err').textContent='Invalid credentials.';
-  }catch(e){document.getElementById('l-err').textContent='Connection error.';}
+      document.getElementById('live-lbl').textContent='SP: '+d.name;
+      toast('Access granted','Welcome '+d.name+' — specialist panel unlocked','tg');
+      loadInc();
+    } else document.getElementById('l-err').textContent='Invalid credentials. Access denied.';
+  }catch(e){document.getElementById('l-err').textContent='Connection error — check network.';}
 }
 function doLogout(){
   spToken=null;spName=null;
   document.getElementById('login-sec').style.display='block';
   document.getElementById('sp-sec').style.display='none';
   document.getElementById('l-name').value='';document.getElementById('l-pass').value='';
-  document.getElementById('live-lbl').textContent='Live';
-  toast('Logged out','Session ended','');
+  document.getElementById('live-lbl').textContent='LIVE';
+  toast('Logged out','Specialist session ended','');
 }
 async function loadInc(){
   if(!spToken)return;
   try{
+    const H={'X-Specialist-Token':spToken};
     const [oR,aR,rR]=await Promise.all([
-      fetch(B+'/api/incidents?status=open',{headers:{'X-Specialist-Token':spToken}}),
-      fetch(B+'/api/incidents?status=assigned',{headers:{'X-Specialist-Token':spToken}}),
-      fetch(B+'/api/incidents?status=resolved',{headers:{'X-Specialist-Token':spToken}})
+      fetch(B+'/api/incidents?status=open',{headers:H}),
+      fetch(B+'/api/incidents?status=assigned',{headers:H}),
+      fetch(B+'/api/incidents?status=resolved',{headers:H})
     ]);
     const open=await oR.json(),asgn=await aR.json(),res=await rR.json();
     document.getElementById('sp-open').textContent=open.length;
@@ -915,33 +1253,33 @@ async function loadInc(){
     document.getElementById('sp-res').textContent=res.length;
     const all=[...open,...asgn];
     const list=document.getElementById('inc-list');
-    if(!all.length){list.innerHTML='<div class="fi fg2"><div>No open incidents — all systems nominal</div></div>';return;}
+    if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents — all systems nominal</div></div>';return;}
     list.innerHTML='';
     all.forEach(inc=>{
-      const bc=inc.status==='open'?'sbo':inc.status==='assigned'?'sba':'sbr';
-      list.innerHTML+=`<div class="inc"><div class="inch">
-        <div><span class="fd">${inc.device_id.split('-').slice(-2).join('-')}</span><span class="sb ${bc}">${inc.status.toUpperCase()}</span></div>
-        <div style="font-size:9px;color:var(--mut)">${fmtT(inc.created_at)}</div></div>
+      const bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';
+      list.innerHTML+=`<div class="inccard"><div class="inch">
+        <div><span style="font-weight:700;color:var(--acc)">${sid(inc.device_id)}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div>
+        <div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div>
         <div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span></div>
-        ${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px">${inc.ai_diagnosis}</div>`:''}
-        ${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px">${inc.automation_command}</div>`:''}
+        ${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px;line-height:1.4">${inc.ai_diagnosis}</div>`:''}
+        ${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px;line-height:1.4">${inc.automation_command}</div>`:''}
         ${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: ${inc.assigned_to}</div>`:''}
         <div class="inca">
-          <input class="ai" id="ai-${inc.id}" placeholder="Assign to engineer...">
-          <button class="btn btn-acc" style="font-size:10px;padding:4px 9px" onclick="assignInc('${inc.id}')">Assign</button>
-          <button class="btn btn-grn" style="font-size:10px;padding:4px 9px" onclick="resolveInc('${inc.id}')">Resolve</button>
+          <input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer...">
+          <button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button>
+          <button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button>
         </div></div>`;
     });
   }catch(e){console.error(e);}
 }
 async function assignInc(id){
-  const v=document.getElementById('ai-'+id).value.trim();if(!v)return;
+  const v=document.getElementById('ai-'+id)?.value.trim();if(!v)return;
   await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});
-  toast('Assigned','Assigned to '+v,'tw');loadInc();
+  toast('Incident assigned','Assigned to '+v,'tw');loadInc();
 }
 async function resolveInc(id){
-  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via dashboard'})});
-  toast('Resolved','Marked resolved by '+spName,'tg');loadInc();
+  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});
+  toast('Incident resolved','Marked resolved by '+spName,'tg');loadInc();
 }
 
 fetchAll();
