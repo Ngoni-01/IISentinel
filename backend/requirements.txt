@@ -1,7 +1,9 @@
 flask
+flask-cors
 gunicorn
 supabase
 joblib
 scikit-learn
 numpy
-flask-cors
+pandas
+requests
