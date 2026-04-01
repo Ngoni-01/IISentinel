@@ -19,7 +19,63 @@
   --tel:#00e5d4;--tela:rgba(0,229,212,0.11);
   --acc:var(--blu);--acca:var(--blua);
 }
+/* ── LIGHT MODE (warm slate, not white) ── */
+body.light{
+  --bg:#eef0f7;--s1:#e4e8f2;--s2:#dde2ee;--s3:#d4daea;
+  --b1:rgba(0,0,0,0.07);--b2:rgba(0,0,0,0.13);--b3:rgba(0,0,0,0.22);
+  --txt:#1a1f2e;--mut:#4a5270;--dim:#8592a8;
+  --grn:#1ab060;--grna:rgba(26,176,96,0.12);
+  --amb:#c07800;--amba:rgba(192,120,0,0.12);
+  --red:#d42030;--reda:rgba(212,32,48,0.12);
+  --blu:#0080b8;--blua:rgba(0,128,184,0.12);
+  --pur:#7040cc;--pura:rgba(112,64,204,0.12);
+  --tel:#008880;--tela:rgba(0,136,128,0.12);
+  --acc:var(--blu);--acca:var(--blua);
+  background-color:#eef0f7!important;
+  background-image:none!important;
+}
+body.light header{background:rgba(232,236,248,0.96);border-bottom-color:var(--b1)}
+body.light nav.mnav{background:rgba(228,232,242,0.95);border-bottom-color:var(--b1)}
+body.light .subloc{background:rgba(220,224,238,0.95);border-bottom-color:var(--b1)}
+body.light .bc,body.light .gc,body.light .ccard,body.light .fcard,
+body.light .lcard,body.light .icard,body.light .twin-wrap,body.light .icard2,
+body.light .en-panel,body.light .wcard,body.light .sim-wrap,body.light .cbsouter{
+  background:rgba(255,255,255,0.75)!important;
+  border-color:var(--b1)!important;
+  box-shadow:0 2px 12px rgba(0,0,0,0.07);
+}
+body.light .lbox{background:rgba(255,255,255,0.9)}
+body.light .fitem{background:rgba(0,0,0,0.03)}
+body.light .fitem:hover{background:rgba(0,0,0,0.06)}
+body.light .cat-hdr{background:rgba(255,255,255,0.6)}
+body.light .ehdr{background:rgba(255,255,255,0.55)!important}
+body.light .toast{background:rgba(240,243,252,0.98)}
+body.light #gtip{background:rgba(240,244,255,0.99);border-color:var(--b2)}
+body.light .stab.active{color:#fff}
+body.light canvas{filter:none}
+body.light .loader-status,.light .loader-sub{color:var(--dim)}
+body.light .li{background:rgba(0,0,0,0.04);color:var(--txt);border-color:var(--b1)}
+body.light .twin-sel{background:rgba(0,0,0,0.04);color:var(--txt);border-color:var(--b1)}
+body.light .ainput{background:rgba(0,0,0,0.04);color:var(--txt);border-color:var(--b1)}
+body.light .gid{color:var(--mut)}
+body.light .gtype{color:var(--dim)}
+body.light .gup{color:var(--dim)}
+body.light .gpill{background:rgba(0,0,0,0.05);color:var(--dim);border-color:var(--b1)}
+body.light .retrain{background:rgba(255,200,0,0.1)}
+body.light .cbs-dev{background:rgba(255,240,240,0.8);border-color:rgba(212,32,48,0.2)}
+body.light .cbsouter{background:rgba(255,240,240,0.5)!important;border-color:rgba(212,32,48,0.3)!important}
+body.light .sphead{background:rgba(240,235,255,0.8);border-color:rgba(112,64,204,0.2)}
+body.light .ops-banner{background:rgba(212,32,48,0.08)}
+body.light .scene{border-color:var(--b2)}
+/* Light mode env themes */
+body.light.e-net{background-color:#eaf4f4!important;background-image:linear-gradient(rgba(0,136,128,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,136,128,.05) 1px,transparent 1px)!important;background-size:38px 38px!important}
+body.light.e-tc{background-color:#eaf2f8!important;background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(0,128,184,.1) 0,transparent 100%)!important}
+body.light.e-mc{background-color:#f5ede0!important;background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(150,80,20,.025) 22px,rgba(150,80,20,.025) 23px)!important}
 body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s}
+
+/* Theme button */
+.theme-btn{padding:6px 11px;border-radius:8px;border:1px solid var(--b1);background:var(--s2);color:var(--txt);cursor:pointer;font-size:14px;transition:all .25s}
+.theme-btn:hover{border-color:var(--b2);transform:rotate(20deg)}
 
 /* LOADING SCREEN */
 #loader{position:fixed;inset:0;z-index:99999;background:#05060e;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .7s ease}
@@ -134,28 +190,46 @@ nav.mnav::-webkit-scrollbar{display:none}
 .scene{width:100%;height:155px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative;background-size:cover;background-position:center}
 .scene svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-/* MINING SCENE: real open-pit mine at golden hour + animated overlay */
+/* MINING: your real photo of the plant lit at night */
 .scene-mc{
   background-image:
-    linear-gradient(to bottom,rgba(20,8,0,.60) 0%,rgba(10,5,0,.30) 45%,rgba(8,4,0,.78) 100%),
-    url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&q=80');
-  background-position:center 40%;
+    linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%),
+    url('/static/mine-plant.png');
+  background-size:cover;
+  background-position:center 35%;
 }
-
-/* TELECOM SCENE: real cell tower at dusk/dawn */
-.scene-tc{
+body.light .scene-mc{
   background-image:
-    linear-gradient(to bottom,rgba(1,5,20,.68) 0%,rgba(3,8,20,.28) 45%,rgba(2,6,18,.82) 100%),
-    url('https://images.unsplash.com/photo-1562440499-64b22895b2b1?w=1200&q=80');
-  background-position:center center;
+    linear-gradient(to bottom,rgba(15,6,0,.30) 0%,rgba(8,4,0,.08) 45%,rgba(10,5,0,.48) 100%),
+    url('/static/mine-plant.png');
 }
 
-/* NETWORK SCENE: infrastructure/engineering at dawn */
+/* NETWORK: your real server room photo */
 .scene-net{
   background-image:
-    linear-gradient(to bottom,rgba(0,10,10,.68) 0%,rgba(1,10,10,.28) 45%,rgba(1,8,8,.82) 100%),
-    url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80');
-  background-position:center 30%;
+    linear-gradient(to bottom,rgba(0,6,10,.60) 0%,rgba(0,4,8,.18) 45%,rgba(0,5,9,.75) 100%),
+    url('/static/server-room.png');
+  background-size:cover;
+  background-position:center center;
+}
+body.light .scene-net{
+  background-image:
+    linear-gradient(to bottom,rgba(0,6,10,.32) 0%,rgba(0,4,8,.08) 45%,rgba(0,5,9,.45) 100%),
+    url('/static/server-room.png');
+}
+
+/* TELECOM: your real Zimbabwean red/white lattice tower */
+.scene-tc{
+  background-image:
+    linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%),
+    url('/static/tc-tower.png');
+  background-size:cover;
+  background-position:center 25%;
+}
+body.light .scene-tc{
+  background-image:
+    linear-gradient(to bottom,rgba(2,4,16,.40) 0%,rgba(2,4,16,.10) 45%,rgba(2,4,16,.50) 100%),
+    url('/static/tc-tower.png');
 }
 
 /* GLOBAL TOOLTIP (click-based) */
@@ -395,6 +469,7 @@ canvas{max-height:158px!important}
   <div class="hrgt">
     <div class="live-pill"><span class="ldot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
     <button class="ops-btn" id="ops-btn" onclick="toggleOpsMode()">⊕ Focus Mode</button>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">☀</button>
     <button class="btn btn-acc" onclick="exportReport()">Export PDF</button>
   </div>
 </header>
@@ -830,6 +905,15 @@ canvas{max-height:158px!important}
     <div class="ptag"><b>DNP3</b> CBS safety</div>
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
+  <div class="ccard" style="margin-bottom:13px">
+    <div class="ctitle">Platform architecture — IISentinel™ system health</div>
+    <div class="igrid" style="margin-top:10px" id="platform-grid">
+      <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Unwritten readings</div></div>
+      <div class="icard"><div class="ititle">Cache age</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Data freshness</div></div>
+      <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
+      <div class="icard"><div class="ititle">Ingestion model</div><div class="ival cg">Queued</div><div class="isub">YouTube-style buffer</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ CBS SAFETY ═══ -->
@@ -888,7 +972,7 @@ canvas{max-height:158px!important}
           L2/L3 interface statistics (SNMP ifTable)
         </div>
         <table class="en-table">
-          <tr><th>Interface</th><th>Utilisation</th><th>CRC errors</th><th>State</th></tr>
+           <thead><th>Interface</th><th>Utilisation</th><th>CRC errors</th><th>State</th></thead>
           <tbody id="en-net-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run network_infra_collector.py</td></tr></tbody>
         </table>
       </div>
@@ -899,7 +983,7 @@ canvas{max-height:158px!important}
           Routing protocol state (BGP/OSPF)
         </div>
         <table class="en-table">
-          <tr><th>Device</th><th>Protocol</th><th>Neighbours</th><th>State</th></tr>
+           <thead><th>Device</th><th>Protocol</th><th>Neighbours</th><th>State</th></thead>
           <tbody id="en-bgp-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run network_infra_collector.py</td></tr></tbody>
         </table>
       </div>
@@ -910,7 +994,7 @@ canvas{max-height:158px!important}
           RF &amp; microwave link metrics (dBm / SNR)
         </div>
         <table class="en-table">
-          <tr><th>Link</th><th>Rx level (dBm)</th><th>SNR (dB)</th><th>BER</th></tr>
+           <thead><th>Link</th><th>Rx level (dBm)</th><th>SNR (dB)</th><th>BER</th></thead>
           <tbody id="en-rf-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run telecom_collector.py</td></tr></tbody>
         </table>
       </div>
@@ -921,7 +1005,7 @@ canvas{max-height:158px!important}
           Industrial asset metrics (Profinet / Modbus TCP)
         </div>
         <table class="en-table">
-          <tr><th>Asset</th><th>MTBF est. (h)</th><th>OEE %</th><th>Condition</th></tr>
+           <thead><th>Asset</th><th>MTBF est. (h)</th><th>OEE %</th><th>Condition</th></thead>
           <tbody id="en-ind-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run mining_collector.py</td></tr></tbody>
         </table>
       </div>
@@ -932,7 +1016,7 @@ canvas{max-height:158px!important}
           QoS &amp; traffic class analysis (DSCP / jitter)
         </div>
         <table class="en-table">
-          <tr><th>Device</th><th>Jitter (ms)</th><th>Queue drops</th><th>DSCP class</th></tr>
+           <thead><th>Device</th><th>Jitter (ms)</th><th>Queue drops</th><th>DSCP class</th></thead>
           <tbody id="en-qos-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run collectors to populate</td></tr></tbody>
         </table>
       </div>
@@ -943,7 +1027,7 @@ canvas{max-height:158px!important}
           CBS / DNP3 safety protocol diagnostics
         </div>
         <table class="en-table">
-          <tr><th>CBS unit</th><th>Link quality</th><th>Last hold time</th><th>MTTR (min)</th></tr>
+           <thead><th>CBS unit</th><th>Link quality</th><th>Last hold time</th><th>MTTR (min)</th></thead>
           <tbody id="en-cbs-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr></tbody>
         </table>
       </div>
@@ -1694,6 +1778,39 @@ async function resolveInc(id){
   await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});
   toast('Resolved','By '+spName,'tg');loadInc();
 }
+
+/* ── THEME TOGGLE ── */
+let lightMode=false;
+function toggleTheme(){
+  lightMode=!lightMode;
+  document.body.classList.toggle('light',lightMode);
+  document.getElementById('theme-btn').textContent=lightMode?'🌙':'☀';
+  localStorage.setItem('iisentinel-theme',lightMode?'light':'dark');
+}
+// Restore saved theme
+if(localStorage.getItem('iisentinel-theme')==='light'){
+  lightMode=true;document.body.classList.add('light');
+  document.getElementById('theme-btn').textContent='🌙';
+}
+
+/* ── PLATFORM OBSERVABILITY FETCH ── */
+async function fetchPlatform(){
+  try{
+    const r=await fetch(B+'/api/platform');
+    const d=await r.json();
+    const qEl=document.getElementById('p-queue');
+    if(qEl){
+      qEl.textContent=d.queue_depth||'0';
+      qEl.className='ival '+(d.queue_depth>50?'cr':d.queue_depth>10?'cw':'ca');
+    }
+    const cEl=document.getElementById('p-cache');
+    if(cEl)cEl.textContent=d.cache_age_seconds+'s';
+    const dEl=document.getElementById('p-devs');
+    if(dEl)dEl.textContent=d.devices_tracked||'0';
+  }catch(e){}
+}
+setInterval(fetchPlatform,12000);
+fetchPlatform();
 
 fetchAll();
 setInterval(fetchAll,10000);
