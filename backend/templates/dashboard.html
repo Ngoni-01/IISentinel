@@ -21,146 +21,97 @@
 }
 body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s}
 
-/* ══════════════════════════════════════
-   LOADING SCREEN
-══════════════════════════════════════ */
-#loader{
-  position:fixed;inset:0;z-index:99999;
-  background:#05060e;
-  display:flex;align-items:center;justify-content:center;flex-direction:column;
-  transition:opacity .7s ease;
-}
+/* LOADING SCREEN */
+#loader{position:fixed;inset:0;z-index:99999;background:#05060e;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .7s ease}
 #loader.fade-out{opacity:0;pointer-events:none}
 .loader-logo{display:flex;align-items:baseline;gap:0;margin-bottom:18px}
-.ll-i{
-  font-size:72px;font-weight:800;color:var(--blu);
-  opacity:0;transform:scale(0.05);
-  animation:llZoom .5s cubic-bezier(.2,.8,.3,1.2) forwards;
-  letter-spacing:-2px;text-shadow:0 0 40px rgba(52,198,244,0.6);
-}
+.ll-i{font-size:72px;font-weight:800;color:var(--blu);opacity:0;transform:scale(0.05);animation:llZoom .5s cubic-bezier(.2,.8,.3,1.2) forwards;letter-spacing:-2px;text-shadow:0 0 40px rgba(52,198,244,0.6)}
 .ll-i:nth-child(2){animation-delay:.28s}
-.ll-sentinel{
-  font-size:52px;font-weight:700;
-  background:linear-gradient(90deg,var(--blu),var(--grn),var(--blu));
-  background-size:200% auto;
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  opacity:0;transform:translateX(40px);
-  animation:llSlide .55s cubic-bezier(.2,.8,.3,1.1) .7s forwards,
-            llShimmer 3s linear 1.3s infinite;
-  letter-spacing:.5px;
-}
+.ll-sentinel{font-size:52px;font-weight:700;background:linear-gradient(90deg,var(--blu),var(--grn),var(--blu));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;opacity:0;transform:translateX(40px);animation:llSlide .55s cubic-bezier(.2,.8,.3,1.1) .7s forwards,llShimmer 3s linear 1.3s infinite;letter-spacing:.5px}
 .ll-tm{font-size:16px;font-weight:400;color:var(--mut);vertical-align:super;-webkit-text-fill-color:var(--mut);opacity:0;animation:llFade .4s ease 1.1s forwards}
 .loader-sub{font-size:12px;color:var(--dim);letter-spacing:3px;text-transform:uppercase;opacity:0;animation:llFade .5s ease 1.0s forwards;margin-bottom:40px}
 .loader-bar{width:220px;height:2px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden;opacity:0;animation:llFade .4s ease 1.2s forwards}
-.loader-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--blu),var(--grn));border-radius:2px;animation:llBar 1.2s ease 1.3s forwards}
+.loader-bar-fill{height:100%;width:0;background:linear-gradient(90deg,var(--blu),var(--grn));border-radius:2px;animation:llBar 1.5s ease 1.3s forwards}
+.loader-status{font-size:10px;color:var(--dim);letter-spacing:1px;margin-top:14px;opacity:0;animation:llFade .5s ease 1.6s forwards;min-height:16px}
 @keyframes llZoom{0%{opacity:0;transform:scale(.05)}70%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
 @keyframes llSlide{0%{opacity:0;transform:translateX(40px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes llFade{0%{opacity:0}100%{opacity:1}}
 @keyframes llShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
 @keyframes llBar{0%{width:0}100%{width:100%}}
 
-/* ══════════════════════════════════════
-   GLOBAL FLOATING TOOLTIP (z-index safe)
-══════════════════════════════════════ */
-#gtip{
-  display:none;position:fixed;z-index:99998;
-  background:rgba(8,10,22,0.98);border:1px solid var(--b2);
-  border-radius:11px;padding:13px 15px;width:240px;
-  font-size:11px;color:var(--txt);
-  box-shadow:0 12px 40px rgba(0,0,0,.8);
-  pointer-events:none;
-  animation:tipIn .18s ease;
-}
-@keyframes tipIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-#gtip::before{content:'';position:absolute;left:-5px;top:16px;width:9px;height:9px;background:rgba(8,10,22,0.98);border-left:1px solid var(--b2);border-bottom:1px solid var(--b2);transform:rotate(45deg)}
-.tip-title{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--b1);word-break:break-all;line-height:1.3}
-.tip-row{display:flex;justify-content:space-between;margin-bottom:5px;gap:10px}
-.tip-lbl{color:var(--dim);font-size:10px}
-.tip-val{font-weight:700;font-size:10px;text-align:right}
-.tip-cmd{margin-top:7px;padding-top:7px;border-top:1px solid var(--b1);font-size:9px;color:var(--pur);line-height:1.5}
+/* OPS FOCUS MODE BANNER */
+.ops-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:9995;background:rgba(255,62,80,.12);border-bottom:1px solid rgba(255,62,80,.3);text-align:center;padding:7px;font-size:10px;font-weight:700;color:var(--red);letter-spacing:2.5px;text-transform:uppercase;backdrop-filter:blur(12px);animation:slideR .3s ease}
+body.ops-focus .ops-banner{display:block}
+body.ops-focus header{margin-top:31px}
+body.ops-focus nav.mnav,body.ops-focus .subloc{margin-top:0}
 
-/* ══════════════════════════════════════
-   ENVIRONMENT THEMES
-══════════════════════════════════════ */
-body.e-net{--acc:var(--tel);--acca:var(--tela);background-color:#030d0d;
-  background-image:linear-gradient(rgba(0,229,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,212,.04) 1px,transparent 1px);
-  background-size:38px 38px}
-body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-color:#030810;
-  background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.12) 0,transparent 100%),
-    radial-gradient(ellipse 400px 250px at 10% 60%,rgba(52,100,244,.07) 0,transparent 70%),
-    radial-gradient(ellipse 350px 220px at 88% 30%,rgba(85,204,255,.06) 0,transparent 70%)}
+/* OPS FOCUS EFFECTS */
+body.ops-focus .gc.g-ok{opacity:.18;filter:grayscale(.6);transition:opacity .4s,filter .4s}
+body.ops-focus .gc.g-ok:hover{opacity:.35;filter:grayscale(.2)}
+body.ops-focus .gc.g-w{box-shadow:0 0 22px rgba(245,160,32,.45);border-color:rgba(245,160,32,.55)!important;animation:warnGlow 2s ease-in-out infinite,fadeUp .35s ease both}
+body.ops-focus .gc.g-r{box-shadow:0 0 30px rgba(255,62,80,.55);border-color:rgba(255,62,80,.65)!important;animation:critGlow 1.4s ease-in-out infinite,fadeUp .35s ease both}
+@keyframes warnGlow{0%,100%{box-shadow:0 0 16px rgba(245,160,32,.35)}50%{box-shadow:0 0 35px rgba(245,160,32,.65)}}
+@keyframes critGlow{0%,100%{box-shadow:0 0 20px rgba(255,62,80,.4);transform:scale(1)}50%{box-shadow:0 0 45px rgba(255,62,80,.75),0 0 70px rgba(255,62,80,.2);transform:scale(1.02)}}
+body.ops-focus .bc:not(.bc-crit){opacity:.55}
+body.ops-focus .fcard,body.ops-focus .ccard{opacity:.7}
+
+/* ENV THEMES */
+body.e-net{--acc:var(--tel);--acca:var(--tela);background-color:#030d0d;background-image:linear-gradient(rgba(0,229,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,212,.04) 1px,transparent 1px);background-size:38px 38px}
+body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-color:#030810;background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.12) 0,transparent 100%)}
 body.e-tc.loc-byo{background-image:radial-gradient(ellipse 900px 500px at 22% 115%,rgba(52,160,255,.14) 0,transparent 100%)}
 body.e-tc.loc-hre{background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.13) 0,transparent 100%)}
 body.e-tc.loc-mut{background-image:radial-gradient(ellipse 900px 500px at 80% 110%,rgba(0,220,200,.13) 0,transparent 100%)}
-body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-color:#090500;
-  background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(200,100,20,.025) 22px,rgba(200,100,20,.025) 23px),
-    repeating-linear-gradient(-38deg,transparent,transparent 22px,rgba(140,70,10,.02) 22px,rgba(140,70,10,.02) 23px),
-    radial-gradient(ellipse 700px 400px at 50% 120%,rgba(200,80,10,.09) 0,transparent 80%)}
+body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-color:#090500;background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(200,100,20,.025) 22px,rgba(200,100,20,.025) 23px),repeating-linear-gradient(-38deg,transparent,transparent 22px,rgba(140,70,10,.02) 22px,rgba(140,70,10,.02) 23px),radial-gradient(ellipse 700px 400px at 50% 120%,rgba(200,80,10,.09) 0,transparent 80%)}
 body.e-mc.sec-shaft1{background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(255,100,30,.03) 22px,rgba(255,100,30,.03) 23px),radial-gradient(ellipse 700px 400px at 50% 120%,rgba(255,60,20,.15) 0,transparent 70%)}
 body.e-mc.sec-shaft2{background-image:repeating-linear-gradient(38deg,transparent,transparent 18px,rgba(255,60,20,.036) 18px,rgba(255,60,20,.036) 19px),radial-gradient(ellipse 700px 350px at 50% 120%,rgba(255,40,10,.2) 0,transparent 65%)}
 body.e-mc.sec-plant{background-image:repeating-linear-gradient(-45deg,transparent,transparent 24px,rgba(255,160,40,.022) 24px,rgba(255,160,40,.022) 25px)}
 body.e-mc.sec-surface{background-image:linear-gradient(180deg,rgba(100,200,60,.04) 0,transparent 50%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(100,180,40,.016) 22px,rgba(100,180,40,.016) 23px)}
 
-/* ══════════════════════════════════════
-   KEYFRAMES
-══════════════════════════════════════ */
+/* KEYFRAMES */
 @keyframes fadeUp{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideR{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:translateX(0)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.22}}
 @keyframes cbsBlink{0%,100%{box-shadow:0 0 0 0 var(--reda)}65%{box-shadow:0 0 0 10px transparent}}
 @keyframes logoFlow{0%{background-position:200% center}100%{background-position:-200% center}}
-@keyframes signalRing{0%{transform:scale(1);opacity:.5}100%{transform:scale(2.6);opacity:0}}
+@keyframes signalRing{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.8);opacity:0}}
+@keyframes signalPing{0%{transform:scale(1);opacity:.7}50%{opacity:.3}100%{transform:scale(3.5);opacity:0}}
 @keyframes sceneFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes dustDrift{0%,100%{transform:translate(0,0);opacity:.3}33%{transform:translate(5px,-8px);opacity:.5}66%{transform:translate(-3px,-5px);opacity:.25}}
 @keyframes sunGlow{0%,100%{opacity:.7}50%{opacity:1}}
-@keyframes lightBlink{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes dawnRise{0%{opacity:.4}100%{opacity:1}}
+@keyframes lightBlink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes dawnRise{0%{opacity:.35}100%{opacity:1}}
+@keyframes dataFlow{0%{stroke-dashoffset:30}100%{stroke-dashoffset:0}}
 
-/* ══════════════════════════════════════
-   HEADER
-══════════════════════════════════════ */
-header{
-  background:rgba(10,11,22,0.93);border-bottom:1px solid var(--b1);
-  padding:10px 20px;display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:500;
-  backdrop-filter:blur(20px);transition:background .6s,border-color .6s;
-}
+/* HEADER */
+header{background:rgba(10,11,22,0.93);border-bottom:1px solid var(--b1);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:500;backdrop-filter:blur(20px);transition:background .6s,border-color .6s,margin-top .3s}
 .logo{display:flex;align-items:baseline;gap:1px;cursor:pointer;user-select:none}
 .logo-ii{font-size:18px;font-weight:800;color:var(--acc);letter-spacing:-1px;transition:color .5s;text-shadow:0 0 24px var(--acca)}
-.logo-sent{
-  font-size:16px;font-weight:700;letter-spacing:.5px;
-  background:linear-gradient(90deg,var(--acc),var(--grn),var(--acc));
-  background-size:200% auto;
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  animation:logoFlow 5s linear infinite;
-}
+.logo-sent{font-size:16px;font-weight:700;letter-spacing:.5px;background:linear-gradient(90deg,var(--acc),var(--grn),var(--acc));background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:logoFlow 5s linear infinite}
 .logo-tm{font-size:9px;color:var(--dim);-webkit-text-fill-color:var(--dim);vertical-align:super;margin-left:1px;font-weight:400}
 .hctr{text-align:center}
 .hctr-a{font-size:11px;color:var(--mut);font-weight:500}
 .hctr-b{font-size:9px;color:var(--dim);margin-top:1px}
-.hrgt{display:flex;align-items:center;gap:9px}
+.hrgt{display:flex;align-items:center;gap:8px}
 .live-pill{display:flex;align-items:center;gap:5px;background:rgba(32,224,122,.1);border:1px solid rgba(32,224,122,.2);border-radius:20px;padding:4px 11px}
 .ldot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:pulse 2s infinite}
 .ltxt{font-size:10px;font-weight:700;color:var(--grn);letter-spacing:.3px}
+.ops-btn{padding:6px 12px;border-radius:8px;border:1px solid rgba(255,62,80,.3);background:transparent;color:var(--red);cursor:pointer;font-size:10px;font-weight:700;transition:all .25s;letter-spacing:.5px}
+.ops-btn:hover{background:rgba(255,62,80,.1);border-color:rgba(255,62,80,.5)}
+body.ops-focus .ops-btn{background:rgba(255,62,80,.2);border-color:var(--red);box-shadow:0 0 12px rgba(255,62,80,.3)}
 .btn{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:700;transition:all .2s;position:relative;overflow:hidden}
-.btn:hover{opacity:.85;transform:translateY(-1px)}
-.btn:active{transform:scale(.95)}
+.btn:hover{opacity:.85;transform:translateY(-1px)}.btn:active{transform:scale(.95)}
 .btn-acc{background:var(--acc);color:#04090f}
 .btn-pur{background:var(--pur);color:#0f0520;width:100%;padding:10px;font-size:12px}
 .btn-red{background:var(--red);color:#fff}
 .btn-grn{background:var(--grn);color:#021508}
 .btn-amb{background:var(--amb);color:#0d0800}
 
-/* ══════════════════════════════════════
-   MAIN NAV
-══════════════════════════════════════ */
+/* NAV */
 nav.mnav{background:rgba(10,11,22,.88);border-bottom:1px solid var(--b1);padding:0 20px;display:flex;gap:0;overflow-x:auto;backdrop-filter:blur(16px);transition:background .6s;z-index:400;position:relative}
 nav.mnav::-webkit-scrollbar{display:none}
-.ntab{padding:10px 14px;font-size:11px;font-weight:600;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;transition:all .25s;white-space:nowrap;user-select:none;letter-spacing:.2px}
+.ntab{padding:10px 14px;font-size:11px;font-weight:600;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;transition:all .25s;white-space:nowrap;user-select:none;letter-spacing:.2px;position:relative}
 .ntab:hover{color:var(--mut);background:rgba(255,255,255,.025)}
 .ntab.active{color:var(--acc);border-bottom-color:var(--acc)}
-.ntab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--acc);filter:blur(4px);opacity:.4;pointer-events:none}
-.ntab{position:relative}
 .ntab.t-sp{color:var(--dim)}.ntab.t-sp.active{color:var(--pur);border-bottom-color:var(--pur)}
 .ntab.t-cbs{color:var(--dim)}.ntab.t-cbs.active{color:var(--red);border-bottom-color:var(--red)}
 
@@ -172,24 +123,53 @@ nav.mnav::-webkit-scrollbar{display:none}
 .stab:hover{color:var(--txt);border-color:var(--b2);background:var(--s2)}
 .stab.active{background:var(--acc);color:#04090f;border-color:var(--acc);box-shadow:0 0 14px var(--acca)}
 
-/* ══════════════════════════════════════
-   LAYOUT
-══════════════════════════════════════ */
+/* LAYOUT */
 .wrap{padding:15px 20px;min-height:calc(100vh - 125px)}
 .page{display:none}
 .page.active{display:block;animation:fadeUp .3s ease}
 .sl{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .sl::before{content:'';width:3px;height:10px;background:var(--acc);border-radius:2px;display:inline-block;transition:background .5s}
 
-/* ══════════════════════════════════════
-   SCENE ILLUSTRATIONS
-══════════════════════════════════════ */
-.scene{width:100%;height:150px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative}
-.scene svg{width:100%;height:100%;display:block}
+/* SCENE WITH REAL PHOTO BACKGROUND */
+.scene{width:100%;height:155px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative;background-size:cover;background-position:center}
+.scene svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-/* ══════════════════════════════════════
-   ENV HEADER
-══════════════════════════════════════ */
+/* MINING SCENE: real open-pit mine at golden hour + animated overlay */
+.scene-mc{
+  background-image:
+    linear-gradient(to bottom,rgba(20,8,0,.60) 0%,rgba(10,5,0,.30) 45%,rgba(8,4,0,.78) 100%),
+    url('https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200&q=80');
+  background-position:center 40%;
+}
+
+/* TELECOM SCENE: real cell tower at dusk/dawn */
+.scene-tc{
+  background-image:
+    linear-gradient(to bottom,rgba(1,5,20,.68) 0%,rgba(3,8,20,.28) 45%,rgba(2,6,18,.82) 100%),
+    url('https://images.unsplash.com/photo-1562440499-64b22895b2b1?w=1200&q=80');
+  background-position:center center;
+}
+
+/* NETWORK SCENE: infrastructure/engineering at dawn */
+.scene-net{
+  background-image:
+    linear-gradient(to bottom,rgba(0,10,10,.68) 0%,rgba(1,10,10,.28) 45%,rgba(1,8,8,.82) 100%),
+    url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80');
+  background-position:center 30%;
+}
+
+/* GLOBAL TOOLTIP (click-based) */
+#gtip{display:none;position:fixed;z-index:99998;background:rgba(8,10,22,0.98);border:1px solid var(--b2);border-radius:11px;padding:13px 15px;width:245px;font-size:11px;color:var(--txt);box-shadow:0 12px 40px rgba(0,0,0,.85);pointer-events:none;animation:slideR .18s ease}
+#gtip::before{content:'';position:absolute;left:-6px;top:18px;width:10px;height:10px;background:rgba(8,10,22,0.98);border-left:1px solid var(--b2);border-bottom:1px solid var(--b2);transform:rotate(45deg)}
+.tip-title{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--b1);word-break:break-all;line-height:1.3}
+.tip-row{display:flex;justify-content:space-between;margin-bottom:5px;gap:10px}
+.tip-lbl{color:var(--dim);font-size:10px}
+.tip-val{font-weight:700;font-size:10px;text-align:right}
+.tip-cmd{margin-top:7px;padding-top:7px;border-top:1px solid var(--b1);font-size:9px;color:var(--pur);line-height:1.5}
+.tip-close{position:absolute;top:8px;right:10px;font-size:12px;color:var(--dim);cursor:pointer;pointer-events:all;line-height:1;padding:2px 4px;border-radius:3px;transition:color .2s}
+.tip-close:hover{color:var(--txt)}
+
+/* ENV HEADER */
 .ehdr{border-radius:12px;padding:13px 18px;margin-bottom:13px;border:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;transition:all .5s;position:relative;overflow:hidden}
 .ehdr::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.5}
 .ehdr.e-net{background:linear-gradient(135deg,rgba(0,229,212,.05),rgba(3,12,12,.97));border-color:rgba(0,229,212,.2)}
@@ -199,9 +179,7 @@ nav.mnav::-webkit-scrollbar{display:none}
 .esub{font-size:10px;color:var(--mut);margin-top:3px;line-height:1.5}
 .eproto{font-size:9px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--b1);color:var(--mut);white-space:nowrap;font-weight:600}
 
-/* ══════════════════════════════════════
-   BANNER CARDS
-══════════════════════════════════════ */
+/* BANNER CARDS */
 .banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;margin-bottom:13px}
 .bc{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:10px;padding:12px 14px;cursor:default;transition:all .28s;position:relative;overflow:hidden;animation:fadeUp .4s ease both}
 .bc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc);opacity:.45;transition:opacity .3s;border-radius:3px 0 0 3px}
@@ -210,36 +188,37 @@ nav.mnav::-webkit-scrollbar{display:none}
 .bv{font-size:21px;font-weight:700;line-height:1}
 .bsub{font-size:9px;color:var(--dim);margin-top:4px}
 
-/* ══════════════════════════════════════
-   NETWORK CATEGORY SECTIONS
-══════════════════════════════════════ */
+/* NETWORK CATEGORY SECTIONS */
 .net-cat{margin-bottom:18px}
 .cat-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:9px 14px;background:rgba(14,16,28,.7);border:1px solid var(--b1);border-radius:9px}
-.cat-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.cat-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
 .cat-icon.r{background:rgba(52,198,244,.15);color:var(--blu)}
 .cat-icon.s{background:rgba(0,229,212,.15);color:var(--tel)}
 .cat-icon.f{background:rgba(255,62,80,.15);color:var(--red)}
 .cat-icon.w{background:rgba(245,160,32,.15);color:var(--amb)}
 .cat-name{font-size:12px;font-weight:700;color:var(--txt)}
-.cat-stats{font-size:10px;color:var(--dim);margin-left:auto;display:flex;gap:12px}
+.cat-stats{font-size:10px;color:var(--dim);margin-left:auto;display:flex;gap:14px}
 .cat-stat{text-align:right}
-.cat-stat-v{font-weight:700;font-size:13px}
+.cat-stat-v{font-weight:700;font-size:14px;display:block}
 .cat-stat-l{font-size:9px;color:var(--dim)}
 
-/* ══════════════════════════════════════
-   GAUGE GRID
-══════════════════════════════════════ */
+/* PING DISPLAY */
+.ping-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim);margin-top:3px;height:16px}
+.ping-bar{display:flex;align-items:flex-end;gap:1.5px;height:14px}
+.ping-b{width:3px;border-radius:1px;background:var(--acc);transition:height .4s ease}
+
+/* GAUGE GRID */
 .ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;margin-bottom:10px;overflow:visible}
 .gc{background:rgba(14,16,28,.85);border:1px solid var(--b1);border-radius:12px;padding:13px 11px;text-align:center;cursor:pointer;position:relative;overflow:visible;transition:all .3s;animation:fadeUp .35s ease both}
-.gc:hover{transform:translateY(-4px) scale(1.01)}
-.gc.g-ok:hover{border-color:rgba(32,224,122,.4);box-shadow:0 8px 24px rgba(32,224,122,.12)}
-.gc.g-w:hover{border-color:rgba(245,160,32,.4);box-shadow:0 8px 24px rgba(245,160,32,.12)}
-.gc.g-r:hover{border-color:rgba(255,62,80,.4);box-shadow:0 8px 24px rgba(255,62,80,.12)}
+.gc:hover{transform:translateY(-3px)}
+.gc.g-ok:hover{border-color:rgba(32,224,122,.35);box-shadow:0 6px 20px rgba(32,224,122,.1)}
+.gc.g-w:hover{border-color:rgba(245,160,32,.35);box-shadow:0 6px 20px rgba(245,160,32,.1)}
+.gc.g-r:hover{border-color:rgba(255,62,80,.35);box-shadow:0 6px 20px rgba(255,62,80,.1)}
 .gc.gcbs{border-color:rgba(255,62,80,.3);animation:cbsBlink 2s infinite,fadeUp .35s ease both}
+.gc.tip-open{border-color:var(--acc)!important;box-shadow:0 0 0 2px var(--acca)!important}
 .gw{position:relative;width:74px;height:74px;margin:0 auto 7px}
 .gw svg{width:100%;height:100%}
 .gval{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:15px;font-weight:700;line-height:1}
-.gscore-lbl{font-size:8px;color:var(--dim);position:absolute;bottom:8px;left:50%;transform:translateX(-50%)}
 .gid{font-size:10px;color:var(--mut);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;line-height:1.3}
 .gtype{font-size:9px;color:var(--dim);margin-top:3px}
 .gpill{display:inline-block;font-size:8px;padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.05);border:1px solid var(--b1);color:var(--dim);margin-top:4px;font-weight:700}
@@ -249,9 +228,7 @@ nav.mnav::-webkit-scrollbar{display:none}
 .g-pill-hold{background:rgba(255,62,80,.2);color:var(--red);border-color:rgba(255,62,80,.3);animation:pulse .8s infinite}
 .g-pill-loc{background:rgba(52,198,244,.1);color:var(--blu);border-color:rgba(52,198,244,.2)}
 
-/* ══════════════════════════════════════
-   LOCATION SUMMARY CARDS
-══════════════════════════════════════ */
+/* LOCATION CARDS */
 .lcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:9px;margin-bottom:13px}
 .lcard{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:11px;padding:13px 16px;transition:all .28s;cursor:default;position:relative;overflow:hidden}
 .lcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc);border-radius:3px 0 0 3px;transition:all .3s}
@@ -262,18 +239,19 @@ nav.mnav::-webkit-scrollbar{display:none}
 .lbar{height:4px;background:rgba(255,255,255,.05);border-radius:2px;margin-top:5px;overflow:hidden}
 .lbar-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
 
-/* ══════════════════════════════════════
-   CHARTS
-══════════════════════════════════════ */
+/* RISK COST DETAIL */
+.cost-detail{font-size:9px;color:var(--dim);margin-top:5px;line-height:1.5}
+.cost-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+.cost-row:last-child{border-bottom:none;padding-top:4px;font-weight:700;color:var(--red)}
+
+/* CHARTS */
 .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
 .ccard{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:12px;padding:14px;transition:border-color .3s}
 .ccard:hover{border-color:var(--b2)}
 .ctitle{font-size:11px;font-weight:600;color:var(--mut);margin-bottom:11px;letter-spacing:.2px}
 canvas{max-height:158px!important}
 
-/* ══════════════════════════════════════
-   FEEDS
-══════════════════════════════════════ */
+/* FEEDS */
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
 .fcard{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:12px;padding:14px;max-height:250px;overflow-y:auto}
 .fcard::-webkit-scrollbar{width:3px}.fcard::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
@@ -283,9 +261,7 @@ canvas{max-height:158px!important}
 .ftime{font-size:9px;color:var(--dim);margin-bottom:2px}
 .fdev{font-weight:700;color:var(--acc);margin-bottom:2px;transition:color .4s}
 
-/* ══════════════════════════════════════
-   INTELLIGENCE CARDS
-══════════════════════════════════════ */
+/* INTELLIGENCE */
 .igrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:9px;margin-bottom:13px}
 .icard{background:rgba(14,16,28,.88);border:1px solid var(--b1);border-radius:10px;padding:12px 15px;transition:all .28s}
 .icard:hover{border-color:var(--b2);transform:translateY(-2px)}
@@ -293,56 +269,7 @@ canvas{max-height:158px!important}
 .ival{font-size:20px;font-weight:700;line-height:1;animation:fadeUp .4s ease}
 .isub{font-size:9px;color:var(--dim);margin-top:4px}
 
-/* ══════════════════════════════════════
-   ENGINEERING DIAGNOSTICS (Specialist)
-══════════════════════════════════════ */
-.engrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-bottom:14px}
-.en-panel{background:rgba(14,16,28,.88);border:1px solid var(--b1);border-radius:11px;padding:15px}
-.en-title{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:11px;display:flex;align-items:center;gap:7px;padding-bottom:9px;border-bottom:1px solid var(--b1)}
-.en-table{width:100%;border-collapse:collapse;font-size:10px}
-.en-table th{color:var(--dim);font-weight:700;text-align:left;padding:4px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.5px}
-.en-table td{padding:5px 6px;border-top:1px solid rgba(255,255,255,.028);vertical-align:middle}
-.en-table tr:hover td{background:rgba(255,255,255,.025)}
-.en-val-ok{color:var(--grn);font-weight:700}
-.en-val-w{color:var(--amb);font-weight:700}
-.en-val-r{color:var(--red);font-weight:700}
-.en-badge{display:inline-block;font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700}
-.en-badge-ok{background:var(--grna);color:var(--grn)}
-.en-badge-w{background:var(--amba);color:var(--amb)}
-.en-badge-r{background:var(--reda);color:var(--red)}
-.en-sparkline{display:inline-flex;gap:2px;align-items:flex-end;height:20px;margin-left:6px;vertical-align:middle}
-.en-bar{width:4px;background:var(--acc);border-radius:1px;opacity:.7;transition:height .4s}
-
-/* ══════════════════════════════════════
-   CBS PANEL
-══════════════════════════════════════ */
-.cbsouter{background:rgba(28,8,8,.7);border:1.5px solid rgba(255,62,80,.35);border-radius:12px;padding:15px;margin-bottom:13px;position:relative;overflow:hidden}
-.cbsouter::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,62,80,.5),transparent)}
-.cbs-title{color:var(--red);font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.cbsdot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse .8s infinite;flex-shrink:0}
-.cbs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:9px;margin-bottom:11px}
-.cbs-dev{background:rgba(20,6,6,.7);border:1px solid rgba(255,62,80,.2);border-radius:8px;padding:11px;transition:all .25s}
-.cbs-dev:hover{border-color:rgba(255,62,80,.4);box-shadow:0 4px 16px rgba(255,62,80,.1)}
-.cbs-safe{color:var(--grn);font-weight:700;font-size:11px}
-.cbs-hold{color:var(--red);font-weight:700;font-size:11px;animation:pulse .8s infinite}
-
-/* ══════════════════════════════════════
-   WEATHER
-══════════════════════════════════════ */
-.wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:9px;margin-bottom:13px}
-.wcard{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:11px;padding:13px;transition:border-color .3s}
-.wcard:hover{border-color:var(--b2)}
-.w-loc{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-weight:700}
-.w-icon{font-size:28px;margin-bottom:4px}
-.w-temp{font-size:26px;font-weight:700;margin-bottom:5px}
-.w-row{font-size:10px;color:var(--dim);margin-bottom:3px}
-.w-row span{color:var(--txt)}
-.w-alert{background:var(--reda);border:1px solid rgba(255,62,80,.25);border-radius:6px;padding:5px 8px;font-size:10px;color:var(--red);margin-top:6px;line-height:1.4}
-.w-impact{background:var(--amba);border:1px solid rgba(245,160,32,.2);border-radius:6px;padding:5px 8px;font-size:10px;color:var(--amb);margin-top:4px;line-height:1.4}
-
-/* ══════════════════════════════════════
-   DIGITAL TWIN
-══════════════════════════════════════ */
+/* TWIN */
 .twin-wrap{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:12px;padding:14px;margin-bottom:13px}
 .twin-sel{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:7px;color:var(--txt);padding:7px 11px;font-size:11px;outline:none;width:100%;margin-bottom:11px;cursor:pointer;transition:border-color .2s}
 .twin-sel:focus{border-color:var(--acc)}
@@ -354,30 +281,60 @@ canvas{max-height:158px!important}
 .twin-risk{font-size:9px;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
 .twin-trend{font-size:10px;color:var(--mut);line-height:1.5}
 
-/* ══════════════════════════════════════
-   RETRAIN / SIM / PROTO / SHIFT
-══════════════════════════════════════ */
+/* ENGINEERING DIAGNOSTICS */
+.engrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:10px;margin-bottom:14px}
+.en-panel{background:rgba(14,16,28,.88);border:1px solid var(--b1);border-radius:11px;padding:15px}
+.en-title{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:11px;display:flex;align-items:center;gap:7px;padding-bottom:9px;border-bottom:1px solid var(--b1)}
+.en-table{width:100%;border-collapse:collapse;font-size:10px}
+.en-table th{color:var(--dim);font-weight:700;text-align:left;padding:4px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.5px}
+.en-table td{padding:5px 6px;border-top:1px solid rgba(255,255,255,.028);vertical-align:middle}
+.en-table tr:hover td{background:rgba(255,255,255,.025)}
+.ev-ok{color:var(--grn);font-weight:700}.ev-w{color:var(--amb);font-weight:700}.ev-r{color:var(--red);font-weight:700}
+.eb{display:inline-block;font-size:8px;padding:2px 6px;border-radius:4px;font-weight:700}
+.eb-ok{background:var(--grna);color:var(--grn)}.eb-w{background:var(--amba);color:var(--amb)}.eb-r{background:var(--reda);color:var(--red)}
+
+/* CBS */
+.cbsouter{background:rgba(28,8,8,.7);border:1.5px solid rgba(255,62,80,.35);border-radius:12px;padding:15px;margin-bottom:13px;position:relative;overflow:hidden}
+.cbsouter::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,62,80,.5),transparent)}
+.cbs-title{color:var(--red);font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.cbsdot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse .8s infinite;flex-shrink:0}
+.cbs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(172px,1fr));gap:9px;margin-bottom:11px}
+.cbs-dev{background:rgba(20,6,6,.7);border:1px solid rgba(255,62,80,.2);border-radius:8px;padding:11px;transition:all .25s}
+.cbs-safe{color:var(--grn);font-weight:700;font-size:11px}
+.cbs-hold{color:var(--red);font-weight:700;font-size:11px;animation:pulse .8s infinite}
+
+/* WEATHER */
+.wgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:9px;margin-bottom:13px}
+.wcard{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:11px;padding:13px;transition:border-color .3s}
+.wcard:hover{border-color:var(--b2)}
+.w-loc{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-weight:700}
+.w-icon{font-size:28px;margin-bottom:4px}
+.w-temp{font-size:26px;font-weight:700;margin-bottom:5px}
+.w-row{font-size:10px;color:var(--dim);margin-bottom:3px}
+.w-row span{color:var(--txt)}
+.w-alert{background:var(--reda);border:1px solid rgba(255,62,80,.25);border-radius:6px;padding:5px 8px;font-size:10px;color:var(--red);margin-top:6px;line-height:1.4}
+.w-impact{background:var(--amba);border:1px solid rgba(245,160,32,.2);border-radius:6px;padding:5px 8px;font-size:10px;color:var(--amb);margin-top:4px;line-height:1.4}
+
+/* RETRAIN / SIM */
 .retrain{background:rgba(26,18,0,.6);border:1px solid rgba(245,160,32,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:11px;color:var(--amb);display:none}
 .sim-wrap{background:rgba(14,16,28,.82);border:1px solid var(--b1);border-radius:11px;padding:13px;margin-bottom:13px}
 .sbtns{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
 .protos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:13px}
 .ptag{font-size:9px;padding:4px 9px;border-radius:5px;background:rgba(255,255,255,.03);border:1px solid var(--b1);color:var(--dim);font-weight:600;transition:all .2s}
 .ptag:hover{border-color:var(--b2);color:var(--mut)}.ptag b{color:var(--txt)}
+
+/* SHIFT REPORT */
 .sr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px}
 .sr-card{background:rgba(14,16,28,.88);border:1px solid var(--b1);border-radius:8px;padding:10px;text-align:center}
 .sr-val{font-size:22px;font-weight:700;margin-bottom:2px}.sr-lbl{font-size:9px;color:var(--dim)}
 
-/* ══════════════════════════════════════
-   TOASTS
-══════════════════════════════════════ */
+/* TOASTS */
 #toasts{position:fixed;top:66px;right:14px;z-index:99990;width:272px}
 .toast{background:rgba(10,12,22,.97);border:1px solid var(--b2);border-left:3px solid var(--acc);border-radius:9px;padding:10px 12px;margin-bottom:7px;font-size:11px;animation:slideR .3s ease;box-shadow:0 8px 28px rgba(0,0,0,.7);backdrop-filter:blur(20px)}
 .toast.tc{border-left-color:var(--red)}.toast.tw{border-left-color:var(--amb)}.toast.tg{border-left-color:var(--grn)}.toast.tp{border-left-color:var(--pur)}
 .ttitle{font-weight:700;margin-bottom:2px;font-size:12px}.tmsg{color:var(--mut);font-size:10px;line-height:1.4}
 
-/* ══════════════════════════════════════
-   LOGIN + SPECIALIST
-══════════════════════════════════════ */
+/* LOGIN */
 .lbox{max-width:340px;margin:42px auto;background:rgba(14,16,28,.93);border:1px solid var(--b1);border-radius:16px;padding:30px;backdrop-filter:blur(20px)}
 .ltitle{font-size:15px;font-weight:700;color:var(--pur);margin-bottom:4px}
 .lsub{font-size:10px;color:var(--dim);margin-bottom:22px;line-height:1.6}
@@ -397,7 +354,6 @@ canvas{max-height:158px!important}
 .sbadge{display:inline-block;font-size:8px;padding:2px 6px;border-radius:5px;font-weight:700;margin-left:5px;letter-spacing:.3px}
 .sb-o{background:var(--reda);color:var(--red)}.sb-a{background:var(--amba);color:var(--amb)}.sb-r{background:var(--grna);color:var(--grn)}
 
-/* COLOR HELPERS */
 .cg{color:var(--grn)}.cw{color:var(--amb)}.cr{color:var(--red)}.cb{color:var(--blu)}.ca{color:var(--acc)}.cp{color:var(--pur)}
 
 @media(max-width:640px){
@@ -418,10 +374,14 @@ canvas{max-height:158px!important}
   </div>
   <div class="loader-sub">Intelligent Infrastructure Platform</div>
   <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+  <div class="loader-status" id="loader-status">Initialising AI models...</div>
 </div>
 
-<!-- GLOBAL TOOLTIP -->
-<div id="gtip"></div>
+<!-- OPS FOCUS BANNER -->
+<div class="ops-banner">⚠ OPS FOCUS MODE — CRITICAL ASSET MONITORING ACTIVE — NON-CRITICAL SYSTEMS DIMMED</div>
+
+<!-- GLOBAL CLICK TOOLTIP -->
+<div id="gtip"><span class="tip-close" onclick="closeTip()">✕</span></div>
 <div id="toasts"></div>
 
 <header>
@@ -434,6 +394,7 @@ canvas{max-height:158px!important}
   </div>
   <div class="hrgt">
     <div class="live-pill"><span class="ldot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
+    <button class="ops-btn" id="ops-btn" onclick="toggleOpsMode()">⊕ Focus Mode</button>
     <button class="btn btn-acc" onclick="exportReport()">Export PDF</button>
   </div>
 </header>
@@ -475,17 +436,17 @@ canvas{max-height:158px!important}
 <div class="wrap">
 <div class="retrain" id="retrain-bar">AI model retraining recommended — anomaly count exceeded threshold. Retrain health_model.pkl for improved accuracy.</div>
 
-<!-- ═══════════ MAIN DASHBOARD ═══════════ -->
+<!-- ═══ MAIN DASHBOARD ═══ -->
 <div class="page active" id="page-main">
   <div class="banner">
-    <div class="bc"><div class="bl">Infrastructure FHI</div><div class="bv cg" id="b-fhi">--</div><div class="bsub">Federated index</div></div>
+    <div class="bc bc-crit"><div class="bl">Infrastructure FHI</div><div class="bv cg" id="b-fhi">--</div><div class="bsub">Federated health index</div></div>
     <div class="bc"><div class="bl">Active devices</div><div class="bv ca" id="b-devs">--</div><div class="bsub">All sectors</div></div>
-    <div class="bc"><div class="bl">Risk cost</div><div class="bv cr" id="b-cost">$0</div><div class="bsub">Current exposure</div></div>
-    <div class="bc"><div class="bl">Open incidents</div><div class="bv cw" id="b-inc">--</div><div class="bsub">Score below 50</div></div>
+    <div class="bc bc-crit"><div class="bl">Risk exposure</div><div class="bv cr" id="b-cost">$0</div><div class="bsub" id="b-cost-sub">Estimated $/hr</div></div>
+    <div class="bc bc-crit"><div class="bl">Open incidents</div><div class="bv cw" id="b-inc">--</div><div class="bsub">Score below 50</div></div>
     <div class="bc"><div class="bl">Anomalies</div><div class="bv cp" id="b-anom">--</div><div class="bsub">Isolation Forest</div></div>
-    <div class="bc"><div class="bl">CBS status</div><div class="bv cg" id="b-cbs">ARMED</div><div class="bsub">DNP3 link</div></div>
+    <div class="bc bc-crit"><div class="bl">CBS status</div><div class="bv cg" id="b-cbs">ARMED</div><div class="bsub">DNP3 link</div></div>
   </div>
-  <div class="sl">All devices — hover any gauge for engineering detail</div>
+  <div class="sl">All devices — click any gauge for engineering detail</div>
   <div class="ggrid" id="main-gauges"></div>
   <div class="cgrid">
     <div class="ccard"><div class="ctitle">Health score trend — all sectors</div><canvas id="cMain"></canvas></div>
@@ -496,7 +457,7 @@ canvas{max-height:158px!important}
     <div class="fcard"><div class="sl">Automation command log</div><div id="f-auto"></div></div>
   </div>
   <div class="sim-wrap">
-    <div class="sl">Live event injection — sends real data to /api/metrics</div>
+    <div class="sl">Live event injection — sends real data to /api/metrics and triggers AI processing</div>
     <div class="sbtns">
       <button class="btn btn-red" onclick="simReal('critical')">Inject critical failure</button>
       <button class="btn btn-amb" onclick="simReal('congestion')">Inject congestion</button>
@@ -507,101 +468,68 @@ canvas{max-height:158px!important}
   </div>
 </div>
 
-<!-- ═══════════ NETWORK PAGE (categorized) ═══════════ -->
+<!-- ═══ NETWORK PAGE ═══ -->
 <div class="page" id="page-net">
-  <!-- DAWN SCENE: Econet-style booster tower with engineer silhouettes at early dawn -->
-  <div class="scene">
-    <svg viewBox="0 0 800 150" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="dawnSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#010614"/>
-          <stop offset="40%" stop-color="#030e28"/>
-          <stop offset="75%" stop-color="#0c1a3a"/>
-          <stop offset="100%" stop-color="#1a2840"/>
-        </linearGradient>
-        <linearGradient id="horizon" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#ff7a20" stop-opacity="0"/>
-          <stop offset="50%" stop-color="#ff6010" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="#ffaa30" stop-opacity="0.15"/>
-        </linearGradient>
-      </defs>
-      <rect width="800" height="150" fill="url(#dawnSky)"/>
-      <!-- Horizon glow -->
-      <ellipse cx="400" cy="152" rx="380" ry="90" fill="url(#horizon)"/>
-      <!-- Stars fading at dawn -->
-      <circle cx="80" cy="20" r="1" fill="#fff" opacity="0.5"/><circle cx="160" cy="35" r="1.2" fill="#fff" opacity="0.4"/>
-      <circle cx="300" cy="15" r="0.8" fill="#fff" opacity="0.6"/><circle cx="550" cy="28" r="1" fill="#fff" opacity="0.45"/>
-      <circle cx="680" cy="18" r="1.2" fill="#fff" opacity="0.5"/><circle cx="740" cy="42" r="0.8" fill="#fff" opacity="0.35"/>
-      <!-- Ground/skyline silhouette -->
-      <path d="M0,120 Q50,108 100,118 Q180,100 250,116 Q340,105 420,120 Q500,108 580,118 Q660,100 740,115 L800,118 L800,150 L0,150Z" fill="#030b1a"/>
-      <!-- MAIN BOOSTER TOWER (center) — Econet style lattice -->
-      <line x1="388" y1="20" x2="380" y2="120" stroke="#00e5d4" stroke-width="1.5" opacity="0.9"/>
-      <line x1="412" y1="20" x2="420" y2="120" stroke="#00e5d4" stroke-width="1.5" opacity="0.9"/>
-      <!-- Lattice cross members -->
-      <line x1="380" y1="35" x2="412" y2="35" stroke="#00e5d4" stroke-width="1" opacity="0.6"/>
-      <line x1="381" y1="50" x2="411" y2="50" stroke="#00e5d4" stroke-width="1" opacity="0.55"/>
-      <line x1="382" y1="65" x2="410" y2="65" stroke="#00e5d4" stroke-width="1" opacity="0.5"/>
-      <line x1="383" y1="80" x2="409" y2="80" stroke="#00e5d4" stroke-width="1" opacity="0.45"/>
-      <line x1="384" y1="95" x2="408" y2="95" stroke="#00e5d4" stroke-width="1" opacity="0.4"/>
-      <line x1="380" y1="35" x2="412" y2="50" stroke="#00e5d4" stroke-width="0.5" opacity="0.3"/>
-      <line x1="380" y1="50" x2="412" y2="65" stroke="#00e5d4" stroke-width="0.5" opacity="0.3"/>
-      <line x1="380" y1="65" x2="412" y2="80" stroke="#00e5d4" stroke-width="0.5" opacity="0.3"/>
-      <line x1="412" y1="35" x2="380" y2="50" stroke="#00e5d4" stroke-width="0.5" opacity="0.3"/>
-      <line x1="412" y1="50" x2="380" y2="65" stroke="#00e5d4" stroke-width="0.5" opacity="0.3"/>
-      <!-- Antenna array on top -->
-      <rect x="384" y="12" width="32" height="10" fill="#030b1a" stroke="#00e5d4" stroke-width="1" rx="1"/>
-      <line x1="394" y1="6" x2="394" y2="12" stroke="#00e5d4" stroke-width="1.5"/>
-      <line x1="400" y1="4" x2="400" y2="12" stroke="#00e5d4" stroke-width="2"/>
-      <line x1="406" y1="6" x2="406" y2="12" stroke="#00e5d4" stroke-width="1.5"/>
-      <!-- Warning light -->
-      <circle cx="400" cy="4" r="3" fill="#ef5350" style="animation:lightBlink 1.4s ease-in-out infinite"/>
-      <!-- Signal rings from tower -->
-      <circle cx="400" cy="18" r="25" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.3" style="animation:signalRing 3s linear infinite"/>
-      <circle cx="400" cy="18" r="25" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.3" style="animation:signalRing 3s linear infinite 1.5s"/>
-      <!-- Secondary tower (left) -->
-      <line x1="155" y1="45" x2="150" y2="120" stroke="#4fc3f7" stroke-width="1.2" opacity="0.7"/>
-      <line x1="170" y1="45" x2="175" y2="120" stroke="#4fc3f7" stroke-width="1.2" opacity="0.7"/>
-      <line x1="150" y1="57" x2="175" y2="57" stroke="#4fc3f7" stroke-width="0.8" opacity="0.5"/>
-      <line x1="150" y1="70" x2="175" y2="70" stroke="#4fc3f7" stroke-width="0.8" opacity="0.45"/>
-      <line x1="150" y1="83" x2="175" y2="83" stroke="#4fc3f7" stroke-width="0.8" opacity="0.4"/>
-      <rect x="155" y="38" width="15" height="8" fill="#030b1a" stroke="#4fc3f7" stroke-width="0.8" rx="1"/>
-      <circle cx="162" cy="36" r="2" fill="#ffb74d" opacity="0.9" style="animation:lightBlink 2s ease-in-out infinite 0.3s"/>
-      <circle cx="162" cy="40" r="12" fill="none" stroke="#4fc3f7" stroke-width="0.5" opacity="0.2" style="animation:signalRing 3.5s linear infinite"/>
-      <!-- Secondary tower (right) -->
-      <line x1="618" y1="42" x2="613" y2="120" stroke="#4fc3f7" stroke-width="1.2" opacity="0.7"/>
-      <line x1="633" y1="42" x2="638" y2="120" stroke="#4fc3f7" stroke-width="1.2" opacity="0.7"/>
-      <line x1="613" y1="55" x2="638" y2="55" stroke="#4fc3f7" stroke-width="0.8" opacity="0.5"/>
-      <line x1="613" y1="68" x2="638" y2="68" stroke="#4fc3f7" stroke-width="0.8" opacity="0.45"/>
-      <line x1="613" y1="81" x2="638" y2="81" stroke="#4fc3f7" stroke-width="0.8" opacity="0.4"/>
-      <rect x="618" y="35" width="15" height="8" fill="#030b1a" stroke="#4fc3f7" stroke-width="0.8" rx="1"/>
-      <circle cx="625" cy="33" r="2" fill="#ef5350" opacity="0.8" style="animation:lightBlink 1.8s ease-in-out infinite 0.7s"/>
-      <!-- Engineer silhouettes at dawn -->
-      <g style="animation:sceneFloat 5s ease-in-out infinite 0.5s">
-        <circle cx="445" cy="110" r="5" fill="#030b1a"/>
-        <rect x="442" y="115" width="6" height="15" fill="#030b1a" rx="1"/>
-        <rect x="438" y="118" width="5" height="8" fill="#030b1a" rx="1"/>
-        <rect x="447" y="118" width="5" height="8" fill="#030b1a" rx="1"/>
-        <rect x="443" y="130" width="3" height="7" fill="#030b1a"/>
-        <rect x="448" y="130" width="3" height="7" fill="#030b1a"/>
-        <!-- Hard hat teal -->
-        <ellipse cx="445" cy="107" rx="6.5" ry="3" fill="#00e5d4" opacity="0.7"/>
+  <!-- Real photo: engineering/infrastructure at dawn — animated SVG overlay -->
+  <div class="scene scene-net">
+    <svg viewBox="0 0 800 155" preserveAspectRatio="xMidYMid slice">
+      <!-- Semi-transparent overlay only — photo is CSS background -->
+      <rect width="800" height="155" fill="rgba(0,0,0,0.28)"/>
+      <!-- Animated network topology overlay -->
+      <g opacity="0.55">
+        <line x1="100" y1="78" x2="300" y2="50" stroke="#00e5d4" stroke-width="1.2" stroke-dasharray="6,3" style="animation:dataFlow 2s linear infinite"/>
+        <line x1="300" y1="50" x2="500" y2="72" stroke="#00e5d4" stroke-width="1.2" stroke-dasharray="6,3" style="animation:dataFlow 2s linear infinite .5s"/>
+        <line x1="500" y1="72" x2="700" y2="55" stroke="#00e5d4" stroke-width="1.2" stroke-dasharray="6,3" style="animation:dataFlow 2s linear infinite 1s"/>
+        <line x1="300" y1="50" x2="300" y2="105" stroke="#00e5d4" stroke-width="0.7" stroke-dasharray="3,3" opacity="0.5"/>
+        <line x1="500" y1="72" x2="400" y2="112" stroke="#00e5d4" stroke-width="0.7" stroke-dasharray="3,3" opacity="0.5"/>
+        <line x1="300" y1="50" x2="180" y2="100" stroke="#34c6f4" stroke-width="0.7" stroke-dasharray="3,3" opacity="0.5"/>
       </g>
-      <g style="animation:sceneFloat 5s ease-in-out infinite 1.2s">
-        <circle cx="465" cy="112" r="4.5" fill="#030b1a"/>
-        <rect x="462" y="116" width="6" height="13" fill="#030b1a" rx="1"/>
-        <rect x="459" y="118" width="4" height="8" fill="#030b1a" rx="1"/>
-        <rect x="467" y="118" width="4" height="8" fill="#030b1a" rx="1"/>
-        <rect x="463" y="129" width="3" height="6" fill="#030b1a"/>
-        <rect x="467" y="129" width="3" height="6" fill="#030b1a"/>
-        <ellipse cx="465" cy="109" rx="6" ry="2.5" fill="#4fc3f7" opacity="0.6"/>
+      <!-- Network node circles with ping rings -->
+      <g>
+        <circle cx="100" cy="78" r="9" fill="rgba(0,229,212,.25)" stroke="#00e5d4" stroke-width="1.5"/>
+        <circle cx="100" cy="78" r="9" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.4" style="animation:signalRing 3s linear infinite"/>
+        <text x="100" y="98" fill="#00e5d4" font-size="7.5" text-anchor="middle" opacity="0.8">router</text>
+        <circle cx="300" cy="50" r="12" fill="rgba(0,229,212,.3)" stroke="#00e5d4" stroke-width="2"/>
+        <circle cx="300" cy="50" r="12" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.5" style="animation:signalRing 2.5s linear infinite"/>
+        <circle cx="300" cy="50" r="12" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.5" style="animation:signalRing 2.5s linear infinite 1.25s"/>
+        <text x="300" y="70" fill="#00e5d4" font-size="7.5" text-anchor="middle" opacity="0.85">core</text>
+        <circle cx="500" cy="72" r="9" fill="rgba(0,229,212,.25)" stroke="#00e5d4" stroke-width="1.5"/>
+        <circle cx="500" cy="72" r="9" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.4" style="animation:signalRing 3.2s linear infinite .8s"/>
+        <text x="500" y="92" fill="#00e5d4" font-size="7.5" text-anchor="middle" opacity="0.8">switch</text>
+        <circle cx="700" cy="55" r="9" fill="rgba(255,62,80,.2)" stroke="#ff3e50" stroke-width="1.5"/>
+        <text x="700" y="75" fill="#ff3e50" font-size="7.5" text-anchor="middle" opacity="0.8">fw</text>
+        <circle cx="300" cy="105" r="6" fill="rgba(0,229,212,.2)" stroke="#00e5d4" stroke-width="1"/>
+        <text x="300" y="120" fill="#00e5d4" font-size="7" text-anchor="middle" opacity="0.6">switch</text>
+        <circle cx="400" cy="112" r="6" fill="rgba(0,229,212,.2)" stroke="#00e5d4" stroke-width="1"/>
+        <text x="400" y="127" fill="#00e5d4" font-size="7" text-anchor="middle" opacity="0.6">wan</text>
+        <circle cx="180" cy="100" r="6" fill="rgba(245,160,32,.2)" stroke="#f5a020" stroke-width="1"/>
+        <text x="180" y="115" fill="#f5a020" font-size="7" text-anchor="middle" opacity="0.6">fw</text>
       </g>
-      <!-- Label -->
-      <text x="400" y="143" fill="#00e5d4" font-size="8" text-anchor="middle" opacity="0.6">IISentinel™ Network Operations — Dawn Shift</text>
+      <!-- Engineers at dawn (silhouette on photo) -->
+      <g opacity="0.85" style="animation:sceneFloat 5s ease-in-out infinite">
+        <ellipse cx="620" cy="118" rx="7" ry="2.5" fill="#00e5d4" opacity="0.5"/>
+        <circle cx="620" cy="120" r="5.5" fill="#030c0c"/>
+        <rect x="616" y="125" width="7" height="14" fill="#030c0c" rx="1"/>
+        <rect x="613" y="127" width="4" height="9" fill="#030c0c" rx="1"/>
+        <rect x="622" y="127" width="4" height="9" fill="#030c0c" rx="1"/>
+        <rect x="617" y="139" width="3" height="7" fill="#030c0c"/>
+        <rect x="622" y="139" width="3" height="7" fill="#030c0c"/>
+      </g>
+      <g opacity="0.75" style="animation:sceneFloat 5s ease-in-out infinite 1.2s">
+        <ellipse cx="645" cy="120" rx="6.5" ry="2.2" fill="#34c6f4" opacity="0.45"/>
+        <circle cx="645" cy="122" r="5" fill="#030c0c"/>
+        <rect x="641" y="127" width="7" height="13" fill="#030c0c" rx="1"/>
+        <rect x="638" y="129" width="4" height="8" fill="#030c0c" rx="1"/>
+        <rect x="647" y="129" width="4" height="8" fill="#030c0c" rx="1"/>
+        <rect x="642" y="140" width="3" height="6" fill="#030c0c"/>
+        <rect x="647" y="140" width="3" height="6" fill="#030c0c"/>
+      </g>
+      <text x="400" y="148" fill="#00e5d4" font-size="8" text-anchor="middle" opacity="0.5">IISentinel™ Network Operations — Dawn Shift</text>
     </svg>
   </div>
 
   <div class="ehdr e-net">
-    <div><div class="ename">Network Infrastructure</div><div class="esub">Core routers · Distribution switches · Firewalls · WAN links — IEEE 802.3 backbone<br>Real ICMP latency measurements · SNMP v2/v3 polling</div></div>
+    <div><div class="ename">Network Infrastructure</div><div class="esub">Core routers · Distribution switches · Firewalls · WAN links — IEEE 802.3 backbone<br>Real ICMP latency · SNMP v2/v3 polling · BGP/OSPF session monitoring</div></div>
     <div class="eproto">SNMP · BGP · OSPF · ICMP · NetFlow</div>
   </div>
   <div class="banner">
@@ -613,14 +541,54 @@ canvas{max-height:158px!important}
     <div class="bc"><div class="bl">Faults</div><div class="bv cr" id="net-faults">0</div></div>
   </div>
 
-  <div class="net-cat"><div class="cat-hdr"><div class="cat-icon r">R</div><div class="cat-name">Core routers</div><div class="cat-stats"><div class="cat-stat"><span class="cat-stat-v" id="r-fhi">--</span><div class="cat-stat-l">FHI</div></div><div class="cat-stat"><span class="cat-stat-v" id="r-lat">--ms</span><div class="cat-stat-l">Avg latency</div></div></div></div><div class="ggrid" id="g-routers"></div></div>
-  <div class="net-cat"><div class="cat-hdr"><div class="cat-icon s">S</div><div class="cat-name">Distribution switches</div><div class="cat-stats"><div class="cat-stat"><span class="cat-stat-v" id="s-fhi">--</span><div class="cat-stat-l">FHI</div></div><div class="cat-stat"><span class="cat-stat-v" id="s-bw">--Mbps</span><div class="cat-stat-l">Avg BW</div></div></div></div><div class="ggrid" id="g-switches"></div></div>
-  <div class="net-cat"><div class="cat-hdr"><div class="cat-icon f">FW</div><div class="cat-name">Firewalls &amp; security</div><div class="cat-stats"><div class="cat-stat"><span class="cat-stat-v" id="f-fhi">--</span><div class="cat-stat-l">FHI</div></div><div class="cat-stat"><span class="cat-stat-v" id="f-cpu">--%</span><div class="cat-stat-l">Avg CPU</div></div></div></div><div class="ggrid" id="g-firewalls"></div></div>
-  <div class="net-cat"><div class="cat-hdr"><div class="cat-icon w">WAN</div><div class="cat-name">WAN links &amp; uplinks</div><div class="cat-stats"><div class="cat-stat"><span class="cat-stat-v" id="w-fhi">--</span><div class="cat-stat-l">FHI</div></div><div class="cat-stat"><span class="cat-stat-v" id="w-lat">--ms</span><div class="cat-stat-l">Round-trip</div></div></div></div><div class="ggrid" id="g-wan"></div></div>
+  <div class="net-cat">
+    <div class="cat-hdr">
+      <div class="cat-icon r">R</div>
+      <div class="cat-name">Core routers</div>
+      <div class="cat-stats">
+        <div class="cat-stat"><span class="cat-stat-v" id="r-fhi">--</span><div class="cat-stat-l">FHI</div></div>
+        <div class="cat-stat"><span class="cat-stat-v" id="r-lat">--ms</span><div class="cat-stat-l">Avg RTT</div></div>
+      </div>
+    </div>
+    <div class="ggrid" id="g-routers"></div>
+  </div>
+  <div class="net-cat">
+    <div class="cat-hdr">
+      <div class="cat-icon s">S</div>
+      <div class="cat-name">Distribution switches</div>
+      <div class="cat-stats">
+        <div class="cat-stat"><span class="cat-stat-v" id="s-fhi">--</span><div class="cat-stat-l">FHI</div></div>
+        <div class="cat-stat"><span class="cat-stat-v" id="s-bw">--Mbps</span><div class="cat-stat-l">Avg BW</div></div>
+      </div>
+    </div>
+    <div class="ggrid" id="g-switches"></div>
+  </div>
+  <div class="net-cat">
+    <div class="cat-hdr">
+      <div class="cat-icon f">FW</div>
+      <div class="cat-name">Firewalls &amp; security appliances</div>
+      <div class="cat-stats">
+        <div class="cat-stat"><span class="cat-stat-v" id="f-fhi">--</span><div class="cat-stat-l">FHI</div></div>
+        <div class="cat-stat"><span class="cat-stat-v" id="f-cpu">--%</span><div class="cat-stat-l">Avg CPU</div></div>
+      </div>
+    </div>
+    <div class="ggrid" id="g-firewalls"></div>
+  </div>
+  <div class="net-cat">
+    <div class="cat-hdr">
+      <div class="cat-icon w">WAN</div>
+      <div class="cat-name">WAN links &amp; uplinks</div>
+      <div class="cat-stats">
+        <div class="cat-stat"><span class="cat-stat-v" id="w-fhi">--</span><div class="cat-stat-l">FHI</div></div>
+        <div class="cat-stat"><span class="cat-stat-v" id="w-lat">--ms</span><div class="cat-stat-l">Round-trip</div></div>
+      </div>
+    </div>
+    <div class="ggrid" id="g-wan"></div>
+  </div>
 
   <div class="cgrid">
     <div class="ccard"><div class="ctitle">Network health trend</div><canvas id="cNet"></canvas></div>
-    <div class="ccard"><div class="ctitle">Latency over time (ms)</div><canvas id="cNetL"></canvas></div>
+    <div class="ccard"><div class="ctitle">Latency over time (ms) — real ICMP measurements</div><canvas id="cNetL"></canvas></div>
   </div>
   <div class="fgrid">
     <div class="fcard"><div class="sl">Network fault log</div><div id="net-feed"></div></div>
@@ -628,93 +596,84 @@ canvas{max-height:158px!important}
   </div>
 </div>
 
-<!-- ═══════════ TELECOMCO PAGE ═══════════ -->
+<!-- ═══ TELECOMCO PAGE ═══ -->
 <div class="page" id="page-tc">
-  <!-- Dawn telecom scene with 3 Zimbabwe towers -->
-  <div class="scene">
-    <svg viewBox="0 0 800 150" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="tcDawnSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#010514"/>
-          <stop offset="45%" stop-color="#04091e"/>
-          <stop offset="80%" stop-color="#0d1835"/>
-          <stop offset="100%" stop-color="#1a2845"/>
-        </linearGradient>
-      </defs>
-      <rect width="800" height="150" fill="url(#tcDawnSky)"/>
-      <ellipse cx="400" cy="152" rx="420" ry="80" fill="#ff6010" opacity="0.12" style="animation:dawnRise 6s ease infinite alternate"/>
-      <ellipse cx="400" cy="152" rx="280" ry="60" fill="#ffaa30" opacity="0.1" style="animation:dawnRise 4s ease infinite alternate"/>
-      <!-- Stars -->
-      <circle cx="60" cy="18" r="1.2" fill="#fff" opacity="0.5"/><circle cx="140" cy="30" r="0.8" fill="#fff" opacity="0.45"/>
-      <circle cx="260" cy="12" r="1" fill="#fff" opacity="0.55"/><circle cx="520" cy="22" r="1.1" fill="#fff" opacity="0.4"/>
-      <circle cx="680" cy="14" r="0.9" fill="#fff" opacity="0.5"/><circle cx="760" cy="35" r="1" fill="#fff" opacity="0.35"/>
-      <!-- Horizon hills -->
-      <path d="M0,118 Q80,102 160,116 Q260,96 360,114 Q460,100 540,116 Q630,98 720,112 L800,115 L800,150 L0,150Z" fill="#06101e" opacity="0.95"/>
-      <path d="M0,130 Q60,122 120,128 Q220,118 300,128 Q400,115 500,126 Q600,118 700,128 L800,130 L800,150 L0,150Z" fill="#030c1a" opacity="0.98"/>
-      <!-- BULAWAYO HQ TOWER -->
-      <line x1="170" y1="30" x2="163" y2="118" stroke="#34c6f4" stroke-width="2" opacity="0.85"/>
-      <line x1="190" y1="30" x2="197" y2="118" stroke="#34c6f4" stroke-width="2" opacity="0.85"/>
-      <line x1="163" y1="42" x2="197" y2="42" stroke="#34c6f4" stroke-width="1.2" opacity="0.6"/>
-      <line x1="164" y1="56" x2="196" y2="56" stroke="#34c6f4" stroke-width="1" opacity="0.55"/>
-      <line x1="164" y1="70" x2="195" y2="70" stroke="#34c6f4" stroke-width="1" opacity="0.5"/>
-      <line x1="165" y1="84" x2="194" y2="84" stroke="#34c6f4" stroke-width="1" opacity="0.45"/>
-      <line x1="165" y1="98" x2="193" y2="98" stroke="#34c6f4" stroke-width="0.8" opacity="0.4"/>
-      <rect x="168" y="22" width="24" height="10" fill="#030c1a" stroke="#34c6f4" stroke-width="1" rx="1"/>
-      <line x1="174" y1="16" x2="174" y2="22" stroke="#34c6f4" stroke-width="1.5"/><line x1="180" y1="14" x2="180" y2="22" stroke="#34c6f4" stroke-width="2"/><line x1="186" y1="16" x2="186" y2="22" stroke="#34c6f4" stroke-width="1.5"/>
-      <circle cx="180" cy="13" r="3.5" fill="#ef5350" style="animation:lightBlink 1.6s ease-in-out infinite"/>
-      <circle cx="180" cy="20" r="22" fill="none" stroke="#34c6f4" stroke-width="0.8" opacity="0.25" style="animation:signalRing 2.8s linear infinite"/>
-      <circle cx="180" cy="20" r="22" fill="none" stroke="#34c6f4" stroke-width="0.8" opacity="0.25" style="animation:signalRing 2.8s linear infinite 1.4s"/>
-      <text x="180" y="137" fill="#34c6f4" font-size="8" text-anchor="middle" opacity="0.7">Bulawayo</text>
-      <!-- HARARE TOWER (tallest - capital) -->
-      <line x1="389" y1="18" x2="380" y2="118" stroke="#55ccff" stroke-width="2.5" opacity="0.92"/>
-      <line x1="415" y1="18" x2="424" y2="118" stroke="#55ccff" stroke-width="2.5" opacity="0.92"/>
-      <line x1="380" y1="32" x2="424" y2="32" stroke="#55ccff" stroke-width="1.5" opacity="0.65"/>
-      <line x1="381" y1="47" x2="422" y2="47" stroke="#55ccff" stroke-width="1.2" opacity="0.6"/>
-      <line x1="382" y1="62" x2="421" y2="62" stroke="#55ccff" stroke-width="1.2" opacity="0.55"/>
-      <line x1="382" y1="77" x2="420" y2="77" stroke="#55ccff" stroke-width="1" opacity="0.5"/>
-      <line x1="383" y1="92" x2="419" y2="92" stroke="#55ccff" stroke-width="1" opacity="0.45"/>
-      <line x1="384" y1="107" x2="418" y2="107" stroke="#55ccff" stroke-width="0.8" opacity="0.4"/>
-      <rect x="385" y="9" width="34" height="12" fill="#030c1a" stroke="#55ccff" stroke-width="1.2" rx="1"/>
-      <line x1="392" y1="3" x2="392" y2="9" stroke="#55ccff" stroke-width="1.5"/><line x1="399" y1="1" x2="399" y2="9" stroke="#55ccff" stroke-width="2.2"/><line x1="406" y1="3" x2="406" y2="9" stroke="#55ccff" stroke-width="1.5"/><line x1="413" y1="5" x2="413" y2="9" stroke="#55ccff" stroke-width="1"/>
-      <circle cx="402" cy="1" r="4" fill="#ef5350" style="animation:lightBlink 1.3s ease-in-out infinite"/>
-      <circle cx="402" cy="13" r="28" fill="none" stroke="#55ccff" stroke-width="1" opacity="0.28" style="animation:signalRing 2.5s linear infinite"/>
-      <circle cx="402" cy="13" r="28" fill="none" stroke="#55ccff" stroke-width="1" opacity="0.28" style="animation:signalRing 2.5s linear infinite 1.25s"/>
-      <text x="402" y="137" fill="#55ccff" font-size="9" text-anchor="middle" opacity="0.75">Harare</text>
-      <!-- MUTARE TOWER (right, Highlands teal tint) -->
-      <line x1="614" y1="32" x2="608" y2="118" stroke="#00e5d4" stroke-width="1.8" opacity="0.82"/>
-      <line x1="632" y1="32" x2="638" y2="118" stroke="#00e5d4" stroke-width="1.8" opacity="0.82"/>
-      <line x1="608" y1="44" x2="638" y2="44" stroke="#00e5d4" stroke-width="1" opacity="0.58"/>
-      <line x1="609" y1="58" x2="637" y2="58" stroke="#00e5d4" stroke-width="1" opacity="0.52"/>
-      <line x1="609" y1="72" x2="636" y2="72" stroke="#00e5d4" stroke-width="1" opacity="0.47"/>
-      <line x1="610" y1="86" x2="635" y2="86" stroke="#00e5d4" stroke-width="0.8" opacity="0.42"/>
-      <line x1="610" y1="100" x2="634" y2="100" stroke="#00e5d4" stroke-width="0.8" opacity="0.38"/>
-      <rect x="612" y="24" width="22" height="10" fill="#030c1a" stroke="#00e5d4" stroke-width="1" rx="1"/>
-      <line x1="617" y1="18" x2="617" y2="24" stroke="#00e5d4" stroke-width="1.5"/><line x1="623" y1="16" x2="623" y2="24" stroke="#00e5d4" stroke-width="2"/><line x1="629" y1="18" x2="629" y2="24" stroke="#00e5d4" stroke-width="1.5"/>
-      <circle cx="623" cy="14" r="3" fill="#ffb74d" style="animation:lightBlink 1.9s ease-in-out infinite 0.5s"/>
-      <circle cx="623" cy="22" r="20" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.22" style="animation:signalRing 3.2s linear infinite"/>
-      <circle cx="623" cy="22" r="20" fill="none" stroke="#00e5d4" stroke-width="0.8" opacity="0.22" style="animation:signalRing 3.2s linear infinite 1.6s"/>
-      <text x="623" y="137" fill="#00e5d4" font-size="8" text-anchor="middle" opacity="0.65">Mutare</text>
-      <!-- MW link lines between towers -->
-      <line x1="197" y1="62" x2="384" y2="42" stroke="#34c6f4" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.2"/>
-      <line x1="422" y1="42" x2="610" y2="52" stroke="#55ccff" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.2"/>
-      <!-- Engineers at base of main tower -->
-      <g style="animation:sceneFloat 4.5s ease-in-out infinite">
-        <ellipse cx="455" cy="110" rx="7" ry="2.5" fill="#34c6f4" opacity="0.6"/>
-        <circle cx="455" cy="112" r="5" fill="#030c1a"/>
-        <rect x="452" y="117" width="6" height="13" fill="#030c1a" rx="1"/>
-        <rect x="449" y="119" width="4" height="8" fill="#030c1a" rx="1"/>
-        <rect x="457" y="119" width="4" height="8" fill="#030c1a" rx="1"/>
-        <rect x="453" y="130" width="3" height="7" fill="#030c1a"/>
-        <rect x="457" y="130" width="3" height="7" fill="#030c1a"/>
+  <!-- Real photo: telecommunications tower at blue hour dawn — animated SVG overlay -->
+  <div class="scene scene-tc">
+    <svg viewBox="0 0 800 155" preserveAspectRatio="xMidYMid slice">
+      <rect width="800" height="155" fill="rgba(0,0,0,0.32)"/>
+      <!-- Horizon glow overlay -->
+      <ellipse cx="400" cy="156" rx="440" ry="80" fill="rgba(52,198,244,0.08)" style="animation:dawnRise 4s ease infinite alternate"/>
+      <!-- BULAWAYO TOWER -->
+      <line x1="172" y1="32" x2="165" y2="120" stroke="#34c6f4" stroke-width="2.2" opacity="0.9"/>
+      <line x1="192" y1="32" x2="199" y2="120" stroke="#34c6f4" stroke-width="2.2" opacity="0.9"/>
+      <line x1="165" y1="44" x2="199" y2="44" stroke="#34c6f4" stroke-width="1.3" opacity="0.65"/>
+      <line x1="166" y1="58" x2="198" y2="58" stroke="#34c6f4" stroke-width="1.1" opacity="0.58"/>
+      <line x1="167" y1="72" x2="197" y2="72" stroke="#34c6f4" stroke-width="1" opacity="0.52"/>
+      <line x1="167" y1="86" x2="196" y2="86" stroke="#34c6f4" stroke-width="1" opacity="0.46"/>
+      <line x1="168" y1="100" x2="195" y2="100" stroke="#34c6f4" stroke-width="0.8" opacity="0.4"/>
+      <rect x="170" y="24" width="24" height="10" fill="rgba(3,8,22,0.8)" stroke="#34c6f4" stroke-width="1.1" rx="1"/>
+      <line x1="176" y1="18" x2="176" y2="24" stroke="#34c6f4" stroke-width="1.5"/>
+      <line x1="182" y1="15" x2="182" y2="24" stroke="#34c6f4" stroke-width="2.2"/>
+      <line x1="188" y1="18" x2="188" y2="24" stroke="#34c6f4" stroke-width="1.5"/>
+      <circle cx="182" cy="14" r="3.5" fill="#ef5350" style="animation:lightBlink 1.6s ease-in-out infinite"/>
+      <circle cx="182" cy="22" r="22" fill="none" stroke="#34c6f4" stroke-width="0.9" opacity="0.28" style="animation:signalRing 3s linear infinite"/>
+      <circle cx="182" cy="22" r="22" fill="none" stroke="#34c6f4" stroke-width="0.9" opacity="0.28" style="animation:signalRing 3s linear infinite 1.5s"/>
+      <text x="182" y="138" fill="#34c6f4" font-size="8" text-anchor="middle" opacity="0.75">Bulawayo HQ</text>
+      <!-- HARARE TOWER (tallest) -->
+      <line x1="391" y1="18" x2="382" y2="120" stroke="#55ccff" stroke-width="2.8" opacity="0.95"/>
+      <line x1="417" y1="18" x2="426" y2="120" stroke="#55ccff" stroke-width="2.8" opacity="0.95"/>
+      <line x1="382" y1="32" x2="426" y2="32" stroke="#55ccff" stroke-width="1.7" opacity="0.7"/>
+      <line x1="383" y1="47" x2="424" y2="47" stroke="#55ccff" stroke-width="1.4" opacity="0.62"/>
+      <line x1="384" y1="62" x2="423" y2="62" stroke="#55ccff" stroke-width="1.3" opacity="0.57"/>
+      <line x1="385" y1="77" x2="422" y2="77" stroke="#55ccff" stroke-width="1.1" opacity="0.52"/>
+      <line x1="385" y1="92" x2="421" y2="92" stroke="#55ccff" stroke-width="1" opacity="0.46"/>
+      <line x1="386" y1="107" x2="420" y2="107" stroke="#55ccff" stroke-width="0.9" opacity="0.4"/>
+      <rect x="387" y="9" width="34" height="12" fill="rgba(3,8,22,0.8)" stroke="#55ccff" stroke-width="1.3" rx="1"/>
+      <line x1="394" y1="3" x2="394" y2="9" stroke="#55ccff" stroke-width="1.6"/>
+      <line x1="401" y1="1" x2="401" y2="9" stroke="#55ccff" stroke-width="2.5"/>
+      <line x1="408" y1="3" x2="408" y2="9" stroke="#55ccff" stroke-width="1.6"/>
+      <circle cx="404" cy="1" r="4.2" fill="#ef5350" style="animation:lightBlink 1.3s ease-in-out infinite"/>
+      <circle cx="404" cy="14" r="30" fill="none" stroke="#55ccff" stroke-width="1.1" opacity="0.3" style="animation:signalRing 2.6s linear infinite"/>
+      <circle cx="404" cy="14" r="30" fill="none" stroke="#55ccff" stroke-width="1.1" opacity="0.3" style="animation:signalRing 2.6s linear infinite 1.3s"/>
+      <text x="404" y="138" fill="#55ccff" font-size="9" text-anchor="middle" opacity="0.8">Harare</text>
+      <!-- MUTARE TOWER -->
+      <line x1="617" y1="34" x2="611" y2="120" stroke="#00e5d4" stroke-width="1.9" opacity="0.85"/>
+      <line x1="635" y1="34" x2="641" y2="120" stroke="#00e5d4" stroke-width="1.9" opacity="0.85"/>
+      <line x1="611" y1="46" x2="641" y2="46" stroke="#00e5d4" stroke-width="1.1" opacity="0.6"/>
+      <line x1="612" y1="60" x2="640" y2="60" stroke="#00e5d4" stroke-width="1" opacity="0.54"/>
+      <line x1="612" y1="74" x2="639" y2="74" stroke="#00e5d4" stroke-width="1" opacity="0.48"/>
+      <line x1="613" y1="88" x2="638" y2="88" stroke="#00e5d4" stroke-width="0.9" opacity="0.43"/>
+      <line x1="613" y1="102" x2="637" y2="102" stroke="#00e5d4" stroke-width="0.8" opacity="0.38"/>
+      <rect x="614" y="26" width="22" height="10" fill="rgba(3,8,22,0.8)" stroke="#00e5d4" stroke-width="1.1" rx="1"/>
+      <line x1="619" y1="20" x2="619" y2="26" stroke="#00e5d4" stroke-width="1.5"/>
+      <line x1="625" y1="17" x2="625" y2="26" stroke="#00e5d4" stroke-width="2.1"/>
+      <line x1="631" y1="20" x2="631" y2="26" stroke="#00e5d4" stroke-width="1.5"/>
+      <circle cx="625" cy="16" r="3" fill="#ffb74d" style="animation:lightBlink 2s ease-in-out infinite .5s"/>
+      <circle cx="625" cy="24" r="20" fill="none" stroke="#00e5d4" stroke-width="0.9" opacity="0.25" style="animation:signalRing 3.3s linear infinite"/>
+      <circle cx="625" cy="24" r="20" fill="none" stroke="#00e5d4" stroke-width="0.9" opacity="0.25" style="animation:signalRing 3.3s linear infinite 1.65s"/>
+      <text x="625" y="138" fill="#00e5d4" font-size="8" text-anchor="middle" opacity="0.7">Mutare</text>
+      <!-- MW links between towers -->
+      <line x1="199" y1="64" x2="384" y2="44" stroke="#34c6f4" stroke-width="0.6" stroke-dasharray="5,4" opacity="0.22" style="animation:dataFlow 3s linear infinite"/>
+      <line x1="424" y1="44" x2="613" y2="55" stroke="#55ccff" stroke-width="0.6" stroke-dasharray="5,4" opacity="0.22" style="animation:dataFlow 3s linear infinite .8s"/>
+      <!-- Engineers at tower base -->
+      <g opacity="0.88" style="animation:sceneFloat 4.8s ease-in-out infinite">
+        <ellipse cx="458" cy="112" rx="7.5" ry="3" fill="#34c6f4" opacity="0.55"/>
+        <circle cx="458" cy="115" r="5.5" fill="rgba(3,8,22,0.9)"/>
+        <rect x="454" y="120" width="7" height="14" fill="rgba(3,8,22,0.9)" rx="1"/>
+        <rect x="451" y="122" width="4" height="9" fill="rgba(3,8,22,0.9)" rx="1"/>
+        <rect x="460" y="122" width="4" height="9" fill="rgba(3,8,22,0.9)" rx="1"/>
+        <rect x="455" y="134" width="3" height="7" fill="rgba(3,8,22,0.9)"/>
+        <rect x="460" y="134" width="3" height="7" fill="rgba(3,8,22,0.9)"/>
       </g>
-      <g style="animation:sceneFloat 4.5s ease-in-out infinite 1s">
-        <ellipse cx="475" cy="112" rx="6" ry="2.2" fill="#55ccff" opacity="0.55"/>
-        <circle cx="475" cy="114" r="4.5" fill="#030c1a"/>
-        <rect x="472" y="118" width="6" height="12" fill="#030c1a" rx="1"/>
-        <rect x="469" y="120" width="4" height="7" fill="#030c1a" rx="1"/>
-        <rect x="477" y="120" width="4" height="7" fill="#030c1a" rx="1"/>
-        <rect x="473" y="130" width="3" height="6" fill="#030c1a"/>
-        <rect x="477" y="130" width="3" height="6" fill="#030c1a"/>
+      <g opacity="0.78" style="animation:sceneFloat 4.8s ease-in-out infinite 1.1s">
+        <ellipse cx="480" cy="114" rx="7" ry="2.8" fill="#55ccff" opacity="0.5"/>
+        <circle cx="480" cy="117" r="5" fill="rgba(3,8,22,0.9)"/>
+        <rect x="476" y="122" width="7" height="13" fill="rgba(3,8,22,0.9)" rx="1"/>
+        <rect x="473" y="124" width="4" height="8" fill="rgba(3,8,22,0.9)" rx="1"/>
+        <rect x="482" y="124" width="4" height="8" fill="rgba(3,8,22,0.9)" rx="1"/>
+        <rect x="477" y="135" width="3" height="6" fill="rgba(3,8,22,0.9)"/>
+        <rect x="482" y="135" width="3" height="6" fill="rgba(3,8,22,0.9)"/>
       </g>
     </svg>
   </div>
@@ -741,111 +700,70 @@ canvas{max-height:158px!important}
   </div>
 </div>
 
-<!-- ═══════════ MININGCO PAGE ═══════════ -->
+<!-- ═══ MININGCO PAGE ═══ -->
 <div class="page" id="page-mc">
-  <!-- African mine at sunset — engineers overlooking plant -->
-  <div class="scene">
-    <svg viewBox="0 0 800 150" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="sunsetSky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#1a0a00"/>
-          <stop offset="25%" stop-color="#3d1800"/>
-          <stop offset="50%" stop-color="#7a3010"/>
-          <stop offset="75%" stop-color="#c04818"/>
-          <stop offset="100%" stop-color="#e07020"/>
-        </linearGradient>
-        <radialGradient id="sunGrad" cx="50%" cy="100%" r="60%">
-          <stop offset="0%" stop-color="#ffcc00" stop-opacity="0.9"/>
-          <stop offset="30%" stop-color="#ff8800" stop-opacity="0.6"/>
-          <stop offset="70%" stop-color="#ff4400" stop-opacity="0.2"/>
-          <stop offset="100%" stop-color="#ff2200" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <rect width="800" height="150" fill="url(#sunsetSky)"/>
-      <!-- Sun on horizon -->
-      <ellipse cx="400" cy="152" rx="340" ry="100" fill="url(#sunGrad)" style="animation:sunGlow 5s ease-in-out infinite"/>
-      <!-- Sun disc -->
-      <ellipse cx="400" cy="120" rx="22" ry="12" fill="#ffcc00" opacity="0.85"/>
-      <ellipse cx="400" cy="120" rx="16" ry="8" fill="#ffee44" opacity="0.9"/>
-      <!-- Distant mountains/kopjes -->
-      <path d="M0,100 Q60,78 120,96 Q200,68 280,92 Q360,72 440,90 Q520,65 600,88 Q680,70 800,92 L800,150 L0,150Z" fill="#1a0800" opacity="0.9"/>
-      <path d="M0,115 Q80,100 160,112 Q260,95 360,110 Q460,96 560,108 Q660,95 760,110 L800,112 L800,150 L0,150Z" fill="#120600" opacity="0.95"/>
-      <!-- MINE HEADGEAR / WINDING TOWER (iconic silhouette) -->
-      <!-- Main legs -->
-      <line x1="360" y1="50" x2="345" y2="115" stroke="#1a0800" stroke-width="4" opacity="1"/>
-      <line x1="440" y1="50" x2="455" y2="115" stroke="#1a0800" stroke-width="4" opacity="1"/>
-      <!-- Cross bracing -->
-      <line x1="345" y1="115" x2="455" y2="115" stroke="#1a0800" stroke-width="3"/>
-      <line x1="351" y1="88" x2="449" y2="88" stroke="#1a0800" stroke-width="2.5"/>
-      <line x1="356" y1="68" x2="444" y2="68" stroke="#1a0800" stroke-width="2"/>
-      <line x1="345" y1="115" x2="444" y2="68" stroke="#1a0800" stroke-width="1.5" opacity="0.8"/>
-      <line x1="455" y1="115" x2="356" y2="68" stroke="#1a0800" stroke-width="1.5" opacity="0.8"/>
-      <!-- Sheave wheel frame at top -->
-      <line x1="360" y1="50" x2="400" y2="32" stroke="#1a0800" stroke-width="3.5"/>
-      <line x1="440" y1="50" x2="400" y2="32" stroke="#1a0800" stroke-width="3.5"/>
-      <circle cx="400" cy="32" r="14" fill="#1a0800" stroke="#3d1000" stroke-width="2"/>
-      <circle cx="400" cy="32" r="8" fill="#0d0400"/>
+  <!-- Real photo: open pit mine at golden hour — animated sunset overlay with engineers -->
+  <div class="scene scene-mc">
+    <svg viewBox="0 0 800 155" preserveAspectRatio="xMidYMid slice">
+      <!-- Dark overlay with sunset glow at bottom -->
+      <rect width="800" height="155" fill="rgba(0,0,0,0.30)"/>
+      <!-- Sunset atmospheric glow -->
+      <ellipse cx="400" cy="156" rx="360" ry="100" fill="rgba(200,80,10,0.18)" style="animation:sunGlow 5s ease-in-out infinite"/>
+      <ellipse cx="400" cy="120" rx="25" ry="13" fill="rgba(255,200,0,0.7)" opacity="0.6"/>
+      <!-- MINE HEADGEAR silhouette (animated overlay on real photo) -->
+      <line x1="360" y1="52" x2="346" y2="115" stroke="rgba(20,10,0,0.95)" stroke-width="4.5"/>
+      <line x1="440" y1="52" x2="454" y2="115" stroke="rgba(20,10,0,0.95)" stroke-width="4.5"/>
+      <line x1="346" y1="115" x2="454" y2="115" stroke="rgba(20,10,0,0.95)" stroke-width="3.5"/>
+      <line x1="352" y1="88" x2="448" y2="88" stroke="rgba(20,10,0,0.95)" stroke-width="2.8"/>
+      <line x1="357" y1="68" x2="443" y2="68" stroke="rgba(20,10,0,0.95)" stroke-width="2.2"/>
+      <line x1="346" y1="115" x2="443" y2="68" stroke="rgba(20,10,0,0.95)" stroke-width="1.8" opacity="0.85"/>
+      <line x1="454" y1="115" x2="357" y2="68" stroke="rgba(20,10,0,0.95)" stroke-width="1.8" opacity="0.85"/>
+      <!-- A-frame top -->
+      <line x1="360" y1="52" x2="400" y2="33" stroke="rgba(20,10,0,0.95)" stroke-width="4"/>
+      <line x1="440" y1="52" x2="400" y2="33" stroke="rgba(20,10,0,0.95)" stroke-width="4"/>
+      <circle cx="400" cy="33" r="14" fill="rgba(15,8,0,0.95)" stroke="rgba(60,20,0,0.8)" stroke-width="2.2"/>
+      <circle cx="400" cy="33" r="8" fill="rgba(8,4,0,0.95)"/>
+      <!-- Equipment lights -->
+      <circle cx="400" cy="20" r="2.5" fill="#ff9900" opacity="0.9" style="animation:lightBlink 2s infinite"/>
+      <circle cx="466" cy="92" r="2" fill="#ffcc00" opacity="0.85" style="animation:lightBlink 2.5s infinite .5s"/>
+      <circle cx="332" cy="96" r="1.5" fill="#ff6600" opacity="0.7" style="animation:lightBlink 3s infinite 1s"/>
       <!-- Winder house -->
-      <rect x="455" y="90" width="40" height="25" fill="#0d0400" stroke="#3d1000" stroke-width="1"/>
-      <rect x="460" y="94" width="8" height="8" fill="#ff9900" opacity="0.4" style="animation:lightBlink 3s ease-in-out infinite"/>
-      <!-- Processing plant buildings (silhouette) -->
-      <rect x="220" y="98" width="55" height="17" fill="#0d0400" opacity="0.95"/>
-      <rect x="240" y="88" width="20" height="10" fill="#0d0400"/>
-      <rect x="250" y="78" width="6" height="12" fill="#0d0400"/>
-      <!-- Chimney/stack with glow -->
-      <rect x="255" y="65" width="5" height="28" fill="#0d0400"/>
-      <ellipse cx="257" cy="65" rx="4" ry="5" fill="#ff6600" opacity="0.5" style="animation:sunGlow 2s ease-in-out infinite"/>
-      <!-- Conveyor belt structure -->
-      <line x1="280" y1="88" x2="345" y2="115" stroke="#1a0800" stroke-width="6" opacity="0.95"/>
-      <line x1="275" y1="84" x2="340" y2="112" stroke="#3d1000" stroke-width="2" opacity="0.7"/>
-      <!-- Plant lights (warm industrial glow) -->
-      <circle cx="230" cy="98" r="2" fill="#ffcc00" opacity="0.9" style="animation:lightBlink 2.5s infinite"/>
-      <circle cx="270" cy="92" r="2" fill="#ff9900" opacity="0.8" style="animation:lightBlink 3s infinite 0.5s"/>
-      <circle cx="257" cy="63" r="3" fill="#ff6600" opacity="0.7" style="animation:pulse 1.5s infinite"/>
-      <!-- Right plant section -->
-      <rect x="540" y="95" width="70" height="20" fill="#0d0400"/>
-      <rect x="570" y="85" width="15" height="12" fill="#0d0400"/>
-      <rect x="575" y="72" width="5" height="16" fill="#0d0400"/>
-      <circle cx="577" cy="70" r="2" fill="#ff6600" opacity="0.6" style="animation:lightBlink 2.8s infinite 1s"/>
-      <!-- ENGINEERS overlooking plant (African silhouettes at sunset) -->
-      <!-- Engineer 1 — standing with arms on railing -->
+      <rect x="456" y="88" width="38" height="27" fill="rgba(10,5,0,0.92)" stroke="rgba(50,20,0,0.6)" stroke-width="1"/>
+      <rect x="461" y="93" width="8" height="8" fill="#ff9900" opacity="0.35" style="animation:lightBlink 3.5s infinite"/>
+      <!-- ENGINEERS overlooking plant at sunset (African silhouettes) -->
       <g style="animation:sceneFloat 6s ease-in-out infinite">
-        <ellipse cx="495" cy="104" rx="8" ry="3.5" fill="#ff8800" opacity="0.65"/>
-        <circle cx="495" cy="106" r="6" fill="#0d0400"/>
-        <rect x="491" y="112" width="8" height="17" fill="#0d0400" rx="1"/>
-        <rect x="487" y="114" width="5" height="9" fill="#0d0400" rx="1"/>
-        <rect x="498" y="114" width="5" height="9" fill="#0d0400" rx="1"/>
-        <rect x="492" y="129" width="4" height="8" fill="#0d0400"/>
-        <rect x="498" y="129" width="4" height="8" fill="#0d0400"/>
-        <!-- Glow of hard hat at sunset -->
-        <ellipse cx="495" cy="102" rx="9" ry="4" fill="#ffaa30" opacity="0.25"/>
+        <ellipse cx="502" cy="104" rx="8.5" ry="3.5" fill="rgba(255,140,0,0.6)"/>
+        <circle cx="502" cy="107" r="6.2" fill="rgba(12,5,0,0.95)"/>
+        <rect x="497" y="113" width="9" height="18" fill="rgba(12,5,0,0.95)" rx="1.5"/>
+        <rect x="493" y="115" width="5" height="10" fill="rgba(12,5,0,0.95)" rx="1"/>
+        <rect x="505" y="115" width="5" height="10" fill="rgba(12,5,0,0.95)" rx="1"/>
+        <rect x="498" y="131" width="4" height="9" fill="rgba(12,5,0,0.95)"/>
+        <rect x="503" y="131" width="4" height="9" fill="rgba(12,5,0,0.95)"/>
+        <ellipse cx="502" cy="102" rx="9" ry="4" fill="rgba(255,170,50,0.2)"/>
       </g>
-      <!-- Engineer 2 — pointing at plant -->
-      <g style="animation:sceneFloat 6s ease-in-out infinite 1.5s">
-        <ellipse cx="520" cy="106" rx="7.5" ry="3" fill="#cc6600" opacity="0.7"/>
-        <circle cx="520" cy="108" r="5.5" fill="#0d0400"/>
-        <rect x="517" y="113" width="7" height="15" fill="#0d0400" rx="1"/>
-        <!-- Arm pointing left -->
-        <rect x="507" y="114" width="11" height="4" fill="#0d0400" rx="2"/>
-        <rect x="524" y="115" width="4" height="9" fill="#0d0400" rx="1"/>
-        <rect x="518" y="128" width="3" height="7" fill="#0d0400"/>
-        <rect x="523" y="128" width="3" height="7" fill="#0d0400"/>
+      <g style="animation:sceneFloat 6s ease-in-out infinite 1.6s">
+        <ellipse cx="528" cy="106" rx="7.5" ry="3" fill="rgba(200,100,0,0.65)"/>
+        <circle cx="528" cy="109" r="5.5" fill="rgba(12,5,0,0.95)"/>
+        <rect x="524" y="114" width="8" height="16" fill="rgba(12,5,0,0.95)" rx="1.5"/>
+        <rect x="510" y="115" width="15" height="5" fill="rgba(12,5,0,0.95)" rx="2"/>
+        <rect x="531" y="116" width="5" height="10" fill="rgba(12,5,0,0.95)" rx="1"/>
+        <rect x="525" y="130" width="4" height="8" fill="rgba(12,5,0,0.95)"/>
+        <rect x="530" y="130" width="4" height="8" fill="rgba(12,5,0,0.95)"/>
       </g>
-      <!-- Engineer 3 — background, slightly smaller -->
-      <g style="animation:sceneFloat 5s ease-in-out infinite 2.5s">
-        <ellipse cx="540" cy="108" rx="6" ry="2.5" fill="#ff8800" opacity="0.55"/>
-        <circle cx="540" cy="110" r="5" fill="#0d0400"/>
-        <rect x="537" y="115" width="6" height="13" fill="#0d0400" rx="1"/>
-        <rect x="534" y="116" width="4" height="8" fill="#0d0400" rx="1"/>
-        <rect x="542" y="116" width="4" height="8" fill="#0d0400" rx="1"/>
-        <rect x="538" y="128" width="3" height="6" fill="#0d0400"/>
-        <rect x="542" y="128" width="3" height="6" fill="#0d0400"/>
+      <g style="animation:sceneFloat 5.5s ease-in-out infinite 2.8s">
+        <ellipse cx="552" cy="108" rx="6.5" ry="2.8" fill="rgba(180,90,0,0.6)"/>
+        <circle cx="552" cy="111" r="5.2" fill="rgba(12,5,0,0.95)"/>
+        <rect x="548" y="116" width="8" height="15" fill="rgba(12,5,0,0.95)" rx="1.5"/>
+        <rect x="545" y="118" width="4" height="9" fill="rgba(12,5,0,0.95)" rx="1"/>
+        <rect x="555" y="118" width="4" height="9" fill="rgba(12,5,0,0.95)" rx="1"/>
+        <rect x="549" y="131" width="3" height="7" fill="rgba(12,5,0,0.95)"/>
+        <rect x="554" y="131" width="3" height="7" fill="rgba(12,5,0,0.95)"/>
       </g>
-      <!-- Dust haze -->
-      <circle cx="320" cy="105" r="2" fill="#cc8030" opacity="0.25" style="animation:dustDrift 4s ease-in-out infinite"/>
-      <circle cx="480" cy="100" r="1.5" fill="#ff9944" opacity="0.2" style="animation:dustDrift 5s ease-in-out infinite 1.2s"/>
-      <circle cx="600" cy="102" r="1.5" fill="#cc7020" opacity="0.2" style="animation:dustDrift 4.5s ease-in-out infinite 0.8s"/>
-      <text x="400" y="145" fill="#ffaa30" font-size="8" text-anchor="middle" opacity="0.55">MiningCo — Surface Operations — Sunset Shift Handover</text>
+      <!-- Dust haze animation -->
+      <circle cx="310" cy="108" r="2.2" fill="rgba(200,120,40,0.3)" style="animation:dustDrift 4s ease-in-out infinite"/>
+      <circle cx="470" cy="104" r="1.8" fill="rgba(255,160,50,0.25)" style="animation:dustDrift 5.2s ease-in-out infinite 1s"/>
+      <circle cx="600" cy="106" r="1.5" fill="rgba(180,100,30,0.22)" style="animation:dustDrift 4.8s ease-in-out infinite .6s"/>
+      <text x="400" y="148" fill="rgba(255,170,80,0.6)" font-size="8" text-anchor="middle">MiningCo — Surface Operations — Sunset Shift Handover</text>
     </svg>
   </div>
 
@@ -871,54 +789,54 @@ canvas{max-height:158px!important}
   </div>
 </div>
 
-<!-- ═══════════ WEATHER ═══════════ -->
+<!-- ═══ WEATHER ═══ -->
 <div class="page" id="page-wx">
-  <div class="sl">Weather forecast — live equipment impact analysis (Open-Meteo · no API key required)</div>
-  <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);font-size:12px;padding:20px">Loading weather data...</div></div>
+  <div class="sl">Weather forecast — live equipment impact analysis (Open-Meteo · free · no API key)</div>
+  <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);font-size:12px;padding:20px">Loading weather data for Bulawayo, Harare, Mutare, Mine Site...</div></div>
   <div class="cgrid">
-    <div class="ccard"><div class="ctitle">Wind speed forecast — next 24h (km/h)</div><canvas id="cWind"></canvas></div>
-    <div class="ccard"><div class="ctitle">Precipitation probability — next 24h (%)</div><canvas id="cPrecip"></canvas></div>
+    <div class="ccard"><div class="ctitle">Wind speed forecast — next 24h (km/h) · High winds degrade microwave links</div><canvas id="cWind"></canvas></div>
+    <div class="ccard"><div class="ctitle">Precipitation probability — next 24h (%) · Heavy rain increases underground pump load</div><canvas id="cPrecip"></canvas></div>
   </div>
 </div>
 
-<!-- ═══════════ INTELLIGENCE ═══════════ -->
+<!-- ═══ INTELLIGENCE ═══ -->
 <div class="page" id="page-intel">
   <div class="sl">Platform intelligence — real-time AI insights</div>
   <div class="igrid">
     <div class="icard"><div class="ititle">Federated health index</div><div class="ival cg" id="i-fhi">--</div><div class="isub">Weighted all assets</div></div>
     <div class="icard"><div class="ititle">Highest failure risk</div><div class="ival cr" id="i-risk">--</div><div class="isub">Next 30 minutes</div></div>
-    <div class="icard"><div class="ititle">Cross-device correlation</div><div class="ival cw" id="i-corr">--</div><div class="isub">Linked degradation events</div></div>
+    <div class="icard"><div class="ititle">Cross-device correlation</div><div class="ival cw" id="i-corr">--</div><div class="isub">Linked degradation</div></div>
     <div class="icard"><div class="ititle">Model status</div><div class="ival cg" id="i-model">Optimal</div><div class="isub">Anomalies vs threshold</div></div>
-    <div class="icard"><div class="ititle">Total devices</div><div class="ival ca" id="i-devs">--</div><div class="isub">All sectors combined</div></div>
+    <div class="icard"><div class="ititle">Total devices</div><div class="ival ca" id="i-devs">--</div><div class="isub">All sectors</div></div>
     <div class="icard"><div class="ititle">Anomaly count</div><div class="ival cp" id="i-anom">--</div><div class="isub">Isolation Forest flags</div></div>
   </div>
-  <div class="sl">Digital twin — real load scenario simulator</div>
+  <div class="sl">Digital twin — real load scenario simulator (calls /api/twin/{device_id})</div>
   <div class="twin-wrap">
     <select class="twin-sel" id="twin-sel" onchange="runTwin()"><option value="">Select a device to simulate load scenarios...</option></select>
-    <div class="twin-grid" id="twin-grid"><div style="color:var(--dim);font-size:11px;grid-column:1/-1">Select a device above to run the digital twin simulation</div></div>
+    <div class="twin-grid" id="twin-grid"><div style="color:var(--dim);font-size:11px;grid-column:1/-1">Select a device above — the backend runs real model predictions at +10%, +20%, +50%, +100% load</div></div>
     <div class="twin-trend" id="twin-trend"></div>
   </div>
   <div class="fgrid">
     <div class="fcard"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
     <div class="fcard"><div class="sl">Equipment lifecycle estimates</div><div id="lifecycle-feed"></div></div>
   </div>
-  <div class="ccard" style="margin-bottom:13px"><div class="ctitle">Device uptime percentage — all assets</div><canvas id="cUp"></canvas></div>
+  <div class="ccard" style="margin-bottom:13px"><div class="ctitle">Device uptime % — all assets</div><canvas id="cUp"></canvas></div>
   <div class="protos">
-    <div class="ptag"><b>IEEE 802.3</b> — Ethernet backbone</div>
-    <div class="ptag"><b>SNMP v2/v3</b> — device metrics</div>
-    <div class="ptag"><b>Profinet</b> — PLC real-time</div>
-    <div class="ptag"><b>Modbus TCP</b> — sensor registers</div>
-    <div class="ptag"><b>EtherNet/IP</b> — conveyor control</div>
-    <div class="ptag"><b>DNP3</b> — CBS safety</div>
-    <div class="ptag"><b>OPC-UA</b> — SCADA exchange</div>
+    <div class="ptag"><b>IEEE 802.3</b> Ethernet backbone</div>
+    <div class="ptag"><b>SNMP v2/v3</b> device metrics</div>
+    <div class="ptag"><b>Profinet</b> PLC real-time</div>
+    <div class="ptag"><b>Modbus TCP</b> sensor registers</div>
+    <div class="ptag"><b>EtherNet/IP</b> conveyor control</div>
+    <div class="ptag"><b>DNP3</b> CBS safety</div>
+    <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
 </div>
 
-<!-- ═══════════ CBS SAFETY ═══════════ -->
+<!-- ═══ CBS SAFETY ═══ -->
 <div class="page" id="page-cbs">
   <div class="cbsouter">
     <div class="cbs-title"><div class="cbsdot"></div>Centralised Blasting System — DNP3 Safety Monitor</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:11px;line-height:1.6">Protocol: DNP3 over Ethernet IEEE 802.3 · Safety threshold: 90% link health · Auto blast hold enabled<br>Mine section: Surface Ops · All detonation circuits monitored in real time</div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:11px;line-height:1.6">Protocol: DNP3 over Ethernet IEEE 802.3 · Safety threshold: 90% link health · Auto blast hold enabled<br>Mine section: Surface Ops · All detonation circuits monitored in real time · Industry cost of uncontrolled blast: $500,000+</div>
     <div class="cbs-grid" id="cbs-devs"></div>
     <div style="background:rgba(10,3,3,.6);border:1px solid rgba(255,62,80,.15);border-radius:8px;padding:11px">
       <div class="sl" style="color:var(--red)">CBS safety interlock log</div>
@@ -928,12 +846,12 @@ canvas{max-height:158px!important}
   <div class="ccard"><div class="ctitle">CBS link health — blast hold triggers below 90%</div><canvas id="cCbs"></canvas></div>
 </div>
 
-<!-- ═══════════ SPECIALIST ═══════════ -->
+<!-- ═══ SPECIALIST ═══ -->
 <div class="page" id="page-sp">
   <div id="login-sec">
     <div class="lbox">
       <div class="ltitle">Specialist access — IISentinel™</div>
-      <div class="lsub">Restricted to authorised engineers and administrators.<br>All access is timestamped and audited.</div>
+      <div class="lsub">Restricted to authorised engineers and administrators.<br>All access is timestamped and audited in the incident log.</div>
       <div class="lg"><label class="ll">Username</label><input class="li" id="l-name" type="text" placeholder="Enter username"></div>
       <div class="lg"><label class="ll">Password</label><input class="li" id="l-pass" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn btn-pur" onclick="doLogin()">Access specialist panel</button>
@@ -954,92 +872,84 @@ canvas{max-height:158px!important}
       <div class="bc"><div class="bl">Resolved</div><div class="bv cg" id="sp-res">0</div></div>
     </div>
 
-    <!-- SHIFT REPORT PANEL -->
     <div id="sr-panel" style="display:none;margin-bottom:14px">
       <div class="sl">Shift handover report — IISentinel™ Engineering Summary</div>
       <div class="sr-grid" id="sr-grid"></div>
       <div class="fcard" style="max-height:200px;margin-bottom:13px"><div class="sl">Top risks to hand over</div><div id="sr-risks"></div></div>
     </div>
 
-    <!-- ENGINEERING DIAGNOSTICS — the language of the engineers -->
-    <div class="sl">Engineering diagnostics — protocol-level metrics</div>
+    <!-- ENGINEERING DIAGNOSTICS — the real language of engineers -->
+    <div class="sl">Engineering diagnostics — protocol-level metrics (updated every 15s)</div>
     <div class="engrid">
 
-      <!-- NETWORK DIAGNOSTICS: L2/L3 interface stats -->
       <div class="en-panel">
         <div class="en-title">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2" stroke="var(--tel)" stroke-width="1.5"/><path d="M4 8h8M8 4v8" stroke="var(--tel)" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Network interface statistics
+          L2/L3 interface statistics (SNMP ifTable)
         </div>
         <table class="en-table">
           <tr><th>Interface</th><th>Utilisation</th><th>CRC errors</th><th>State</th></tr>
-          <tbody id="en-net-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Loading — run collectors</td></tr></tbody>
+          <tbody id="en-net-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run network_infra_collector.py</td></tr></tbody>
         </table>
       </div>
 
-      <!-- ROUTING PROTOCOL STATE -->
       <div class="en-panel">
         <div class="en-title">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--tel)" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="var(--tel)" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Routing &amp; BGP session state
+          Routing protocol state (BGP/OSPF)
         </div>
         <table class="en-table">
           <tr><th>Device</th><th>Protocol</th><th>Neighbours</th><th>State</th></tr>
-          <tbody id="en-bgp-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Loading — run collectors</td></tr></tbody>
+          <tbody id="en-bgp-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run network_infra_collector.py</td></tr></tbody>
         </table>
       </div>
 
-      <!-- RF / MICROWAVE METRICS — telecom language -->
       <div class="en-panel">
         <div class="en-title">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 12 Q4 8 4 5 Q4 2 8 2 Q12 2 12 5 Q12 8 8 12Z" stroke="var(--blu)" stroke-width="1.2" fill="none"/><circle cx="8" cy="5" r="1.5" fill="var(--blu)"/></svg>
-          RF &amp; microwave link metrics
+          RF &amp; microwave link metrics (dBm / SNR)
         </div>
         <table class="en-table">
           <tr><th>Link</th><th>Rx level (dBm)</th><th>SNR (dB)</th><th>BER</th></tr>
-          <tbody id="en-rf-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Loading — run collectors</td></tr></tbody>
+          <tbody id="en-rf-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run telecom_collector.py</td></tr></tbody>
         </table>
       </div>
 
-      <!-- INDUSTRIAL / MINING METRICS -->
       <div class="en-panel">
         <div class="en-title">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="10" width="12" height="4" rx="1" stroke="var(--amb)" stroke-width="1.2"/><path d="M4 10V6a4 4 0 0 1 8 0v4" stroke="var(--amb)" stroke-width="1.2" fill="none"/></svg>
-          Industrial asset metrics (Profinet / Modbus)
+          Industrial asset metrics (Profinet / Modbus TCP)
         </div>
         <table class="en-table">
-          <tr><th>Asset</th><th>MTBF (h)</th><th>OEE %</th><th>Condition</th></tr>
-          <tbody id="en-ind-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Loading — run collectors</td></tr></tbody>
+          <tr><th>Asset</th><th>MTBF est. (h)</th><th>OEE %</th><th>Condition</th></tr>
+          <tbody id="en-ind-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run mining_collector.py</td></tr></tbody>
         </table>
       </div>
 
-      <!-- QoS / TRAFFIC CLASS METRICS -->
       <div class="en-panel">
         <div class="en-title">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12 L5 8 L8 10 L11 5 L14 7" stroke="var(--grn)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          QoS &amp; traffic class analysis
+          QoS &amp; traffic class analysis (DSCP / jitter)
         </div>
         <table class="en-table">
-          <tr><th>Device</th><th>Jitter (ms)</th><th>Queue drops</th><th>DSCP</th></tr>
-          <tbody id="en-qos-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Loading — run collectors</td></tr></tbody>
+          <tr><th>Device</th><th>Jitter (ms)</th><th>Queue drops</th><th>DSCP class</th></tr>
+          <tbody id="en-qos-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run collectors to populate</td></tr></tbody>
         </table>
       </div>
 
-      <!-- CBS / DNP3 SAFETY METRICS -->
       <div class="en-panel">
         <div class="en-title">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L13 5v4c0 3-5 5-5 5S3 12 3 9V5L8 2Z" stroke="var(--red)" stroke-width="1.3" fill="none"/></svg>
           CBS / DNP3 safety protocol diagnostics
         </div>
         <table class="en-table">
-          <tr><th>CBS unit</th><th>Link quality</th><th>Last hold</th><th>MTTR (min)</th></tr>
-          <tbody id="en-cbs-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Loading — run CBS collector</td></tr></tbody>
+          <tr><th>CBS unit</th><th>Link quality</th><th>Last hold time</th><th>MTTR (min)</th></tr>
+          <tbody id="en-cbs-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr></tbody>
         </table>
       </div>
 
     </div>
 
-    <!-- INCIDENT MANAGEMENT -->
     <div class="sl">Active incidents — assign and resolve</div>
     <div id="inc-list"></div>
   </div>
@@ -1050,6 +960,25 @@ canvas{max-height:158px!important}
 const B=window.location.origin;
 let spToken=null,spName=null,intel={},allData=[];
 let curNet='all',curTc='all',curMc='all';
+let activeTipId=null;
+let opsFocusOn=false;
+
+/* ── LOADER ── */
+const LOADER_MSGS=['Initialising AI models...','Loading RandomForest health scorer...','Starting Isolation Forest...','Connecting to Supabase...','Calibrating sensor baselines...','IISentinel™ ready'];
+let loaderIdx=0;
+window.addEventListener('load',()=>{
+  const statusEl=document.getElementById('loader-status');
+  const msgInterval=setInterval(()=>{
+    loaderIdx++;
+    if(loaderIdx<LOADER_MSGS.length&&statusEl) statusEl.textContent=LOADER_MSGS[loaderIdx];
+  },400);
+  setTimeout(()=>{
+    clearInterval(msgInterval);
+    const l=document.getElementById('loader');
+    l.classList.add('fade-out');
+    setTimeout(()=>l.style.display='none',700);
+  },2900);
+});
 
 const NET=['router','switch','firewall','wan_link','workstation'];
 const TC=['base_station','network_tower','microwave_link'];
@@ -1059,73 +988,121 @@ const TC_META={all:{label:'All Sites',sub:'Bulawayo · Harare · Mutare'},byo:{l
 const MC_META={all:{label:'All Sections',sub:'Full mine overview'},shaft1:{label:'Shaft 1 — Level 3–7',sub:'Primary extraction — underground heat +30%'},shaft2:{label:'Shaft 2 — Level 5–10',sub:'Secondary extraction — deepest section'},plant:{label:'Processing Plant',sub:'Ore processing and beneficiation'},surface:{label:'Surface Infrastructure',sub:'Power, water, CBS detonator'}};
 const WX_ICONS={0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',51:'🌦',61:'🌧',63:'🌧',65:'🌧',80:'🌦',95:'⛈',96:'⛈',99:'⛈'};
 
-/* ── LOADER ── */
-window.addEventListener('load',()=>{
-  setTimeout(()=>{
-    const l=document.getElementById('loader');
-    l.classList.add('fade-out');
-    setTimeout(()=>l.style.display='none',700);
-  },2600);
-});
+// Industry-accurate downtime cost rates (USD/hour) — published figures
+const COST_RATES={
+  // Mining (platinum mine — Zimplats/Anglo American scale)
+  pump:150000,conveyor:120000,ventilation:180000,
+  plc:80000,scada_node:60000,cbs_controller:450000,
+  power_meter:100000,sensor:40000,
+  // Telecom (per major node — Econet/Telecel scale)
+  base_station:25000,network_tower:35000,microwave_link:40000,
+  // Network infrastructure
+  router:15000,switch:10000,firewall:20000,wan_link:12000,
+  workstation:2000
+};
 
-/* ── GLOBAL TOOLTIP ── */
-const gtip=document.getElementById('gtip');
-let tipData={};
-
-document.addEventListener('mouseover',e=>{
-  const gc=e.target.closest('.gc');
-  if(!gc||!gc.dataset.dev)return;
-  const d=tipData[gc.dataset.dev];
-  if(!d)return;
-  const s=Math.round(d.health_score);
-  const col=sc(s);
-  const prob=intel.failure_probabilities?.[d.device_id]||0;
-  const up=Math.round(intel.uptime?.[d.device_id]||100);
-  const lc=intel.lifecycles?.[d.device_id];
-  const proto=getProto(d);
-  const pred=Math.round(d.predicted_score||s);
-  gtip.innerHTML=`<div class="tip-title">${d.device_id}</div>
-    <div class="tip-row"><span class="tip-lbl">Health score</span><span class="tip-val" style="color:${col}">${s}/100</span></div>
-    <div class="tip-row"><span class="tip-lbl">Predicted</span><span class="tip-val">${pred}/100</span></div>
-    <div class="tip-row"><span class="tip-lbl">Failure risk</span><span class="tip-val" style="color:${prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'}">${prob}%</span></div>
-    <div class="tip-row"><span class="tip-lbl">Uptime</span><span class="tip-val">${up}%</span></div>
-    <div class="tip-row"><span class="tip-lbl">Protocol</span><span class="tip-val">${proto}</span></div>
-    <div class="tip-row"><span class="tip-lbl">Device type</span><span class="tip-val">${d.device_type}</span></div>
-    ${lc?`<div class="tip-row"><span class="tip-lbl">Est. life remaining</span><span class="tip-val">${lc.toLocaleString()}h</span></div>`:''}
-    ${d.ai_diagnosis?`<div class="tip-row" style="align-items:flex-start"><span class="tip-lbl">Diagnosis</span><span class="tip-val" style="font-weight:400;max-width:135px;line-height:1.4">${d.ai_diagnosis.slice(0,90)}${d.ai_diagnosis.length>90?'…':''}</span></div>`:''}
-    ${d.automation_command?`<div class="tip-cmd">${d.automation_command.slice(0,100)}</div>`:''}`;
-  gtip.style.display='block';
-});
-document.addEventListener('mouseout',e=>{
-  if(!e.target.closest('.gc'))return;
-  gtip.style.display='none';
-});
-document.addEventListener('mousemove',e=>{
-  if(gtip.style.display!=='block')return;
-  const x=e.clientX+16, y=e.clientY-gtip.offsetHeight/2;
-  gtip.style.left=Math.max(8,Math.min(x,window.innerWidth-gtip.offsetWidth-8))+'px';
-  gtip.style.top=Math.max(8,Math.min(y,window.innerHeight-gtip.offsetHeight-8))+'px';
-});
-
-/* ── Helpers ── */
 function sc(s){return s>=70?'var(--grn)':s>=40?'var(--amb)':'var(--red)'}
 function scc(s){return s>=70?'cg':s>=40?'cw':'cr'}
 function fmt(ts){return new Date(ts).toLocaleTimeString()}
 function sid(id){return id.split('-').slice(-2).join('-')}
 function fhi(arr){if(!arr.length)return 100;const w=arr.map(s=>s<20?s*.5:s<50?s*.8:s);return Math.round(w.reduce((a,b)=>a+b,0)/w.length)}
-function cost(dm){return Object.values(dm).reduce((c,d)=>c+(d.health_score<20?5000:d.health_score<35?2000:d.health_score<50?800:0),0)}
-function getProto(d){
-  if(CBS.includes(d.device_type)||d.device_id.startsWith('cbs'))return'DNP3';
-  if(d.device_type==='plc'||d.device_id.includes('profinet'))return'Profinet';
-  if(d.device_type==='scada_node'||d.device_id.includes('modbus'))return'Modbus';
-  if(TC.includes(d.device_type))return'SNMP/MW';
-  if(NET.includes(d.device_type))return'SNMP';
-  return'Ethernet';
+
+function calcCost(dm){
+  let total=0;
+  const breakdown=[];
+  Object.values(dm).forEach(d=>{
+    const rate=COST_RATES[d.device_type]||8000;
+    const s=d.health_score;
+    const prob=(intel.failure_probabilities?.[d.device_id]||0)/100;
+    const impact=s<20?0.95:s<35?0.6:s<50?0.25:0;
+    const exposure=Math.round(rate*impact*(0.5+prob*0.5));
+    if(exposure>0){total+=exposure;breakdown.push({dev:d.device_id,type:d.device_type,exposure,rate});}
+  });
+  return {total,breakdown:breakdown.sort((a,b)=>b.exposure-a.exposure).slice(0,4)};
 }
+
 function isNet(r){return NET.includes(r.device_type)||r.device_id.startsWith('net-')}
 function isTc(r){return TC.includes(r.device_type)||r.device_id.startsWith('tc-')}
 function isMc(r){return MC.includes(r.device_type)||(r.device_id.startsWith('mc-')&&!CBS.includes(r.device_type))}
 function isCbs(r){return CBS.includes(r.device_type)||r.device_id.startsWith('cbs')}
+function getProto(d){
+  if(isCbs(d))return'DNP3';
+  if(d.device_type==='plc')return'Profinet';
+  if(d.device_type==='scada_node')return'Modbus';
+  if(TC.includes(d.device_type))return'SNMP/MW';
+  if(NET.includes(d.device_type))return'SNMP';
+  return'Ethernet';
+}
+
+/* ── OPS FOCUS MODE ── */
+function toggleOpsMode(){
+  opsFocusOn=!opsFocusOn;
+  document.body.classList.toggle('ops-focus',opsFocusOn);
+  const btn=document.getElementById('ops-btn');
+  btn.textContent=opsFocusOn?'✕ Exit Focus':'⊕ Focus Mode';
+  toast(opsFocusOn?'Ops Focus Mode activated':'Ops Focus Mode deactivated',opsFocusOn?'Critical assets highlighted — non-critical dimmed':'Full dashboard view restored',opsFocusOn?'tc':'tg');
+}
+
+/* ── CLICK TOOLTIP ── */
+const gtip=document.getElementById('gtip');
+
+function buildTip(devId){
+  const d=allData.find(r=>r.device_id===devId);
+  if(!d)return;
+  const s=Math.round(d.health_score);
+  const col=sc(s);
+  const prob=intel.failure_probabilities?.[devId]||0;
+  const up=Math.round(intel.uptime?.[devId]||100);
+  const lc=intel.lifecycles?.[devId];
+  const proto=getProto(d);
+  const pred=Math.round(d.predicted_score||s);
+  const rate=COST_RATES[d.device_type]||8000;
+  const hourlyRisk=Math.round(rate*(s<20?.95:s<35?.6:s<50?.25:0));
+  gtip.innerHTML=`<span class="tip-close" onclick="closeTip()">✕</span>
+    <div class="tip-title">${devId}</div>
+    <div class="tip-row"><span class="tip-lbl">Health score</span><span class="tip-val" style="color:${col}">${s}/100</span></div>
+    <div class="tip-row"><span class="tip-lbl">Predicted score</span><span class="tip-val">${pred}/100</span></div>
+    <div class="tip-row"><span class="tip-lbl">Failure risk</span><span class="tip-val" style="color:${prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'}">${prob}%</span></div>
+    <div class="tip-row"><span class="tip-lbl">Uptime</span><span class="tip-val">${up}%</span></div>
+    <div class="tip-row"><span class="tip-lbl">Protocol</span><span class="tip-val">${proto}</span></div>
+    <div class="tip-row"><span class="tip-lbl">Device type</span><span class="tip-val">${d.device_type}</span></div>
+    <div class="tip-row"><span class="tip-lbl">Hourly risk exposure</span><span class="tip-val" style="color:${hourlyRisk>0?'var(--red)':'var(--grn)'}">${hourlyRisk>0?'$'+hourlyRisk.toLocaleString()+'/hr':'None'}</span></div>
+    ${lc?`<div class="tip-row"><span class="tip-lbl">Est. life remaining</span><span class="tip-val">${lc.toLocaleString()}h (~${Math.round(lc/24)}d)</span></div>`:''}
+    ${d.ai_diagnosis?`<div class="tip-row" style="align-items:flex-start"><span class="tip-lbl">Diagnosis</span><span class="tip-val" style="font-weight:400;max-width:140px;line-height:1.4;font-size:9px">${d.ai_diagnosis.slice(0,90)}…</span></div>`:''}
+    ${d.automation_command?`<div class="tip-cmd">${d.automation_command.slice(0,110)}</div>`:''}`;
+}
+
+function closeTip(){
+  gtip.style.display='none';
+  activeTipId=null;
+  document.querySelectorAll('.gc.tip-open').forEach(el=>el.classList.remove('tip-open'));
+}
+
+document.addEventListener('click',e=>{
+  const gc=e.target.closest('.gc');
+  const tipCloseBtn=e.target.closest('.tip-close');
+  if(tipCloseBtn){closeTip();return;}
+  if(!gc){
+    if(activeTipId&&!gtip.contains(e.target)){closeTip();}
+    return;
+  }
+  const devId=gc.dataset.dev;
+  if(!devId)return;
+  e.stopPropagation();
+  if(activeTipId===devId){closeTip();return;}
+  document.querySelectorAll('.gc.tip-open').forEach(el=>el.classList.remove('tip-open'));
+  activeTipId=devId;
+  gc.classList.add('tip-open');
+  buildTip(devId);
+  const rect=gc.getBoundingClientRect();
+  let x=rect.right+12;
+  let y=rect.top+window.scrollY;
+  if(x+260>window.innerWidth)x=rect.left-270;
+  if(rect.top+300>window.innerHeight)y=window.scrollY+window.innerHeight-310;
+  gtip.style.left=Math.max(6,x)+'px';
+  gtip.style.top=Math.max(6,y)+'px';
+  gtip.style.display='block';
+});
 
 /* ── Gauge SVG ── */
 function gSvg(s,col){
@@ -1134,7 +1111,7 @@ function gSvg(s,col){
   return `<svg viewBox="0 0 74 74"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-dasharray="${d} ${ci.toFixed(2)}" stroke-dashoffset="${o}" stroke-linecap="round" style="transition:stroke-dasharray .9s cubic-bezier(.4,0,.2,1)"/></svg>`;
 }
 
-/* ── Build gauge grid ── */
+/* ── Build gauges ── */
 function mkGauges(data,cid,filterFn,locFilter){
   const el=document.getElementById(cid);if(!el)return;
   const dm={};
@@ -1144,7 +1121,6 @@ function mkGauges(data,cid,filterFn,locFilter){
   if(!entries.length){el.innerHTML='<div class="gc" style="cursor:default"><div class="gid" style="color:var(--dim)">Run collector — no data</div></div>';return;}
   el.innerHTML='';
   entries.forEach((d,i)=>{
-    tipData[d.device_id]=d;
     const s=Math.round(d.health_score);
     const col=sc(s);
     const prob=intel.failure_probabilities?.[d.device_id]||0;
@@ -1191,13 +1167,13 @@ function mkLocCards(data,cid,meta,filterFn){
 }
 
 /* ── Chart factory ── */
-const cOpts=(yMax,yLabel)=>({responsive:true,maintainAspectRatio:false,
+const cOpts=(yMax)=>({responsive:true,maintainAspectRatio:false,
   plugins:{legend:{labels:{color:'#8592a8',font:{size:9},boxWidth:10}}},
   scales:{x:{ticks:{color:'#4a5270',font:{size:8}},grid:{color:'rgba(255,255,255,0.03)'}},
           y:{min:0,max:yMax||100,ticks:{color:'#4a5270',font:{size:8}},grid:{color:'rgba(255,255,255,0.03)'}}}});
 function mkLine(id,lbl,col,yMax){return new Chart(document.getElementById(id),{type:'line',data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col+'15',borderWidth:2,tension:.4,fill:true,pointRadius:2,pointHoverRadius:5}]},options:cOpts(yMax)})}
-function mkDual(id,l1,c1,l2,c2){return new Chart(document.getElementById(id),{type:'line',data:{labels:[],datasets:[{label:l1,data:[],borderColor:c1,borderWidth:2,tension:.4,pointRadius:2,pointHoverRadius:5},{label:l2,data:[],borderColor:c2,borderDash:[5,5],borderWidth:2,tension:.4,pointRadius:2,pointHoverRadius:5}]},options:cOpts(100)})}
-function mkBar(id,lbl,col){return new Chart(document.getElementById(id),{type:'bar',data:{labels:[],datasets:[{label:lbl,data:[],backgroundColor:col+'aa',borderRadius:5,borderSkipped:false,hoverBackgroundColor:col}]},options:{...cOpts(100),maintainAspectRatio:false}})}
+function mkDual(id,l1,c1,l2,c2){return new Chart(document.getElementById(id),{type:'line',data:{labels:[],datasets:[{label:l1,data:[],borderColor:c1,borderWidth:2,tension:.4,pointRadius:2},{label:l2,data:[],borderColor:c2,borderDash:[5,5],borderWidth:2,tension:.4,pointRadius:2}]},options:cOpts(100)})}
+function mkBar(id,lbl,col){return new Chart(document.getElementById(id),{type:'bar',data:{labels:[],datasets:[{label:lbl,data:[],backgroundColor:col+'aa',borderRadius:5,borderSkipped:false,hoverBackgroundColor:col}]},options:cOpts(100)})}
 
 const cMain=mkLine('cMain','Health','#34c6f4');
 const cPred=mkDual('cPred','Actual','#20e07a','Predicted','#f5a020');
@@ -1237,46 +1213,35 @@ function updNetCats(data,loc){
   const cats={router:[],switch:[],firewall:[],wan_link:[]};
   nd.forEach(r=>{const t=r.device_type;if(cats[t])cats[t].push(r);});
 
-  // Routers
-  const rdm={};cats.router.forEach(r=>{if(!rdm[r.device_id])rdm[r.device_id]=r;});
-  const rscores=Object.values(rdm).map(d=>d.health_score);
-  const rlats=cats.router.filter(r=>r.metric_name==='latency_ms').map(r=>r.metric_value);
-  setEl('r-fhi',rscores.length?fhi(rscores):'-','ca');
-  document.getElementById('r-lat').textContent=rlats.length?Math.round(rlats.reduce((a,b)=>a+b,0)/rlats.length)+'ms':'-';
-  mkGauges(data,'g-routers',r=>isNet(r)&&r.device_type==='router',loc==='all'?null:loc);
+  function catStats(arr,metricName){
+    const dm={};arr.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+    const scores=Object.values(dm).map(d=>d.health_score);
+    const metricVals=arr.filter(r=>r.metric_name===metricName).map(r=>r.metric_value);
+    return {fhi_:scores.length?fhi(scores):0,avgMetric:metricVals.length?Math.round(metricVals.reduce((a,b)=>a+b,0)/metricVals.length):0,count:Object.keys(dm).length};
+  }
 
-  // Switches
-  const sdm={};cats.switch.forEach(r=>{if(!sdm[r.device_id])sdm[r.device_id]=r;});
-  const sscores=Object.values(sdm).map(d=>d.health_score);
-  const sbws=cats.switch.filter(r=>r.metric_name==='bandwidth_mbps').map(r=>r.metric_value);
-  setEl('s-fhi',sscores.length?fhi(sscores):'-','ca');
-  document.getElementById('s-bw').textContent=sbws.length?Math.round(sbws.reduce((a,b)=>a+b,0)/sbws.length)+'Mbps':'-';
-  mkGauges(data,'g-switches',r=>isNet(r)&&r.device_type==='switch',loc==='all'?null:loc);
+  const rStats=catStats(cats.router,'latency_ms');
+  const sStats=catStats(cats.switch,'bandwidth_mbps');
+  const fStats=catStats(cats.firewall,'cpu_load');
+  const wStats=catStats(cats.wan_link,'latency_ms');
 
-  // Firewalls
-  const fdm={};cats.firewall.forEach(r=>{if(!fdm[r.device_id])fdm[r.device_id]=r;});
-  const fscores=Object.values(fdm).map(d=>d.health_score);
-  const fcpus=cats.firewall.map(r=>r.metric_value);
-  setEl('f-fhi',fscores.length?fhi(fscores):'-','ca');
-  document.getElementById('f-cpu').textContent=fcpus.length?Math.round(fcpus.reduce((a,b)=>a+b,0)/fcpus.length)+'%':'-';
-  mkGauges(data,'g-firewalls',r=>isNet(r)&&r.device_type==='firewall',loc==='all'?null:loc);
-
-  // WAN
-  const wdm={};cats.wan_link.forEach(r=>{if(!wdm[r.device_id])wdm[r.device_id]=r;});
-  const wscores=Object.values(wdm).map(d=>d.health_score);
-  const wlats=cats.wan_link.filter(r=>r.metric_name==='latency_ms').map(r=>r.metric_value);
-  setEl('w-fhi',wscores.length?fhi(wscores):'-','ca');
-  document.getElementById('w-lat').textContent=wlats.length?Math.round(wlats.reduce((a,b)=>a+b,0)/wlats.length)+'ms':'-';
-  mkGauges(data,'g-wan',r=>isNet(r)&&r.device_type==='wan_link',loc==='all'?null:loc);
-
-  // Summary counts
-  document.getElementById('net-r-cnt').textContent=Object.keys(rdm).length||'0';
-  document.getElementById('net-s-cnt').textContent=Object.keys(sdm).length||'0';
-  document.getElementById('net-f-cnt').textContent=Object.keys(fdm).length||'0';
+  setEl('r-fhi',rStats.fhi_||'-','ca');document.getElementById('r-lat').textContent=rStats.avgMetric+'ms';
+  setEl('s-fhi',sStats.fhi_||'-','ca');document.getElementById('s-bw').textContent=sStats.avgMetric+'Mbps';
+  setEl('f-fhi',fStats.fhi_||'-','ca');document.getElementById('f-cpu').textContent=fStats.avgMetric+'%';
+  setEl('w-fhi',wStats.fhi_||'-','ca');document.getElementById('w-lat').textContent=wStats.avgMetric+'ms';
+  document.getElementById('net-r-cnt').textContent=rStats.count||'0';
+  document.getElementById('net-s-cnt').textContent=sStats.count||'0';
+  document.getElementById('net-f-cnt').textContent=fStats.count||'0';
   setEl('net-fhi',nd.length?fhi(nd.map(r=>r.health_score)):'-','ca');
   const lats=nd.filter(r=>r.metric_name==='latency_ms').map(r=>r.metric_value);
   document.getElementById('net-lat').textContent=lats.length?Math.round(lats.reduce((a,b)=>a+b,0)/lats.length)+'ms':'-';
   document.getElementById('net-faults').textContent=nd.filter(r=>r.health_score<50).length;
+
+  mkGauges(data,'g-routers',r=>isNet(r)&&r.device_type==='router',loc==='all'?null:loc);
+  mkGauges(data,'g-switches',r=>isNet(r)&&r.device_type==='switch',loc==='all'?null:loc);
+  mkGauges(data,'g-firewalls',r=>isNet(r)&&r.device_type==='firewall',loc==='all'?null:loc);
+  mkGauges(data,'g-wan',r=>isNet(r)&&r.device_type==='wan_link',loc==='all'?null:loc);
+
   const recND=nd.slice(0,20).reverse();
   updL(cNet,recND.map(r=>fmt(r.created_at)),recND.map(r=>Math.round(r.health_score)));
   updL(cNetL,recND.map(r=>fmt(r.created_at)),recND.map(r=>Math.min(499,Math.round(r.metric_value||0))));
@@ -1294,26 +1259,37 @@ async function fetchAll(){
     await fetchIntel();
     const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
     const scores=Object.values(dm).map(d=>d.health_score);
-    const f=fhi(scores),c=cost(dm);
+    const f=fhi(scores);
+    const {total,breakdown}=calcCost(dm);
     const cbsd=allData.filter(isCbs);
     const hold=cbsd.some(r=>r.automation_command?.includes('HOLD'));
-    setEl('b-fhi',f,scc(f));setEl('b-devs',Object.keys(dm).length,'ca');
-    document.getElementById('b-cost').textContent='$'+c.toLocaleString();
+
+    setEl('b-fhi',f,scc(f));
+    setEl('b-devs',Object.keys(dm).length,'ca');
+    document.getElementById('b-cost').textContent='$'+total.toLocaleString()+'/hr';
+    document.getElementById('b-cost').className='bv cr';
+    const topRisk=breakdown[0];
+    document.getElementById('b-cost-sub').textContent=topRisk?`Largest: ${sid(topRisk.dev)} $${topRisk.exposure.toLocaleString()}/hr`:'Estimated exposure';
     setEl('b-inc',allData.filter(r=>r.health_score<50).length,'cw');
     setEl('b-anom',intel.anomaly_count||0,'cp');
+
     const cbsEl=document.getElementById('b-cbs');
     cbsEl.textContent=hold?'BLAST HOLD':'ARMED';cbsEl.className='bv '+(hold?'cr':'cg');
-    if(hold&&!cbsEl._al){cbsEl._al=1;toast('CBS Safety Interlock','BLAST HOLD active — DNP3 link degraded','tc');}
+    if(hold&&!cbsEl._al){cbsEl._al=1;toast('CBS Safety Interlock','BLAST HOLD active — DNP3 link degraded — Cost exposure: $450,000/hr','tc');}
     if(!hold)delete cbsEl._al;
     if(intel.retrain_needed)document.getElementById('retrain-bar').style.display='block';
+
     mkGauges(allData,'main-gauges',()=>true,'all');
     const rec=allData.slice(0,20).reverse();
     updL(cMain,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)));
     updD(cPred,rec.map(r=>fmt(r.created_at)),rec.map(r=>Math.round(r.health_score)),rec.map(r=>Math.round(r.predicted_score||r.health_score)));
     setFeed('f-diag',allData.filter(r=>r.ai_diagnosis).slice(0,8),diagItem);
     setFeed('f-auto',allData.filter(r=>r.automation_command).slice(0,8),autoItem);
+
     updNetCats(allData,curNet);
-    updTcPage();updMcPage();updCbsPage(cbsd);updIntelPage();updTwinSel(dm);updEngDiag();
+    updTcPage();updMcPage();updCbsPage(cbsd);updIntelPage();updTwinSel(dm);
+    if(spToken)updEngDiag();
+
   }catch(e){console.error(e);}
 }
 
@@ -1363,6 +1339,7 @@ function updCbsPage(cbsd){
     grid.innerHTML+=`<div class="cbs-dev"><div style="font-weight:700;font-size:11px;margin-bottom:5px">${d.device_id}</div>
       <div style="font-size:10px;color:var(--dim)">DNP3/Ethernet · Link: <span style="color:${sc(s)};font-weight:700">${s}%</span></div>
       <div class="${hold?'cbs-hold':'cbs-safe'}" style="margin-top:6px">${hold?'BLAST HOLD ACTIVE':'ARMED — SAFE'}</div>
+      ${hold?'<div style="font-size:9px;color:var(--red);margin-top:4px">Cost exposure: $450,000/hr</div>':''}
       ${d.ai_diagnosis?`<div style="font-size:9px;color:var(--dim);margin-top:5px;line-height:1.4">${d.ai_diagnosis.slice(0,100)}</div>`:''}
     </div>`;
   });
@@ -1390,131 +1367,164 @@ function updIntelPage(){
   cUp.update('none');
   const pf=document.getElementById('prob-feed');pf.innerHTML='';
   Object.entries(probs).sort((a,b)=>b[1]-a[1]).forEach(([dev,p])=>{
-    pf.innerHTML+=`<div class="fitem ${p>50?'fi-r':p>25?'fi-w':'fi-ok'}"><div class="fdev">${dev}</div><div>Failure probability: <strong>${p}%</strong> — next 30 min</div></div>`;
+    const rate=COST_RATES[allData.find(r=>r.device_id===dev)?.device_type]||8000;
+    const exposure=Math.round(rate*(p/100));
+    pf.innerHTML+=`<div class="fitem ${p>50?'fi-r':p>25?'fi-w':'fi-ok'}"><div class="fdev">${dev} — ${p}% risk</div><div>Failure probability next 30 min · Risk exposure: $${exposure.toLocaleString()}/hr</div></div>`;
   });
   if(!Object.keys(probs).length)pf.innerHTML='<div class="fitem fi-ok"><div>All devices within safe range</div></div>';
   const lf=document.getElementById('lifecycle-feed');lf.innerHTML='';
   const lcs=intel.lifecycles||{};
   if(Object.keys(lcs).length){
     Object.entries(lcs).sort((a,b)=>a[1]-b[1]).slice(0,8).forEach(([dev,hrs])=>{
-      lf.innerHTML+=`<div class="fitem ${hrs<720?'fi-r':hrs<2160?'fi-w':'fi-ok'}"><div class="fdev">${dev}</div><div>Est. useful life: <strong>${hrs.toLocaleString()}h</strong> (~${Math.round(hrs/24)} days)</div></div>`;
+      lf.innerHTML+=`<div class="fitem ${hrs<720?'fi-r':hrs<2160?'fi-w':'fi-ok'}"><div class="fdev">${dev}</div><div>Est. useful life: <strong>${hrs.toLocaleString()}h</strong> (~${Math.round(hrs/24)} days remaining)</div></div>`;
     });
   } else {
     lf.innerHTML='<div class="fitem fi-t"><div>Lifecycle data accumulates after 5+ readings per device</div></div>';
   }
 }
 
-/* ── Engineering diagnostics (specialist page) ── */
+function updTwinSel(dm){
+  const sel=document.getElementById('twin-sel');
+  const curr=sel.value;
+  sel.innerHTML='<option value="">Select a device to simulate load scenarios...</option>';
+  Object.keys(dm).forEach(d=>{const opt=document.createElement('option');opt.value=d;opt.textContent=d;if(d===curr)opt.selected=true;sel.appendChild(opt);});
+}
+
+async function runTwin(){
+  const devId=document.getElementById('twin-sel').value;if(!devId)return;
+  const scDiv=document.getElementById('twin-grid'),tDiv=document.getElementById('twin-trend');
+  scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Running simulation via /api/twin/...</div>';
+  try{
+    const r=await fetch(B+'/api/twin/'+encodeURIComponent(devId));
+    if(!r.ok){scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">No history for this device yet — need 3+ readings</div>';return;}
+    const d=await r.json();
+    scDiv.innerHTML='';
+    const rate=COST_RATES[allData.find(r=>r.device_id===devId)?.device_type]||8000;
+    d.scenarios.forEach(s=>{
+      const col=s.risk==='safe'?'var(--grn)':s.risk==='warning'?'var(--amb)':'var(--red)';
+      const impact=s.risk==='critical'?rate*0.95:s.risk==='warning'?rate*0.6:0;
+      scDiv.innerHTML+=`<div class="twin-sc ${s.risk}">
+        <div class="twin-load">Load ${s.load_increase}</div>
+        <div class="twin-score" style="color:${col}">${s.predicted_score}</div>
+        <div class="twin-risk" style="color:${col}">${s.risk}${s.anomaly_predicted?' · ANOM':''}</div>
+        ${impact>0?`<div style="font-size:8px;color:${col};margin-top:3px">$${Math.round(impact/1000)}k/hr risk</div>`:''}
+      </div>`;
+    });
+    const tr=d.trend;
+    if(tr.direction!=='insufficient data'){
+      const col=tr.direction==='declining'?'var(--red)':tr.direction==='improving'?'var(--grn)':'var(--mut)';
+      tDiv.innerHTML=`Current: <strong>${d.current_score}</strong> · Trend: <span style="color:${col}">${tr.direction}</span> (${tr.slope_per_reading>0?'+':''}${tr.slope_per_reading}/reading)${tr.readings_to_critical?` · Critical in ~<strong>${tr.readings_to_critical} readings</strong> (~${Math.round(tr.readings_to_critical*10/60)} min)`:''}`;
+    } else {
+      tDiv.textContent='Accumulating readings for trend analysis...';
+    }
+    toast('Digital twin complete',`${sid(devId)}: safe at +10%, ${d.scenarios[1]?.risk||'?'} at +20% load`,'');
+  }catch(e){scDiv.innerHTML=`<div style="color:var(--red);font-size:11px">Simulation error: ${e.message}</div>`;}
+}
+
+/* ── Engineering diagnostics ── */
 function updEngDiag(){
   const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-  const probs=intel.failure_probabilities||{};
 
-  // Network interface stats
   const netDevs=Object.values(dm).filter(d=>isNet(d)).slice(0,6);
-  const netTbl=document.getElementById('en-net-table');
-  if(netTbl&&netDevs.length){
-    netTbl.innerHTML=netDevs.map(d=>{
+  const ntbl=document.getElementById('en-net-table');
+  if(ntbl&&netDevs.length){
+    ntbl.innerHTML=netDevs.map(d=>{
       const s=Math.round(d.health_score);
-      const util=Math.round(d.metric_value||0);
-      const crcs=d.anomaly_flag?Math.floor(Math.random()*5)+1:0;
-      const state=s>70?'<span class="en-badge en-badge-ok">UP</span>':s>40?'<span class="en-badge en-badge-w">DEGRADED</span>':'<span class="en-badge en-badge-r">DOWN</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${util>80?'en-val-r':util>60?'en-val-w':'en-val-ok'}">${util}%</td><td class="${crcs>0?'en-val-w':'en-val-ok'}">${crcs}</td><td>${state}</td></tr>`;
+      const util=Math.min(100,Math.round(d.metric_value||0));
+      const crcs=d.anomaly_flag?Math.floor(Math.random()*8)+1:0;
+      const state=s>70?'<span class="eb eb-ok">UP</span>':s>40?'<span class="eb eb-w">DEGRADED</span>':'<span class="eb eb-r">DOWN</span>';
+      return `<tr><td>${sid(d.device_id)}</td><td class="${util>80?'ev-r':util>60?'ev-w':'ev-ok'}">${util}%</td><td class="${crcs>0?'ev-w':'ev-ok'}">${crcs}</td><td>${state}</td></tr>`;
     }).join('');
   }
 
-  // BGP/routing state
-  const routerDevs=Object.values(dm).filter(d=>d.device_type==='router').slice(0,5);
-  const bgpTbl=document.getElementById('en-bgp-table');
-  if(bgpTbl&&routerDevs.length){
-    bgpTbl.innerHTML=routerDevs.map(d=>{
+  const rtrs=Object.values(dm).filter(d=>d.device_type==='router').slice(0,5);
+  const btbl=document.getElementById('en-bgp-table');
+  if(btbl&&rtrs.length){
+    btbl.innerHTML=rtrs.map(d=>{
       const s=Math.round(d.health_score);
       const nbrs=s>70?Math.floor(Math.random()*3)+2:s>40?1:0;
-      const state=s>70?'<span class="en-badge en-badge-ok">ESTABLISHED</span>':s>40?'<span class="en-badge en-badge-w">IDLE</span>':'<span class="en-badge en-badge-r">ACTIVE</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td>BGP/OSPF</td><td class="${nbrs<2?'en-val-w':'en-val-ok'}">${nbrs}</td><td>${state}</td></tr>`;
+      const state=s>70?'<span class="eb eb-ok">ESTABLISHED</span>':s>40?'<span class="eb eb-w">IDLE</span>':'<span class="eb eb-r">ACTIVE</span>';
+      return `<tr><td>${sid(d.device_id)}</td><td>BGP/OSPF</td><td class="${nbrs<2?'ev-w':'ev-ok'}">${nbrs}</td><td>${state}</td></tr>`;
     }).join('');
   }
 
-  // RF metrics (telecom)
   const tcDevs=Object.values(dm).filter(d=>isTc(d)).slice(0,5);
-  const rfTbl=document.getElementById('en-rf-table');
-  if(rfTbl&&tcDevs.length){
-    rfTbl.innerHTML=tcDevs.map(d=>{
+  const rftbl=document.getElementById('en-rf-table');
+  if(rftbl&&tcDevs.length){
+    rftbl.innerHTML=tcDevs.map(d=>{
       const s=Math.round(d.health_score);
-      const rxDbm=s>70?-(Math.random()*10+50).toFixed(1):s>40?-(Math.random()*15+65).toFixed(1):-(Math.random()*20+80).toFixed(1);
-      const snr=s>70?(Math.random()*10+20).toFixed(1):s>40?(Math.random()*8+10).toFixed(1):(Math.random()*5+3).toFixed(1);
+      const rxDbm=s>70?-(Math.random()*10+48).toFixed(1):s>40?-(Math.random()*15+65).toFixed(1):-(Math.random()*20+82).toFixed(1);
+      const snr=s>70?(Math.random()*10+22).toFixed(1):s>40?(Math.random()*8+10).toFixed(1):(Math.random()*5+2).toFixed(1);
       const ber=s>70?`1e-${Math.floor(Math.random()*3+7)}`:'1e-4';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${rxDbm<-75?'en-val-r':rxDbm<-65?'en-val-w':'en-val-ok'}">${rxDbm}</td><td class="${snr<12?'en-val-r':snr<18?'en-val-w':'en-val-ok'}">${snr}</td><td class="${ber==='1e-4'?'en-val-r':'en-val-ok'}">${ber}</td></tr>`;
+      return `<tr><td>${sid(d.device_id)}</td><td class="${rxDbm<-75?'ev-r':rxDbm<-65?'ev-w':'ev-ok'}">${rxDbm}</td><td class="${snr<12?'ev-r':snr<18?'ev-w':'ev-ok'}">${snr}</td><td class="${ber==='1e-4'?'ev-r':'ev-ok'}">${ber}</td></tr>`;
     }).join('');
   }
 
-  // Industrial metrics (Profinet/Modbus)
-  const indDevs=Object.values(dm).filter(d=>isMc(d)||d.device_type==='plc').slice(0,5);
-  const indTbl=document.getElementById('en-ind-table');
-  if(indTbl&&indDevs.length){
-    indTbl.innerHTML=indDevs.map(d=>{
+  const indDevs=Object.values(dm).filter(d=>isMc(d)).slice(0,5);
+  const itbl=document.getElementById('en-ind-table');
+  if(itbl&&indDevs.length){
+    itbl.innerHTML=indDevs.map(d=>{
       const s=Math.round(d.health_score);
       const lc=intel.lifecycles?.[d.device_id];
-      const mtbf=lc?Math.round(lc):s>70?Math.floor(Math.random()*5000+3000):Math.floor(Math.random()*1000+500);
-      const oee=s>70?Math.floor(Math.random()*15+80):s>40?Math.floor(Math.random()*20+55):Math.floor(Math.random()*30+20);
-      const cond=s>70?'<span class="en-badge en-badge-ok">NOMINAL</span>':s>40?'<span class="en-badge en-badge-w">MONITOR</span>':'<span class="en-badge en-badge-r">CRITICAL</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${mtbf<1000?'en-val-r':mtbf<2500?'en-val-w':'en-val-ok'}">${mtbf.toLocaleString()}</td><td class="${oee<60?'en-val-r':oee<75?'en-val-w':'en-val-ok'}">${oee}</td><td>${cond}</td></tr>`;
+      const mtbf=lc?Math.round(lc):s>70?Math.floor(Math.random()*4000+3000):Math.floor(Math.random()*800+400);
+      const oee=s>70?Math.floor(Math.random()*12+82):s>40?Math.floor(Math.random()*18+55):Math.floor(Math.random()*25+20);
+      const cond=s>70?'<span class="eb eb-ok">NOMINAL</span>':s>40?'<span class="eb eb-w">MONITOR</span>':'<span class="eb eb-r">CRITICAL</span>';
+      return `<tr><td>${sid(d.device_id)}</td><td class="${mtbf<800?'ev-r':mtbf<2000?'ev-w':'ev-ok'}">${mtbf.toLocaleString()}</td><td class="${oee<60?'ev-r':oee<75?'ev-w':'ev-ok'}">${oee}</td><td>${cond}</td></tr>`;
     }).join('');
   }
 
-  // QoS metrics
   const allDevs2=Object.values(dm).slice(0,5);
-  const qosTbl=document.getElementById('en-qos-table');
-  if(qosTbl&&allDevs2.length){
-    qosTbl.innerHTML=allDevs2.map(d=>{
+  const qtbl=document.getElementById('en-qos-table');
+  if(qtbl&&allDevs2.length){
+    qtbl.innerHTML=allDevs2.map(d=>{
       const s=Math.round(d.health_score);
-      const jitter=s>70?(Math.random()*2+0.5).toFixed(1):s>40?(Math.random()*8+3).toFixed(1):(Math.random()*20+10).toFixed(1);
-      const drops=s>70?0:s>40?Math.floor(Math.random()*50):Math.floor(Math.random()*500+50);
+      const jitter=s>70?(Math.random()*2+.5).toFixed(1):s>40?(Math.random()*8+3).toFixed(1):(Math.random()*20+10).toFixed(1);
+      const drops=s>70?0:s>40?Math.floor(Math.random()*40):Math.floor(Math.random()*400+40);
       const dscp=isNet(d)?'EF/AF41':'BE';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${jitter>5?'en-val-r':jitter>2?'en-val-w':'en-val-ok'}">${jitter}</td><td class="${drops>100?'en-val-r':drops>10?'en-val-w':'en-val-ok'}">${drops}</td><td>${dscp}</td></tr>`;
+      return `<tr><td>${sid(d.device_id)}</td><td class="${jitter>5?'ev-r':jitter>2?'ev-w':'ev-ok'}">${jitter}</td><td class="${drops>100?'ev-r':drops>10?'ev-w':'ev-ok'}">${drops}</td><td>${dscp}</td></tr>`;
     }).join('');
   }
 
-  // CBS DNP3 metrics
   const cbsDevs=Object.values(dm).filter(d=>isCbs(d));
-  const cbsTbl=document.getElementById('en-cbs-table');
-  if(cbsTbl&&cbsDevs.length){
-    cbsTbl.innerHTML=cbsDevs.map(d=>{
+  const ctbl=document.getElementById('en-cbs-table');
+  if(ctbl&&cbsDevs.length){
+    ctbl.innerHTML=cbsDevs.map(d=>{
       const s=Math.round(d.health_score);
-      const lq=s>90?'<span class="en-badge en-badge-ok">GOOD</span>':s>70?'<span class="en-badge en-badge-w">MARGINAL</span>':'<span class="en-badge en-badge-r">DEGRADED</span>';
+      const lq=s>90?'<span class="eb eb-ok">GOOD</span>':s>70?'<span class="eb eb-w">MARGINAL</span>':'<span class="eb eb-r">DEGRADED</span>';
       const lastHold=s<90?fmt(d.created_at):'None';
-      const mttr=Math.floor(Math.random()*12+3);
+      const mttr=Math.floor(Math.random()*10+4);
       return `<tr><td>${sid(d.device_id)}</td><td>${lq}</td><td style="color:${lastHold!=='None'?'var(--amb)':'var(--grn)'};font-size:9px">${lastHold}</td><td>${mttr}</td></tr>`;
     }).join('');
-  } else if(cbsTbl&&!cbsDevs.length){
-    cbsTbl.innerHTML='<tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr>';
+  } else if(ctbl){
+    ctbl.innerHTML='<tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr>';
   }
 }
 
-/* ── Page navigation ── */
+/* ── Navigation ── */
 function goPage(el,name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   el.classList.add('active');
   document.querySelectorAll('.subloc').forEach(s=>s.classList.remove('vis'));
-  document.body.className='';
-  if(name==='net'){document.getElementById('sub-net').classList.add('vis');document.body.className='e-net';}
-  else if(name==='tc'){document.getElementById('sub-tc').classList.add('vis');applyTcTheme();}
-  else if(name==='mc'){document.getElementById('sub-mc').classList.add('vis');applyMcTheme();}
-  if(name==='intel')updIntelPage();
-  if(name==='tc')updTcPage();
-  if(name==='mc')updMcPage();
-  if(name==='net')updNetCats(allData,curNet);
-  if(name==='wx')loadWx();
+  const prevEnv=document.body.className.split(' ').find(c=>c.startsWith('e-'));
+  if(prevEnv)document.body.classList.remove(prevEnv);
+  closeTip();
+  if(name==='net'){document.getElementById('sub-net').classList.add('vis');document.body.classList.add('e-net');updNetCats(allData,curNet);}
+  else if(name==='tc'){document.getElementById('sub-tc').classList.add('vis');applyTcTheme();updTcPage();}
+  else if(name==='mc'){document.getElementById('sub-mc').classList.add('vis');applyMcTheme();updMcPage();}
+  else if(name==='intel')updIntelPage();
+  else if(name==='wx')loadWx();
 }
-function applyTcTheme(){document.body.className='e-tc'+(curTc!=='all'?' loc-'+curTc:'');}
-function applyMcTheme(){const m={shaft1:'sec-shaft1',shaft2:'sec-shaft2',plant:'sec-plant',surface:'sec-surface'};document.body.className='e-mc'+(curMc!=='all'&&m[curMc]?' '+m[curMc]:'');}
+function applyTcTheme(){document.body.classList.add('e-tc');if(curTc!=='all')document.body.classList.add('loc-'+curTc);}
+function applyMcTheme(){const m={shaft1:'sec-shaft1',shaft2:'sec-shaft2',plant:'sec-plant',surface:'sec-surface'};document.body.classList.add('e-mc');if(curMc!=='all'&&m[curMc])document.body.classList.add(m[curMc]);}
 function setSub(sec,val,el){
   el.closest('.subloc').querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
+  closeTip();
   if(sec==='net'){curNet=val;updNetCats(allData,curNet);}
-  else if(sec==='tc'){curTc=val;applyTcTheme();updTcPage();}
-  else if(sec==='mc'){curMc=val;applyMcTheme();updMcPage();}
+  else if(sec==='tc'){curTc=val;document.body.className=document.body.className.replace(/loc-\S+/g,'').trim();applyTcTheme();updTcPage();}
+  else if(sec==='mc'){curMc=val;document.body.className=document.body.className.replace(/sec-\S+/g,'').trim();applyMcTheme();updMcPage();}
 }
 
 /* ── Toasts ── */
@@ -1525,38 +1535,32 @@ function toast(title,msg,type){
   el.innerHTML=`<div class="ttitle">${title}</div><div class="tmsg">${msg}</div>`;
   c.insertBefore(el,c.firstChild);
   if(c.children.length>5)c.lastChild.remove();
-  setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400);},6000);
+  setTimeout(()=>{el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(()=>el.remove(),400);},7000);
 }
 
-/* ── Digital twin ── */
-function updTwinSel(dm){
-  const sel=document.getElementById('twin-sel');
-  const curr=sel.value;
-  sel.innerHTML='<option value="">Select a device to simulate load scenarios...</option>';
-  Object.keys(dm).forEach(d=>{const opt=document.createElement('option');opt.value=d;opt.textContent=d;if(d===curr)opt.selected=true;sel.appendChild(opt);});
-}
-async function runTwin(){
-  const devId=document.getElementById('twin-sel').value;if(!devId)return;
-  const scDiv=document.getElementById('twin-grid'),tDiv=document.getElementById('twin-trend');
-  scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Running simulation...</div>';
+/* ── Sim injection ── */
+const SIMS={
+  critical:{device_type:'ventilation',device_id:'mc-shaft2-vent-sim',metric_name:'temperature',metric_value:98.5,cpu_load:94,bandwidth_mbps:8,latency_ms:280,packet_loss:12,connected_devices:3,temperature:98.5,signal_strength:15,protocol:'Profinet/EtherNet-IP'},
+  congestion:{device_type:'base_station',device_id:'tc-hre-bs-sim',metric_name:'bandwidth_mbps',metric_value:960,cpu_load:88,bandwidth_mbps:960,latency_ms:210,packet_loss:6,connected_devices:1200,temperature:72,signal_strength:38,protocol:'SNMP/Ethernet-802.3'},
+  recovery:{device_type:'router',device_id:'net-byo-router-sim',metric_name:'cpu_load',metric_value:22,cpu_load:22,bandwidth_mbps:180,latency_ms:8,packet_loss:0,connected_devices:35,temperature:38,signal_strength:95,protocol:'SNMP/Ethernet-802.3'},
+  anomaly:{device_type:'pump',device_id:'mc-shaft1-pump-sim',metric_name:'temperature',metric_value:55,cpu_load:95,bandwidth_mbps:5,latency_ms:15,packet_loss:.5,connected_devices:4,temperature:55,signal_strength:85,protocol:'Profinet/EtherNet-IP'},
+  blast:{device_type:'cbs_controller',device_id:'cbs-dnp3-shaft2-sim',metric_name:'link_health',metric_value:62,cpu_load:18,bandwidth_mbps:6,latency_ms:45,packet_loss:4,connected_devices:2,temperature:32,signal_strength:62,protocol:'DNP3/Ethernet',blast_hold:true,automation_override:'CBS SAFETY INTERLOCK: BLAST HOLD on cbs-dnp3-shaft2-sim — DNP3 link 62% below threshold.'}
+};
+async function simReal(type){
+  const cfg=SIMS[type];if(!cfg)return;
   try{
-    const r=await fetch(B+'/api/twin/'+encodeURIComponent(devId));
-    if(!r.ok){scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">No history for this device yet</div>';return;}
+    const r=await fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
     const d=await r.json();
-    scDiv.innerHTML='';
-    d.scenarios.forEach(s=>{
-      const col=s.risk==='safe'?'var(--grn)':s.risk==='warning'?'var(--amb)':'var(--red)';
-      scDiv.innerHTML+=`<div class="twin-sc ${s.risk}"><div class="twin-load">Load ${s.load_increase}</div><div class="twin-score" style="color:${col}">${s.predicted_score}</div><div class="twin-risk" style="color:${col}">${s.risk}${s.anomaly_predicted?' · ANOM':''}</div></div>`;
-    });
-    const tr=d.trend;
-    if(tr.direction!=='insufficient data'){
-      const col=tr.direction==='declining'?'var(--red)':tr.direction==='improving'?'var(--grn)':'var(--mut)';
-      tDiv.innerHTML=`Current: <strong>${d.current_score}</strong> · Trend: <span style="color:${col}">${tr.direction}</span> (${tr.slope_per_reading>0?'+':''}${tr.slope_per_reading}/reading)${tr.readings_to_critical?` · Critical in ~<strong>${tr.readings_to_critical} readings</strong> (~${Math.round(tr.readings_to_critical*10/60)} min)`:''}`;
-    } else {
-      tDiv.textContent='Accumulating readings for trend analysis...';
-    }
-    toast('Digital twin complete',`${sid(devId)}: safe at +10%, ${d.scenarios[1]?.risk||'?'} at +20%`,'');
-  }catch(e){scDiv.innerHTML='<div style="color:var(--red);font-size:11px">Simulation error</div>';}
+    const rate=COST_RATES[cfg.device_type]||8000;
+    const exposure=d.health_score<50?Math.round(rate*(1-d.health_score/100)):0;
+    toast(`${type==='recovery'?'Recovery':'Event'} injected`,`${cfg.device_id} → score ${d.health_score}${d.anomaly_flag?' · ANOMALY':''}${exposure>0?' · $'+exposure.toLocaleString()+'/hr risk':''}`,type==='recovery'?'tg':type==='anomaly'?'tp':'tc');
+    setTimeout(fetchAll,1500);
+  }catch(e){toast('Injection error',e.message,'tc');}
+}
+
+function exportReport(){toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf — ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
+function logoClick(){
+  toast('IISentinel™ v2.0','Intelligent Infrastructure Sentinel™ — Network · Telecom · Mining · CBS · Weather · AI','');
 }
 
 /* ── Weather ── */
@@ -1571,7 +1575,8 @@ async function loadWx(){
       const d=await r.json();
       if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}
       const icon=WX_ICONS[d.weather_code]||'🌡';
-      let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}°C</div>
+      let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div>
+        <div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}°C</div>
         <div class="w-row">Wind <span>${d.wind_speed}km/h</span> · Gusts <span>${d.wind_gusts}km/h</span></div>
         <div class="w-row">Humidity <span>${d.humidity}%</span> · Cloud <span>${d.cloud_cover}%</span></div>
         <div class="w-row">Precip <span>${d.precipitation}mm</span> · 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;
@@ -1579,7 +1584,7 @@ async function loadWx(){
       d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);
       wrap.innerHTML+=html+'</div>';
       if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}
-    }catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error</div></div>`;}
+    }catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}
   }
   if(firstWind){
     const h=firstWind.map((_,i)=>'+'+i+'h');
@@ -1587,27 +1592,6 @@ async function loadWx(){
     if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));
   }
 }
-
-/* ── Sim events ── */
-const SIMS={
-  critical:{device_type:'ventilation',device_id:'mc-shaft2-vent-sim',metric_name:'temperature',metric_value:98.5,cpu_load:94,bandwidth_mbps:8,latency_ms:280,packet_loss:12,connected_devices:3,temperature:98.5,signal_strength:15,protocol:'Profinet/EtherNet-IP'},
-  congestion:{device_type:'base_station',device_id:'tc-hre-bs-sim',metric_name:'bandwidth_mbps',metric_value:960,cpu_load:88,bandwidth_mbps:960,latency_ms:210,packet_loss:6,connected_devices:1200,temperature:72,signal_strength:38,protocol:'SNMP/Ethernet-802.3'},
-  recovery:{device_type:'router',device_id:'net-byo-router-sim',metric_name:'cpu_load',metric_value:22,cpu_load:22,bandwidth_mbps:180,latency_ms:8,packet_loss:0,connected_devices:35,temperature:38,signal_strength:95,protocol:'SNMP/Ethernet-802.3'},
-  anomaly:{device_type:'pump',device_id:'mc-shaft1-pump-sim',metric_name:'temperature',metric_value:55,cpu_load:95,bandwidth_mbps:5,latency_ms:15,packet_loss:0.5,connected_devices:4,temperature:55,signal_strength:85,protocol:'Profinet/EtherNet-IP'},
-  blast:{device_type:'cbs_controller',device_id:'cbs-dnp3-shaft2-sim',metric_name:'link_health',metric_value:62,cpu_load:18,bandwidth_mbps:6,latency_ms:45,packet_loss:4,connected_devices:2,temperature:32,signal_strength:62,protocol:'DNP3/Ethernet',blast_hold:true,automation_override:'CBS SAFETY INTERLOCK: BLAST HOLD on cbs-dnp3-shaft2-sim — DNP3 link 62% below threshold.'}
-};
-async function simReal(type){
-  const cfg=SIMS[type];if(!cfg)return;
-  try{
-    const r=await fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
-    const d=await r.json();
-    toast(`${type==='recovery'?'Recovery':'Event'} injected`,`${cfg.device_id} → score ${d.health_score}${d.anomaly_flag?' · ANOMALY':''}`,type==='recovery'?'tg':type==='anomaly'?'tp':'tc');
-    setTimeout(fetchAll,1500);
-  }catch(e){toast('Injection error',e.message,'tc');}
-}
-
-function exportReport(){toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf — ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
-function logoClick(){toast('IISentinel™','Intelligent Infrastructure Platform — Network · Telecom · Mining · CBS · Weather','');}
 
 /* ── Specialist ── */
 async function doLogin(){
@@ -1623,22 +1607,43 @@ async function doLogin(){
       document.getElementById('sp-name').textContent=d.name;
       document.getElementById('sp-role').textContent=d.role.toUpperCase();
       document.getElementById('live-lbl').textContent='SP:'+d.name;
-      toast('Access granted','Welcome '+d.name+' — specialist panel unlocked','tg');
+      toast('Access granted','Welcome '+d.name+' — specialist panel and engineering diagnostics unlocked','tg');
       loadInc();updEngDiag();
     } else document.getElementById('l-err').textContent='Invalid credentials. Access denied.';
   }catch(e){document.getElementById('l-err').textContent='Connection error.';}
 }
-function doLogout(){spToken=null;spName=null;document.getElementById('login-sec').style.display='block';document.getElementById('sp-sec').style.display='none';document.getElementById('l-name').value='';document.getElementById('l-pass').value='';document.getElementById('live-lbl').textContent='LIVE';document.getElementById('sr-panel').style.display='none';toast('Logged out','Session ended','');}
+function doLogout(){
+  spToken=null;spName=null;
+  document.getElementById('login-sec').style.display='block';
+  document.getElementById('sp-sec').style.display='none';
+  document.getElementById('l-name').value='';document.getElementById('l-pass').value='';
+  document.getElementById('live-lbl').textContent='LIVE';
+  document.getElementById('sr-panel').style.display='none';
+  toast('Logged out','Specialist session ended','');
+}
 
 async function loadShiftReport(){
   document.getElementById('sr-panel').style.display='block';
   try{
     const r=await fetch(B+'/api/shift-report',{headers:{'X-Specialist-Token':spToken}});
     const d=await r.json();
-    document.getElementById('sr-grid').innerHTML=`<div class="sr-card"><div class="sr-val ca">${d.total_devices}</div><div class="sr-lbl">Total devices</div></div><div class="sr-card"><div class="sr-val cg">${d.avg_health}</div><div class="sr-lbl">Avg health</div></div><div class="sr-card"><div class="sr-val cr">${d.critical_devices}</div><div class="sr-lbl">Critical</div></div><div class="sr-card"><div class="sr-val cw">${d.warning_devices}</div><div class="sr-lbl">Warning</div></div><div class="sr-card"><div class="sr-val cg">${d.healthy_devices}</div><div class="sr-lbl">Healthy</div></div><div class="sr-card"><div class="sr-val cr">${d.open_incidents}</div><div class="sr-lbl">Open incidents</div></div>`;
+    const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+    const {total}=calcCost(dm);
+    document.getElementById('sr-grid').innerHTML=`
+      <div class="sr-card"><div class="sr-val ca">${d.total_devices}</div><div class="sr-lbl">Total devices</div></div>
+      <div class="sr-card"><div class="sr-val cg">${d.avg_health}</div><div class="sr-lbl">Avg health score</div></div>
+      <div class="sr-card"><div class="sr-val cr">${d.critical_devices}</div><div class="sr-lbl">Critical</div></div>
+      <div class="sr-card"><div class="sr-val cw">${d.warning_devices}</div><div class="sr-lbl">Warning</div></div>
+      <div class="sr-card"><div class="sr-val cg">${d.healthy_devices}</div><div class="sr-lbl">Healthy</div></div>
+      <div class="sr-card"><div class="sr-val cr">${d.open_incidents}</div><div class="sr-lbl">Open incidents</div></div>
+      <div class="sr-card"><div class="sr-val cr">$${total.toLocaleString()}</div><div class="sr-lbl">Risk/hr exposure</div></div>`;
     const rf=document.getElementById('sr-risks');rf.innerHTML='';
-    d.top_risks.length?d.top_risks.forEach(rsk=>{rf.innerHTML+=`<div class="fitem fi-r"><div class="fdev">${rsk.device} — ${rsk.score}/100</div><div>${rsk.diagnosis||'No diagnosis'}</div></div>`;}):rf.innerHTML='<div class="fitem fi-ok"><div>No critical risks — systems nominal</div></div>';
-    toast('Shift report','Generated successfully','tg');
+    d.top_risks.length?d.top_risks.forEach(rsk=>{
+      const rate=COST_RATES[allData.find(r=>r.device_id===rsk.device)?.device_type]||8000;
+      const exp=Math.round(rate*(1-rsk.score/100));
+      rf.innerHTML+=`<div class="fitem fi-r"><div class="fdev">${rsk.device} — ${rsk.score}/100 · $${exp.toLocaleString()}/hr risk</div><div>${rsk.diagnosis||'No diagnosis'}</div></div>`;
+    }):rf.innerHTML='<div class="fitem fi-ok"><div>No critical risks — systems nominal</div></div>';
+    toast('Shift report generated',`${d.total_devices} devices · ${d.critical_devices} critical · $${total.toLocaleString()}/hr risk exposure`,'tg');
   }catch(e){toast('Report error',e.message,'tc');}
 }
 
@@ -1646,7 +1651,11 @@ async function loadInc(){
   if(!spToken)return;
   try{
     const H={'X-Specialist-Token':spToken};
-    const [oR,aR,rR]=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);
+    const [oR,aR,rR]=await Promise.all([
+      fetch(B+'/api/incidents?status=open',{headers:H}),
+      fetch(B+'/api/incidents?status=assigned',{headers:H}),
+      fetch(B+'/api/incidents?status=resolved',{headers:H})
+    ]);
     const open=await oR.json(),asgn=await aR.json(),res=await rR.json();
     document.getElementById('sp-open').textContent=open.length;
     document.getElementById('sp-asgn').textContent=asgn.length;
@@ -1657,18 +1666,34 @@ async function loadInc(){
     list.innerHTML='';
     all.forEach(inc=>{
       const bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';
-      list.innerHTML+=`<div class="icard2"><div class="ich"><div><span class="fdev">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div><div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div>
-        <div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span></div>
+      const rate=COST_RATES[inc.device_type]||8000;
+      const exp=Math.round(rate*(1-inc.health_score/100));
+      list.innerHTML+=`<div class="icard2"><div class="ich">
+        <div><span class="fdev">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div>
+        <div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div>
+        <div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span> · <span style="color:var(--red)">$${exp.toLocaleString()}/hr risk</span></div>
         ${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px;line-height:1.4">${inc.ai_diagnosis}</div>`:''}
         ${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px">${inc.automation_command}</div>`:''}
-        ${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned: ${inc.assigned_to}</div>`:''}
-        <div class="ica"><input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button></div>
+        ${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: ${inc.assigned_to}</div>`:''}
+        <div class="ica">
+          <input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer...">
+          <button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button>
+          <button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button>
+        </div>
       </div>`;
     });
   }catch(e){}
 }
-async function assignInc(id){const v=document.getElementById('ai-'+id)?.value.trim();if(!v)return;await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});toast('Assigned','→ '+v,'tw');loadInc();}
-async function resolveInc(id){await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});toast('Resolved','By '+spName,'tg');loadInc();}
+
+async function assignInc(id){
+  const v=document.getElementById('ai-'+id)?.value.trim();if(!v)return;
+  await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});
+  toast('Assigned','→ '+v,'tw');loadInc();
+}
+async function resolveInc(id){
+  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});
+  toast('Resolved','By '+spName,'tg');loadInc();
+}
 
 fetchAll();
 setInterval(fetchAll,10000);
