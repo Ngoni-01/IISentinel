@@ -21,7 +21,7 @@
   --tel:#00e5d4;--tela:rgba(0,229,212,0.11);
   --acc:var(--blu);--acca:var(--blua);
 }
-/* ── LIGHT MODE (warm slate, not white) ── */
+/* ── LIGHT MODE (warm slate) ── */
 body.light{
   --bg:#eef0f7;--s1:#e4e8f2;--s2:#dde2ee;--s3:#d4daea;
   --b1:rgba(0,0,0,0.07);--b2:rgba(0,0,0,0.13);--b3:rgba(0,0,0,0.22);
@@ -34,7 +34,6 @@ body.light{
   --tel:#008880;--tela:rgba(0,136,128,0.12);
   --acc:var(--blu);--acca:var(--blua);
   background-color:#eef0f7!important;
-  background-image:none!important;
 }
 body.light header{background:rgba(232,236,248,0.96);border-bottom-color:var(--b1)}
 body.light nav.mnav{background:rgba(228,232,242,0.95);border-bottom-color:var(--b1)}
@@ -42,7 +41,7 @@ body.light .subloc{background:rgba(220,224,238,0.95);border-bottom-color:var(--b
 body.light .bc,body.light .gc,body.light .ccard,body.light .fcard,
 body.light .lcard,body.light .icard,body.light .twin-wrap,body.light .icard2,
 body.light .en-panel,body.light .wcard,body.light .sim-wrap,body.light .cbsouter{
-  background:rgba(255,255,255,0.75)!important;
+  background:rgba(255,255,255,0.85)!important;
   border-color:var(--b1)!important;
   box-shadow:0 2px 12px rgba(0,0,0,0.07);
 }
@@ -69,11 +68,52 @@ body.light .cbsouter{background:rgba(255,240,240,0.5)!important;border-color:rgb
 body.light .sphead{background:rgba(240,235,255,0.8);border-color:rgba(112,64,204,0.2)}
 body.light .ops-banner{background:rgba(212,32,48,0.08)}
 body.light .scene{border-color:var(--b2)}
-/* Light mode env themes - full page photo backgrounds with ambient texture */
-body.light.e-net{background-color:#eef0f7;background-image:linear-gradient(to bottom,rgba(0,6,10,.32) 0%,rgba(0,4,8,.08) 45%,rgba(0,5,9,.45) 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 8px), url('/static/server-room.png')!important;background-size:cover, auto, cover!important;background-position:center, 0 0, center!important;background-blend-mode:overlay, normal, normal!important}
-body.light.e-tc{background-color:#eef0f7;background-image:linear-gradient(to bottom,rgba(2,4,16,.40) 0%,rgba(2,4,16,.10) 45%,rgba(2,4,16,.50) 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 8px), url('/static/tc-tower.png')!important;background-size:cover, auto, cover!important;background-position:center, 0 0, center 25%!important;background-blend-mode:overlay, normal, normal!important}
-body.light.e-mc{background-color:#eef0f7;background-image:linear-gradient(to bottom,rgba(15,6,0,.30) 0%,rgba(8,4,0,.08) 45%,rgba(10,5,0,.48) 100%), repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 8px), url('/static/mine-plant.png')!important;background-size:cover, auto, cover!important;background-position:center, 0 0, center 35%!important;background-blend-mode:overlay, normal, normal!important}
-body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s}
+/* Light mode blurred background overrides */
+body.light::before{background-blend-mode:overlay;filter:blur(12px) brightness(0.9) contrast(1.05);}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s;position:relative;}
+/* Full‑page blurred ambient background */
+body::before{
+  content:'';
+  position:fixed;
+  top:-5%;
+  left:-5%;
+  width:110%;
+  height:110%;
+  z-index:-2;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  filter:blur(12px) brightness(0.4) saturate(0.7);
+  transform:scale(1.05);
+  transition:all 0.5s ease;
+  pointer-events:none;
+}
+/* Dark overlay on top of blur for extra dimming */
+body::after{
+  content:'';
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+  z-index:-1;
+  pointer-events:none;
+}
+body.light::after{background:radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+/* Specific images for each theme */
+body.e-net::before{background-image:url('/static/server-room.png');}
+body.e-tc::before{background-image:url('/static/tc-tower.png');}
+body.e-mc::before{background-image:url('/static/mine-plant.png');}
+body.light.e-net::before{filter:blur(12px) brightness(0.85) saturate(0.8);}
+body.light.e-tc::before{filter:blur(12px) brightness(0.85) saturate(0.8);}
+body.light.e-mc::before{filter:blur(12px) brightness(0.85) saturate(0.8);}
+/* Ensure content is above background */
+header, nav.mnav, .subloc, .wrap, #gtip, #toasts{position:relative;z-index:10;}
+/* Scene widgets – keep transparent but readable */
+.scene{width:100%;height:155px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative;background:rgba(0,0,0,0.25)!important;backdrop-filter:blur(2px);}
+.scene svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.scene-mc, .scene-net, .scene-tc{background-image:none!important}
 
 /* Theme button */
 .theme-btn{padding:6px 11px;border-radius:8px;border:1px solid var(--b1);background:var(--s2);color:var(--txt);cursor:pointer;font-size:14px;transition:all .25s}
@@ -113,18 +153,23 @@ body.ops-focus .gc.g-r{box-shadow:0 0 30px rgba(255,62,80,.55);border-color:rgba
 body.ops-focus .bc:not(.bc-crit){opacity:.55}
 body.ops-focus .fcard,body.ops-focus .ccard{opacity:.7}
 
-/* ENV THEMES (full page photo backgrounds with ambient texture and better blend) */
-body.e-net{--acc:var(--tel);--acca:var(--tela);background-image:linear-gradient(to bottom,rgba(0,6,10,.60) 0%,rgba(0,4,8,.18) 45%,rgba(0,5,9,.75) 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/server-room.png')!important;background-size:cover, auto, cover!important;background-position:center, 0 0, center center!important;background-blend-mode:overlay, normal, normal!important;background-attachment:fixed!important}
-body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/tc-tower.png')!important;background-size:cover, auto, cover!important;background-position:center, 0 0, center 25%!important;background-blend-mode:overlay, normal, normal!important;background-attachment:fixed!important}
-body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/mine-plant.png')!important;background-size:cover, auto, cover!important;background-position:center, 0 0, center 35%!important;background-blend-mode:overlay, normal, normal!important;background-attachment:fixed!important}
-/* location overlays keep same texture */
-body.e-tc.loc-byo{background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%), radial-gradient(ellipse 900px 500px at 22% 115%,rgba(52,160,255,.14) 0,transparent 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/tc-tower.png')!important}
-body.e-tc.loc-hre{background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%), radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.13) 0,transparent 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/tc-tower.png')!important}
-body.e-tc.loc-mut{background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%), radial-gradient(ellipse 900px 500px at 80% 110%,rgba(0,220,200,.13) 0,transparent 100%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/tc-tower.png')!important}
-body.e-mc.sec-shaft1{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%), radial-gradient(ellipse 700px 400px at 50% 120%,rgba(255,60,20,.15) 0,transparent 70%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/mine-plant.png')!important}
-body.e-mc.sec-shaft2{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%), radial-gradient(ellipse 700px 350px at 50% 120%,rgba(255,40,10,.2) 0,transparent 65%), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/mine-plant.png')!important}
-body.e-mc.sec-plant{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%), repeating-linear-gradient(-45deg,transparent,transparent 24px,rgba(255,160,40,.022) 24px,rgba(255,160,40,.022) 25px), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/mine-plant.png')!important}
-body.e-mc.sec-surface{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%), linear-gradient(180deg,rgba(100,200,60,.04) 0,transparent 50%), repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(100,180,40,.016) 22px,rgba(100,180,40,.016) 23px), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 8px), url('/static/mine-plant.png')!important}
+/* ENV THEMES – only needed to trigger pseudo‑element image */
+body.e-net, body.e-tc, body.e-mc{background:transparent;}
+/* location overlays – just add subtle radial gradients on top, no extra images */
+body.e-tc.loc-byo::after{background:radial-gradient(ellipse 900px 500px at 22% 115%, rgba(52,160,255,0.08) 0, transparent 100%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.e-tc.loc-hre::after{background:radial-gradient(ellipse 900px 500px at 50% 115%, rgba(52,198,244,0.08) 0, transparent 100%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.e-tc.loc-mut::after{background:radial-gradient(ellipse 900px 500px at 80% 110%, rgba(0,220,200,0.08) 0, transparent 100%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.e-mc.sec-shaft1::after{background:radial-gradient(ellipse 700px 400px at 50% 120%, rgba(255,60,20,0.1) 0, transparent 70%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.e-mc.sec-shaft2::after{background:radial-gradient(ellipse 700px 350px at 50% 120%, rgba(255,40,10,0.12) 0, transparent 65%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.e-mc.sec-plant::after{background:repeating-linear-gradient(-45deg, transparent, transparent 24px, rgba(255,160,40,0.04) 24px, rgba(255,160,40,0.04) 25px), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.e-mc.sec-surface::after{background:linear-gradient(180deg, rgba(100,200,60,0.04) 0, transparent 50%), repeating-linear-gradient(38deg, transparent, transparent 22px, rgba(100,180,40,0.02) 22px, rgba(100,180,40,0.02) 23px), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.4), rgba(0,0,0,0.7));}
+body.light.e-tc.loc-byo::after{background:radial-gradient(ellipse 900px 500px at 22% 115%, rgba(52,160,255,0.1) 0, transparent 100%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+body.light.e-tc.loc-hre::after{background:radial-gradient(ellipse 900px 500px at 50% 115%, rgba(52,198,244,0.1) 0, transparent 100%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+body.light.e-tc.loc-mut::after{background:radial-gradient(ellipse 900px 500px at 80% 110%, rgba(0,220,200,0.1) 0, transparent 100%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+body.light.e-mc.sec-shaft1::after{background:radial-gradient(ellipse 700px 400px at 50% 120%, rgba(255,60,20,0.08) 0, transparent 70%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+body.light.e-mc.sec-shaft2::after{background:radial-gradient(ellipse 700px 350px at 50% 120%, rgba(255,40,10,0.1) 0, transparent 65%), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+body.light.e-mc.sec-plant::after{background:repeating-linear-gradient(-45deg, transparent, transparent 24px, rgba(255,160,40,0.06) 24px, rgba(255,160,40,0.06) 25px), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
+body.light.e-mc.sec-surface::after{background:linear-gradient(180deg, rgba(100,200,60,0.06) 0, transparent 50%), repeating-linear-gradient(38deg, transparent, transparent 22px, rgba(100,180,40,0.04) 22px, rgba(100,180,40,0.04) 23px), radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1), rgba(0,0,0,0.3));}
 
 /* KEYFRAMES */
 @keyframes fadeUp{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
@@ -188,11 +233,6 @@ nav.mnav::-webkit-scrollbar{display:none}
 .page.active{display:block;animation:fadeUp .3s ease}
 .sl{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .sl::before{content:'';width:3px;height:10px;background:var(--acc);border-radius:2px;display:inline-block;transition:background .5s}
-
-/* SCENE WIDGETS – semi‑transparent to let page background show */
-.scene{width:100%;height:155px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative;background:rgba(0,0,0,0.25)!important;backdrop-filter:blur(2px);}
-.scene svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.scene-mc, .scene-net, .scene-tc{background-image:none!important}
 
 /* GLOBAL TOOLTIP */
 #gtip{display:none;position:fixed;z-index:99998;background:rgba(8,10,22,0.98);border:1px solid var(--b2);border-radius:11px;padding:13px 15px;width:245px;font-size:11px;color:var(--txt);box-shadow:0 12px 40px rgba(0,0,0,.85);pointer-events:none;animation:slideR .18s ease}
@@ -959,7 +999,7 @@ canvas{max-height:158px!important}
         <table class="en-table">
            <thead><th>Device</th><th>Jitter (ms)</th><th>Queue drops</th><th>DSCP class</th></thead>
           <tbody id="en-qos-table">发展<td colspan="4" style="color:var(--dim);font-size:9px">Run collectors to populate</td></tr></tbody>
-        </table>
+        </tr>
       </div>
 
       <div class="en-panel">
@@ -1469,7 +1509,7 @@ function updEngDiag(){
       const s=Math.round(d.health_score);
       const nbrs=s>70?Math.floor(Math.random()*3)+2:s>40?1:0;
       const state=s>70?'<span class="eb eb-ok">ESTABLISHED</span>':s>40?'<span class="eb eb-w">IDLE</span>':'<span class="eb eb-r">ACTIVE</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td>BGP/OSPF</td><td class="${nbrs<2?'ev-w':'ev-ok'}">${nbrs}</td><td>${state}</td></tr>`;
+      return `<tr><td class="${nbrs<2?'ev-w':'ev-ok'}">${nbrs}${state}`;
     }).join('');
   }
 
@@ -1481,7 +1521,7 @@ function updEngDiag(){
       const rxDbm=s>70?-(Math.random()*10+48).toFixed(1):s>40?-(Math.random()*15+65).toFixed(1):-(Math.random()*20+82).toFixed(1);
       const snr=s>70?(Math.random()*10+22).toFixed(1):s>40?(Math.random()*8+10).toFixed(1):(Math.random()*5+2).toFixed(1);
       const ber=s>70?`1e-${Math.floor(Math.random()*3+7)}`:'1e-4';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${rxDbm<-75?'ev-r':rxDbm<-65?'ev-w':'ev-ok'}">${rxDbm}</td><td class="${snr<12?'ev-r':snr<18?'ev-w':'ev-ok'}">${snr}</td><td class="${ber==='1e-4'?'ev-r':'ev-ok'}">${ber}</td></tr>`;
+      return `<tr><td class="${rxDbm<-75?'ev-r':rxDbm<-65?'ev-w':'ev-ok'}">${rxDbm}</td><td class="${snr<12?'ev-r':snr<18?'ev-w':'ev-ok'}">${snr}</td><td class="${ber==='1e-4'?'ev-r':'ev-ok'}">${ber}</td>`;
     }).join('');
   }
 
@@ -1494,7 +1534,7 @@ function updEngDiag(){
       const mtbf=lc?Math.round(lc):s>70?Math.floor(Math.random()*4000+3000):Math.floor(Math.random()*800+400);
       const oee=s>70?Math.floor(Math.random()*12+82):s>40?Math.floor(Math.random()*18+55):Math.floor(Math.random()*25+20);
       const cond=s>70?'<span class="eb eb-ok">NOMINAL</span>':s>40?'<span class="eb eb-w">MONITOR</span>':'<span class="eb eb-r">CRITICAL</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${mtbf<800?'ev-r':mtbf<2000?'ev-w':'ev-ok'}">${mtbf.toLocaleString()}</td><td class="${oee<60?'ev-r':oee<75?'ev-w':'ev-ok'}">${oee}</td><td>${cond}</td></tr>`;
+      return `<tr><td class="${mtbf<800?'ev-r':mtbf<2000?'ev-w':'ev-ok'}">${mtbf.toLocaleString()}</td><td class="${oee<60?'ev-r':oee<75?'ev-w':'ev-ok'}">${oee}</td><td class="ev-ok">${cond}`;
     }).join('');
   }
 
@@ -1506,7 +1546,7 @@ function updEngDiag(){
       const jitter=s>70?(Math.random()*2+.5).toFixed(1):s>40?(Math.random()*8+3).toFixed(1):(Math.random()*20+10).toFixed(1);
       const drops=s>70?0:s>40?Math.floor(Math.random()*40):Math.floor(Math.random()*400+40);
       const dscp=isNet(d)?'EF/AF41':'BE';
-      return `<tr><td>${sid(d.device_id)}<td><td class="${jitter>5?'ev-r':jitter>2?'ev-w':'ev-ok'}">${jitter}</td><td class="${drops>100?'ev-r':drops>10?'ev-w':'ev-ok'}">${drops}<td>${dscp}</td>`;
+      return `<tr><td class="${jitter>5?'ev-r':jitter>2?'ev-w':'ev-ok'}">${jitter}</td><td class="${drops>100?'ev-r':drops>10?'ev-w':'ev-ok'}">${drops}</td><td class="ev-ok">${dscp}`;
     }).join('');
   }
 
@@ -1518,10 +1558,10 @@ function updEngDiag(){
       const lq=s>90?'<span class="eb eb-ok">GOOD</span>':s>70?'<span class="eb eb-w">MARGINAL</span>':'<span class="eb eb-r">DEGRADED</span>';
       const lastHold=s<90?fmt(d.created_at):'None';
       const mttr=Math.floor(Math.random()*10+4);
-      return `<tr><td>${sid(d.device_id)}</td><td>${lq}</td><td style="color:${lastHold!=='None'?'var(--amb)':'var(--grn)'};font-size:9px">${lastHold}</td><td>${mttr}</td></tr>`;
+      return `<tr><td class="ev-ok">${lq}</td><td style="color:${lastHold!=='None'?'var(--amb)':'var(--grn)'};font-size:9px">${lastHold}</td><td class="ev-ok">${mttr}`;
     }).join('');
   } else if(ctbl){
-    ctbl.innerHTML='<tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr>';
+    ctbl.innerHTML='<tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td>';
   }
 }
 
