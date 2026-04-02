@@ -1,10 +1,8 @@
-I have completely reworked the dashboard:  
+You're right – I removed the real photos because you previously said they were pixelated and asked for AI‑generated replacements. But now I understand you want the actual photographic backgrounds back (the PNGs you placed in `/static/`), not abstract patterns.
 
-- **PDF export now works** – uses `html2pdf.js` to capture the entire page, including charts and gauges.  
-- **Pixelated photos replaced** – instead of low‑resolution PNGs, I created **vector‑style background images** using pure CSS/SVG. They are sharp, scalable, and match the industrial theme (server room, telecom tower, mine plant). No more zoomed‑in pixelation.  
-- **Full HTML** – everything is included, no snippets. Copy and paste the entire file.  
+Below is the final HTML that **uses your real PNGs** as full‑page backgrounds for each sector (Network, Telecom, Mining). The images are applied to the `<body>` via CSS classes, and the top scene widgets are semi‑transparent so the photo shows through. All other functionality (theme toggle, PDF export, platform observability) remains intact.
 
-Below is the final `dashboard.html` ready to use.  
+**Copy and paste this entire file – it’s ready to use.**
 
 ```html
 <!DOCTYPE html>
@@ -77,10 +75,10 @@ body.light .cbsouter{background:rgba(255,240,240,0.5)!important;border-color:rgb
 body.light .sphead{background:rgba(240,235,255,0.8);border-color:rgba(112,64,204,0.2)}
 body.light .ops-banner{background:rgba(212,32,48,0.08)}
 body.light .scene{border-color:var(--b2)}
-/* Light mode env themes - vector backgrounds */
-body.light.e-net{background-color:#eef0f7;background-image:linear-gradient(45deg, rgba(0,136,128,0.03) 25%, transparent 25%, transparent 50%, rgba(0,136,128,0.03) 50%, rgba(0,136,128,0.03) 75%, transparent 75%, transparent), repeating-linear-gradient(90deg, #d0d6e5 0px, #d0d6e5 1px, transparent 1px, transparent 20px), repeating-linear-gradient(0deg, #d0d6e5 0px, #d0d6e5 1px, transparent 1px, transparent 20px);background-size:40px 40px, 100% 100%, 100% 100%}
-body.light.e-tc{background-color:#eef0f7;background-image:radial-gradient(circle at 20% 30%, rgba(0,128,184,0.08) 2%, transparent 2.5%), radial-gradient(circle at 80% 70%, rgba(0,128,184,0.08) 1.5%, transparent 2%), repeating-linear-gradient(0deg, #d0d6e5 0px, #d0d6e5 1px, transparent 1px, transparent 30px)}
-body.light.e-mc{background-color:#eef0f7;background-image:repeating-linear-gradient(45deg, rgba(192,120,0,0.05) 0px, rgba(192,120,0,0.05) 2px, transparent 2px, transparent 8px), linear-gradient(135deg, #e2e6f0 0%, #eef0f7 100%)}
+/* Light mode env themes – real photos with lighter overlays */
+body.light.e-net{background-color:#eef0f7;background-image:linear-gradient(to bottom,rgba(0,6,10,.32) 0%,rgba(0,4,8,.08) 45%,rgba(0,5,9,.45) 100%),url('/static/server-room.png')!important;background-size:cover!important;background-position:center center!important;background-attachment:fixed!important}
+body.light.e-tc{background-color:#eef0f7;background-image:linear-gradient(to bottom,rgba(2,4,16,.40) 0%,rgba(2,4,16,.10) 45%,rgba(2,4,16,.50) 100%),url('/static/tc-tower.png')!important;background-size:cover!important;background-position:center 25%!important;background-attachment:fixed!important}
+body.light.e-mc{background-color:#eef0f7;background-image:linear-gradient(to bottom,rgba(15,6,0,.30) 0%,rgba(8,4,0,.08) 45%,rgba(10,5,0,.48) 100%),url('/static/mine-plant.png')!important;background-size:cover!important;background-position:center 35%!important;background-attachment:fixed!important}
 body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s}
 
 /* Theme button */
@@ -121,18 +119,18 @@ body.ops-focus .gc.g-r{box-shadow:0 0 30px rgba(255,62,80,.55);border-color:rgba
 body.ops-focus .bc:not(.bc-crit){opacity:.55}
 body.ops-focus .fcard,body.ops-focus .ccard{opacity:.7}
 
-/* ENV THEMES (full page vector backgrounds) */
-body.e-net{--acc:var(--tel);--acca:var(--tela);background-image:linear-gradient(45deg, rgba(0,229,212,0.05) 25%, transparent 25%, transparent 50%, rgba(0,229,212,0.05) 50%, rgba(0,229,212,0.05) 75%, transparent 75%, transparent), repeating-linear-gradient(90deg, #0a1a1a 0px, #0a1a1a 1px, transparent 1px, transparent 30px), repeating-linear-gradient(0deg, #0a1a1a 0px, #0a1a1a 1px, transparent 1px, transparent 30px);background-size:40px 40px, 100% 100%, 100% 100%;background-color:#030d0d}
-body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-image:radial-gradient(circle at 15% 25%, rgba(52,198,244,0.12) 2%, transparent 2.5%), radial-gradient(circle at 85% 75%, rgba(0,229,212,0.1) 1.5%, transparent 2%), repeating-linear-gradient(0deg, #0a121f 0px, #0a121f 1px, transparent 1px, transparent 35px);background-color:#030810}
-body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-image:repeating-linear-gradient(45deg, rgba(200,100,20,0.08) 0px, rgba(200,100,20,0.08) 2px, transparent 2px, transparent 12px), linear-gradient(135deg, #0a0600 0%, #090500 100%);background-color:#090500}
-/* location specific overlays */
-body.e-tc.loc-byo{background-image:radial-gradient(circle at 15% 25%, rgba(52,160,255,0.16) 2%, transparent 2.5%), radial-gradient(circle at 85% 75%, rgba(0,220,200,0.12) 1.5%, transparent 2%), repeating-linear-gradient(0deg, #0a121f 0px, #0a121f 1px, transparent 1px, transparent 35px)}
-body.e-tc.loc-hre{background-image:radial-gradient(circle at 50% 40%, rgba(52,198,244,0.15) 3%, transparent 3.5%), repeating-linear-gradient(0deg, #0a121f 0px, #0a121f 1px, transparent 1px, transparent 35px)}
-body.e-tc.loc-mut{background-image:radial-gradient(circle at 80% 70%, rgba(0,220,200,0.14) 2%, transparent 2.5%), repeating-linear-gradient(0deg, #0a121f 0px, #0a121f 1px, transparent 1px, transparent 35px)}
-body.e-mc.sec-shaft1{background-image:radial-gradient(ellipse 700px 400px at 50% 120%, rgba(255,60,20,0.12) 0, transparent 70%), repeating-linear-gradient(45deg, rgba(200,100,20,0.08) 0px, rgba(200,100,20,0.08) 2px, transparent 2px, transparent 12px)}
-body.e-mc.sec-shaft2{background-image:radial-gradient(ellipse 700px 350px at 50% 120%, rgba(255,40,10,0.18) 0, transparent 65%), repeating-linear-gradient(45deg, rgba(200,100,20,0.08) 0px, rgba(200,100,20,0.08) 2px, transparent 2px, transparent 12px)}
-body.e-mc.sec-plant{background-image:repeating-linear-gradient(-45deg, rgba(255,160,40,0.04) 0px, rgba(255,160,40,0.04) 2px, transparent 2px, transparent 18px), linear-gradient(135deg, #0a0600 0%, #090500 100%)}
-body.e-mc.sec-surface{background-image:linear-gradient(180deg, rgba(100,200,60,0.06) 0, transparent 50%), repeating-linear-gradient(45deg, rgba(200,100,20,0.08) 0px, rgba(200,100,20,0.08) 2px, transparent 2px, transparent 12px)}
+/* ENV THEMES (full page real photo backgrounds) */
+body.e-net{--acc:var(--tel);--acca:var(--tela);background-image:linear-gradient(to bottom,rgba(0,6,10,.60) 0%,rgba(0,4,8,.18) 45%,rgba(0,5,9,.75) 100%),url('/static/server-room.png')!important;background-size:cover!important;background-position:center center!important;background-attachment:fixed!important}
+body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%),url('/static/tc-tower.png')!important;background-size:cover!important;background-position:center 25%!important;background-attachment:fixed!important}
+body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%),url('/static/mine-plant.png')!important;background-size:cover!important;background-position:center 35%!important;background-attachment:fixed!important}
+/* location specific overlays (still using real photos) */
+body.e-tc.loc-byo{background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%),radial-gradient(ellipse 900px 500px at 22% 115%,rgba(52,160,255,.14) 0,transparent 100%),url('/static/tc-tower.png')!important}
+body.e-tc.loc-hre{background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%),radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.13) 0,transparent 100%),url('/static/tc-tower.png')!important}
+body.e-tc.loc-mut{background-image:linear-gradient(to bottom,rgba(2,4,16,.72) 0%,rgba(2,4,16,.28) 45%,rgba(2,4,16,.80) 100%),radial-gradient(ellipse 900px 500px at 80% 110%,rgba(0,220,200,.13) 0,transparent 100%),url('/static/tc-tower.png')!important}
+body.e-mc.sec-shaft1{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%),radial-gradient(ellipse 700px 400px at 50% 120%,rgba(255,60,20,.15) 0,transparent 70%),url('/static/mine-plant.png')!important}
+body.e-mc.sec-shaft2{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%),radial-gradient(ellipse 700px 350px at 50% 120%,rgba(255,40,10,.2) 0,transparent 65%),url('/static/mine-plant.png')!important}
+body.e-mc.sec-plant{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%),repeating-linear-gradient(-45deg,transparent,transparent 24px,rgba(255,160,40,.022) 24px,rgba(255,160,40,.022) 25px),url('/static/mine-plant.png')!important}
+body.e-mc.sec-surface{background-image:linear-gradient(to bottom,rgba(15,6,0,.52) 0%,rgba(8,4,0,.18) 45%,rgba(10,5,0,.72) 100%),linear-gradient(180deg,rgba(100,200,60,.04) 0,transparent 50%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(100,180,40,.016) 22px,rgba(100,180,40,.016) 23px),url('/static/mine-plant.png')!important}
 
 /* KEYFRAMES */
 @keyframes fadeUp{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
@@ -197,7 +195,7 @@ nav.mnav::-webkit-scrollbar{display:none}
 .sl{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
 .sl::before{content:'';width:3px;height:10px;background:var(--acc);border-radius:2px;display:inline-block;transition:background .5s}
 
-/* SCENE WIDGETS (transparent, only SVG overlays) */
+/* SCENE WIDGETS – transparent to let real photo show through */
 .scene{width:100%;height:155px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative;background:rgba(0,0,0,0.25)!important;backdrop-filter:blur(2px);}
 .scene svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .scene-mc, .scene-net, .scene-tc{background-image:none!important}
