@@ -485,6 +485,100 @@ body.light.e-mc::before{
     linear-gradient(rgba(245,237,224,.72) 0%,rgba(238,225,205,.55) 100%),
     url('/static/mine-plant.png');
 }
+
+/* ═══════════════════════════════════════════════════
+   DESIGN SYSTEM v2 — Side-tab left-border removal
+   Every .bc, .lcard, .fitem, .toast, .sl rebuilt
+   ═══════════════════════════════════════════════════ */
+
+/* ── 1. BANNER CARDS: top accent + status glow ring ── */
+.bc::before{display:none!important}
+.bc{
+  border-top:2px solid var(--acc)!important;
+  border-left:1px solid var(--b1)!important;
+}
+.bc:hover{
+  box-shadow:0 0 0 1px var(--acc),0 10px 28px rgba(0,0,0,.5)!important;
+  border-color:transparent!important;
+}
+
+/* ── 2. LOCATION / SECTION CARDS: top accent arc ── */
+.lcard::before{display:none!important}
+.lcard{
+  border-top:2px solid var(--acc)!important;
+  border-left:1px solid var(--b1)!important;
+}
+.lcard:hover{
+  box-shadow:0 0 0 1px var(--acc),0 12px 32px rgba(0,0,0,.55)!important;
+  border-color:transparent!important;
+}
+
+/* ── 3. SECTION LABELS: tiny diamond icon ── */
+.sl::before{
+  content:'◆';
+  width:auto!important;height:auto!important;
+  background:none!important;border-radius:0!important;
+  font-size:6px;
+  color:var(--acc);
+  display:inline-flex!important;
+  align-items:center;
+  transition:color .5s;
+  letter-spacing:0;
+  margin-right:1px;
+}
+
+/* ── 4. FEED ITEMS: left border → floating status dot ── */
+.fitem{
+  border-left:none!important;
+  padding-left:30px!important;
+  position:relative;
+}
+/* dot for each status */
+.fitem::before{
+  content:'';
+  position:absolute;
+  left:11px;
+  top:50%;
+  transform:translateY(-50%);
+  width:7px;height:7px;
+  border-radius:50%;
+  background:var(--acc);
+  flex-shrink:0;
+  box-shadow:0 0 6px var(--acc);
+}
+.fitem.fi-ok::before{background:var(--grn);box-shadow:0 0 6px var(--grn)}
+.fitem.fi-w::before{background:var(--amb);box-shadow:0 0 6px var(--amb)}
+.fitem.fi-r::before{background:var(--red);box-shadow:0 0 6px var(--red)}
+.fitem.fi-p::before{background:var(--pur);box-shadow:0 0 5px var(--pur)}
+.fitem.fi-t::before{background:var(--tel);box-shadow:0 0 5px var(--tel)}
+.fitem.fi-cbs::before{
+  background:var(--red);
+  box-shadow:0 0 8px var(--red);
+  animation:pulse .8s infinite;
+}
+
+/* ── 5. TOAST NOTIFICATIONS: left bar → top accent chip ── */
+.toast{
+  border-left:none!important;
+  border-top:2.5px solid var(--acc)!important;
+}
+.toast.tc{border-top-color:var(--red)!important}
+.toast.tw{border-top-color:var(--amb)!important}
+.toast.tg{border-top-color:var(--grn)!important}
+.toast.tp{border-top-color:var(--pur)!important}
+
+/* ── 6. CBS feed items: pulsing dot already above, extra bg ── */
+.fitem.fi-cbs{background:rgba(255,62,80,.04)}
+
+/* ── 7. Env-specific banner card top colors ── */
+body.e-net .bc{border-top-color:var(--tel)!important}
+body.e-tc  .bc{border-top-color:#55ccff!important}
+body.e-mc  .bc{border-top-color:var(--amb)!important}
+
+/* Light mode adjustments */
+body.light .bc{border-top-color:var(--acc)!important}
+body.light .lcard{border-top-color:var(--acc)!important}
+
 </style>
 </head>
 <body>
