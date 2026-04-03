@@ -940,12 +940,23 @@ body.light .lcard{border-top-color:var(--acc)!important}
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
   <div class="ccard" style="margin-bottom:13px">
-    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health</div>
+    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health (YouTube-style)</div>
     <div class="igrid" style="margin-top:10px" id="platform-grid">
       <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Unwritten readings</div></div>
       <div class="icard"><div class="ititle">Cache age</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Data freshness</div></div>
       <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
-      <div class="icard"><div class="ititle">Ingestion model</div><div class="ival cg">Queued</div><div class="isub">YouTube-style buffer</div></div>
+      <div class="icard"><div class="ititle">Scoring queue</div><div class="ival cb" id="p-score">--</div><div class="isub">Async AI pending</div></div>
+      <div class="icard"><div class="ititle">Auto-retrain</div><div class="ival cg" id="p-retrain">Standby</div><div class="isub">Hot-swap pipeline</div></div>
+      <div class="icard"><div class="ititle">Platform uptime</div><div class="ival cg" id="p-uptime">--h</div><div class="isub">Since last restart</div></div>
+    </div>
+    <div style="margin-top:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:9px">
+      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; YouTube Notification Service equivalent</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div id="nc-email" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#9993; Email</div>
+        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS (Africa's Talking)</div>
+        <div id="nc-wa"    style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp Business</div>
+        <span style="font-size:9px;color:var(--dim);margin-left:4px">Configure in .env &#8212; CBS hold always triggers SMS</span>
+      </div>
     </div>
   </div>
 </div>
@@ -1047,7 +1058,7 @@ const MC=['pump','conveyor','ventilation','power_meter','sensor','plc','scada_no
 const CBS=['cbs_controller'];
 const TC_META={all:{label:'All Sites',sub:'Bulawayo \u00b7 Harare \u00b7 Mutare'},byo:{label:'Bulawayo HQ',sub:'Home base \u2014 Matabeleland NOC'},hre:{label:'Harare',sub:'Capital \u2014 Mashonaland hub'},mut:{label:'Mutare',sub:'Eastern Highlands relay'}};
 const MC_META={all:{label:'All Sections',sub:'Full mine overview'},shaft1:{label:'Shaft 1 \u2014 Level 3\u20137',sub:'Primary extraction \u2014 underground heat +30%'},shaft2:{label:'Shaft 2 \u2014 Level 5\u201310',sub:'Secondary extraction \u2014 deepest section'},plant:{label:'Processing Plant',sub:'Ore processing and beneficiation'},surface:{label:'Surface Infrastructure',sub:'Power, water, CBS detonator'}};
-const WX_ICONS={0:'\u2600',1:'\U0001f324',2:'\u26c5',3:'\u2601',45:'\U0001f32b',51:'\U0001f326',61:'\U0001f327',63:'\U0001f327',65:'\U0001f327',80:'\U0001f326',95:'\u26c8',96:'\u26c8',99:'\u26c8'};
+const WX_ICONS={0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',51:'🌦',61:'🌧',63:'🌧',65:'🌧',80:'🌦',95:'⛈',96:'⛈',99:'⛈'};
 const COST_RATES={pump:150000,conveyor:120000,ventilation:180000,plc:80000,scada_node:60000,cbs_controller:450000,power_meter:100000,sensor:40000,base_station:25000,network_tower:35000,microwave_link:40000,router:15000,switch:10000,firewall:20000,wan_link:12000,workstation:2000};
 
 function sc(s){return s>=70?'var(--grn)':s>=40?'var(--amb)':'var(--red)'}
@@ -1193,7 +1204,7 @@ async function simReal(type){const cfg=SIMS[type];if(!cfg)return;try{const r=awa
 function exportReport(){toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf \u2014 ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
 function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u2014 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
 
-async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const icon=WX_ICONS[d.weather_code]||'\U0001f321';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
+async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const icon=WX_ICONS[d.weather_code]||'🌡';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
 
 async function doLogin(){const n=document.getElementById('l-name').value.trim(),p=document.getElementById('l-pass').value.trim();document.getElementById('l-err').textContent='';try{const r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:p})});const d=await r.json();if(d.success){spToken=d.token;spName=d.name;document.getElementById('login-sec').style.display='none';document.getElementById('sp-sec').style.display='block';document.getElementById('sp-name').textContent=d.name;document.getElementById('sp-role').textContent=d.role.toUpperCase();document.getElementById('live-lbl').textContent='SP:'+d.name;toast('Access granted','Welcome '+d.name+' \u2014 specialist panel and engineering diagnostics unlocked','tg');loadInc();updEngDiag();}else document.getElementById('l-err').textContent='Invalid credentials. Access denied.';}catch(e){document.getElementById('l-err').textContent='Connection error.';}}
 function doLogout(){spToken=null;spName=null;document.getElementById('login-sec').style.display='block';document.getElementById('sp-sec').style.display='none';document.getElementById('l-name').value='';document.getElementById('l-pass').value='';document.getElementById('live-lbl').textContent='LIVE';document.getElementById('sr-panel').style.display='none';toast('Logged out','Specialist session ended','');}
@@ -1210,7 +1221,27 @@ function toggleTheme(){lightMode=!lightMode;document.body.classList.toggle('ligh
 if(localStorage.getItem('iisentinel-theme')==='light'){lightMode=true;document.body.classList.add('light');document.getElementById('theme-btn').textContent='🌙';}
 
 /* PLATFORM OBSERVABILITY */
-async function fetchPlatform(){try{const r=await fetch(B+'/api/platform');const d=await r.json();const qEl=document.getElementById('p-queue');if(qEl){qEl.textContent=d.queue_depth||'0';qEl.className='ival '+(d.queue_depth>50?'cr':d.queue_depth>10?'cw':'ca');}const cEl=document.getElementById('p-cache');if(cEl)cEl.textContent=d.cache_age_seconds+'s';const dEl=document.getElementById('p-devs');if(dEl)dEl.textContent=d.devices_tracked||'0';}catch(e){}}
+async function fetchPlatform(){try{
+  const r=await fetch(B+'/api/platform');const d=await r.json();
+  const qEl=document.getElementById('p-queue');
+  if(qEl){qEl.textContent=d.queue_depth||'0';qEl.className='ival '+(d.queue_depth>50?'cr':d.queue_depth>10?'cw':'ca');}
+  const cEl=document.getElementById('p-cache');
+  if(cEl)cEl.textContent=d.cache_age_seconds+'s';
+  const dEl=document.getElementById('p-devs');
+  if(dEl)dEl.textContent=d.devices_tracked||'0';
+  const sEl=document.getElementById('p-score');
+  if(sEl)sEl.textContent=d.scoring_queue||'0';
+  const rEl=document.getElementById('p-retrain');
+  if(rEl){rEl.textContent=d.retrain_in_progress?'Running...':d.retrain_needed?'Needed':'Standby';rEl.className='ival '+(d.retrain_in_progress?'cw':d.retrain_needed?'cr':'cg');}
+  const uEl=document.getElementById('p-uptime');
+  if(uEl)uEl.textContent=(d.platform_uptime_h||0).toFixed(1)+'h';
+  // Notification channel indicators
+  const nc=d.notifications||{};
+  const style=(on)=>on?'font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--grn);color:var(--grn);background:var(--grna)':'font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)';
+  const em=document.getElementById('nc-email');if(em)em.style.cssText=style(nc.email_enabled);
+  const sm=document.getElementById('nc-sms');  if(sm)sm.style.cssText=style(nc.sms_enabled);
+  const wa=document.getElementById('nc-wa');   if(wa)wa.style.cssText=style(nc.whatsapp_enabled);
+}catch(e){}}
 setInterval(fetchPlatform,12000);
 fetchPlatform();
 fetchAll();
@@ -2160,12 +2191,23 @@ body.light .lcard{border-top-color:var(--acc)!important}
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
   <div class="ccard" style="margin-bottom:13px">
-    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health</div>
+    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health (YouTube-style)</div>
     <div class="igrid" style="margin-top:10px" id="platform-grid">
       <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Unwritten readings</div></div>
       <div class="icard"><div class="ititle">Cache age</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Data freshness</div></div>
       <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
-      <div class="icard"><div class="ititle">Ingestion model</div><div class="ival cg">Queued</div><div class="isub">YouTube-style buffer</div></div>
+      <div class="icard"><div class="ititle">Scoring queue</div><div class="ival cb" id="p-score">--</div><div class="isub">Async AI pending</div></div>
+      <div class="icard"><div class="ititle">Auto-retrain</div><div class="ival cg" id="p-retrain">Standby</div><div class="isub">Hot-swap pipeline</div></div>
+      <div class="icard"><div class="ititle">Platform uptime</div><div class="ival cg" id="p-uptime">--h</div><div class="isub">Since last restart</div></div>
+    </div>
+    <div style="margin-top:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:9px">
+      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; YouTube Notification Service equivalent</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div id="nc-email" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#9993; Email</div>
+        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS (Africa's Talking)</div>
+        <div id="nc-wa"    style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp Business</div>
+        <span style="font-size:9px;color:var(--dim);margin-left:4px">Configure in .env &#8212; CBS hold always triggers SMS</span>
+      </div>
     </div>
   </div>
 </div>
@@ -2267,7 +2309,7 @@ const MC=['pump','conveyor','ventilation','power_meter','sensor','plc','scada_no
 const CBS=['cbs_controller'];
 const TC_META={all:{label:'All Sites',sub:'Bulawayo \u00b7 Harare \u00b7 Mutare'},byo:{label:'Bulawayo HQ',sub:'Home base \u2014 Matabeleland NOC'},hre:{label:'Harare',sub:'Capital \u2014 Mashonaland hub'},mut:{label:'Mutare',sub:'Eastern Highlands relay'}};
 const MC_META={all:{label:'All Sections',sub:'Full mine overview'},shaft1:{label:'Shaft 1 \u2014 Level 3\u20137',sub:'Primary extraction \u2014 underground heat +30%'},shaft2:{label:'Shaft 2 \u2014 Level 5\u201310',sub:'Secondary extraction \u2014 deepest section'},plant:{label:'Processing Plant',sub:'Ore processing and beneficiation'},surface:{label:'Surface Infrastructure',sub:'Power, water, CBS detonator'}};
-const WX_ICONS={0:'\u2600',1:'\U0001f324',2:'\u26c5',3:'\u2601',45:'\U0001f32b',51:'\U0001f326',61:'\U0001f327',63:'\U0001f327',65:'\U0001f327',80:'\U0001f326',95:'\u26c8',96:'\u26c8',99:'\u26c8'};
+const WX_ICONS={0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',51:'🌦',61:'🌧',63:'🌧',65:'🌧',80:'🌦',95:'⛈',96:'⛈',99:'⛈'};
 const COST_RATES={pump:150000,conveyor:120000,ventilation:180000,plc:80000,scada_node:60000,cbs_controller:450000,power_meter:100000,sensor:40000,base_station:25000,network_tower:35000,microwave_link:40000,router:15000,switch:10000,firewall:20000,wan_link:12000,workstation:2000};
 
 function sc(s){return s>=70?'var(--grn)':s>=40?'var(--amb)':'var(--red)'}
@@ -2413,7 +2455,7 @@ async function simReal(type){const cfg=SIMS[type];if(!cfg)return;try{const r=awa
 function exportReport(){toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf \u2014 ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
 function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u2014 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
 
-async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const icon=WX_ICONS[d.weather_code]||'\U0001f321';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
+async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const icon=WX_ICONS[d.weather_code]||'🌡';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
 
 async function doLogin(){const n=document.getElementById('l-name').value.trim(),p=document.getElementById('l-pass').value.trim();document.getElementById('l-err').textContent='';try{const r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:p})});const d=await r.json();if(d.success){spToken=d.token;spName=d.name;document.getElementById('login-sec').style.display='none';document.getElementById('sp-sec').style.display='block';document.getElementById('sp-name').textContent=d.name;document.getElementById('sp-role').textContent=d.role.toUpperCase();document.getElementById('live-lbl').textContent='SP:'+d.name;toast('Access granted','Welcome '+d.name+' \u2014 specialist panel and engineering diagnostics unlocked','tg');loadInc();updEngDiag();}else document.getElementById('l-err').textContent='Invalid credentials. Access denied.';}catch(e){document.getElementById('l-err').textContent='Connection error.';}}
 function doLogout(){spToken=null;spName=null;document.getElementById('login-sec').style.display='block';document.getElementById('sp-sec').style.display='none';document.getElementById('l-name').value='';document.getElementById('l-pass').value='';document.getElementById('live-lbl').textContent='LIVE';document.getElementById('sr-panel').style.display='none';toast('Logged out','Specialist session ended','');}
@@ -2430,7 +2472,27 @@ function toggleTheme(){lightMode=!lightMode;document.body.classList.toggle('ligh
 if(localStorage.getItem('iisentinel-theme')==='light'){lightMode=true;document.body.classList.add('light');document.getElementById('theme-btn').textContent='🌙';}
 
 /* PLATFORM OBSERVABILITY */
-async function fetchPlatform(){try{const r=await fetch(B+'/api/platform');const d=await r.json();const qEl=document.getElementById('p-queue');if(qEl){qEl.textContent=d.queue_depth||'0';qEl.className='ival '+(d.queue_depth>50?'cr':d.queue_depth>10?'cw':'ca');}const cEl=document.getElementById('p-cache');if(cEl)cEl.textContent=d.cache_age_seconds+'s';const dEl=document.getElementById('p-devs');if(dEl)dEl.textContent=d.devices_tracked||'0';}catch(e){}}
+async function fetchPlatform(){try{
+  const r=await fetch(B+'/api/platform');const d=await r.json();
+  const qEl=document.getElementById('p-queue');
+  if(qEl){qEl.textContent=d.queue_depth||'0';qEl.className='ival '+(d.queue_depth>50?'cr':d.queue_depth>10?'cw':'ca');}
+  const cEl=document.getElementById('p-cache');
+  if(cEl)cEl.textContent=d.cache_age_seconds+'s';
+  const dEl=document.getElementById('p-devs');
+  if(dEl)dEl.textContent=d.devices_tracked||'0';
+  const sEl=document.getElementById('p-score');
+  if(sEl)sEl.textContent=d.scoring_queue||'0';
+  const rEl=document.getElementById('p-retrain');
+  if(rEl){rEl.textContent=d.retrain_in_progress?'Running...':d.retrain_needed?'Needed':'Standby';rEl.className='ival '+(d.retrain_in_progress?'cw':d.retrain_needed?'cr':'cg');}
+  const uEl=document.getElementById('p-uptime');
+  if(uEl)uEl.textContent=(d.platform_uptime_h||0).toFixed(1)+'h';
+  // Notification channel indicators
+  const nc=d.notifications||{};
+  const style=(on)=>on?'font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--grn);color:var(--grn);background:var(--grna)':'font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)';
+  const em=document.getElementById('nc-email');if(em)em.style.cssText=style(nc.email_enabled);
+  const sm=document.getElementById('nc-sms');  if(sm)sm.style.cssText=style(nc.sms_enabled);
+  const wa=document.getElementById('nc-wa');   if(wa)wa.style.cssText=style(nc.whatsapp_enabled);
+}catch(e){}}
 setInterval(fetchPlatform,12000);
 fetchPlatform();
 fetchAll();
