@@ -17,34 +17,34 @@ from email.mime.text import MIMEText
 
 # ═══════════════════════════════════════════════════════════════════════════
 # IISentinel™ — Intelligent Infrastructure Sentinel
-# Architecture: YouTube-inspired high-throughput ingestion → AI enrichment
+# Architecture: high-throughput ingestion → AI enrichment
 #               → multi-tenant federated delivery
 #
-# Mapping:
-#   YouTube Upload Service     → metric_queue (deque, Kafka-ready)
-#   YouTube Encoder            → scaler + feature normalisation
-#   YouTube Blob/Temp/Cache    → three-tier: Supabase + in-memory + cold dump
-#   YouTube Recommendation     → RandomForest scorer + IsolationForest (async)
-#   YouTube CDN                → edge-node ready (runs standalone per site)
-#   YouTube Notification Svc   → SMS (Africa's Talking) + WhatsApp + Email
+# Platform layer mapping:
+#   Ingestion buffer   → metric_queue (deque, Kafka-ready, 500-reading failsafe)
+#   Normalisation      → scaler + feature pipeline before any storage write
+#   Scoring engine     → RandomForest async worker (never blocks ingestion API)
+#   Three-tier storage → Supabase (persistent) + in-memory (hot) + cold dump
+#   Edge delivery      → standalone node per site, works offline if WAN drops
+#   Alert dispatch     → SMS (Africa's Talking) + WhatsApp + Email, <60s target
 #
-# Core value proposition (pitch anchor):
+# Core value proposition:
 #   Reduce the time between "pump shows anomaly" and
 #   "engineer makes a decision" to near zero.
 # ═══════════════════════════════════════════════════════════════════════════
 
-# ── TIER 1: INGESTION QUEUE (YouTube Upload Service equivalent) ────────────
-# Never-blocking deque. Collectors POST and return immediately.
-# Background flusher writes to Supabase in batches every 3 seconds.
+# ── TIER 1: INGESTION QUEUE (non-blocking buffer — Kafka-ready deque) ────────
+# Collectors POST and return immediately. Never blocks on storage write.
+# Background flusher drains to Supabase in batches every 3 seconds.
 # On WAN failure the queue holds 500 readings (~83 minutes at 6/min).
-# This is the moat — competitors lose readings on timeout, we don't.
+# This is the moat: competitors lose readings on timeout, IISentinel™ doesn't.
 metric_queue  = deque(maxlen=500)
 scoring_queue = deque(maxlen=200)   # async AI scoring pipeline
 queue_lock    = threading.Lock()
 
-# ── TIER 2: HOT CACHE (YouTube Redis equivalent) ──────────────────────────
+# ── TIER 2: HOT CACHE (8s TTL in-memory, one DB query per TTL window) ────────
 # Dashboard polls /api/data every 10 s. One Supabase query per 8 s max.
-# Each edge site has its own cache shard (geography-aware, like YouTube CDN).
+# Each edge site has its own cache shard (geography-aware per site node).
 _data_cache   = {'data': [], 'ts': 0}
 CACHE_TTL     = 8   # seconds
 
@@ -155,7 +155,7 @@ def fire_critical_alert(device_id, device_type, health_score, message):
             daemon=True
         ).start()
 
-# ── BACKGROUND QUEUE FLUSHER (YouTube batch-write equivalent) ─────────────
+# ── BACKGROUND QUEUE FLUSHER (batch-write, 3s interval) ─────────────────────
 def flush_queue():
     """
     Drains metric_queue → Supabase every 3 seconds.
@@ -184,7 +184,7 @@ def flush_queue():
 
 threading.Thread(target=flush_queue, daemon=True).start()
 
-# ── ASYNC AI SCORING PIPELINE (YouTube Recommendation async equivalent) ───
+# ── ASYNC AI SCORING PIPELINE (non-blocking background worker) ─────────────
 def scoring_worker():
     """
     Consumes scoring_queue and computes failure_probabilities without
@@ -213,7 +213,7 @@ def scoring_worker():
 threading.Thread(target=scoring_worker, daemon=True).start()
 _lifecycle_cache = {}
 
-# ── AUTO-RETRAIN PIPELINE (YouTube adaptive algorithm equivalent) ──────────
+# ── AUTO-RETRAIN PIPELINE (hot-swap, triggered on anomaly threshold) ────────
 retrain_lock = threading.Lock()
 _retrain_in_progress = False
 
@@ -222,7 +222,7 @@ def auto_retrain():
     Hot-swap model retraining triggered when anomaly_count >= threshold.
     Retrains on the last 1000 readings from Supabase.
     Swaps models atomically — dashboard never sees a gap.
-    This mirrors YouTube's continuous improvement of recommendation models.
+    Models improve continuously without any service downtime.
     """
     global rf_model, iso_model, scaler, anomaly_count, _retrain_in_progress
     with retrain_lock:
@@ -320,7 +320,7 @@ MINING_TYPES  = ['pump', 'conveyor', 'ventilation', 'power_meter',
                  'sensor', 'plc', 'scada_node']
 CBS_TYPES     = ['cbs_controller']
 
-# ── GEOGRAPHY (edge-node shards, like YouTube CDN nodes) ──────────────────
+# ── GEOGRAPHY (edge-node shards, one per site — offline-resilient) ─────────
 LOCATIONS = {
     'byo' : {'lat': -20.15, 'lon': 28.58, 'name': 'Bulawayo'},
     'hre' : {'lat': -17.82, 'lon': 31.05, 'name': 'Harare'},
@@ -522,7 +522,7 @@ def get_uptime_pct(device_id):
 @app.route('/api/metrics', methods=['POST'])
 def receive_metrics():
     """
-    Ingestion endpoint — YouTube Upload Service equivalent.
+    Ingestion endpoint — non-blocking, scores inline, queues for storage.
     Non-blocking: score inline (<1ms), queue for storage, fire alerts async.
     """
     global anomaly_count
@@ -677,7 +677,7 @@ def get_data():
 @app.route('/api/platform', methods=['GET'])
 def platform_health():
     """
-    Internal SLA dashboard — YouTube Observability equivalent.
+    Internal SLA dashboard — every metric that matters for <60s alert target.
     Every metric that matters for the <60s alert target is surfaced here.
     """
     uptime_h = (time.time() - platform_stats['start_ts']) / 3600
@@ -697,7 +697,7 @@ def platform_health():
             'whatsapp_enabled' : NOTIFY_WHATSAPP_ENABLED,
         },
         'architecture': {
-            'ingestion'   : 'Queue-buffered (YouTube-style, 500-reading buffer)',
+            'ingestion'   : 'Queue-buffered (Kafka-ready deque, 500-reading failsafe)',
             'cache'       : f'{CACHE_TTL}s TTL hot cache per edge node',
             'ai_models'   : ['RandomForest (health, inline <1ms)',
                              'IsolationForest (anomaly, inline)',
@@ -751,7 +751,7 @@ def get_intelligence():
 def digital_twin(device_id):
     """
     Digital twin load simulator — runs real RandomForest predictions
-    at +10%, +20%, +50%, +100% load. Equivalent to YouTube's A/B
+    at +10%, +20%, +50%, +100% load. Scenario testing on
     scenario testing on recommendation algorithm variants.
     """
     history = device_history.get(device_id, [])

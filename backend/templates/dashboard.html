@@ -8,7 +8,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
 :root{
-  --bg:#07080f;--s1:#0b0d1a;--s2:#0f1120;--s3:#131628;
+  --bg:#080d18;--s1:#0c1122;--s2:#101628;--s3:#141c30;
   --b1:rgba(255,255,255,0.055);--b2:rgba(255,255,255,0.10);--b3:rgba(255,255,255,0.18);
   --txt:#e4eaf6;--mut:#8592a8;--dim:#4a5270;
   --grn:#20e07a;--grna:rgba(32,224,122,0.13);
@@ -64,10 +64,10 @@ body.light .cbsouter{background:rgba(255,240,240,0.5)!important;border-color:rgb
 body.light .sphead{background:rgba(240,235,255,0.8);border-color:rgba(112,64,204,0.2)}
 body.light .ops-banner{background:rgba(212,32,48,0.08)}
 body.light .ehdr-photo{filter:grayscale(0.2) brightness(1.1)}
-body.light.e-net{background-color:#eaf4f4!important;background-image:linear-gradient(rgba(0,136,128,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,136,128,.05) 1px,transparent 1px)!important;background-size:38px 38px!important}
-body.light.e-tc{background-color:#eaf2f8!important;background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(0,128,184,.1) 0,transparent 100%)!important}
-body.light.e-mc{background-color:#f5ede0!important;background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(150,80,20,.025) 22px,rgba(150,80,20,.025) 23px)!important}
-body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s}
+body.light.e-net{background-color:#e6f4f3!important;background-image:radial-gradient(ellipse 900px 400px at 50% 110%,rgba(0,136,128,.08) 0,transparent 70%),linear-gradient(rgba(0,136,128,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,136,128,.05) 1px,transparent 1px)!important;background-size:auto,38px 38px,38px 38px!important}
+body.light.e-tc{background-color:#e8f2fa!important;background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(0,128,184,.12) 0,transparent 75%)!important}
+body.light.e-mc{background-color:#f5ead8!important;background-image:radial-gradient(ellipse 800px 400px at 50% 110%,rgba(180,90,10,.08) 0,transparent 70%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(150,80,20,.022) 22px,rgba(150,80,20,.022) 23px)!important}
+body{background:var(--bg);background-image:radial-gradient(ellipse 1400px 700px at 50% 115%,rgba(52,198,244,0.05) 0,transparent 68%);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;overflow-x:hidden;transition:background-color .8s,background-image .8s}
 
 /* LOADING */
 #loader{position:fixed;inset:0;z-index:99999;background:#05060e;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .7s ease}
@@ -102,16 +102,16 @@ body.ops-focus .bc:not(.bc-crit){opacity:.55}
 body.ops-focus .fcard,body.ops-focus .ccard{opacity:.7}
 
 /* ENV THEMES */
-body.e-net{--acc:var(--tel);--acca:var(--tela);background-color:#030d0d;background-image:linear-gradient(rgba(0,229,212,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,212,.04) 1px,transparent 1px);background-size:38px 38px}
-body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-color:#030810;background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.12) 0,transparent 100%)}
-body.e-tc.loc-byo{background-image:radial-gradient(ellipse 900px 500px at 22% 115%,rgba(52,160,255,.14) 0,transparent 100%)}
-body.e-tc.loc-hre{background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(52,198,244,.13) 0,transparent 100%)}
-body.e-tc.loc-mut{background-image:radial-gradient(ellipse 900px 500px at 80% 110%,rgba(0,220,200,.13) 0,transparent 100%)}
-body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-color:#090500;background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(200,100,20,.025) 22px,rgba(200,100,20,.025) 23px),repeating-linear-gradient(-38deg,transparent,transparent 22px,rgba(140,70,10,.02) 22px,rgba(140,70,10,.02) 23px),radial-gradient(ellipse 700px 400px at 50% 120%,rgba(200,80,10,.09) 0,transparent 80%)}
-body.e-mc.sec-shaft1{background-image:repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(255,100,30,.03) 22px,rgba(255,100,30,.03) 23px),radial-gradient(ellipse 700px 400px at 50% 120%,rgba(255,60,20,.15) 0,transparent 70%)}
-body.e-mc.sec-shaft2{background-image:repeating-linear-gradient(38deg,transparent,transparent 18px,rgba(255,60,20,.036) 18px,rgba(255,60,20,.036) 19px),radial-gradient(ellipse 700px 350px at 50% 120%,rgba(255,40,10,.2) 0,transparent 65%)}
-body.e-mc.sec-plant{background-image:repeating-linear-gradient(-45deg,transparent,transparent 24px,rgba(255,160,40,.022) 24px,rgba(255,160,40,.022) 25px)}
-body.e-mc.sec-surface{background-image:linear-gradient(180deg,rgba(100,200,60,.04) 0,transparent 50%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(100,180,40,.016) 22px,rgba(100,180,40,.016) 23px)}
+body.e-net{--acc:var(--tel);--acca:var(--tela);background-color:#030f0f;background-image:radial-gradient(ellipse 1000px 500px at 50% 110%,rgba(0,229,212,0.07) 0,transparent 70%),linear-gradient(rgba(0,229,212,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,212,.035) 1px,transparent 1px);background-size:auto,38px 38px,38px 38px}
+body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-color:#04091c;background-image:radial-gradient(ellipse 1100px 600px at 50% 115%,rgba(52,198,244,.14) 0,transparent 75%),radial-gradient(ellipse 600px 300px at 50% 100%,rgba(85,204,255,.08) 0,transparent 60%)}
+body.e-tc.loc-byo{background-image:radial-gradient(ellipse 1000px 500px at 22% 115%,rgba(52,160,255,.16) 0,transparent 75%)}
+body.e-tc.loc-hre{background-image:radial-gradient(ellipse 1000px 500px at 50% 115%,rgba(52,198,244,.15) 0,transparent 75%)}
+body.e-tc.loc-mut{background-image:radial-gradient(ellipse 1000px 500px at 80% 110%,rgba(0,220,200,.15) 0,transparent 75%)}
+body.e-mc{--acc:#ffaa30;--acca:rgba(255,170,48,.12);background-color:#0d0702;background-image:radial-gradient(ellipse 900px 500px at 50% 115%,rgba(200,90,10,.14) 0,transparent 70%),radial-gradient(ellipse 500px 250px at 50% 100%,rgba(255,130,20,.08) 0,transparent 60%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(200,100,20,.022) 22px,rgba(200,100,20,.022) 23px),repeating-linear-gradient(-38deg,transparent,transparent 22px,rgba(140,70,10,.016) 22px,rgba(140,70,10,.016) 23px)}
+body.e-mc.sec-shaft1{background-image:radial-gradient(ellipse 900px 480px at 50% 115%,rgba(255,60,20,.2) 0,transparent 68%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(255,100,30,.028) 22px,rgba(255,100,30,.028) 23px)}
+body.e-mc.sec-shaft2{background-image:radial-gradient(ellipse 900px 460px at 50% 115%,rgba(255,40,10,.24) 0,transparent 65%),repeating-linear-gradient(38deg,transparent,transparent 18px,rgba(255,60,20,.032) 18px,rgba(255,60,20,.032) 19px)}
+body.e-mc.sec-plant{background-image:radial-gradient(ellipse 800px 400px at 50% 110%,rgba(255,160,40,.1) 0,transparent 70%),repeating-linear-gradient(-45deg,transparent,transparent 24px,rgba(255,160,40,.02) 24px,rgba(255,160,40,.02) 25px)}
+body.e-mc.sec-surface{background-image:radial-gradient(ellipse 900px 400px at 50% 110%,rgba(120,200,50,.08) 0,transparent 68%),linear-gradient(180deg,rgba(100,200,60,.05) 0,transparent 50%),repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(100,180,40,.014) 22px,rgba(100,180,40,.014) 23px)}
 
 /* KEYFRAMES */
 @keyframes fadeUp{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
@@ -827,7 +827,7 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
 <!-- INTELLIGENCE -->
 <div class="page" id="page-intel">
 
-  <!-- YouTube-architecture pitch panel — shown on the expo floor -->
+  <!-- IISentinel™ platform architecture panel — shown on the expo floor -->
   <div class="alert-target">
     <div class="at-number">&lt;60s</div>
     <div class="at-label">
@@ -839,7 +839,7 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
   <div class="arch-panel">
     <div class="arch-title">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 5v6L8 14 2 11V5L8 2Z" stroke="var(--acc)" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="2" fill="var(--acc)"/></svg>
-      YouTube-mirrored architecture &#8212; IISentinel&#8482; platform design
+      IISentinel&#8482; high-throughput platform architecture
     </div>
     <div class="arch-flow">
       <div class="arch-node">
@@ -869,12 +869,12 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
     </div>
     <div class="arch-cols">
       <div class="arch-col">
-        <div class="arch-col-title">&#9654; YouTube parallel</div>
-        <div class="arch-col-item">Upload Service = metric_queue (Kafka-ready deque)</div>
-        <div class="arch-col-item">Encoder = scaler + feature normalisation</div>
-        <div class="arch-col-item">Recommendation Engine = RandomForest scorer (async)</div>
-        <div class="arch-col-item">CDN = edge node per site (Bulawayo / Harare / Mutare / mine)</div>
-        <div class="arch-col-item">Notification Service = SMS (Africa's Talking) + WhatsApp + Email</div>
+        <div class="arch-col-title">&#9654; Platform layer mapping</div>
+        <div class="arch-col-item">Ingestion buffer = metric_queue (Kafka-ready deque, 500-reading failsafe)</div>
+        <div class="arch-col-item">Normalisation = scaler + feature pipeline before any storage write</div>
+        <div class="arch-col-item">Scoring engine = RandomForest async worker, never blocks ingestion</div>
+        <div class="arch-col-item">Edge delivery = standalone node per site (Bulawayo / Harare / Mutare / mine)</div>
+        <div class="arch-col-item">Alert dispatch = SMS (Africa's Talking) + WhatsApp + Email, &lt;60s target</div>
       </div>
       <div class="arch-col">
         <div class="arch-col-title">&#9654; Africa-first design</div>
@@ -925,7 +925,7 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
   <div class="ccard" style="margin-bottom:13px">
-    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health</div>
+    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health &amp; observability</div>
     <div class="igrid" style="margin-top:10px" id="platform-grid">
       <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Buffered readings</div></div>
       <div class="icard"><div class="ititle">Scoring queue</div><div class="ival cb" id="p-score">--</div><div class="isub">Async AI pending</div></div>
@@ -935,7 +935,7 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
       <div class="icard"><div class="ititle">Platform uptime</div><div class="ival cg" id="p-uptime">--h</div><div class="isub">Since last restart</div></div>
     </div>
     <div style="margin-top:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:9px">
-      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; Africa-first alert delivery (&lt;60s target)</div>
+      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; Africa-first multi-channel alert dispatch</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <div id="nc-email" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#9993; Email</div>
         <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS (Africa's Talking)</div>
@@ -1192,7 +1192,7 @@ const SIMS={critical:{device_type:'ventilation',device_id:'mc-shaft2-vent-sim',m
 async function simReal(type){const cfg=SIMS[type];if(!cfg)return;try{const r=await fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});const d=await r.json();const rate=COST_RATES[cfg.device_type]||8000;const exposure=d.health_score<50?Math.round(rate*(1-d.health_score/100)):0;toast(`${type==='recovery'?'Recovery':'Event'} injected`,`${cfg.device_id} \u2192 score ${d.health_score}${d.anomaly_flag?' \u00b7 ANOMALY':''}${exposure>0?' \u00b7 $'+exposure.toLocaleString()+'/hr risk':''}`,type==='recovery'?'tg':type==='anomaly'?'tp':'tc');setTimeout(fetchAll,1500);}catch(e){toast('Injection error',e.message,'tc');}}
 
 function exportReport(){toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf \u2014 ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
-function logoClick(){toast('IISentinel\u2122 v2.0','YouTube-architecture \u00b7 Event\u2192decision &lt;60s \u00b7 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
+function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u00b7 Event\u2192decision \u003c60s \u00b7 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
 
 async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const icon=WX_ICONS[d.weather_code]||'\ud83c\udf21';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
 
