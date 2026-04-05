@@ -101,6 +101,29 @@ body.ops-focus .gc.g-r{box-shadow:0 0 30px rgba(255,62,80,.55);border-color:rgba
 body.ops-focus .bc:not(.bc-crit){opacity:.55}
 body.ops-focus .fcard,body.ops-focus .ccard{opacity:.7}
 
+/* ── OPS FOCUS: critical gauges scale up for instant visual priority ── */
+body.ops-focus .gc.g-r{
+  transform:scale(1.08);
+  z-index:10;
+  grid-column:span 1;
+}
+body.ops-focus .gc.g-w{
+  transform:scale(1.03);
+  z-index:5;
+}
+body.ops-focus .gc.g-r .gw{width:84px;height:84px}
+body.ops-focus .gc.g-r .gval{font-size:17px}
+body.ops-focus .gc.g-r .gid{font-size:11px;font-weight:700}
+body.ops-focus .gc.g-r::after{
+  content:'';
+  position:absolute;
+  inset:-2px;
+  border-radius:14px;
+  border:2px solid var(--red);
+  pointer-events:none;
+  animation:critGlow 1.4s ease-in-out infinite;
+}
+
 /* ENV THEMES */
 body.e-net{--acc:var(--tel);--acca:var(--tela);background-color:#030f0f;background-image:radial-gradient(ellipse 1000px 500px at 50% 110%,rgba(0,229,212,0.07) 0,transparent 70%),linear-gradient(rgba(0,229,212,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,212,.035) 1px,transparent 1px);background-size:auto,38px 38px,38px 38px}
 body.e-tc{--acc:#55ccff;--acca:rgba(85,204,255,.11);background-color:#04091c;background-image:radial-gradient(ellipse 1100px 600px at 50% 115%,rgba(52,198,244,.14) 0,transparent 75%),radial-gradient(ellipse 600px 300px at 50% 100%,rgba(85,204,255,.08) 0,transparent 60%)}
@@ -434,24 +457,24 @@ body.light .ainput{background:rgba(0,0,0,0.04);color:var(--txt);border-color:var
 .cg{color:var(--grn)}.cw{color:var(--amb)}.cr{color:var(--red)}.cb{color:var(--blu)}.ca{color:var(--acc)}.cp{color:var(--pur)}
 
 /* ARCHITECTURE PITCH PANEL */
-.arch-panel{background:rgba(10,14,28,.88);border:1px solid var(--b1);border-radius:12px;padding:16px;margin-bottom:13px}
-.arch-title{font-size:11px;font-weight:700;color:var(--acc);margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:.3px}
-.arch-flow{display:flex;gap:0;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-.arch-node{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:8px;padding:8px 12px;font-size:9px;text-align:center;min-width:90px;position:relative}
-.arch-node-label{font-weight:700;color:var(--acc);font-size:10px;display:block;margin-bottom:3px}
-.arch-node-sub{color:var(--dim);font-size:8px;line-height:1.4}
-.arch-arrow{color:var(--dim);font-size:16px;padding:0 6px;flex-shrink:0}
-.arch-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:10px}
-.arch-col{background:rgba(255,255,255,.025);border:1px solid var(--b1);border-radius:8px;padding:10px 12px}
-.arch-col-title{font-size:9px;font-weight:700;color:var(--acc);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
-.arch-col-item{font-size:9px;color:var(--mut);margin-bottom:3px;line-height:1.4;padding-left:10px;position:relative}
-.arch-col-item::before{content:'→';position:absolute;left:0;color:var(--dim);font-size:8px}
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* ALERT TARGET BANNER */
-.alert-target{background:linear-gradient(135deg,rgba(32,224,122,.08),rgba(52,198,244,.06));border:1px solid rgba(32,224,122,.25);border-radius:10px;padding:12px 16px;margin-bottom:13px;display:flex;align-items:center;gap:14px}
-.at-number{font-size:36px;font-weight:800;color:var(--grn);line-height:1;flex-shrink:0;text-shadow:0 0 20px rgba(32,224,122,.4)}
-.at-label{font-size:10px;color:var(--mut);line-height:1.6}
-.at-label strong{color:var(--grn);font-size:13px;display:block;margin-bottom:2px}
+
+
+
+
 
 /* SCENE */
 .scene{width:100%;height:155px;border-radius:12px;margin-bottom:14px;overflow:hidden;border:1px solid var(--b1);position:relative}
@@ -470,8 +493,8 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
   .wrap{padding:10px 12px}
   header{padding:8px 12px}
   .ggrid{grid-template-columns:repeat(auto-fill,minmax(128px,1fr))}
-  .arch-flow{flex-direction:column;align-items:flex-start}
-  .arch-arrow{transform:rotate(90deg)}
+  
+  
 }
 </style>
 </head>
@@ -500,7 +523,7 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
   </div>
   <div class="hrgt">
     <div class="live-pill"><span class="ldot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
-    <button class="ops-btn" id="ops-btn" onclick="toggleOpsMode()">&#8853; Focus Mode</button>
+    <button class="ops-btn" id="ops-btn" onclick="toggleOpsMode()" title="Toggle Ops Focus Mode (F)">&#8853; Focus Mode</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">&#9728;</button>
     <button class="btn btn-acc" onclick="exportReport()">Export PDF</button>
   </div>
@@ -541,8 +564,8 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
 </div>
 
 <div class="wrap">
-<div class="retrain" id="retrain-bar">&#9888; AI model retraining recommended &#8212; anomaly count exceeded threshold. Auto-retrain pipeline will trigger on next anomaly batch.</div>
-<div class="retrain-active" id="retrain-active-bar">&#10004; AI model retraining in progress &#8212; hot-swap pipeline running. Dashboard continues uninterrupted.</div>
+<div class="retrain" id="retrain-bar">&#9888; AI model optimisation recommended &#8212; scheduling automated update.</div>
+<div class="retrain-active" id="retrain-active-bar">&#10004; AI model update in progress &#8212; live monitoring continues uninterrupted.</div>
 
 <!-- MAIN DASHBOARD -->
 <div class="page active" id="page-main">
@@ -827,87 +850,19 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
 <!-- INTELLIGENCE -->
 <div class="page" id="page-intel">
 
-  <!-- IISentinel™ platform architecture panel — shown on the expo floor -->
-  <div class="alert-target">
-    <div class="at-number">&lt;60s</div>
-    <div class="at-label">
-      <strong>Event-to-decision target</strong>
-      IISentinel&#8482; core value proposition: reduce the time between "pump shows anomaly" and "engineer makes a decision" to near zero. Every architectural decision is evaluated against this single metric.
-    </div>
-  </div>
-
-  <div class="arch-panel">
-    <div class="arch-title">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2L14 5v6L8 14 2 11V5L8 2Z" stroke="var(--acc)" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="2" fill="var(--acc)"/></svg>
-      IISentinel&#8482; high-throughput platform architecture
-    </div>
-    <div class="arch-flow">
-      <div class="arch-node">
-        <span class="arch-node-label">Collectors</span>
-        <span class="arch-node-sub">SNMP · Modbus · DNP3 · Profinet · OPC-UA</span>
-      </div>
-      <div class="arch-arrow">&#8594;</div>
-      <div class="arch-node">
-        <span class="arch-node-label">Ingestion Queue</span>
-        <span class="arch-node-sub">500-reading buffer. Never drops on WAN failure.</span>
-      </div>
-      <div class="arch-arrow">&#8594;</div>
-      <div class="arch-node">
-        <span class="arch-node-label">AI Pipeline</span>
-        <span class="arch-node-sub">RandomForest (&lt;1ms) + IsolationForest. Async scoring.</span>
-      </div>
-      <div class="arch-arrow">&#8594;</div>
-      <div class="arch-node">
-        <span class="arch-node-label">Hot Cache</span>
-        <span class="arch-node-sub">8s TTL. Dashboard instant. One DB query per cache TTL.</span>
-      </div>
-      <div class="arch-arrow">&#8594;</div>
-      <div class="arch-node">
-        <span class="arch-node-label">Alert Dispatch</span>
-        <span class="arch-node-sub">SMS · WhatsApp · Email. CBS hold always fires SMS.</span>
-      </div>
-    </div>
-    <div class="arch-cols">
-      <div class="arch-col">
-        <div class="arch-col-title">&#9654; Platform layer mapping</div>
-        <div class="arch-col-item">Ingestion buffer = metric_queue (Kafka-ready deque, 500-reading failsafe)</div>
-        <div class="arch-col-item">Normalisation = scaler + feature pipeline before any storage write</div>
-        <div class="arch-col-item">Scoring engine = RandomForest async worker, never blocks ingestion</div>
-        <div class="arch-col-item">Edge delivery = standalone node per site (Bulawayo / Harare / Mutare / mine)</div>
-        <div class="arch-col-item">Alert dispatch = SMS (Africa's Talking) + WhatsApp + Email, &lt;60s target</div>
-      </div>
-      <div class="arch-col">
-        <div class="arch-col-title">&#9654; Africa-first design</div>
-        <div class="arch-col-item">Edge node runs offline if WAN drops — no data loss</div>
-        <div class="arch-col-item">SMS is primary alert channel — engineers underground have no browser</div>
-        <div class="arch-col-item">Auto-retrain hot-swap — no downtime while models improve</div>
-        <div class="arch-col-item">CBS $450k/hr exposure — alert target is &lt;60 seconds</div>
-        <div class="arch-col-item">Sharded by geography — site failure doesn't affect other sites</div>
-      </div>
-      <div class="arch-col">
-        <div class="arch-col-title">&#9654; Competitive moat</div>
-        <div class="arch-col-item">Queue = never lose a reading on timeout (competitors do)</div>
-        <div class="arch-col-item">Federated health index = single KPI across all sectors</div>
-        <div class="arch-col-item">Digital twin = simulate load before you change anything</div>
-        <div class="arch-col-item">Cost-of-downtime rates = speaks CFO language, not IT language</div>
-        <div class="arch-col-item">Protocol-aware AI — diagnosis names the protocol, not just a score</div>
-      </div>
-    </div>
-  </div>
-
   <div class="sl">Platform intelligence &#8212; real-time AI insights</div>
   <div class="igrid">
     <div class="icard"><div class="ititle">Federated health index</div><div class="ival cg" id="i-fhi">--</div><div class="isub">Weighted all assets</div></div>
     <div class="icard"><div class="ititle">Highest failure risk</div><div class="ival cr" id="i-risk">--</div><div class="isub">Next 30 minutes</div></div>
     <div class="icard"><div class="ititle">Cross-device correlation</div><div class="ival cw" id="i-corr">--</div><div class="isub">Linked degradation</div></div>
-    <div class="icard"><div class="ititle">Model status</div><div class="ival cg" id="i-model">Optimal</div><div class="isub">Anomalies vs threshold</div></div>
+    <div class="icard"><div class="ititle">Model status</div><div class="ival cg" id="i-model">Optimal</div><div class="isub">Continuous learning</div></div>
     <div class="icard"><div class="ititle">Total devices</div><div class="ival ca" id="i-devs">--</div><div class="isub">All sectors</div></div>
-    <div class="icard"><div class="ititle">Anomaly count</div><div class="ival cp" id="i-anom">--</div><div class="isub">Isolation Forest flags</div></div>
+    <div class="icard"><div class="ititle">Flagged events</div><div class="ival cp" id="i-anom">--</div><div class="isub">AI-detected deviations</div></div>
   </div>
   <div class="sl">Digital twin &#8212; real load scenario simulator</div>
   <div class="twin-wrap">
     <select class="twin-sel" id="twin-sel" onchange="runTwin()"><option value="">Select a device to simulate load scenarios...</option></select>
-    <div class="twin-grid" id="twin-grid"><div style="color:var(--dim);font-size:11px;grid-column:1/-1">Select a device above &#8212; the backend runs real model predictions at +10%, +20%, +50%, +100% load</div></div>
+    <div class="twin-grid" id="twin-grid"><div style="color:var(--dim);font-size:11px;grid-column:1/-1">Select a device above to model performance under increased load</div></div>
     <div class="twin-trend" id="twin-trend"></div>
   </div>
   <div class="fgrid">
@@ -925,22 +880,22 @@ body.light .scene-tc::before{background-image:linear-gradient(to bottom,rgba(2,4
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
   <div class="ccard" style="margin-bottom:13px">
-    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health &amp; observability</div>
+    <div class="ctitle">Platform health &amp; observability</div>
     <div class="igrid" style="margin-top:10px" id="platform-grid">
-      <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Buffered readings</div></div>
-      <div class="icard"><div class="ititle">Scoring queue</div><div class="ival cb" id="p-score">--</div><div class="isub">Async AI pending</div></div>
-      <div class="icard"><div class="ititle">Cache age</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Data freshness</div></div>
+      <div class="icard"><div class="ititle">Data throughput</div><div class="ival ca" id="p-queue">--</div><div class="isub">Active readings/cycle</div></div>
+      <div class="icard"><div class="ititle">AI processing</div><div class="ival cb" id="p-score">--</div><div class="isub">Active computations</div></div>
+      <div class="icard"><div class="ititle">Data freshness</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Last sync</div></div>
       <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
-      <div class="icard"><div class="ititle">Auto-retrain</div><div class="ival cg" id="p-retrain">Standby</div><div class="isub">Hot-swap pipeline</div></div>
+      <div class="icard"><div class="ititle">Model health</div><div class="ival cg" id="p-retrain">Optimal</div><div class="isub">AI model status</div></div>
       <div class="icard"><div class="ititle">Platform uptime</div><div class="ival cg" id="p-uptime">--h</div><div class="isub">Since last restart</div></div>
     </div>
     <div style="margin-top:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:9px">
-      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; Africa-first multi-channel alert dispatch</div>
+      <div class="sl" style="margin-bottom:8px">Notification channels</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <div id="nc-email" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#9993; Email</div>
-        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS (Africa's Talking)</div>
+        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS Alerts</div>
         <div id="nc-wa"    style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp Business</div>
-        <span style="font-size:9px;color:var(--dim);margin-left:4px">Configure in .env &#8212; CBS hold always triggers SMS regardless of channel config</span>
+        <span style="font-size:9px;color:var(--dim);margin-left:4px">Configure in .env &#8212; CBS hold always triggers SMS — primary safety channel</span>
       </div>
     </div>
   </div>
@@ -1029,7 +984,7 @@ let spToken=null,spName=null,intel={},allData=[];
 let curNet='all',curTc='all',curMc='all';
 let activeTipId=null,opsFocusOn=false;
 
-const LOADER_MSGS=['Initialising AI models...','Loading RandomForest health scorer...','Starting Isolation Forest...','Connecting to Supabase...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
+const LOADER_MSGS=['Initialising AI models...','Loading predictive health engine...','Starting anomaly detection...','Connecting to data layer...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
 let loaderIdx=0;
 window.addEventListener('load',()=>{
   const statusEl=document.getElementById('loader-status');
@@ -1191,7 +1146,21 @@ function toast(title,msg,type){const c=document.getElementById('toasts');const e
 const SIMS={critical:{device_type:'ventilation',device_id:'mc-shaft2-vent-sim',metric_name:'temperature',metric_value:98.5,cpu_load:94,bandwidth_mbps:8,latency_ms:280,packet_loss:12,connected_devices:3,temperature:98.5,signal_strength:15,protocol:'Profinet/EtherNet-IP'},congestion:{device_type:'base_station',device_id:'tc-hre-bs-sim',metric_name:'bandwidth_mbps',metric_value:960,cpu_load:88,bandwidth_mbps:960,latency_ms:210,packet_loss:6,connected_devices:1200,temperature:72,signal_strength:38,protocol:'SNMP/Ethernet-802.3'},recovery:{device_type:'router',device_id:'net-byo-router-sim',metric_name:'cpu_load',metric_value:22,cpu_load:22,bandwidth_mbps:180,latency_ms:8,packet_loss:0,connected_devices:35,temperature:38,signal_strength:95,protocol:'SNMP/Ethernet-802.3'},anomaly:{device_type:'pump',device_id:'mc-shaft1-pump-sim',metric_name:'temperature',metric_value:55,cpu_load:95,bandwidth_mbps:5,latency_ms:15,packet_loss:.5,connected_devices:4,temperature:55,signal_strength:85,protocol:'Profinet/EtherNet-IP'},blast:{device_type:'cbs_controller',device_id:'cbs-dnp3-shaft2-sim',metric_name:'link_health',metric_value:62,cpu_load:18,bandwidth_mbps:6,latency_ms:45,packet_loss:4,connected_devices:2,temperature:32,signal_strength:62,protocol:'DNP3/Ethernet',blast_hold:true,automation_override:'CBS SAFETY INTERLOCK: BLAST HOLD on cbs-dnp3-shaft2-sim \u2014 DNP3 link 62% below threshold.'}};
 async function simReal(type){const cfg=SIMS[type];if(!cfg)return;try{const r=await fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});const d=await r.json();const rate=COST_RATES[cfg.device_type]||8000;const exposure=d.health_score<50?Math.round(rate*(1-d.health_score/100)):0;toast(`${type==='recovery'?'Recovery':'Event'} injected`,`${cfg.device_id} \u2192 score ${d.health_score}${d.anomaly_flag?' \u00b7 ANOMALY':''}${exposure>0?' \u00b7 $'+exposure.toLocaleString()+'/hr risk':''}`,type==='recovery'?'tg':type==='anomaly'?'tp':'tc');setTimeout(fetchAll,1500);}catch(e){toast('Injection error',e.message,'tc');}}
 
-function exportReport(){toast('Report exported',`IISentinel_Report_${new Date().toLocaleDateString()}.pdf \u2014 ${intel.total_devices||'--'} devices, FHI: ${intel.federated_index||'--'}`,'tg');}
+function exportReport(){
+  const btn=document.querySelector('.btn-acc');
+  const orig=btn?btn.textContent:'Export PDF';
+  if(btn){btn.textContent='Generating…';btn.style.opacity='.6';btn.disabled=true;}
+  const a=document.createElement('a');
+  a.href=B+'/api/export-pdf';
+  a.download='IISentinel_Report.pdf';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>{
+    if(btn){btn.textContent=orig;btn.style.opacity='';btn.disabled=false;}
+    toast('Report exported','PDF shift report downloaded — '+new Date().toLocaleString(),'tg');
+  },2000);
+}
 function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u00b7 Event\u2192decision \u003c60s \u00b7 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
 
 async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const icon=WX_ICONS[d.weather_code]||'\ud83c\udf21';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
@@ -1237,6 +1206,18 @@ fetchPlatform();
 fetchAll();
 setInterval(fetchAll,10000);
 setInterval(()=>{if(spToken){loadInc();updEngDiag();}},15000);
+
+/* ── Keyboard shortcuts ── */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA') return;
+  if(e.key==='f'||e.key==='F') toggleOpsMode();
+  if(e.key==='e'||e.key==='E') exportReport();
+  if(e.key==='Escape') closeTip();
+  // Number keys 1-8 switch tabs
+  const tabs=document.querySelectorAll('.ntab');
+  const n=parseInt(e.key);
+  if(n>=1&&n<=tabs.length) tabs[n-1].click();
+});
 </script>
 </body>
 </html>

@@ -14,6 +14,7 @@ import json
 import hashlib
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # ═══════════════════════════════════════════════════════════════════════════
 # IISentinel™ — Intelligent Infrastructure Sentinel
@@ -26,7 +27,7 @@ from email.mime.text import MIMEText
 #   Scoring engine     → RandomForest async worker (never blocks ingestion API)
 #   Three-tier storage → Supabase (persistent) + in-memory (hot) + cold dump
 #   Edge delivery      → standalone node per site, works offline if WAN drops
-#   Alert dispatch     → SMS (Africa's Talking) + WhatsApp + Email, <60s target
+#   Alert dispatch     → SMS + WhatsApp + Email, <60s target
 #
 # Core value proposition:
 #   Reduce the time between "pump shows anomaly" and
@@ -60,26 +61,65 @@ platform_stats = {
     'start_ts'        : time.time(),
 }
 
-# ── NOTIFICATION CONFIG (Africa-first: SMS > WhatsApp > Email) ────────────
+# ── NOTIFICATION CONFIG (SMS primary → WhatsApp → Email) ─────────────────────
 NOTIFY_EMAIL_ENABLED    = bool(os.environ.get('SMTP_HOST'))
-NOTIFY_SMS_ENABLED      = bool(os.environ.get('AT_API_KEY'))      # Africa's Talking
+NOTIFY_SMS_ENABLED      = bool(os.environ.get('AT_API_KEY') or os.environ.get('TWILIO_SID') or os.environ.get('VONAGE_KEY') or os.environ.get('SMS_GATEWAY_URL'))
 NOTIFY_WHATSAPP_ENABLED = bool(os.environ.get('WA_TOKEN'))
 
 def send_sms_alert(message, phone=None):
-    """Africa's Talking SMS — most reliable channel in sub-Saharan Africa."""
+    """SMS alert dispatch via configurable gateway."""
     if not NOTIFY_SMS_ENABLED:
         return
     phone = phone or os.environ.get('ALERT_PHONE', '')
     if not phone:
         return
     try:
-        import africastalking
-        africastalking.initialize(
-            os.environ.get('AT_USERNAME', 'sandbox'),
-            os.environ.get('AT_API_KEY', '')
-        )
-        sms = africastalking.SMS
-        sms.send(message, [phone])
+        # Supports multiple SMS gateways via environment config.
+        # Set SMS_GATEWAY to 'africastalking', 'twilio', or 'vonage'
+        gateway = os.environ.get('SMS_GATEWAY', 'africastalking')
+
+        if gateway == 'africastalking':
+            import africastalking
+            africastalking.initialize(
+                os.environ.get('AT_USERNAME', 'sandbox'),
+                os.environ.get('AT_API_KEY', '')
+            )
+            africastalking.SMS.send(message, [phone])
+
+        elif gateway == 'twilio':
+            from twilio.rest import Client
+            client = Client(
+                os.environ.get('TWILIO_SID', ''),
+                os.environ.get('TWILIO_TOKEN', '')
+            )
+            client.messages.create(
+                body=message,
+                from_=os.environ.get('TWILIO_FROM', ''),
+                to=phone
+            )
+
+        elif gateway == 'vonage':
+            import vonage
+            client = vonage.Client(
+                key=os.environ.get('VONAGE_KEY', ''),
+                secret=os.environ.get('VONAGE_SECRET', '')
+            )
+            sms = vonage.Sms(client)
+            sms.send_message({
+                'from': os.environ.get('VONAGE_FROM', 'IISentinel'),
+                'to': phone,
+                'text': message,
+            })
+
+        else:
+            # Generic HTTP SMS gateway — POST to SMS_GATEWAY_URL
+            gateway_url = os.environ.get('SMS_GATEWAY_URL', '')
+            if gateway_url:
+                req.post(gateway_url, json={
+                    'to': phone,
+                    'message': message,
+                    'api_key': os.environ.get('SMS_API_KEY', ''),
+                }, timeout=8)
     except Exception as e:
         print(f'SMS alert error: {e}')
 
@@ -108,17 +148,93 @@ def send_whatsapp_alert(message):
     except Exception as e:
         print(f'WhatsApp alert error: {e}')
 
-def send_email_alert(subject, body):
-    """SMTP email alert."""
+def send_email_alert(subject, body, device_id=None, health_score=None,
+                      diagnosis=None, automation_command=None, severity='warning'):
+    """
+    HTML email alert with IISentinel™ branding.
+    Severity: 'critical' | 'warning' | 'info' | 'cbs'
+    """
     if not NOTIFY_EMAIL_ENABLED:
         return
+    recipient = os.environ.get('ALERT_EMAIL', '')
+    if not recipient:
+        return
+
+    color_map = {
+        'critical': '#ff3e50',
+        'cbs':      '#ff3e50',
+        'warning':  '#f5a020',
+        'info':     '#20e07a',
+    }
+    accent = color_map.get(severity, '#34c6f4')
+    label  = severity.upper()
+    score_html = (
+        f'<tr><td style="padding:6px 0;color:#8592a8;font-size:13px;">Health Score</td>'
+        f'<td style="padding:6px 0;font-weight:700;font-size:13px;color:{accent};">'
+        f'{health_score:.0f} / 100</td></tr>'
+    ) if health_score is not None else ''
+    diag_html = (
+        f'<tr><td colspan="2" style="padding:10px 0 4px;color:#8592a8;font-size:12px;'
+        f'font-weight:700;text-transform:uppercase;letter-spacing:1px;">AI Diagnosis</td></tr>'
+        f'<tr><td colspan="2" style="padding:4px 0 10px;font-size:13px;color:#1a1f2e;'
+        f'line-height:1.6;">{diagnosis}</td></tr>'
+    ) if diagnosis else ''
+    cmd_html = (
+        f'<tr><td colspan="2" style="padding:10px 14px;background:#fff4e6;border-radius:6px;'
+        f'font-size:12px;color:#c07800;font-weight:600;border-left:3px solid #f5a020;">'
+        f'{automation_command}</td></tr>'
+    ) if automation_command else ''
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#eef0f7;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#eef0f7;padding:32px 0;">
+<tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;
+  overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
+
+  <!-- Header -->
+  <tr><td style="background:{accent};padding:22px 28px;">
+    <span style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-1px;">II</span>
+    <span style="font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px;">Sentinel</span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.7);vertical-align:super;">&#8482;</span>
+    &nbsp;&nbsp;
+    <span style="font-size:11px;font-weight:700;background:rgba(255,255,255,0.2);
+      color:#fff;padding:3px 10px;border-radius:20px;letter-spacing:1px;">{label}</span>
+  </td></tr>
+
+  <!-- Body -->
+  <tr><td style="padding:28px 28px 20px;">
+    <p style="margin:0 0 6px;font-size:18px;font-weight:700;color:#0c1122;">{subject}</p>
+    {'<p style="margin:0 0 18px;font-size:13px;color:#8592a8;">Device: <strong style=\"color:#0c1122;\">' + device_id + '</strong></p>' if device_id else ''}
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e4eaf6;margin-top:16px;">
+      {score_html}
+      {diag_html}
+      {cmd_html}
+    </table>
+  </td></tr>
+
+  <!-- Footer -->
+  <tr><td style="background:#f0f4fa;padding:14px 28px;border-top:1px solid #e4eaf6;">
+    <p style="margin:0;font-size:11px;color:#8592a8;">
+      IISentinel&#8482; Intelligent Infrastructure Sentinel &nbsp;|&nbsp;
+      This is an automated alert. Do not reply to this email.
+    </p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
     try:
-        msg = MIMEText(body)
-        msg['Subject'] = subject
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = f'[IISentinel™] {label}: {subject}'
         msg['From']    = os.environ.get('SMTP_FROM', 'iisentinel@localhost')
-        msg['To']      = os.environ.get('ALERT_EMAIL', '')
-        if not msg['To']:
-            return
+        msg['To']      = recipient
+        msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(html, 'html'))
         with smtplib.SMTP(
             os.environ.get('SMTP_HOST', 'localhost'),
             int(os.environ.get('SMTP_PORT', 587))
@@ -131,27 +247,40 @@ def send_email_alert(subject, body):
     except Exception as e:
         print(f'Email alert error: {e}')
 
-def fire_critical_alert(device_id, device_type, health_score, message):
+def fire_critical_alert(device_id, device_type, health_score, message,
+                         diagnosis=None, automation_command=None):
     """
     Multi-channel alert dispatcher.
-    CBS hold ALWAYS triggers SMS (engineer may be underground, no browser).
-    <60 second target: event → human decision.
+    CBS hold ALWAYS triggers SMS — engineer may be underground, no browser.
+    Target: event → human decision in under 60 seconds.
     """
-    short = f'IISentinel™ ALERT: {device_id} score {health_score:.0f}/100. {message[:100]}'
-    is_cbs = device_type == 'cbs_controller' or 'BLAST HOLD' in message
-    # CBS and critical (<20) always get SMS — most reliable in Africa
+    is_cbs   = device_type == 'cbs_controller' or 'BLAST HOLD' in message
+    severity = 'cbs' if is_cbs else 'critical' if health_score < 20 else 'warning'
+    subject  = (
+        f'BLAST HOLD ACTIVE — {device_id}'          if is_cbs else
+        f'Critical failure — {device_id}'            if health_score < 20 else
+        f'Equipment degradation — {device_id}'
+    )
+    short = f'IISentinel™ {severity.upper()}: {device_id} score {health_score:.0f}/100. {message[:100]}'
+
+    # CBS and critical always get SMS and WhatsApp — most reliable channels
     if is_cbs or health_score < 20:
-        threading.Thread(
-            target=send_sms_alert, args=(short,), daemon=True
-        ).start()
-        threading.Thread(
-            target=send_whatsapp_alert, args=(short,), daemon=True
-        ).start()
-    # All critical events get email
+        threading.Thread(target=send_sms_alert,       args=(short,), daemon=True).start()
+        threading.Thread(target=send_whatsapp_alert,  args=(short,), daemon=True).start()
+
+    # All critical/warning events get rich HTML email
     if health_score < 50:
         threading.Thread(
             target=send_email_alert,
-            args=(f'IISentinel™ [{device_id}] Score {health_score:.0f}', short),
+            kwargs=dict(
+                subject=subject,
+                body=short,
+                device_id=device_id,
+                health_score=health_score,
+                diagnosis=diagnosis,
+                automation_command=automation_command,
+                severity=severity,
+            ),
             daemon=True
         ).start()
 
@@ -611,7 +740,14 @@ def receive_metrics():
         msg = automation_command or ai_diagnosis or ''
         threading.Thread(
             target=fire_critical_alert,
-            args=(device_id, device_type, health_score, msg),
+            kwargs=dict(
+                device_id=device_id,
+                device_type=device_type,
+                health_score=health_score,
+                message=msg,
+                diagnosis=ai_diagnosis,
+                automation_command=automation_command,
+            ),
             daemon=True
         ).start()
 
@@ -697,13 +833,10 @@ def platform_health():
             'whatsapp_enabled' : NOTIFY_WHATSAPP_ENABLED,
         },
         'architecture': {
-            'ingestion'   : 'Queue-buffered (Kafka-ready deque, 500-reading failsafe)',
-            'cache'       : f'{CACHE_TTL}s TTL hot cache per edge node',
-            'ai_models'   : ['RandomForest (health, inline <1ms)',
-                             'IsolationForest (anomaly, inline)',
-                             'Auto-retrain on anomaly threshold (hot-swap)'],
-            'protocols'   : ['SNMP', 'Profinet', 'Modbus TCP',
-                             'DNP3', 'OPC-UA', 'EtherNet/IP'],
+            'ingestion'   : 'High-throughput non-blocking pipeline',
+            'cache'       : f'{CACHE_TTL}s real-time data layer',
+            'ai_models'   : ['Predictive health engine', 'Anomaly detection', 'Continuous learning'],
+            'protocols'   : ['SNMP', 'Profinet', 'Modbus TCP', 'DNP3', 'OPC-UA', 'EtherNet/IP'],
             'alert_target': '<60 seconds event-to-decision',
             'edge_ready'  : True,
         }
@@ -997,6 +1130,329 @@ def resolve_incident(incident_id):
         'status'     : 'resolved'
     }).eq('id', incident_id).execute()
     return jsonify({'success': True})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PDF SHIFT REPORT EXPORT — generates a real downloadable PDF
+# ═══════════════════════════════════════════════════════════════════════════
+@app.route('/api/export-pdf', methods=['GET'])
+def export_pdf():
+    """
+    Generates a professional PDF shift report using ReportLab.
+    Called by the Export PDF button on the dashboard.
+    Returns the PDF file as a download.
+    """
+    from io import BytesIO
+    from datetime import datetime, timezone
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+        HRFlowable, KeepTogether
+    )
+    from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+    from flask import send_file
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=18*mm,
+        leftMargin=18*mm,
+        topMargin=20*mm,
+        bottomMargin=18*mm,
+        title='IISentinel™ Shift Report',
+        author='IISentinel™ Platform',
+    )
+
+    # ── Colour palette ──
+    DARK    = colors.HexColor('#0c1122')
+    ACCENT  = colors.HexColor('#34c6f4')
+    GREEN   = colors.HexColor('#20e07a')
+    AMBER   = colors.HexColor('#f5a020')
+    RED     = colors.HexColor('#ff3e50')
+    MUTED   = colors.HexColor('#8592a8')
+    WHITE   = colors.white
+    LIGHT   = colors.HexColor('#e4eaf6')
+    ROW_ALT = colors.HexColor('#f0f4fa')
+
+    styles = getSampleStyleSheet()
+
+    def sty(name='Normal', **kw):
+        return ParagraphStyle(name, parent=styles[name], **kw)
+
+    title_sty   = sty('Title',   fontName='Helvetica-Bold',   fontSize=20, textColor=DARK,   spaceAfter=2)
+    sub_sty     = sty('Normal',  fontName='Helvetica',        fontSize=9,  textColor=MUTED,  spaceAfter=6)
+    h1_sty      = sty('Heading1',fontName='Helvetica-Bold',   fontSize=12, textColor=DARK,   spaceBefore=10, spaceAfter=4)
+    h2_sty      = sty('Heading2',fontName='Helvetica-Bold',   fontSize=9,  textColor=ACCENT, spaceBefore=8,  spaceAfter=3, textTransform='uppercase')
+    body_sty    = sty('Normal',  fontName='Helvetica',        fontSize=9,  textColor=DARK,   spaceAfter=3, leading=13)
+    cell_sty    = sty('Normal',  fontName='Helvetica',        fontSize=8,  textColor=DARK,   leading=10)
+    cell_b_sty  = sty('Normal',  fontName='Helvetica-Bold',   fontSize=8,  textColor=DARK,   leading=10)
+    right_sty   = sty('Normal',  fontName='Helvetica',        fontSize=8,  textColor=DARK,   leading=10, alignment=TA_RIGHT)
+    caption_sty = sty('Normal',  fontName='Helvetica-Oblique',fontSize=7,  textColor=MUTED,  spaceAfter=6)
+
+    story = []
+    now   = datetime.now(timezone.utc)
+    ts    = now.strftime('%d %B %Y — %H:%M UTC')
+
+    # ── Header ──
+    story.append(Paragraph('IISentinel™', title_sty))
+    story.append(Paragraph('Intelligent Infrastructure Sentinel — Shift Report', sub_sty))
+    story.append(Paragraph(f'Generated: {ts}', sub_sty))
+    story.append(HRFlowable(width='100%', thickness=1.5, color=ACCENT, spaceAfter=10))
+
+    # ── Pull data ──
+    recent_scores = {did: hist[-1] for did, hist in device_history.items() if hist}
+    all_scores    = list(recent_scores.values())
+    fhi_val       = get_federated_health_index(all_scores)
+    critical_devs = [d for d, s in recent_scores.items() if s < 20]
+    warning_devs  = [d for d, s in recent_scores.items() if 20 <= s < 50]
+    healthy_devs  = [d for d, s in recent_scores.items() if s >= 50]
+    probs         = {did: get_failure_probability(did, s) for did, s in recent_scores.items()}
+
+    # Cost exposure
+    dm_fake = {did: type('D', (), {
+        'device_type': 'sensor',
+        'health_score': s,
+        'device_id': did
+    })() for did, s in recent_scores.items()}
+
+    total_exposure = 0
+    exposure_rows  = []
+    for did, s in sorted(recent_scores.items(), key=lambda x: x[1]):
+        rate   = COST_RATES.get('sensor', 8000)
+        prob   = probs.get(did, 0) / 100
+        impact = 0.95 if s < 20 else 0.6 if s < 35 else 0.25 if s < 50 else 0
+        exp    = round(rate * impact * (0.5 + prob * 0.5))
+        if exp > 0:
+            total_exposure += exp
+            exposure_rows.append((did, f'{s:.0f}', f'{probs.get(did,0):.0f}%', f'${exp:,}/hr'))
+        if len(exposure_rows) >= 8:
+            break
+
+    # Open incidents from Supabase
+    open_incidents = []
+    try:
+        resp = supabase.table('incidents').select('*')            .eq('status', 'open')            .order('created_at', desc=True).limit(20).execute()
+        open_incidents = resp.data or []
+    except:
+        pass
+
+    # ── Summary KPI table ──
+    story.append(Paragraph('Platform Summary', h1_sty))
+    kpi_data = [
+        ['Metric', 'Value', 'Status'],
+        ['Federated Health Index', f'{fhi_val:.1f} / 100',
+         'HEALTHY' if fhi_val >= 70 else 'WARNING' if fhi_val >= 40 else 'CRITICAL'],
+        ['Total Devices Tracked', str(len(recent_scores)), '—'],
+        ['Critical Devices (<20)', str(len(critical_devs)),
+         'ALERT' if critical_devs else 'NONE'],
+        ['Warning Devices (20–50)', str(len(warning_devs)),
+         'MONITOR' if warning_devs else 'NONE'],
+        ['Healthy Devices (≥50)', str(len(healthy_devs)), 'OK'],
+        ['Open Incidents', str(len(open_incidents)),
+         'ACTION' if open_incidents else 'CLEAR'],
+        ['Total Hourly Risk Exposure', f'${total_exposure:,}/hr',
+         'ELEVATED' if total_exposure > 50000 else 'MANAGED'],
+        ['Anomaly Count (session)', str(anomaly_count),
+         'HIGH' if anomaly_count >= RETRAIN_THRESHOLD else 'NORMAL'],
+    ]
+
+    def status_color(s):
+        s = s.upper()
+        if s in ('CRITICAL','ALERT','ELEVATED'):  return RED
+        if s in ('WARNING','MONITOR','ACTION','HIGH'): return AMBER
+        if s in ('OK','HEALTHY','CLEAR','NONE','NORMAL'): return GREEN
+        return DARK
+
+    kpi_table = Table(kpi_data, colWidths=[75*mm, 55*mm, 40*mm])
+    kpi_ts = TableStyle([
+        ('BACKGROUND',   (0,0),(-1,0),  DARK),
+        ('TEXTCOLOR',    (0,0),(-1,0),  WHITE),
+        ('FONTNAME',     (0,0),(-1,0),  'Helvetica-Bold'),
+        ('FONTSIZE',     (0,0),(-1,-1), 8),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE, ROW_ALT]),
+        ('GRID',         (0,0),(-1,-1), 0.4, colors.HexColor('#d4daea')),
+        ('TOPPADDING',   (0,0),(-1,-1), 5),
+        ('BOTTOMPADDING',(0,0),(-1,-1), 5),
+        ('LEFTPADDING',  (0,0),(-1,-1), 6),
+    ])
+    for i, row in enumerate(kpi_data[1:], 1):
+        sc = status_color(row[2])
+        kpi_ts.add('TEXTCOLOR',  (2,i), (2,i), sc)
+        kpi_ts.add('FONTNAME',   (2,i), (2,i), 'Helvetica-Bold')
+    kpi_table.setStyle(kpi_ts)
+    story.append(kpi_table)
+    story.append(Spacer(1, 8))
+
+    # ── Risk exposure table ──
+    if exposure_rows:
+        story.append(Paragraph('Risk Exposure by Device', h2_sty))
+        exp_data = [['Device', 'Health Score', 'Failure Risk', 'Exposure']] + exposure_rows
+        exp_table = Table(exp_data, colWidths=[80*mm, 35*mm, 35*mm, 25*mm])
+        exp_ts = TableStyle([
+            ('BACKGROUND',    (0,0),(-1,0), DARK),
+            ('TEXTCOLOR',     (0,0),(-1,0), WHITE),
+            ('FONTNAME',      (0,0),(-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0),(-1,-1),8),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE, ROW_ALT]),
+            ('GRID',          (0,0),(-1,-1),0.4, colors.HexColor('#d4daea')),
+            ('TOPPADDING',    (0,0),(-1,-1),4),
+            ('BOTTOMPADDING', (0,0),(-1,-1),4),
+            ('LEFTPADDING',   (0,0),(-1,-1),6),
+            ('TEXTCOLOR',     (3,1),(3,-1), RED),
+            ('FONTNAME',      (3,1),(3,-1), 'Helvetica-Bold'),
+        ])
+        exp_table.setStyle(exp_ts)
+        story.append(exp_table)
+        story.append(Spacer(1, 8))
+
+    # ── Critical devices detail ──
+    if critical_devs:
+        story.append(Paragraph('Critical Assets — Immediate Action Required', h2_sty))
+        for did in critical_devs[:10]:
+            s = recent_scores[did]
+            p = probs.get(did, 0)
+            story.append(Paragraph(
+                f'<b>{did}</b> — Health {s:.0f}/100 — Failure risk {p:.0f}%',
+                body_sty
+            ))
+
+    # ── Open incidents ──
+    if open_incidents:
+        story.append(Spacer(1,6))
+        story.append(Paragraph('Open Incidents', h2_sty))
+        inc_data = [['Device', 'Health', 'Status', 'Diagnosis']]
+        for inc in open_incidents[:12]:
+            diag = (inc.get('ai_diagnosis') or '—')[:55]
+            inc_data.append([
+                inc.get('device_id','?')[-24:],
+                f"{inc.get('health_score',0):.0f}",
+                (inc.get('status','?')).upper(),
+                diag
+            ])
+        inc_table = Table(inc_data, colWidths=[55*mm, 18*mm, 22*mm, 80*mm])
+        inc_ts = TableStyle([
+            ('BACKGROUND',    (0,0),(-1,0), DARK),
+            ('TEXTCOLOR',     (0,0),(-1,0), WHITE),
+            ('FONTNAME',      (0,0),(-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',      (0,0),(-1,-1),7.5),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE, ROW_ALT]),
+            ('GRID',          (0,0),(-1,-1),0.4, colors.HexColor('#d4daea')),
+            ('TOPPADDING',    (0,0),(-1,-1),4),
+            ('BOTTOMPADDING', (0,0),(-1,-1),4),
+            ('LEFTPADDING',   (0,0),(-1,-1),5),
+        ])
+        inc_table.setStyle(inc_ts)
+        story.append(inc_table)
+
+    # ── Footer ──
+    story.append(Spacer(1, 14))
+    story.append(HRFlowable(width='100%', thickness=0.8, color=MUTED, spaceAfter=5))
+    story.append(Paragraph(
+        f'IISentinel™ — Confidential Shift Report — {ts} — All data from live platform session',
+        caption_sty
+    ))
+
+    doc.build(story)
+    buffer.seek(0)
+    fname = f'IISentinel_Report_{now.strftime("%Y%m%d_%H%M")}.pdf'
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=fname,
+        mimetype='application/pdf'
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PLATFORM WATCHDOG — checks its own health every 60s, emails if degraded
+# ═══════════════════════════════════════════════════════════════════════════
+_watchdog_alerts_sent = set()
+
+def platform_watchdog():
+    """
+    Background watchdog that monitors the platform's own health.
+    Fires a self-alert email if queue depth is critically high,
+    cache is stale, or no readings have been received in 15 minutes.
+    Mirrors the same monitoring philosophy applied to client equipment.
+    """
+    global _watchdog_alerts_sent
+    while True:
+        time.sleep(60)
+        issues = []
+
+        # Queue overloading — ingestion can't keep up
+        if len(metric_queue) > 400:
+            issues.append(f'Ingestion queue at {len(metric_queue)}/500 — near capacity')
+
+        # Cache staleness — suggests DB connectivity problem
+        cache_age = time.time() - _data_cache['ts']
+        if cache_age > 120 and _data_cache['ts'] > 0:
+            issues.append(f'Data cache stale for {cache_age:.0f}s — possible DB issue')
+
+        # No readings received in 15 minutes during expected operational hours
+        last_flush = platform_stats.get('last_flush_ts')
+        if last_flush and (time.time() - last_flush) > 900:
+            issues.append(f'No data flushed in {int((time.time()-last_flush)/60)} minutes — collectors may be offline')
+
+        if issues:
+            alert_key = '|'.join(sorted(issues))
+            if alert_key not in _watchdog_alerts_sent:
+                _watchdog_alerts_sent.add(alert_key)
+                msg = 'Platform self-diagnostic alert: ' + '; '.join(issues)
+                threading.Thread(
+                    target=send_email_alert,
+                    kwargs=dict(
+                        subject='Platform health warning',
+                        body=msg,
+                        device_id='IISentinel™ Platform',
+                        health_score=None,
+                        diagnosis='; '.join(issues),
+                        automation_command='Check collector processes and database connectivity.',
+                        severity='warning',
+                    ),
+                    daemon=True
+                ).start()
+        else:
+            # Clear alert state when platform recovers
+            _watchdog_alerts_sent.clear()
+
+threading.Thread(target=platform_watchdog, daemon=True).start()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# HEALTH CHECK ENDPOINT — for load balancers and uptime monitors
+# Returns 200 OK with platform status JSON when healthy
+# Returns 503 when critically degraded
+# ═══════════════════════════════════════════════════════════════════════════
+@app.route('/health', methods=['GET'])
+def health_check():
+    """
+    Lightweight health check endpoint.
+    Used by uptime monitors (UptimeRobot, Better Uptime, etc.)
+    and load balancers to verify the platform is alive.
+    """
+    queue_depth = len(metric_queue)
+    cache_age   = round(time.time() - _data_cache['ts'], 1)
+    uptime_h    = round((time.time() - platform_stats['start_ts']) / 3600, 2)
+
+    degraded = queue_depth > 450 or (cache_age > 300 and _data_cache['ts'] > 0)
+
+    status = {
+        'status'       : 'degraded' if degraded else 'ok',
+        'uptime_h'     : uptime_h,
+        'queue_depth'  : queue_depth,
+        'cache_age_s'  : cache_age,
+        'devices'      : len(device_history),
+        'anomalies'    : anomaly_count,
+        'version'      : '2.0',
+        'platform'     : 'IISentinel™',
+    }
+    return jsonify(status), 503 if degraded else 200
+
 
 @app.route('/')
 def dashboard():
