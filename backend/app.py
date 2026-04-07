@@ -2,7 +2,7 @@ import os
 import joblib
 import numpy as np
 import requests as req
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from supabase import create_client
 from functools import wraps
@@ -16,7 +16,6 @@ import random
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from collections import deque
 
 # ── IN-MEMORY QUEUE (YouTube Upload Service equivalent) ───────────────────
@@ -30,11 +29,10 @@ CACHE_TTL   = 8
 def get_cached_data():
     now = time.time()
     if now - _data_cache['ts'] < CACHE_TTL and _data_cache['data']:
-        if 'platform_stats' in globals():
-            platform_stats['cache_hits'] += 1
+        platform_stats['cache_hits'] += 1
         return _data_cache['data']
     try:
-        resp = globals()['supabase'].table('metrics').select('*') \
+        resp = supabase.table('metrics').select('*') \
             .order('created_at', desc=True).limit(200).execute()
         _data_cache['data'] = resp.data
         _data_cache['ts']   = now
@@ -55,7 +53,7 @@ def flush_queue():
         try:
             for item in batch:
                 supabase.table('metrics').insert(item).execute()
-            if 'platform_stats' in globals(): platform_stats['last_flush'] = datetime.now(timezone.utc).isoformat()
+            platform_stats['last_flush'] = datetime.now(timezone.utc).isoformat()
         except Exception as e:
             print(f'Queue flush error: {e}')
             with queue_lock:
@@ -177,7 +175,7 @@ def sse_broadcast(event_type, payload):
             _sse_subscribers.remove(q)
 
 # ── NOTIFICATION SERVICE (YouTube Notification Service equivalent) ─────────
-# Multi-channel alerts: SMS → WhatsApp Business → Email
+# Africa-first: SMS via Africa's Talking, WhatsApp Business, email
 NOTIFY_CONFIG = {
     'email_enabled':    os.environ.get('NOTIFY_EMAIL_ENABLED','false').lower()=='true',
     'sms_enabled':      os.environ.get('NOTIFY_SMS_ENABLED','false').lower()=='true',
@@ -245,7 +243,7 @@ def send_email_alert(subject, body):
         print(f'[Email] Error: {e}')
 
 def send_sms_alert(message):
-    """SMS alert dispatch via configured gateway."""
+    """Africa's Talking — most reliable channel in industrial Africa."""
     if not NOTIFY_CONFIG['sms_enabled'] or not NOTIFY_CONFIG['at_api_key']:
         return
     try:
@@ -360,17 +358,6 @@ NETWORK_TYPES = ['router','switch','firewall','wan_link','workstation']
 TELECOM_TYPES = ['base_station','network_tower','microwave_link']
 MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
 CBS_TYPES     = ['cbs_controller']
-_lifecycle_cache = {}
-
-# Hourly downtime cost rates per device type ($USD)
-COST_RATES = {
-    'pump': 150000, 'conveyor': 120000, 'ventilation': 180000,
-    'plc': 80000, 'scada_node': 60000, 'cbs_controller': 450000,
-    'power_meter': 100000, 'sensor': 40000,
-    'base_station': 25000, 'network_tower': 35000, 'microwave_link': 40000,
-    'router': 15000, 'switch': 10000, 'firewall': 20000,
-    'wan_link': 12000, 'workstation': 2000,
-}
 
 LOCATIONS = {
     'byo':  {'lat':-20.15,'lon':28.58,'name':'Bulawayo'},
@@ -1008,26 +995,6 @@ def demo_injection_worker():
 if os.environ.get('DEMO_MODE','false').lower() == 'true':
     threading.Thread(target=demo_injection_worker, daemon=True).start()
     print('[IISentinel] DEMO_MODE=true -- realistic data injection started')
-
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Lightweight health check for load balancers and uptime monitors."""
-    queue_depth = len(metric_queue)
-    cache_age   = round(time.time() - _data_cache['ts'], 1)
-    uptime_s    = (datetime.now(timezone.utc) -
-                   datetime.fromisoformat(platform_stats['uptime_start'])).total_seconds()
-    degraded    = queue_depth > 450 or (cache_age > 300 and _data_cache['ts'] > 0)
-    return jsonify({
-        'status'     : 'degraded' if degraded else 'ok',
-        'uptime_h'   : round(uptime_s / 3600, 2),
-        'queue_depth': queue_depth,
-        'cache_age_s': cache_age,
-        'devices'    : len(device_history),
-        'anomalies'  : anomaly_count,
-        'version'    : '2.0',
-        'platform'   : 'IISentinel™',
-    }), 503 if degraded else 200
 
 @app.route('/')
 def dashboard():

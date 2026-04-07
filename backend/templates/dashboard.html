@@ -252,14 +252,47 @@ body.light .scene-tc::before{
 .tip-close:hover{color:var(--txt)}
 
 /* ENV HEADER */
-.ehdr{border-radius:12px;padding:13px 18px;margin-bottom:13px;border:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;transition:all .5s;position:relative;overflow:hidden}
-.ehdr::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.5}
-.ehdr.e-net{background:linear-gradient(135deg,rgba(0,229,212,.05),rgba(3,12,12,.97));border-color:rgba(0,229,212,.2)}
-.ehdr.e-tc{background:linear-gradient(135deg,rgba(52,198,244,.06),rgba(3,8,16,.97));border-color:rgba(52,198,244,.2)}
-.ehdr.e-mc{background:linear-gradient(135deg,rgba(245,160,32,.07),rgba(9,5,0,.97));border-color:rgba(245,160,32,.2)}
-.ename{font-size:15px;font-weight:700;color:var(--acc)}
-.esub{font-size:10px;color:var(--mut);margin-top:3px;line-height:1.5}
-.eproto{font-size:9px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--b1);color:var(--mut);white-space:nowrap;font-weight:600}
+/* ═══════════════════════════════════════════════════════════
+   ENV HEADER PANELS — photo blurred behind text via ::after
+   Each .ehdr gets its own photo background (not full-page).
+   text sits above on z-index:1 via position:relative on children.
+   ═══════════════════════════════════════════════════════════ */
+.ehdr{
+  border-radius:12px;padding:13px 18px;margin-bottom:13px;
+  border:1px solid var(--b1);display:flex;align-items:center;
+  justify-content:space-between;transition:all .5s;
+  position:relative;overflow:hidden;min-height:80px;
+}
+.ehdr::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);
+  opacity:.6;z-index:2;
+}
+/* Blurred photo layer — extends inset so blur edge is hidden */
+.ehdr::after{
+  content:'';position:absolute;inset:-20px;
+  background-size:cover;background-position:center;
+  filter:blur(3px) brightness(0.28) saturate(0.7);
+  z-index:0;will-change:filter;transition:filter .5s;
+}
+.ehdr:hover::after{filter:blur(2px) brightness(0.35) saturate(0.85)}
+/* All direct children must sit above the blurred photo */
+.ehdr>*{position:relative;z-index:1}
+/* Photo assignments per environment */
+.ehdr.e-net::after{background-image:url('/static/server-room.png')}
+.ehdr.e-tc::after{background-image:url('/static/tc-tower.png')}
+.ehdr.e-mc::after{background-image:url('/static/mine-plant.png');background-position:center 35%}
+.ehdr.e-net{border-color:rgba(0,229,212,.3)}
+.ehdr.e-tc{border-color:rgba(52,198,244,.3)}
+.ehdr.e-mc{border-color:rgba(245,160,32,.3)}
+/* Light mode: slightly brighter */
+body.light .ehdr::after{filter:blur(3px) brightness(0.45) saturate(0.7)}
+body.light .ehdr:hover::after{filter:blur(2px) brightness(0.52) saturate(0.8)}
+.ename{font-size:15px;font-weight:700;color:var(--acc);text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.esub{font-size:10px;color:rgba(200,215,240,0.88);margin-top:3px;line-height:1.5;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+body.light .esub{color:var(--mut)}
+.eproto{font-size:9px;padding:4px 10px;border-radius:6px;background:rgba(0,0,0,.55);border:1px solid var(--b2);color:rgba(200,220,255,0.9);white-space:nowrap;font-weight:600;backdrop-filter:blur(6px)}
+body.light .eproto{background:rgba(255,255,255,.5);color:var(--mut)}
 
 /* BANNER */
 .banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;margin-bottom:13px}
@@ -965,20 +998,20 @@ body.demo-mode .demo-banner{display:block}
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
   <div class="ccard" style="margin-bottom:13px">
-    <div class="ctitle">Platform health &amp; observability</div>
+    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health (YouTube-style)</div>
     <div class="igrid" style="margin-top:10px" id="platform-grid">
-      <div class="icard"><div class="ititle">Data throughput</div><div class="ival ca" id="p-queue">--</div><div class="isub">Active readings/cycle</div></div>
+      <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Unwritten readings</div></div>
       <div class="icard"><div class="ititle">Cache age</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Data freshness</div></div>
       <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
-      <div class="icard"><div class="ititle">AI processing</div><div class="ival cb" id="p-score">--</div><div class="isub">Active computations</div></div>
+      <div class="icard"><div class="ititle">Scoring queue</div><div class="ival cb" id="p-score">--</div><div class="isub">Async AI pending</div></div>
       <div class="icard"><div class="ititle">Auto-retrain</div><div class="ival cg" id="p-retrain">Standby</div><div class="isub">Hot-swap pipeline</div></div>
       <div class="icard"><div class="ititle">Platform uptime</div><div class="ival cg" id="p-uptime">--h</div><div class="isub">Since last restart</div></div>
     </div>
     <div style="margin-top:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:9px">
-      <div class="sl" style="margin-bottom:8px">Notification channels</div>
+      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; YouTube Notification Service equivalent</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <div id="nc-email" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#9993; Email</div>
-        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS Alerts</div>
+        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS (Africa's Talking)</div>
         <div id="nc-wa"    style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp Business</div>
         <span style="font-size:9px;color:var(--dim);margin-left:4px">Configure in .env &#8212; CBS hold always triggers SMS</span>
       </div>
@@ -1069,7 +1102,7 @@ let spToken=null,spName=null,intel={},allData=[];
 let curNet='all',curTc='all',curMc='all';
 let activeTipId=null,opsFocusOn=false;
 
-const LOADER_MSGS=['Initialising AI models...','Loading predictive health engine...','Starting anomaly detection...','Connecting to data layer...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
+const LOADER_MSGS=['Initialising AI models...','Loading RandomForest health scorer...','Starting Isolation Forest...','Connecting to Supabase...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
 let loaderIdx=0;
 window.addEventListener('load',()=>{
   const statusEl=document.getElementById('loader-status');
@@ -1606,14 +1639,47 @@ body.light .scene-tc::before{
 .tip-close:hover{color:var(--txt)}
 
 /* ENV HEADER */
-.ehdr{border-radius:12px;padding:13px 18px;margin-bottom:13px;border:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;transition:all .5s;position:relative;overflow:hidden}
-.ehdr::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.5}
-.ehdr.e-net{background:linear-gradient(135deg,rgba(0,229,212,.05),rgba(3,12,12,.97));border-color:rgba(0,229,212,.2)}
-.ehdr.e-tc{background:linear-gradient(135deg,rgba(52,198,244,.06),rgba(3,8,16,.97));border-color:rgba(52,198,244,.2)}
-.ehdr.e-mc{background:linear-gradient(135deg,rgba(245,160,32,.07),rgba(9,5,0,.97));border-color:rgba(245,160,32,.2)}
-.ename{font-size:15px;font-weight:700;color:var(--acc)}
-.esub{font-size:10px;color:var(--mut);margin-top:3px;line-height:1.5}
-.eproto{font-size:9px;padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.04);border:1px solid var(--b1);color:var(--mut);white-space:nowrap;font-weight:600}
+/* ═══════════════════════════════════════════════════════════
+   ENV HEADER PANELS — photo blurred behind text via ::after
+   Each .ehdr gets its own photo background (not full-page).
+   text sits above on z-index:1 via position:relative on children.
+   ═══════════════════════════════════════════════════════════ */
+.ehdr{
+  border-radius:12px;padding:13px 18px;margin-bottom:13px;
+  border:1px solid var(--b1);display:flex;align-items:center;
+  justify-content:space-between;transition:all .5s;
+  position:relative;overflow:hidden;min-height:80px;
+}
+.ehdr::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);
+  opacity:.6;z-index:2;
+}
+/* Blurred photo layer — extends inset so blur edge is hidden */
+.ehdr::after{
+  content:'';position:absolute;inset:-20px;
+  background-size:cover;background-position:center;
+  filter:blur(3px) brightness(0.28) saturate(0.7);
+  z-index:0;will-change:filter;transition:filter .5s;
+}
+.ehdr:hover::after{filter:blur(2px) brightness(0.35) saturate(0.85)}
+/* All direct children must sit above the blurred photo */
+.ehdr>*{position:relative;z-index:1}
+/* Photo assignments per environment */
+.ehdr.e-net::after{background-image:url('/static/server-room.png')}
+.ehdr.e-tc::after{background-image:url('/static/tc-tower.png')}
+.ehdr.e-mc::after{background-image:url('/static/mine-plant.png');background-position:center 35%}
+.ehdr.e-net{border-color:rgba(0,229,212,.3)}
+.ehdr.e-tc{border-color:rgba(52,198,244,.3)}
+.ehdr.e-mc{border-color:rgba(245,160,32,.3)}
+/* Light mode: slightly brighter */
+body.light .ehdr::after{filter:blur(3px) brightness(0.45) saturate(0.7)}
+body.light .ehdr:hover::after{filter:blur(2px) brightness(0.52) saturate(0.8)}
+.ename{font-size:15px;font-weight:700;color:var(--acc);text-shadow:0 1px 8px rgba(0,0,0,.8)}
+.esub{font-size:10px;color:rgba(200,215,240,0.88);margin-top:3px;line-height:1.5;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+body.light .esub{color:var(--mut)}
+.eproto{font-size:9px;padding:4px 10px;border-radius:6px;background:rgba(0,0,0,.55);border:1px solid var(--b2);color:rgba(200,220,255,0.9);white-space:nowrap;font-weight:600;backdrop-filter:blur(6px)}
+body.light .eproto{background:rgba(255,255,255,.5);color:var(--mut)}
 
 /* BANNER */
 .banner{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;margin-bottom:13px}
@@ -2298,20 +2364,20 @@ body.light .lcard{border-top-color:var(--acc)!important}
     <div class="ptag"><b>OPC-UA</b> SCADA exchange</div>
   </div>
   <div class="ccard" style="margin-bottom:13px">
-    <div class="ctitle">Platform health &amp; observability</div>
+    <div class="ctitle">Platform architecture &#8212; IISentinel&#8482; system health (YouTube-style)</div>
     <div class="igrid" style="margin-top:10px" id="platform-grid">
-      <div class="icard"><div class="ititle">Data throughput</div><div class="ival ca" id="p-queue">--</div><div class="isub">Active readings/cycle</div></div>
+      <div class="icard"><div class="ititle">Ingestion queue</div><div class="ival ca" id="p-queue">--</div><div class="isub">Unwritten readings</div></div>
       <div class="icard"><div class="ititle">Cache age</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Data freshness</div></div>
       <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
-      <div class="icard"><div class="ititle">AI processing</div><div class="ival cb" id="p-score">--</div><div class="isub">Active computations</div></div>
+      <div class="icard"><div class="ititle">Scoring queue</div><div class="ival cb" id="p-score">--</div><div class="isub">Async AI pending</div></div>
       <div class="icard"><div class="ititle">Auto-retrain</div><div class="ival cg" id="p-retrain">Standby</div><div class="isub">Hot-swap pipeline</div></div>
       <div class="icard"><div class="ititle">Platform uptime</div><div class="ival cg" id="p-uptime">--h</div><div class="isub">Since last restart</div></div>
     </div>
     <div style="margin-top:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:9px">
-      <div class="sl" style="margin-bottom:8px">Notification channels</div>
+      <div class="sl" style="margin-bottom:8px">Notification channels &#8212; YouTube Notification Service equivalent</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <div id="nc-email" style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#9993; Email</div>
-        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS Alerts</div>
+        <div id="nc-sms"   style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS (Africa's Talking)</div>
         <div id="nc-wa"    style="font-size:10px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp Business</div>
         <span style="font-size:9px;color:var(--dim);margin-left:4px">Configure in .env &#8212; CBS hold always triggers SMS</span>
       </div>
@@ -2402,7 +2468,7 @@ let spToken=null,spName=null,intel={},allData=[];
 let curNet='all',curTc='all',curMc='all';
 let activeTipId=null,opsFocusOn=false;
 
-const LOADER_MSGS=['Initialising AI models...','Loading predictive health engine...','Starting anomaly detection...','Connecting to data layer...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
+const LOADER_MSGS=['Initialising AI models...','Loading RandomForest health scorer...','Starting Isolation Forest...','Connecting to Supabase...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
 let loaderIdx=0;
 window.addEventListener('load',()=>{
   const statusEl=document.getElementById('loader-status');
