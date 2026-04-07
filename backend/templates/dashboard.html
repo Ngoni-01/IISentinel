@@ -532,13 +532,6 @@ body.e-mc  .bc{border-top-color:var(--amb)!important}
 body.light .bc{border-top-color:var(--acc)!important}
 body.light .lcard{border-top-color:var(--acc)!important}
 
-/* DEMO MODE BANNER */
-.demo-banner{display:none;position:fixed;bottom:0;left:0;right:0;z-index:9994;
-  background:rgba(32,224,122,.12);border-top:1px solid rgba(32,224,122,.3);
-  text-align:center;padding:6px;font-size:10px;font-weight:700;
-  color:var(--grn);letter-spacing:2px;text-transform:uppercase;backdrop-filter:blur(12px)}
-body.demo-mode .demo-banner{display:block}
-
 /* PRINT CSS */
 @media print{
   #loader,#toasts,.ops-banner,.ops-btn,.theme-btn,.btn,.subloc,
@@ -566,7 +559,6 @@ body.demo-mode .demo-banner{display:block}
   <div class="loader-status" id="loader-status">Initialising AI models...</div>
 </div>
 
-<div class="demo-banner">&#9654; DEMO MODE ACTIVE &#8212; AUTO-INJECTION RUNNING &#8212; ALL 4 SITES &#8212; 15 DEVICES</div>
 <div class="ops-banner">&#9888; OPS FOCUS MODE &#8212; CRITICAL ASSET MONITORING ACTIVE &#8212; NON-CRITICAL SYSTEMS DIMMED</div>
 <div id="gtip"><span class="tip-close" onclick="closeTip()">&#10005;</span></div>
 <div id="toasts"></div>
@@ -580,10 +572,10 @@ body.demo-mode .demo-banner{display:block}
     <div class="hctr-b">Network &middot; Telecom &middot; Mining &middot; CBS Safety &middot; Weather</div>
   </div>
   <div class="hrgt">
-    <div class="live-pill"><span class="ldot" id="conn-dot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
+    <div class="live-pill"><span class="ldot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
     <button class="ops-btn" id="ops-btn" onclick="toggleOpsMode()">&#8853; Focus Mode</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">&#9728;</button>
-    <a class="btn btn-acc" href="javascript:void(0)" onclick="exportReport()" id="pdf-btn" style="text-decoration:none;display:inline-flex;align-items:center">Export PDF</a>
+    <button class="btn btn-acc" onclick="exportReport()">Export PDF</button>
   </div>
 </header>
 
@@ -1166,19 +1158,10 @@ function updNetCats(data,loc){
   setFeed('net-auto',nd.filter(r=>r.automation_command).slice(0,8),autoItem);
 }
 
-async function fetchIntel(){try{const r=await fetch(B+'/api/intelligence');intel=await r.json();
-  if(d.architecture && d.architecture.demo_mode){
-    document.body.classList.add('demo-mode');
-  } else {
-    document.body.classList.remove('demo-mode');
-  }
+async function fetchIntel(){try{const r=await fetch(B+'/api/intelligence');intel=await r.json();}catch(e){}}
 
-}catch(e){}}
-
-let _lastFetch=0;
 async function fetchAll(){
   try{
-    _lastFetch=Date.now()/1000;
     const r=await fetch(B+'/api/data');allData=await r.json();
     if(!allData?.length)return;
     await fetchIntel();
@@ -1236,22 +1219,78 @@ const SIMS={critical:{device_type:'ventilation',device_id:'mc-shaft2-vent-sim',m
 async function simReal(type){const cfg=SIMS[type];if(!cfg)return;try{const r=await fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});const d=await r.json();const rate=COST_RATES[cfg.device_type]||8000;const exposure=d.health_score<50?Math.round(rate*(1-d.health_score/100)):0;toast(`${type==='recovery'?'Recovery':'Event'} injected`,`${cfg.device_id} \u2192 score ${d.health_score}${d.anomaly_flag?' \u00b7 ANOMALY':''}${exposure>0?' \u00b7 $'+exposure.toLocaleString()+'/hr risk':''}`,type==='recovery'?'tg':type==='anomaly'?'tp':'tc');setTimeout(fetchAll,1500);}catch(e){toast('Injection error',e.message,'tc');}}
 
 async function exportReport(){
-  const btn=document.getElementById('pdf-btn');
-  if(btn){btn.textContent='Generating...';btn.style.opacity='.65';btn.style.pointerEvents='none';}
-  try{
-    // Real PDF download from server endpoint — no popup, works on all browsers/firewalls
-    const a=document.createElement('a');
-    a.href=B+'/api/export-pdf';
-    a.download='IISentinel_Report.pdf';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(()=>{
-      if(btn){btn.textContent='Export PDF';btn.style.opacity='';btn.style.pointerEvents='';}
-      toast('Report downloaded','PDF shift report saved — '+Object.keys((()=>{const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});return dm;})()).length+' devices · FHI: '+(intel.federated_index||'--'),'tg');
-    },2200);
-  }catch(e){
-    if(btn){btn.textContent='Export PDF';btn.style.opacity='';btn.style.pointerEvents='';}
-    toast('PDF error',e.message,'tc');
-  }
+  // Build a clean printable report
+  const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const f=intel.federated_index||'--';
+  const devCount=Object.keys(dm).length;
+  const critCount=Object.values(dm).filter(d=>d.health_score<20).length;
+  const warnCount=Object.values(dm).filter(d=>d.health_score>=20&&d.health_score<50).length;
+  const {total}=calcCost(dm);
+  const now=new Date().toLocaleString();
+  // Open print window with formatted report
+  const win=window.open('','_blank','width=900,height=700');
+  if(!win){toast('PDF blocked','Allow pop-ups for this site to export PDF','tc');return;}
+  win.document.write(`<!DOCTYPE html><html><head><title>IISentinel™ Report — ${now}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;color:#1a1f2e;background:#fff;padding:28px}
+h1{font-size:20px;font-weight:800;color:#0070a0;margin-bottom:4px;letter-spacing:.3px}
+.sub{font-size:10px;color:#666;margin-bottom:20px}
+.section{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin:18px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.card{border:1px solid #e0e4f0;border-radius:8px;padding:10px 12px;border-top:2.5px solid #0070a0}
+.card.red{border-top-color:#d42030}.card.amb{border-top-color:#c07800}.card.grn{border-top-color:#1ab060}
+.clbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.cval{font-size:20px;font-weight:700;color:#1a1f2e}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:5px 7px;background:#f4f6fc;font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#666}
+td{padding:5px 7px;border-top:1px solid #eee}
+.ok{color:#1ab060;font-weight:700}.warn{color:#c07800;font-weight:700}.crit{color:#d42030;font-weight:700}
+.footer{margin-top:24px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:8px}
+@media print{body{padding:14px}.grid{grid-template-columns:repeat(4,1fr)}}
+</style></head><body>
+<h1>IISentinel™ — Infrastructure Health Report</h1>
+<div class="sub">Generated: ${now} · Network · Telecom · Mining · CBS Safety · Weather</div>
+<div class="section">Platform Summary</div>
+<div class="grid">
+  <div class="card ${f>=70?'grn':f>=40?'amb':'red'}"><div class="clbl">Federated Health Index</div><div class="cval">${f}/100</div></div>
+  <div class="card"><div class="clbl">Active Devices</div><div class="cval">${devCount}</div></div>
+  <div class="card red"><div class="clbl">Risk Exposure</div><div class="cval">$${total.toLocaleString()}/hr</div></div>
+  <div class="card red"><div class="clbl">Critical Assets</div><div class="cval">${critCount}</div></div>
+  <div class="card amb"><div class="clbl">Warning Assets</div><div class="cval">${warnCount}</div></div>
+  <div class="card"><div class="clbl">Anomaly Count</div><div class="cval">${intel.anomaly_count||0}</div></div>
+  <div class="card"><div class="clbl">Model Status</div><div class="cval" style="font-size:13px">${intel.retrain_needed?'Retrain needed':'Optimal'}</div></div>
+</div>
+<div class="section">Device Health Register</div>
+<table>
+  <tr><th>Device ID</th><th>Type</th><th>Health</th><th>Predicted</th><th>Risk %</th><th>Uptime %</th><th>Status</th></tr>
+  ${Object.values(dm).sort((a,b)=>a.health_score-b.health_score).map(d=>{
+    const s=Math.round(d.health_score);const cl=s>=70?'ok':s>=40?'warn':'crit';
+    const prob=intel.failure_probabilities?.[d.device_id]||0;
+    const up=Math.round(intel.uptime?.[d.device_id]||100);
+    return \`<tr><td>${d.device_id}</td><td>${d.device_type}</td><td class="${cl}">${s}/100</td><td>${Math.round(d.predicted_score||s)}</td><td class="${prob>50?'crit':prob>25?'warn':'ok'}">${prob}%</td><td>${up}%</td><td class="${cl}">${s>=70?'Healthy':s>=40?'Warning':'Critical'}</td></tr>\`;
+  }).join('')}
+</table>
+${Object.values(dm).filter(d=>d.ai_diagnosis).length?`
+<div class="section">AI Diagnosis Feed</div>
+<table>
+  <tr><th>Device</th><th>Score</th><th>Diagnosis</th></tr>
+  ${Object.values(dm).filter(d=>d.ai_diagnosis).sort((a,b)=>a.health_score-b.health_score).slice(0,12).map(d=>{
+    const s=Math.round(d.health_score);const cl=s>=70?'ok':s>=40?'warn':'crit';
+    return \`<tr><td>${d.device_id}</td><td class="${cl}">${s}/100</td><td>${d.ai_diagnosis||''}</td></tr>\`;
+  }).join('')}
+</table>`:''}
+${Object.values(dm).filter(d=>d.automation_command).length?`
+<div class="section">Automation Commands</div>
+<table>
+  <tr><th>Device</th><th>Command</th></tr>
+  ${Object.values(dm).filter(d=>d.automation_command).map(d=>`<tr><td>${d.device_id}</td><td class="crit">${d.automation_command}</td></tr>`).join('')}
+</table>`:''}
+<div class="footer">IISentinel™ Intelligent Infrastructure Sentinel · Confidential · ${now} · AI: RandomForest + IsolationForest · Protocols: SNMP, Profinet, Modbus TCP, DNP3, OPC-UA</div>
+</body></html>`);
+  win.document.close();
+  setTimeout(()=>{win.print();},600);
+  toast('Report ready',`PDF opened — ${devCount} devices · FHI: ${f} · $${total.toLocaleString()}/hr exposure`,'tg');
 }
 function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u2014 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
 
@@ -1262,14 +1301,7 @@ function doLogout(){spToken=null;spName=null;document.getElementById('login-sec'
 
 async function loadShiftReport(){document.getElementById('sr-panel').style.display='block';try{const r=await fetch(B+'/api/shift-report',{headers:{'X-Specialist-Token':spToken}});const d=await r.json();const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});const{total}=calcCost(dm);document.getElementById('sr-grid').innerHTML=`<div class="sr-card"><div class="sr-val ca">${d.total_devices}</div><div class="sr-lbl">Total devices</div></div><div class="sr-card"><div class="sr-val cg">${d.avg_health}</div><div class="sr-lbl">Avg health score</div></div><div class="sr-card"><div class="sr-val cr">${d.critical_devices}</div><div class="sr-lbl">Critical</div></div><div class="sr-card"><div class="sr-val cw">${d.warning_devices}</div><div class="sr-lbl">Warning</div></div><div class="sr-card"><div class="sr-val cg">${d.healthy_devices}</div><div class="sr-lbl">Healthy</div></div><div class="sr-card"><div class="sr-val cr">${d.open_incidents}</div><div class="sr-lbl">Open incidents</div></div><div class="sr-card"><div class="sr-val cr">$${total.toLocaleString()}</div><div class="sr-lbl">Risk/hr exposure</div></div>`;const rf=document.getElementById('sr-risks');rf.innerHTML='';d.top_risks.length?d.top_risks.forEach(rsk=>{const rate=COST_RATES[allData.find(r=>r.device_id===rsk.device)?.device_type]||8000;const exp=Math.round(rate*(1-rsk.score/100));rf.innerHTML+=`<div class="fitem fi-r"><div class="fdev">${rsk.device} \u2014 ${rsk.score}/100 \u00b7 $${exp.toLocaleString()}/hr risk</div><div>${rsk.diagnosis||'No diagnosis'}</div></div>`;}) :rf.innerHTML='<div class="fitem fi-ok"><div>No critical risks \u2014 systems nominal</div></div>';toast('Shift report generated',`${d.total_devices} devices \u00b7 ${d.critical_devices} critical \u00b7 $${total.toLocaleString()}/hr risk exposure`,'tg');}catch(e){toast('Report error',e.message,'tc');}}
 
-async function loadInc(){if(!spToken)return;try{const H={'X-Specialist-Token':spToken};const[oR,aR,rR]=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);const open=await oR.json(),asgn=await aR.json(),res=await rR.json();document.getElementById('sp-open').textContent=open.length;document.getElementById('sp-asgn').textContent=asgn.length;document.getElementById('sp-res').textContent=res.length;const all=[...open,...asgn];const list=document.getElementById('inc-list');if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents \u2014 all systems nominal</div></div>';return;}list.innerHTML='';all.forEach(inc=>{const bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';const rate=COST_RATES[inc.device_type]||8000;const exp=Math.round(rate*(1-inc.health_score/100));list.innerHTML+=`<div class="icard2"><div class="ich"><div><span class="fdev">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div><div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div><div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span> \u00b7 <span style="color:var(--red)">$${exp.toLocaleString()}/hr risk</span></div>${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px;line-height:1.4">${inc.ai_diagnosis}</div>`:''}${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px">${inc.automation_command}</div>`:''}${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: ${inc.assigned_to}</div>`:''}<div class="ica"><input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button></div></div>`;});
-  if(d.architecture && d.architecture.demo_mode){
-    document.body.classList.add('demo-mode');
-  } else {
-    document.body.classList.remove('demo-mode');
-  }
-
-}catch(e){}}
+async function loadInc(){if(!spToken)return;try{const H={'X-Specialist-Token':spToken};const[oR,aR,rR]=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);const open=await oR.json(),asgn=await aR.json(),res=await rR.json();document.getElementById('sp-open').textContent=open.length;document.getElementById('sp-asgn').textContent=asgn.length;document.getElementById('sp-res').textContent=res.length;const all=[...open,...asgn];const list=document.getElementById('inc-list');if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents \u2014 all systems nominal</div></div>';return;}list.innerHTML='';all.forEach(inc=>{const bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';const rate=COST_RATES[inc.device_type]||8000;const exp=Math.round(rate*(1-inc.health_score/100));list.innerHTML+=`<div class="icard2"><div class="ich"><div><span class="fdev">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div><div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div><div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span> \u00b7 <span style="color:var(--red)">$${exp.toLocaleString()}/hr risk</span></div>${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px;line-height:1.4">${inc.ai_diagnosis}</div>`:''}${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px">${inc.automation_command}</div>`:''}${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: ${inc.assigned_to}</div>`:''}<div class="ica"><input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button></div></div>`;});}catch(e){}}
 async function assignInc(id){const v=document.getElementById('ai-'+id)?.value.trim();if(!v)return;await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});toast('Assigned','\u2192 '+v,'tw');loadInc();}
 async function resolveInc(id){await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});toast('Resolved','By '+spName,'tg');loadInc();}
 
@@ -1299,52 +1331,7 @@ async function fetchPlatform(){try{
   const em=document.getElementById('nc-email');if(em)em.style.cssText=style(nc.email_enabled);
   const sm=document.getElementById('nc-sms');  if(sm)sm.style.cssText=style(nc.sms_enabled);
   const wa=document.getElementById('nc-wa');   if(wa)wa.style.cssText=style(nc.whatsapp_enabled);
-
-  if(d.architecture && d.architecture.demo_mode){
-    document.body.classList.add('demo-mode');
-  } else {
-    document.body.classList.remove('demo-mode');
-  }
-
 }catch(e){}}
-
-/* SSE REAL-TIME PUSH CLIENT ─────────────────────────────────────────────────
-   Subscribes to /api/stream for instant critical event push.
-   On CBS blast hold or critical failure, fetchAll() fires immediately
-   instead of waiting up to 10 seconds for the next poll cycle.
-   This is the <60 second event-to-decision architecture in action. */
-let _sseConn = null;
-const connDot = document.getElementById('conn-dot');
-const connTxt = document.getElementById('live-lbl');
-
-function initSSE(){
-  if(_sseConn) _sseConn.close();
-  _sseConn = new EventSource(B+'/api/stream');
-  _sseConn.addEventListener('connected', ()=>{
-    if(connDot) connDot.style.background='var(--grn)';
-  });
-  _sseConn.addEventListener('metric', e=>{
-    try{
-      const d=JSON.parse(e.data);
-      // Immediately re-fetch on any critical event — no waiting for 10s poll
-      if(d.blast_hold||d.is_cbs||d.health_score<35||d.anomaly_flag){
-        fetchAll();
-        if(d.blast_hold||d.is_cbs){
-          toast('LIVE: CBS Alert','Blast hold received via real-time channel — refreshing','tc');
-        } else if(d.health_score<20){
-          toast('LIVE: Critical',''+d.device_id+' at '+d.health_score+'/100 — refreshing','tc');
-        }
-      }
-    }catch(ex){}
-  });
-  _sseConn.onerror = ()=>{
-    if(connDot) connDot.style.background='var(--amb)';
-    setTimeout(initSSE, 5000); // reconnect after 5s
-  };
-}
-// Start SSE after initial data load
-setTimeout(initSSE, 3000);
-
 setInterval(fetchPlatform,12000);
 fetchPlatform();
 fetchAll();
@@ -1899,7 +1886,6 @@ body.light .lcard{border-top-color:var(--acc)!important}
   <div class="loader-status" id="loader-status">Initialising AI models...</div>
 </div>
 
-<div class="demo-banner">&#9654; DEMO MODE ACTIVE &#8212; AUTO-INJECTION RUNNING &#8212; ALL 4 SITES &#8212; 15 DEVICES</div>
 <div class="ops-banner">&#9888; OPS FOCUS MODE &#8212; CRITICAL ASSET MONITORING ACTIVE &#8212; NON-CRITICAL SYSTEMS DIMMED</div>
 <div id="gtip"><span class="tip-close" onclick="closeTip()">&#10005;</span></div>
 <div id="toasts"></div>
@@ -1913,10 +1899,10 @@ body.light .lcard{border-top-color:var(--acc)!important}
     <div class="hctr-b">Network &middot; Telecom &middot; Mining &middot; CBS Safety &middot; Weather</div>
   </div>
   <div class="hrgt">
-    <div class="live-pill"><span class="ldot" id="conn-dot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
+    <div class="live-pill"><span class="ldot"></span><span class="ltxt" id="live-lbl">LIVE</span></div>
     <button class="ops-btn" id="ops-btn" onclick="toggleOpsMode()">&#8853; Focus Mode</button>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle light/dark mode">&#9728;</button>
-    <a class="btn btn-acc" href="javascript:void(0)" onclick="exportReport()" id="pdf-btn" style="text-decoration:none;display:inline-flex;align-items:center">Export PDF</a>
+    <button class="btn btn-acc" onclick="exportReport()">Export PDF</button>
   </div>
 </header>
 
@@ -2499,19 +2485,10 @@ function updNetCats(data,loc){
   setFeed('net-auto',nd.filter(r=>r.automation_command).slice(0,8),autoItem);
 }
 
-async function fetchIntel(){try{const r=await fetch(B+'/api/intelligence');intel=await r.json();
-  if(d.architecture && d.architecture.demo_mode){
-    document.body.classList.add('demo-mode');
-  } else {
-    document.body.classList.remove('demo-mode');
-  }
+async function fetchIntel(){try{const r=await fetch(B+'/api/intelligence');intel=await r.json();}catch(e){}}
 
-}catch(e){}}
-
-let _lastFetch=0;
 async function fetchAll(){
   try{
-    _lastFetch=Date.now()/1000;
     const r=await fetch(B+'/api/data');allData=await r.json();
     if(!allData?.length)return;
     await fetchIntel();
@@ -2569,22 +2546,78 @@ const SIMS={critical:{device_type:'ventilation',device_id:'mc-shaft2-vent-sim',m
 async function simReal(type){const cfg=SIMS[type];if(!cfg)return;try{const r=await fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});const d=await r.json();const rate=COST_RATES[cfg.device_type]||8000;const exposure=d.health_score<50?Math.round(rate*(1-d.health_score/100)):0;toast(`${type==='recovery'?'Recovery':'Event'} injected`,`${cfg.device_id} \u2192 score ${d.health_score}${d.anomaly_flag?' \u00b7 ANOMALY':''}${exposure>0?' \u00b7 $'+exposure.toLocaleString()+'/hr risk':''}`,type==='recovery'?'tg':type==='anomaly'?'tp':'tc');setTimeout(fetchAll,1500);}catch(e){toast('Injection error',e.message,'tc');}}
 
 async function exportReport(){
-  const btn=document.getElementById('pdf-btn');
-  if(btn){btn.textContent='Generating...';btn.style.opacity='.65';btn.style.pointerEvents='none';}
-  try{
-    // Real PDF download from server endpoint — no popup, works on all browsers/firewalls
-    const a=document.createElement('a');
-    a.href=B+'/api/export-pdf';
-    a.download='IISentinel_Report.pdf';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(()=>{
-      if(btn){btn.textContent='Export PDF';btn.style.opacity='';btn.style.pointerEvents='';}
-      toast('Report downloaded','PDF shift report saved — '+Object.keys((()=>{const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});return dm;})()).length+' devices · FHI: '+(intel.federated_index||'--'),'tg');
-    },2200);
-  }catch(e){
-    if(btn){btn.textContent='Export PDF';btn.style.opacity='';btn.style.pointerEvents='';}
-    toast('PDF error',e.message,'tc');
-  }
+  // Build a clean printable report
+  const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
+  const f=intel.federated_index||'--';
+  const devCount=Object.keys(dm).length;
+  const critCount=Object.values(dm).filter(d=>d.health_score<20).length;
+  const warnCount=Object.values(dm).filter(d=>d.health_score>=20&&d.health_score<50).length;
+  const {total}=calcCost(dm);
+  const now=new Date().toLocaleString();
+  // Open print window with formatted report
+  const win=window.open('','_blank','width=900,height=700');
+  if(!win){toast('PDF blocked','Allow pop-ups for this site to export PDF','tc');return;}
+  win.document.write(`<!DOCTYPE html><html><head><title>IISentinel™ Report — ${now}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:12px;color:#1a1f2e;background:#fff;padding:28px}
+h1{font-size:20px;font-weight:800;color:#0070a0;margin-bottom:4px;letter-spacing:.3px}
+.sub{font-size:10px;color:#666;margin-bottom:20px}
+.section{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin:18px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.card{border:1px solid #e0e4f0;border-radius:8px;padding:10px 12px;border-top:2.5px solid #0070a0}
+.card.red{border-top-color:#d42030}.card.amb{border-top-color:#c07800}.card.grn{border-top-color:#1ab060}
+.clbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.cval{font-size:20px;font-weight:700;color:#1a1f2e}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{text-align:left;padding:5px 7px;background:#f4f6fc;font-size:9px;text-transform:uppercase;letter-spacing:.3px;color:#666}
+td{padding:5px 7px;border-top:1px solid #eee}
+.ok{color:#1ab060;font-weight:700}.warn{color:#c07800;font-weight:700}.crit{color:#d42030;font-weight:700}
+.footer{margin-top:24px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:8px}
+@media print{body{padding:14px}.grid{grid-template-columns:repeat(4,1fr)}}
+</style></head><body>
+<h1>IISentinel™ — Infrastructure Health Report</h1>
+<div class="sub">Generated: ${now} · Network · Telecom · Mining · CBS Safety · Weather</div>
+<div class="section">Platform Summary</div>
+<div class="grid">
+  <div class="card ${f>=70?'grn':f>=40?'amb':'red'}"><div class="clbl">Federated Health Index</div><div class="cval">${f}/100</div></div>
+  <div class="card"><div class="clbl">Active Devices</div><div class="cval">${devCount}</div></div>
+  <div class="card red"><div class="clbl">Risk Exposure</div><div class="cval">$${total.toLocaleString()}/hr</div></div>
+  <div class="card red"><div class="clbl">Critical Assets</div><div class="cval">${critCount}</div></div>
+  <div class="card amb"><div class="clbl">Warning Assets</div><div class="cval">${warnCount}</div></div>
+  <div class="card"><div class="clbl">Anomaly Count</div><div class="cval">${intel.anomaly_count||0}</div></div>
+  <div class="card"><div class="clbl">Model Status</div><div class="cval" style="font-size:13px">${intel.retrain_needed?'Retrain needed':'Optimal'}</div></div>
+</div>
+<div class="section">Device Health Register</div>
+<table>
+  <tr><th>Device ID</th><th>Type</th><th>Health</th><th>Predicted</th><th>Risk %</th><th>Uptime %</th><th>Status</th></tr>
+  ${Object.values(dm).sort((a,b)=>a.health_score-b.health_score).map(d=>{
+    const s=Math.round(d.health_score);const cl=s>=70?'ok':s>=40?'warn':'crit';
+    const prob=intel.failure_probabilities?.[d.device_id]||0;
+    const up=Math.round(intel.uptime?.[d.device_id]||100);
+    return \`<tr><td>${d.device_id}</td><td>${d.device_type}</td><td class="${cl}">${s}/100</td><td>${Math.round(d.predicted_score||s)}</td><td class="${prob>50?'crit':prob>25?'warn':'ok'}">${prob}%</td><td>${up}%</td><td class="${cl}">${s>=70?'Healthy':s>=40?'Warning':'Critical'}</td></tr>\`;
+  }).join('')}
+</table>
+${Object.values(dm).filter(d=>d.ai_diagnosis).length?`
+<div class="section">AI Diagnosis Feed</div>
+<table>
+  <tr><th>Device</th><th>Score</th><th>Diagnosis</th></tr>
+  ${Object.values(dm).filter(d=>d.ai_diagnosis).sort((a,b)=>a.health_score-b.health_score).slice(0,12).map(d=>{
+    const s=Math.round(d.health_score);const cl=s>=70?'ok':s>=40?'warn':'crit';
+    return \`<tr><td>${d.device_id}</td><td class="${cl}">${s}/100</td><td>${d.ai_diagnosis||''}</td></tr>\`;
+  }).join('')}
+</table>`:''}
+${Object.values(dm).filter(d=>d.automation_command).length?`
+<div class="section">Automation Commands</div>
+<table>
+  <tr><th>Device</th><th>Command</th></tr>
+  ${Object.values(dm).filter(d=>d.automation_command).map(d=>`<tr><td>${d.device_id}</td><td class="crit">${d.automation_command}</td></tr>`).join('')}
+</table>`:''}
+<div class="footer">IISentinel™ Intelligent Infrastructure Sentinel · Confidential · ${now} · AI: RandomForest + IsolationForest · Protocols: SNMP, Profinet, Modbus TCP, DNP3, OPC-UA</div>
+</body></html>`);
+  win.document.close();
+  setTimeout(()=>{win.print();},600);
+  toast('Report ready',`PDF opened — ${devCount} devices · FHI: ${f} · $${total.toLocaleString()}/hr exposure`,'tg');
 }
 function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u2014 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI','');}
 
@@ -2595,14 +2628,7 @@ function doLogout(){spToken=null;spName=null;document.getElementById('login-sec'
 
 async function loadShiftReport(){document.getElementById('sr-panel').style.display='block';try{const r=await fetch(B+'/api/shift-report',{headers:{'X-Specialist-Token':spToken}});const d=await r.json();const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});const{total}=calcCost(dm);document.getElementById('sr-grid').innerHTML=`<div class="sr-card"><div class="sr-val ca">${d.total_devices}</div><div class="sr-lbl">Total devices</div></div><div class="sr-card"><div class="sr-val cg">${d.avg_health}</div><div class="sr-lbl">Avg health score</div></div><div class="sr-card"><div class="sr-val cr">${d.critical_devices}</div><div class="sr-lbl">Critical</div></div><div class="sr-card"><div class="sr-val cw">${d.warning_devices}</div><div class="sr-lbl">Warning</div></div><div class="sr-card"><div class="sr-val cg">${d.healthy_devices}</div><div class="sr-lbl">Healthy</div></div><div class="sr-card"><div class="sr-val cr">${d.open_incidents}</div><div class="sr-lbl">Open incidents</div></div><div class="sr-card"><div class="sr-val cr">$${total.toLocaleString()}</div><div class="sr-lbl">Risk/hr exposure</div></div>`;const rf=document.getElementById('sr-risks');rf.innerHTML='';d.top_risks.length?d.top_risks.forEach(rsk=>{const rate=COST_RATES[allData.find(r=>r.device_id===rsk.device)?.device_type]||8000;const exp=Math.round(rate*(1-rsk.score/100));rf.innerHTML+=`<div class="fitem fi-r"><div class="fdev">${rsk.device} \u2014 ${rsk.score}/100 \u00b7 $${exp.toLocaleString()}/hr risk</div><div>${rsk.diagnosis||'No diagnosis'}</div></div>`;}) :rf.innerHTML='<div class="fitem fi-ok"><div>No critical risks \u2014 systems nominal</div></div>';toast('Shift report generated',`${d.total_devices} devices \u00b7 ${d.critical_devices} critical \u00b7 $${total.toLocaleString()}/hr risk exposure`,'tg');}catch(e){toast('Report error',e.message,'tc');}}
 
-async function loadInc(){if(!spToken)return;try{const H={'X-Specialist-Token':spToken};const[oR,aR,rR]=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);const open=await oR.json(),asgn=await aR.json(),res=await rR.json();document.getElementById('sp-open').textContent=open.length;document.getElementById('sp-asgn').textContent=asgn.length;document.getElementById('sp-res').textContent=res.length;const all=[...open,...asgn];const list=document.getElementById('inc-list');if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents \u2014 all systems nominal</div></div>';return;}list.innerHTML='';all.forEach(inc=>{const bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';const rate=COST_RATES[inc.device_type]||8000;const exp=Math.round(rate*(1-inc.health_score/100));list.innerHTML+=`<div class="icard2"><div class="ich"><div><span class="fdev">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div><div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div><div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span> \u00b7 <span style="color:var(--red)">$${exp.toLocaleString()}/hr risk</span></div>${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px;line-height:1.4">${inc.ai_diagnosis}</div>`:''}${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px">${inc.automation_command}</div>`:''}${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: ${inc.assigned_to}</div>`:''}<div class="ica"><input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button></div></div>`;});
-  if(d.architecture && d.architecture.demo_mode){
-    document.body.classList.add('demo-mode');
-  } else {
-    document.body.classList.remove('demo-mode');
-  }
-
-}catch(e){}}
+async function loadInc(){if(!spToken)return;try{const H={'X-Specialist-Token':spToken};const[oR,aR,rR]=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);const open=await oR.json(),asgn=await aR.json(),res=await rR.json();document.getElementById('sp-open').textContent=open.length;document.getElementById('sp-asgn').textContent=asgn.length;document.getElementById('sp-res').textContent=res.length;const all=[...open,...asgn];const list=document.getElementById('inc-list');if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents \u2014 all systems nominal</div></div>';return;}list.innerHTML='';all.forEach(inc=>{const bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';const rate=COST_RATES[inc.device_type]||8000;const exp=Math.round(rate*(1-inc.health_score/100));list.innerHTML+=`<div class="icard2"><div class="ich"><div><span class="fdev">${inc.device_id}</span><span class="sbadge ${bc}">${inc.status.toUpperCase()}</span></div><div style="font-size:9px;color:var(--dim)">${fmt(inc.created_at)}</div></div><div style="font-size:10px;margin-bottom:4px">Health: <span class="${scc(inc.health_score)}">${Math.round(inc.health_score)}/100</span> \u00b7 <span style="color:var(--red)">$${exp.toLocaleString()}/hr risk</span></div>${inc.ai_diagnosis?`<div style="font-size:9px;color:var(--mut);margin-bottom:4px;line-height:1.4">${inc.ai_diagnosis}</div>`:''}${inc.automation_command?`<div style="font-size:9px;color:var(--pur);margin-bottom:4px">${inc.automation_command}</div>`:''}${inc.assigned_to?`<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: ${inc.assigned_to}</div>`:''}<div class="ica"><input class="ainput" id="ai-${inc.id}" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 10px" onclick="assignInc('${inc.id}')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 10px" onclick="resolveInc('${inc.id}')">Resolve</button></div></div>`;});}catch(e){}}
 async function assignInc(id){const v=document.getElementById('ai-'+id)?.value.trim();if(!v)return;await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});toast('Assigned','\u2192 '+v,'tw');loadInc();}
 async function resolveInc(id){await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});toast('Resolved','By '+spName,'tg');loadInc();}
 
@@ -2632,52 +2658,7 @@ async function fetchPlatform(){try{
   const em=document.getElementById('nc-email');if(em)em.style.cssText=style(nc.email_enabled);
   const sm=document.getElementById('nc-sms');  if(sm)sm.style.cssText=style(nc.sms_enabled);
   const wa=document.getElementById('nc-wa');   if(wa)wa.style.cssText=style(nc.whatsapp_enabled);
-
-  if(d.architecture && d.architecture.demo_mode){
-    document.body.classList.add('demo-mode');
-  } else {
-    document.body.classList.remove('demo-mode');
-  }
-
 }catch(e){}}
-
-/* SSE REAL-TIME PUSH CLIENT ─────────────────────────────────────────────────
-   Subscribes to /api/stream for instant critical event push.
-   On CBS blast hold or critical failure, fetchAll() fires immediately
-   instead of waiting up to 10 seconds for the next poll cycle.
-   This is the <60 second event-to-decision architecture in action. */
-let _sseConn = null;
-const connDot = document.getElementById('conn-dot');
-const connTxt = document.getElementById('live-lbl');
-
-function initSSE(){
-  if(_sseConn) _sseConn.close();
-  _sseConn = new EventSource(B+'/api/stream');
-  _sseConn.addEventListener('connected', ()=>{
-    if(connDot) connDot.style.background='var(--grn)';
-  });
-  _sseConn.addEventListener('metric', e=>{
-    try{
-      const d=JSON.parse(e.data);
-      // Immediately re-fetch on any critical event — no waiting for 10s poll
-      if(d.blast_hold||d.is_cbs||d.health_score<35||d.anomaly_flag){
-        fetchAll();
-        if(d.blast_hold||d.is_cbs){
-          toast('LIVE: CBS Alert','Blast hold received via real-time channel — refreshing','tc');
-        } else if(d.health_score<20){
-          toast('LIVE: Critical',''+d.device_id+' at '+d.health_score+'/100 — refreshing','tc');
-        }
-      }
-    }catch(ex){}
-  });
-  _sseConn.onerror = ()=>{
-    if(connDot) connDot.style.background='var(--amb)';
-    setTimeout(initSSE, 5000); // reconnect after 5s
-  };
-}
-// Start SSE after initial data load
-setTimeout(initSSE, 3000);
-
 setInterval(fetchPlatform,12000);
 fetchPlatform();
 fetchAll();
