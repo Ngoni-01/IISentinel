@@ -1,29 +1,10 @@
-# IISentinel™ — Python Dependencies
-# Install: pip install -r requirements.txt --break-system-packages
-
-# Core web framework
-flask>=3.0.0
-flask-cors>=4.0.0
-flask-limiter>=3.5.0
-
-# AI/ML models
-numpy>=1.26.0
-scikit-learn>=1.4.0
-joblib>=1.3.0
-
-# HTTP client (weather, WhatsApp, Africa's Talking)
-requests>=2.31.0
-
-# Database
-supabase>=2.0.0
-
-# PDF report generation
-reportlab>=4.0.0
-
-# Environment config
-python-dotenv>=1.0.0
-
-# SMS gateways (install only the one you use)
-# africastalking>=1.0.0   # Africa's Talking SMS
-# twilio>=8.0.0           # Twilio SMS
-# vonage>=3.0.0           # Vonage SMS
+flask
+flask-cors
+gunicorn
+supabase
+joblib
+scikit-learn
+numpy
+pandas
+requests
+reportlab
