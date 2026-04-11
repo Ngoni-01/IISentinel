@@ -638,7 +638,7 @@ body.light .arch-table td{border-color:#d4daea}
 
 /* ONBOARDING OVERLAY */
 .ob-overlay{position:fixed;inset:0;z-index:9997;background:rgba(5,6,14,0.96);
-  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  align-items:center;justify-content:center;flex-direction:column;
   transition:opacity .8s}
 
 /* PRINT CSS */
@@ -655,69 +655,14 @@ body.light .arch-table td{border-color:#d4daea}
   header{position:relative!important;background:#f4f6ff!important;color:#000!important}
   .logo-ii,.logo-sent{color:#0070a0!important;-webkit-text-fill-color:#0070a0!important}
 }
+
+/* ═══ AUTO-DISMISS LOADER — pure CSS, fires at 3s regardless of JS ═══ */
+@keyframes loaderOut{0%,84%{opacity:1}100%{opacity:0;visibility:hidden;pointer-events:none}}
+#loader{animation:loaderOut 0.6s 3s ease forwards!important}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════════
-     G1 — SECTOR SELECTOR LANDING PAGE
-     Shown only on first visit or when no sector is active.
-     Three sector cards route to the relevant dashboard view.
-     ═══════════════════════════════════════════════════════════════════ -->
-<div id="landing-page" style="display:none;position:fixed;inset:0;z-index:9998;background:var(--bg);overflow-y:auto;padding:40px 20px">
-  <div style="max-width:900px;margin:0 auto">
-    <div style="text-align:center;margin-bottom:40px">
-      <div class="logo" style="justify-content:center;margin-bottom:10px;display:flex">
-        <span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">&#8482;</span>
-      </div>
-      <div style="font-size:18px;font-weight:700;color:var(--txt);margin-bottom:6px">Intelligent Infrastructure Sentinel</div>
-      <div style="font-size:12px;color:var(--dim)">Select your sector to enter the platform</div>
-    </div>
-    <div class="sector-grid">
-      <div class="sector-card" onclick="enterSector('network-only')">
-        <div class="sc-icon" style="background:rgba(0,229,212,.12);color:var(--tel)">&#9698;</div>
-        <div class="sc-title">Network / ISP</div>
-        <div class="sc-desc">Core routers, distribution switches, WAN links &#8212; BGP, OSPF, real ICMP latency</div>
-        <div class="sc-protos">SNMP v3 &#183; BGP &#183; OSPF &#183; NetFlow</div>
-        <div class="sc-roi">Avg 73% reduction in MTTR</div>
-        <div class="sc-price">From $15/device/month</div>
-        <button class="btn btn-acc sc-btn">Enter Network Dashboard &#8594;</button>
-      </div>
-      <div class="sector-card sc-featured" onclick="enterSector('telecom-only')">
-        <div class="sc-icon" style="background:rgba(52,198,244,.12);color:var(--blu)">&#9019;</div>
-        <div class="sc-title">Telecom Operator</div>
-        <div class="sc-desc">Base stations, microwave backhaul, LTE signal health across all sites</div>
-        <div class="sc-protos">SNMP &#183; LTE &#183; MW backhaul &#183; IEEE 802.3</div>
-        <div class="sc-roi">Avg $12,000/hr prevented per outage</div>
-        <div class="sc-price">From $200/site/month</div>
-        <button class="btn btn-acc sc-btn">Enter Telecom Dashboard &#8594;</button>
-      </div>
-      <div class="sector-card" onclick="enterSector('mining-only')">
-        <div class="sc-icon" style="background:rgba(245,160,32,.12);color:var(--amb)">&#9881;</div>
-        <div class="sc-title">Mining Operation</div>
-        <div class="sc-desc">PLCs, conveyors, pumps, ventilation &#8212; and a safety interlock that stops blasts</div>
-        <div class="sc-protos">Modbus TCP &#183; Profinet &#183; DNP3 &#183; OPC-UA</div>
-        <div class="sc-roi">$500,000+ protected per CBS blast event</div>
-        <div class="sc-price">From $2,000/site/month</div>
-        <button class="btn btn-acc sc-btn">Enter Mining Dashboard &#8594;</button>
-      </div>
-    </div>
-    <div style="text-align:center;margin-top:28px">
-      <button class="btn" style="background:transparent;border:1px solid var(--b2);color:var(--mut);font-size:11px" onclick="enterSector('default')">
-        Full platform (all sectors) &#8594;
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════════════
-     G2 — 10-SECOND ONBOARDING OVERLAY
-     Tells the engineer exactly what sector, how many devices, and
-     what sites are being monitored — then animates away.
-     ═══════════════════════════════════════════════════════════════════ -->
-<div id="onboarding-overlay" class="ob-overlay" style="display:none">
-  <div style="text-align:center;max-width:500px;padding:0 24px">
-    <div style="font-size:28px;font-weight:800;color:var(--acc);margin-bottom:8px">IISentinel&#8482; is live</div>
     <div style="font-size:14px;color:var(--txt);margin-bottom:6px" id="ob-devices">Monitoring &#8212; assets across &#8212;</div>
     <div style="font-size:12px;color:var(--dim);margin-bottom:24px" id="ob-sectors">Sectors loading&#8230;</div>
     <div class="boot-bar"><div class="boot-fill" id="boot-fill"></div></div>
@@ -1443,7 +1388,6 @@ async function fetchAll(){
     setFeed('f-diag',allData.filter(r=>r.ai_diagnosis).slice(0,8),diagItem);
     setFeed('f-auto',allData.filter(r=>r.automation_command).slice(0,8),autoItem);
     updNetCats(allData,curNet);updTcPage();updMcPage();updCbsPage(cbsd);updIntelPage();updTwinSel(dm);
-    updateROIFromData();
     if(spToken)updEngDiag();
   }catch(e){console.error(e);}
 }
@@ -1670,31 +1614,9 @@ async function loadMaintenanceCalendar(){
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   E2 — TENANT CONFIG DRIVEN UI (bootForTenant)
    ═══════════════════════════════════════════════════════════════════════ */
-let tenantCfg=null;
-async function bootForTenant(){
-  try{
-    const r=await fetch(B+'/api/tenant');const d=await r.json();tenantCfg=d.config;
-    const sectors=tenantCfg.sectors||[];
-    document.querySelectorAll('.ntab[data-sector]').forEach(tab=>{
-      const sec=tab.dataset.sector;
-      if(sec==='dashboard'||sec==='specialist')return;
-      if(!sectors.includes(sec)){tab.style.display='none';}
-    });
-    if(tenantCfg.protocols){
-      const sub=document.querySelector('.hctr-b');
-      if(sub)sub.textContent=tenantCfg.protocols.join(' · ');
-    }
-    if(!tenantCfg.cbs_mandatory){
-      const ct=document.querySelector('.ntab.t-cbs');if(ct)ct.style.opacity='0.5';
-    }
-    if(tenantCfg.name){
-      const hc=document.querySelector('.hctr-a');if(hc)hc.textContent=tenantCfg.name;
-    }
-  }catch(e){console.warn('[IISentinel] Tenant config unavailable, using defaults');}
-  // Note: fetchAll is called separately after bootForTenant
-}
+
+
 
 /* keyboard shortcuts */
 document.addEventListener('keydown',e=>{
@@ -1711,89 +1633,16 @@ document.addEventListener('keydown',e=>{
 /* ═══════════════════════════════════════════════════════════════════════
    G1 — SECTOR ENTRY
    ═══════════════════════════════════════════════════════════════════════ */
-async function enterSector(tenantKey){
-  const lp=document.getElementById('landing-page');
-  if(lp) lp.style.display='none';
-  localStorage.setItem('iisentinel-sector', tenantKey);
-  window._forcedTenant = tenantKey;
-  // No onboarding overlay - just go straight to dashboard
-  toast('Welcome to IISentinel™','Sector: '+tenantKey+' — loading live data…','tg');
-}
 
-function showLanding(){
-  const landing=document.getElementById('landing-page');
-  if(landing) landing.style.display='block';
-}
+
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    G2 — ONBOARDING OVERLAY
    ═══════════════════════════════════════════════════════════════════════ */
-const SECTOR_META={
-  'default':      {name:'Full Platform',  sites:['Bulawayo','Harare','Mutare','Mine Site'], sectors:['Network','Telecom','Mining','CBS','Weather']},
-  'network-only': {name:'Network / ISP',  sites:['Bulawayo HQ','Harare','Mutare'],         sectors:['Network','Weather','Intelligence']},
-  'telecom-only': {name:'TelecomCo',      sites:['Bulawayo HQ','Harare','Mutare','Vic Falls'], sectors:['Telecom','Weather','Intelligence']},
-  'mining-only':  {name:'MiningCo',       sites:['Shaft 1','Shaft 2','Processing Plant','Surface'], sectors:['Mining','CBS','Weather']},
-};
 
-async function showOnboarding(tenantKey){
-  const overlay=document.getElementById('onboarding-overlay');
-  const fill=document.getElementById('boot-fill');
-  const statusEl=document.getElementById('ob-status');
-  const devEl=document.getElementById('ob-devices');
-  const secEl=document.getElementById('ob-sectors');
-  if(!overlay)return;
-  overlay.style.display='flex';overlay.style.opacity='1';
-  const meta=SECTOR_META[tenantKey]||SECTOR_META['default'];
 
-  const msgs=[
-    'Connecting to platform…',
-    'Loading AI models…',
-    'Initialising '+meta.name+'…',
-    'Reading device history…',
-    'Starting real-time feed…',
-    'IISentinel™ ready',
-  ];
 
-  // Fetch actual device count
-  let deviceCount='--';
-  try{
-    const r=await fetch(B+'/api/platform');
-    const d=await r.json();
-    deviceCount=d.devices_tracked||'--';
-  }catch(e){}
-
-  devEl.textContent='Monitoring '+deviceCount+' assets across '+meta.sites.join(', ');
-  secEl.textContent='Sectors: '+meta.sectors.join(' · ');
-
-  // Animate progress bar over 9 seconds
-  let pct=0;
-  const pctStep=100/(msgs.length*4);
-  let msgIdx=0;
-  const interval=setInterval(()=>{
-    pct=Math.min(100,pct+pctStep);
-    if(fill)fill.style.width=pct+'%';
-    if(pct%(100/msgs.length)<pctStep && msgIdx<msgs.length){
-      if(statusEl)statusEl.textContent=msgs[msgIdx++];
-    }
-  },250);
-
-  setTimeout(()=>{
-    clearInterval(interval);
-    if(fill)fill.style.width='100%';
-    if(statusEl)statusEl.textContent='IISentinel™ ready';
-    setTimeout(()=>{
-      overlay.style.transition='opacity .8s';
-      overlay.style.opacity='0';
-      setTimeout(()=>{
-        overlay.style.display='none';
-        overlay.style.opacity='1';
-        overlay.style.transition='';
-        // Show ROI bar after onboarding
-        initROICounter();
-      },800);
-    },800);
-  },9500);
-}
 
 /* ═══════════════════════════════════════════════════════════════════════
    H1 — LIVE ROI COUNTER
@@ -1801,27 +1650,13 @@ async function showOnboarding(tenantKey){
    CBS hold = $450k+ prevented. Anomaly caught = up to $4,500.
    Incident resolved = cost rate * (1 - final_score/100).
    ═══════════════════════════════════════════════════════════════════════ */
-let _roiTotal=0;
-let _roiEvents=0;
-const _roiSeen=new Set();
 
-function initROICounter(){
-  const bar=document.getElementById('roi-bar');
-  if(bar)bar.style.display='flex';
-}
 
-function addROI(amount, reason, eventKey){
-  if(_roiSeen.has(eventKey)) return;  // deduplicate
-  _roiSeen.add(eventKey);
-  _roiTotal+=amount;
-  _roiEvents++;
-  const el=document.getElementById('roi-counter');
-  const det=document.getElementById('roi-detail');
-  const ev=document.getElementById('roi-events');
-  if(el) el.textContent='$'+_roiTotal.toLocaleString();
-  if(det && reason) det.textContent=reason;
-  if(ev) ev.textContent=_roiEvents+' event'+(  _roiEvents!==1?'s':'')+' captured';
-}
+
+
+
+
+
 
 // Hook into simReal and fetchAll to feed ROI counter
 const _origSimReal=window.simReal;
@@ -1832,40 +1667,15 @@ const _origSimReal=window.simReal;
    ═══════════════════════════════════════════════════════════════════════ */
 
 // ROI counter wired into data updates (no fetchAll override — avoids recursion)
-function updateROIFromData(){
-  if(!allData||!allData.length)return;
-  const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});
-  Object.values(dm).forEach(d=>{
-    const s=d.health_score;
-    if(d.automation_command&&d.automation_command.includes('BLAST HOLD')){
-      addROI(450000,'CBS blast hold prevented — $450k+ exposure blocked',d.device_id+':cbs');
-    } else if(s<20&&d.device_type==='ventilation'){
-      addROI(180000,'Ventilation critical caught — $180k/hr prevented',d.device_id+':vent');
-    } else if(s<20&&d.device_type==='pump'){
-      addROI(150000,'Pump failure prevented — $150k/hr blocked',d.device_id+':pump');
-    } else if(d.anomaly_flag&&s<50){
-      addROI(4500,'AI anomaly caught before fault — est. $4,500 prevented',d.device_id+':anom');
-    }
-  });
-}
-// ── CLEAN BOOT SEQUENCE ──────────────────────────────────────────────────
-// No deadlocks. No overlays blocking the UI.
-// Loader dismisses after 2.5s. Data starts loading immediately.
-bootForTenant();
+
+// ══════════════════════════════════════════════════════
+// BOOT — 5 lines, no dependencies, no overlays
+// ══════════════════════════════════════════════════════
 fetchAll();
 setInterval(fetchAll, 10000);
-setInterval(fetchPlatform, 12000);
 fetchPlatform();
-setInterval(()=>{ if(spToken){ loadInc(); updEngDiag(); } }, 15000);
-
-// Show landing page on first visit (after loader clears)
-setTimeout(()=>{
-  const saved = localStorage.getItem('iisentinel-sector');
-  if(!saved){
-    const lp = document.getElementById('landing-page');
-    if(lp) lp.style.display='block';
-  }
-}, 3000);
+setInterval(fetchPlatform, 12000);
+setInterval(function(){ if(spToken){ loadInc(); updEngDiag(); } }, 15000);
 </script>
 </body>
 </html>
