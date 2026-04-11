@@ -1602,8 +1602,6 @@ function initSSE(){
 // Start SSE after initial data load
 setTimeout(initSSE, 3000);
 
-setInterval(fetchPlatform,12000);
-fetchPlatform();
 setInterval(()=>{if(spToken){loadInc();updEngDiag();}},15000);
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -1710,20 +1708,16 @@ document.addEventListener('keydown',e=>{
 });
 
 /* boot sequence */
-// bootForTenant and fetchAll called in BOOT SEQUENCE block below
-
 /* ═══════════════════════════════════════════════════════════════════════
    G1 — SECTOR ENTRY
    ═══════════════════════════════════════════════════════════════════════ */
 async function enterSector(tenantKey){
-  // Hide landing page
-  document.getElementById('landing-page').style.display='none';
-  // Store sector choice
+  const lp=document.getElementById('landing-page');
+  if(lp) lp.style.display='none';
   localStorage.setItem('iisentinel-sector', tenantKey);
-  // Set TENANT via URL if changed (just updates display — backend uses env)
   window._forcedTenant = tenantKey;
-  // Show onboarding overlay
-  showOnboarding(tenantKey);
+  // No onboarding overlay - just go straight to dashboard
+  toast('Welcome to IISentinel™','Sector: '+tenantKey+' — loading live data…','tg');
 }
 
 function showLanding(){
@@ -1836,34 +1830,6 @@ const _origSimReal=window.simReal;
 /* ═══════════════════════════════════════════════════════════════════════
    G1/G2 BOOT — check if first visit, show landing or go direct
    ═══════════════════════════════════════════════════════════════════════ */
-function initLandingOrDash(){
-  const savedSector=localStorage.getItem('iisentinel-sector');
-  // If URL has ?demo=1 or sector is saved, skip landing
-  const urlParams=new URLSearchParams(window.location.search);
-  if(urlParams.get('demo')||urlParams.get('sector')){
-    const sec=urlParams.get('sector')||savedSector||'default';
-    showOnboarding(sec);
-  } else if(!savedSector){
-    // First visit — show landing page
-    setTimeout(()=>{
-      const loader=document.getElementById('loader');
-      if(loader&&loader.style.display!=='none'){
-        // Wait for loader to finish
-        const checkLoader=setInterval(()=>{
-          if(!loader||loader.style.display==='none'){
-            clearInterval(checkLoader);
-            showLanding();
-          }
-        },200);
-      } else {
-        showLanding();
-      }
-    },3200);
-  } else {
-    // Returning visitor — show onboarding briefly then go
-    showOnboarding(savedSector);
-  }
-}
 
 // ROI counter wired into data updates (no fetchAll override — avoids recursion)
 function updateROIFromData(){
@@ -1882,21 +1848,24 @@ function updateROIFromData(){
     }
   });
 }
-
-// ── BOOT SEQUENCE ────────────────────────────────────────────────────────
-// 1. Loader dismisses after 2.8s (see window.addEventListener above)
-// 2. After loader, show landing or onboarding based on visit history
-// 3. bootForTenant configures UI for active sector
-// 4. fetchAll starts data polling
-setTimeout(()=>{
-  initLandingOrDash();
-}, 3200);
-
-// Start data polling immediately (behind loader) so data is ready when UI appears
+// ── CLEAN BOOT SEQUENCE ──────────────────────────────────────────────────
+// No deadlocks. No overlays blocking the UI.
+// Loader dismisses after 2.5s. Data starts loading immediately.
 bootForTenant();
 fetchAll();
 setInterval(fetchAll, 10000);
+setInterval(fetchPlatform, 12000);
+fetchPlatform();
+setInterval(()=>{ if(spToken){ loadInc(); updEngDiag(); } }, 15000);
 
+// Show landing page on first visit (after loader clears)
+setTimeout(()=>{
+  const saved = localStorage.getItem('iisentinel-sector');
+  if(!saved){
+    const lp = document.getElementById('landing-page');
+    if(lp) lp.style.display='block';
+  }
+}, 3000);
 </script>
 </body>
 </html>
