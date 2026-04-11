@@ -1,79 +1,126 @@
+"""
+IISentinel™ — AI Model Training Script
+Trains RandomForest (health scorer) + IsolationForest (anomaly detector)
+Run once before starting app.py:  python train_models.py
+"""
+
 import numpy as np
-import pandas as pd
 import joblib
 from sklearn.ensemble import RandomForestRegressor, IsolationForest
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+
+print("IISentinel™ Model Training")
+print("══════════════════════════")
+
+# ── FEATURE SCHEMA ────────────────────────────────────────────────────────────
+# [cpu_load, bandwidth_mbps, latency_ms, packet_loss,
+#  connected_devices, temperature, signal_strength]
+# Health score target: 0–100 (higher = healthier)
 
 np.random.seed(42)
-n = 2000
+N = 3000
 
-# Normal operation (70% of data)
-n_normal = int(n * 0.7)
-normal = pd.DataFrame({
-    'cpu_load': np.random.uniform(10, 50, n_normal),
-    'bandwidth_mbps': np.random.uniform(10, 300, n_normal),
-    'latency_ms': np.random.uniform(1, 20, n_normal),
-    'packet_loss': np.random.uniform(0, 0.5, n_normal),
-    'connected_devices': np.random.randint(5, 30, n_normal),
-    'temperature': np.random.uniform(20, 60, n_normal),
-    'signal_strength': np.random.uniform(70, 100, n_normal),
-})
-normal['health_score'] = np.random.uniform(75, 100, n_normal)
+def make_dataset(n):
+    rows, labels = [], []
+    for _ in range(n):
+        # Healthy device (70–100)
+        if np.random.random() < 0.60:
+            cpu  = np.random.uniform(5,  55)
+            bw   = np.random.uniform(50, 800)
+            lat  = np.random.uniform(1,  45)
+            loss = np.random.uniform(0,  0.8)
+            devs = np.random.randint(5,  60)
+            temp = np.random.uniform(20, 45)
+            sig  = np.random.uniform(65, 98)
+            score= np.random.uniform(70, 99)
+        # Warning device (35–70)
+        elif np.random.random() < 0.75:
+            cpu  = np.random.uniform(50, 82)
+            bw   = np.random.uniform(600,950)
+            lat  = np.random.uniform(40, 180)
+            loss = np.random.uniform(0.8, 4)
+            devs = np.random.randint(1,  20)
+            temp = np.random.uniform(44, 72)
+            sig  = np.random.uniform(35, 65)
+            score= np.random.uniform(35, 69)
+        # Critical device (0–35)
+        else:
+            cpu  = np.random.uniform(82, 100)
+            bw   = np.random.uniform(900,1000)
+            lat  = np.random.uniform(180,500)
+            loss = np.random.uniform(4,  20)
+            devs = np.random.randint(0,  5)
+            temp = np.random.uniform(72, 110)
+            sig  = np.random.uniform(5,  35)
+            score= np.random.uniform(2,  34)
+        rows.append([cpu, bw, lat, loss, devs, temp, sig])
+        labels.append(score)
+    return np.array(rows), np.array(labels)
 
-# Congestion event (20% of data)
-n_congestion = int(n * 0.2)
-congestion = pd.DataFrame({
-    'cpu_load': np.random.uniform(70, 90, n_congestion),
-    'bandwidth_mbps': np.random.uniform(800, 1000, n_congestion),
-    'latency_ms': np.random.uniform(50, 200, n_congestion),
-    'packet_loss': np.random.uniform(1, 5, n_congestion),
-    'connected_devices': np.random.randint(50, 100, n_congestion),
-    'temperature': np.random.uniform(60, 80, n_congestion),
-    'signal_strength': np.random.uniform(40, 70, n_congestion),
-})
-congestion['health_score'] = np.random.uniform(35, 60, n_congestion)
+X, y = make_dataset(N)
+print(f"Training dataset: {N} samples")
+print(f"  Healthy (≥70):  {(y>=70).sum()}")
+print(f"  Warning (35-70):{((y>=35)&(y<70)).sum()}")
+print(f"  Critical (<35): {(y<35).sum()}")
 
-# Critical failure (10% of data)
-n_critical = n - n_normal - n_congestion
-critical = pd.DataFrame({
-    'cpu_load': np.random.uniform(90, 100, n_critical),
-    'bandwidth_mbps': np.random.uniform(950, 1000, n_critical),
-    'latency_ms': np.random.uniform(200, 500, n_critical),
-    'packet_loss': np.random.uniform(5, 20, n_critical),
-    'connected_devices': np.random.randint(80, 150, n_critical),
-    'temperature': np.random.uniform(80, 100, n_critical),
-    'signal_strength': np.random.uniform(10, 40, n_critical),
-})
-critical['health_score'] = np.random.uniform(0, 35, n_critical)
-
-# Combine all scenarios
-df = pd.concat([normal, congestion, critical], ignore_index=True)
-df = df.sample(frac=1).reset_index(drop=True)
-
-features = ['cpu_load', 'bandwidth_mbps', 'latency_ms',
-            'packet_loss', 'connected_devices', 'temperature', 'signal_strength']
-
-X = df[features]
-y = df['health_score']
-
-# Train Model 1: RandomForest health score predictor
-rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
-rf_model.fit(X, y)
-joblib.dump(rf_model, 'health_model.pkl')
-print("Model 1 saved: health_model.pkl")
-
-# Train Model 2: Isolation Forest anomaly detector
-iso_model = IsolationForest(contamination=0.1, random_state=42)
-iso_model.fit(X)
-joblib.dump(iso_model, 'anomaly_model.pkl')
-print("Model 2 saved: anomaly_model.pkl")
-
-# Save feature scaler
-scaler = MinMaxScaler()
-scaler.fit(X)
+# ── SCALER ────────────────────────────────────────────────────────────────────
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 joblib.dump(scaler, 'scaler.pkl')
-print("Scaler saved: scaler.pkl")
+print("\n✓ scaler.pkl saved")
 
-print("\nTraining complete!")
-print(f"Total samples: {len(df)}")
-print(f"Normal: {n_normal} | Congestion: {n_congestion} | Critical: {n_critical}")
+# ── RANDOM FOREST HEALTH SCORER ───────────────────────────────────────────────
+rf = RandomForestRegressor(
+    n_estimators=120,
+    max_depth=10,
+    min_samples_leaf=3,
+    random_state=42,
+    n_jobs=-1,
+)
+rf.fit(X, y)
+joblib.dump(rf, 'health_model.pkl')
+
+# Quick accuracy check
+from sklearn.metrics import mean_absolute_error
+pred = rf.predict(X)
+mae  = mean_absolute_error(y, pred)
+print(f"✓ health_model.pkl saved  (train MAE: {mae:.2f} points)")
+
+# Feature importance
+feat_names = ['cpu_load','bandwidth_mbps','latency_ms','packet_loss',
+              'connected_devices','temperature','signal_strength']
+importances = sorted(zip(feat_names, rf.feature_importances_),
+                     key=lambda x: -x[1])
+print("  Feature importances:")
+for name, imp in importances:
+    bar = '█' * int(imp*40)
+    print(f"    {name:<22} {bar} {imp:.3f}")
+
+# ── ISOLATION FOREST ANOMALY DETECTOR ────────────────────────────────────────
+# Train on the healthy portion only so it learns what "normal" looks like
+X_normal = X[y >= 60]
+iso = IsolationForest(
+    n_estimators=100,
+    contamination=0.08,   # expect ~8% anomalies in production data
+    random_state=42,
+    n_jobs=-1,
+)
+iso.fit(X_normal)
+joblib.dump(iso, 'anomaly_model.pkl')
+
+# Sanity check
+n_anom_in_healthy = (iso.predict(X_normal) == -1).sum()
+n_anom_in_critical= (iso.predict(X[y<35])  == -1).sum()
+print(f"\n✓ anomaly_model.pkl saved")
+print(f"  False positives on healthy data: {n_anom_in_healthy}/{len(X_normal)}")
+print(f"  True  positives on critical data:{n_anom_in_critical}/{(y<35).sum()}")
+
+print("""
+══════════════════════════════════════════
+  Training complete. Files created:
+    health_model.pkl
+    anomaly_model.pkl
+    scaler.pkl
+  Now run:  python app.py
+══════════════════════════════════════════
+""")

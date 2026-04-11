@@ -1289,19 +1289,30 @@ let activeTipId=null,opsFocusOn=false;
 
 const LOADER_MSGS=['Initialising AI models...','Loading RandomForest health scorer...','Starting Isolation Forest...','Connecting to Supabase...','Calibrating sensor baselines...','IISentinel\u2122 ready'];
 let loaderIdx=0;
-window.addEventListener('load',()=>{
+// ── BULLETPROOF LOADER DISMISS ─────────────────────────────────────────────
+// Dismisses after 2.5s regardless of network, models, or API state.
+// Three independent fallbacks so it ALWAYS clears.
+function dismissLoader(){
+  const l=document.getElementById('loader');
+  if(!l||l._dismissed)return;
+  l._dismissed=true;
+  l.style.transition='opacity .6s';
+  l.style.opacity='0';
+  setTimeout(()=>{l.style.display='none';},650);
+}
+// Fallback 1: DOMContentLoaded + 2.5s
+document.addEventListener('DOMContentLoaded',()=>{
   const statusEl=document.getElementById('loader-status');
   const msgInterval=setInterval(()=>{
     loaderIdx++;
-    if(loaderIdx<LOADER_MSGS.length&&statusEl) statusEl.textContent=LOADER_MSGS[loaderIdx];
+    if(statusEl&&loaderIdx<LOADER_MSGS.length) statusEl.textContent=LOADER_MSGS[loaderIdx];
   },400);
-  // Always dismiss loader after 2.8s — no waiting for network/models
-  setTimeout(()=>{
-    clearInterval(msgInterval);
-    const l=document.getElementById('loader');
-    if(l){l.classList.add('fade-out');setTimeout(()=>{l.style.display='none';},700);}
-  },2800);
+  setTimeout(()=>{clearInterval(msgInterval);dismissLoader();},2500);
 });
+// Fallback 2: window.load
+window.addEventListener('load',()=>setTimeout(dismissLoader,2800));
+// Fallback 3: hard cap — always gone by 4s
+setTimeout(dismissLoader,4000);
 
 const NET=['router','switch','firewall','wan_link','workstation'];
 const TC=['base_station','network_tower','microwave_link'];

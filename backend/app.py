@@ -533,9 +533,63 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'iisentinel-secret-2026')
 
-rf_model  = joblib.load('health_model.pkl')
-iso_model = joblib.load('anomaly_model.pkl')
-scaler    = joblib.load('scaler.pkl')
+# ── AI MODEL LOADING (auto-generates if .pkl files missing) ──────────────
+def _generate_default_models():
+    """
+    Generates baseline models if .pkl files don't exist yet.
+    These give reasonable predictions immediately — they improve
+    automatically once real data flows through auto_retrain_pipeline.
+    Run train_models.py for better initial accuracy.
+    """
+    print('[IISentinel] Generating baseline AI models (no .pkl files found)...')
+    from sklearn.ensemble import RandomForestRegressor, IsolationForest
+    from sklearn.preprocessing import StandardScaler
+    import numpy as np
+
+    np.random.seed(42)
+    N = 1000
+    # [cpu_load, bandwidth_mbps, latency_ms, packet_loss,
+    #  connected_devices, temperature, signal_strength]
+    X = np.column_stack([
+        np.random.uniform(5,  95, N),   # cpu_load
+        np.random.uniform(10, 900, N),  # bandwidth_mbps
+        np.random.uniform(1,  400, N),  # latency_ms
+        np.random.uniform(0,  15, N),   # packet_loss
+        np.random.uniform(1,  500, N),  # connected_devices
+        np.random.uniform(20, 90, N),   # temperature
+        np.random.uniform(20, 100, N),  # signal_strength
+    ])
+    # Health score: high when metrics are good
+    y = np.clip(
+        100
+        - X[:,0] * 0.3          # cpu hurts
+        - X[:,2] * 0.08         # latency hurts
+        - X[:,3] * 2.5          # packet loss hurts badly
+        + X[:,6] * 0.2          # signal helps
+        - np.maximum(0, X[:,5] - 70) * 0.5  # temperature hurts above 70°C
+        + np.random.normal(0, 5, N),
+        0, 100
+    )
+    sc = StandardScaler()
+    Xs = sc.fit_transform(X)
+    rf = RandomForestRegressor(n_estimators=50, random_state=42)
+    rf.fit(Xs, y)
+    iso = IsolationForest(contamination=0.1, random_state=42)
+    iso.fit(Xs[y > 50])
+
+    joblib.dump(rf,  'health_model.pkl')
+    joblib.dump(iso, 'anomaly_model.pkl')
+    joblib.dump(sc,  'scaler.pkl')
+    print('[IISentinel] Baseline models generated and saved.')
+    return rf, iso, sc
+
+try:
+    rf_model  = joblib.load('health_model.pkl')
+    iso_model = joblib.load('anomaly_model.pkl')
+    scaler    = joblib.load('scaler.pkl')
+    print('[IISentinel] AI models loaded from .pkl files.')
+except FileNotFoundError:
+    rf_model, iso_model, scaler = _generate_default_models()
 
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
@@ -842,12 +896,19 @@ def receive_metrics():
                     data.get('signal_strength', 80)]
     features_arr = np.array([features])
 
-    health_score = float(rf_model.predict(features_arr)[0])
+    try:
+        features_scaled = scaler.transform(features_arr)
+    except Exception:
+        features_scaled = features_arr
+    health_score = float(rf_model.predict(features_scaled)[0])
     health_score = max(0, min(100, health_score))
     if device_type == 'cbs_controller':
         health_score = min(health_score, data.get('signal_strength', 100))
 
-    anomaly_result = iso_model.predict(features_arr)[0]
+    try:
+        anomaly_result = iso_model.predict(features_scaled)[0]
+    except Exception:
+        anomaly_result = 1
     anomaly_flag   = bool(anomaly_result == -1)
     if anomaly_flag:
         anomaly_count += 1
@@ -1166,9 +1227,11 @@ def digital_twin(device_id):
     for mult in [1.1, 1.2, 1.5, 2.0]:
         f         = np.array([[min(100,50*mult), min(1000,100*mult),
                                min(500,10*mult), min(20,mult*.5), 10, 40, 80]])
-        sim_score = float(rf_model.predict(f)[0])
+        try: fs = scaler.transform(f)
+        except: fs = f
+        sim_score = float(rf_model.predict(fs)[0])
         sim_score = max(0, min(100, sim_score))
-        anomaly   = bool(iso_model.predict(f)[0] == -1)
+        anomaly   = bool(iso_model.predict(fs)[0] == -1)
         scenarios.append({'load_increase': f'+{int((mult-1)*100)}%',
             'predicted_score': round(sim_score, 1), 'anomaly_predicted': anomaly,
             'risk': 'critical' if sim_score < 30 else 'warning' if sim_score < 60 else 'safe'})
