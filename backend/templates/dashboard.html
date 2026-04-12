@@ -240,9 +240,105 @@ body.ops-focus .gc.g-r{box-shadow:0 0 30px rgba(255,62,80,.5);border-color:rgba(
 .obs-btn:hover{background:rgba(255,62,80,.1)}
 body.ops-focus .obs-btn{background:rgba(255,62,80,.2)}
 @media(max-width:640px){.cgrid,.fgrid,.twin-grid{grid-template-columns:1fr}.banner{grid-template-columns:1fr 1fr}.wrap{padding:10px 12px}}
+
+/* ═══════════════ SECTOR SELECTOR ═══════════════ */
+#sector-selector{position:fixed;inset:0;z-index:9998;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px;animation:fadeUp .4s ease}
+.ss-box{width:100%;max-width:820px;background:var(--s1);border:1px solid var(--b2);border-radius:18px;padding:36px 32px;box-shadow:0 24px 80px rgba(0,0,0,.7)}
+.ss-logo{display:flex;align-items:baseline;gap:1px;justify-content:center;margin-bottom:14px}
+.ss-title{font-size:20px;font-weight:800;color:var(--txt);text-align:center;margin-bottom:6px}
+.ss-sub{font-size:12px;color:var(--dim);text-align:center;margin-bottom:28px;line-height:1.6;max-width:480px;margin-left:auto;margin-right:auto}
+.ss-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:600px){.ss-cards{grid-template-columns:1fr}}
+.ss-card{position:relative;background:var(--s2);border:2px solid var(--b1);border-radius:12px;padding:18px 16px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:4px;user-select:none}
+.ss-card input{display:none}
+.ss-card:hover{border-color:var(--b2);transform:translateY(-2px)}
+.ss-card.selected{border-color:var(--acc);background:var(--acca);box-shadow:0 0 0 1px var(--acc),0 8px 24px rgba(0,0,0,.4)}
+.ss-card-icon{font-size:28px;margin-bottom:6px}
+.ss-card-name{font-size:15px;font-weight:700;color:var(--txt)}
+.ss-card-desc{font-size:10px;color:var(--mut);line-height:1.5}
+.ss-card-proto{font-size:9px;color:var(--dim);font-weight:600;letter-spacing:.3px;margin-top:4px}
+.ss-check{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#000;font-size:12px;font-weight:800;display:none;align-items:center;justify-content:center}
+.ss-card.selected .ss-check{display:flex}
+.ss-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;align-items:center}
+.ss-qlbl{font-size:10px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-right:4px}
+.ss-qbtn{font-size:10px;padding:5px 11px;border-radius:20px;border:1px solid var(--b2);background:transparent;color:var(--mut);cursor:pointer;transition:all .2s}
+.ss-qbtn:hover{border-color:var(--acc);color:var(--acc)}
+.ss-preview{text-align:center;font-size:12px;color:var(--mut);padding:10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid var(--b1);margin-bottom:18px;min-height:38px;line-height:1.5}
+.ss-enter{width:100%;padding:14px;border-radius:10px;border:none;background:var(--acc);color:#020e12;font-size:14px;font-weight:800;cursor:pointer;transition:all .25s;letter-spacing:.3px}
+.ss-enter:hover:not(:disabled){opacity:.88;transform:translateY(-1px)}
+.ss-enter:disabled{opacity:.3;cursor:not-allowed}
+.ss-note{text-align:center;font-size:10px;color:var(--dim);margin-top:14px;line-height:1.5}
+body.light .ss-box{background:rgba(255,255,255,.95)}
+body.light .ss-card{background:rgba(255,255,255,.9)}
+body.light .ss-card.selected{background:var(--acca)}
+
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTOR SELECTOR — shown after loader, before dashboard
+     User picks which sector(s) to access — selection is ENFORCED.
+     Only selected tabs become visible. Specialist always visible.
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="sector-selector" style="display:none">
+  <div class="ss-box">
+    <div class="ss-logo">
+      <span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">&#8482;</span>
+    </div>
+    <div class="ss-title">Select your access</div>
+    <div class="ss-sub">Choose which sectors you need. Only selected tabs will be accessible. Specialist is always available.</div>
+
+    <div class="ss-cards">
+      <label class="ss-card" id="sc-net">
+        <input type="checkbox" value="net" onchange="updateSectorPreview()">
+        <div class="ss-card-icon" style="color:var(--tel)">&#9698;</div>
+        <div class="ss-card-name">Network</div>
+        <div class="ss-card-desc">Routers &middot; Switches &middot; Firewalls &middot; WAN</div>
+        <div class="ss-card-proto">SNMP &middot; BGP &middot; OSPF</div>
+        <div class="ss-check">&#10003;</div>
+      </label>
+
+      <label class="ss-card" id="sc-tc">
+        <input type="checkbox" value="tc" onchange="updateSectorPreview()">
+        <div class="ss-card-icon" style="color:var(--blu)">&#9019;</div>
+        <div class="ss-card-name">TelecomCo</div>
+        <div class="ss-card-desc">Base stations &middot; MW backhaul &middot; Towers</div>
+        <div class="ss-card-proto">SNMP &middot; LTE &middot; MW backhaul</div>
+        <div class="ss-check">&#10003;</div>
+      </label>
+
+      <label class="ss-card" id="sc-mc">
+        <input type="checkbox" value="mc" onchange="updateSectorPreview()">
+        <div class="ss-card-icon" style="color:var(--amb)">&#9881;</div>
+        <div class="ss-card-name">MiningCo</div>
+        <div class="ss-card-desc">PLCs &middot; Pumps &middot; Conveyors &middot; Ventilation</div>
+        <div class="ss-card-proto">Profinet &middot; Modbus TCP &middot; DNP3</div>
+        <div class="ss-check">&#10003;</div>
+      </label>
+    </div>
+
+    <div class="ss-quick">
+      <span class="ss-qlbl">Quick select:</span>
+      <button class="ss-qbtn" onclick="quickSelect(['net','tc','mc'])">All three</button>
+      <button class="ss-qbtn" onclick="quickSelect(['net','tc'])">Network + Telecom</button>
+      <button class="ss-qbtn" onclick="quickSelect(['tc','mc'])">Telecom + Mining</button>
+      <button class="ss-qbtn" onclick="quickSelect(['net','mc'])">Network + Mining</button>
+      <button class="ss-qbtn" onclick="quickSelect(['net'])">Network only</button>
+      <button class="ss-qbtn" onclick="quickSelect(['tc'])">Telecom only</button>
+      <button class="ss-qbtn" onclick="quickSelect(['mc'])">Mining only</button>
+    </div>
+
+    <div class="ss-preview" id="ss-preview">Select at least one sector above</div>
+
+    <button class="ss-enter" id="ss-enter" onclick="enterWithSectors()" disabled>
+      Enter IISentinel&#8482; &#8594;
+    </button>
+
+    <div class="ss-note">&#9679; CBS Safety tab follows Mining &middot; Weather &amp; Intelligence always included &middot; Specialist always accessible</div>
+  </div>
+</div>
+
 
 <div id="loader">
   <div class="lspinner"></div>
@@ -262,7 +358,7 @@ body.ops-focus .obs-btn{background:rgba(255,62,80,.2)}
     <div class="hctr-b">Network &middot; Telecom &middot; Mining &middot; CBS Safety &middot; Weather</div>
   </div>
   <div class="hrgt">
-    <div class="live-pill"><span class="ldot"></span><span class="ltxt">LIVE</span></div>
+    <button class="ss-qbtn" style="margin-right:4px;border-color:var(--b2)" onclick="showSectorSelector()">&#9776; Sectors</button><div class="live-pill"><span class="ldot"></span><span class="ltxt">LIVE</span></div>
     <button class="obs-btn" onclick="toggleOps()">&#8853; Focus</button>
     <button class="tbtn" onclick="toggleTheme()">&#9728;</button>
     <button class="btn btn-acc" onclick="exportPDF()">Export PDF</button>
@@ -1019,11 +1115,145 @@ document.addEventListener('keydown',function(e){
   if(n>=1&&n<=tabs.length) tabs[n-1].click();
 });
 
-fetchAll();
-setInterval(fetchAll, 10000);
-fetchPlatform();
-setInterval(fetchPlatform, 12000);
-setInterval(function(){ if(spToken){ loadInc(); updEngDiag(); } }, 15000);
+/* polling started by sector selector boot */
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTOR SELECTOR LOGIC
+   Enforces exclusive sector access — selected sectors only visible.
+   CBS follows Mining. Weather + Intelligence always shown.
+   Specialist always accessible.
+   ═══════════════════════════════════════════════════════════════ */
+var _activeSectors = [];
+
+function updateSectorPreview() {
+  var checked = Array.from(document.querySelectorAll('#sector-selector input[type=checkbox]:checked')).map(function(c){return c.value;});
+  // Update card visual state
+  document.querySelectorAll('.ss-card').forEach(function(card) {
+    var cb = card.querySelector('input');
+    card.classList.toggle('selected', cb && cb.checked);
+  });
+  var btn = document.getElementById('ss-enter');
+  if(btn) btn.disabled = checked.length === 0;
+  // Update preview text
+  var prev = document.getElementById('ss-preview');
+  if(!prev) return;
+  if(checked.length === 0) {
+    prev.textContent = 'Select at least one sector above';
+    return;
+  }
+  var names = {net:'Network',tc:'TelecomCo',mc:'MiningCo'};
+  var parts = checked.map(function(v){return names[v]||v;});
+  var extra = [];
+  if(checked.indexOf('mc') !== -1) extra.push('CBS Safety');
+  extra.push('Weather');extra.push('Intelligence');extra.push('Specialist');
+  prev.innerHTML = '<strong style="color:var(--acc)">You will access: </strong>' +
+    parts.join(' + ') + ' &middot; <span style="color:var(--dim)">' +
+    extra.join(' &middot; ') + ' always included</span>';
+}
+
+function quickSelect(sectors) {
+  document.querySelectorAll('#sector-selector input[type=checkbox]').forEach(function(cb) {
+    cb.checked = sectors.indexOf(cb.value) !== -1;
+  });
+  updateSectorPreview();
+}
+
+function enterWithSectors() {
+  var checked = Array.from(document.querySelectorAll('#sector-selector input[type=checkbox]:checked')).map(function(c){return c.value;});
+  if(checked.length === 0) return;
+  _activeSectors = checked;
+  localStorage.setItem('ii-sectors', JSON.stringify(checked));
+  applySectorAccess(checked);
+  // Hide selector
+  var ss = document.getElementById('sector-selector');
+  if(ss) { ss.style.transition='opacity .4s'; ss.style.opacity='0'; setTimeout(function(){ss.style.display='none';},400); }
+  // Start data
+  fetchAll();
+  setInterval(fetchAll, 10000);
+  fetchPlatform();
+  setInterval(fetchPlatform, 12000);
+  setInterval(function(){ if(spToken){ loadInc(); updEngDiag(); } }, 15000);
+}
+
+function applySectorAccess(sectors) {
+  /* Which nav tabs to show — always show: Dashboard, Weather, Intelligence, Specialist */
+  var alwaysShow = ['main','wx','intel','sp'];
+  var sectorMap  = {net:'net', tc:'tc', mc:'mc'};  // sector key -> page key
+  /* CBS shows only if mining is selected */
+  var showCbs = sectors.indexOf('mc') !== -1;
+
+  document.querySelectorAll('.ntab').forEach(function(tab) {
+    var onclick = tab.getAttribute('onclick') || '';
+    var page = (onclick.match(/goPage\(this,'(\w+)'\)/) || [])[1] || '';
+    if(page === 'cbs') {
+      tab.style.display = showCbs ? '' : 'none';
+    } else if(alwaysShow.indexOf(page) !== -1) {
+      tab.style.display = '';
+    } else {
+      // Check if this page's sector is selected
+      var show = false;
+      for(var s in sectorMap) {
+        if(sectorMap[s] === page && sectors.indexOf(s) !== -1) { show = true; break; }
+      }
+      tab.style.display = show ? '' : 'none';
+    }
+  });
+
+  /* Update header subtitle */
+  var names = {net:'Network',tc:'TelecomCo',mc:'MiningCo'};
+  var parts = sectors.map(function(s){return names[s]||s;});
+  if(showCbs) parts.push('CBS Safety');
+  var sub = document.querySelector('.hctr-b');
+  if(sub) sub.textContent = parts.join(' · ') + ' · Weather · Intelligence';
+
+  /* If only one sector, auto-navigate to it */
+  if(sectors.length === 1) {
+    var pageMap = {net:'net',tc:'tc',mc:'mc'};
+    var targetPage = pageMap[sectors[0]];
+    if(targetPage) {
+      setTimeout(function() {
+        var tab = document.querySelector('.ntab[onclick="goPage(this,\''+targetPage+'\')"]');
+        if(tab) tab.click();
+      }, 300);
+    }
+  }
+}
+
+function showSectorSelector() {
+  var ss = document.getElementById('sector-selector');
+  if(!ss) return;
+  ss.style.display = 'flex';ss.style.opacity = '1';
+  // Reset checkboxes
+  document.querySelectorAll('#sector-selector input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+  document.querySelectorAll('.ss-card').forEach(function(c){c.classList.remove('selected');});
+  updateSectorPreview();
+}
+
+/* ── BOOT: show selector after loader, or restore saved selection ── */
+(function boot() {
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem('ii-sectors')); } catch(e){}
+  var loaderDone = false;
+  function checkShow() {
+    if(!loaderDone) return;
+    var ss = document.getElementById('sector-selector');
+    if(saved && saved.length) {
+      // Restore saved selection immediately
+      _activeSectors = saved;
+      applySectorAccess(saved);
+      if(ss) ss.style.display = 'none';
+      fetchAll();setInterval(fetchAll,10000);
+      fetchPlatform();setInterval(fetchPlatform,12000);
+      setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
+    } else {
+      // Show sector selector
+      if(ss) { ss.style.display='flex'; ss.style.opacity='1'; }
+    }
+  }
+  // Loader auto-dismisses via CSS animation at 3s — watch for it
+  setTimeout(function() { loaderDone = true; checkShow(); }, 3200);
+})();
+
 </script>
 </body>
 </html>
