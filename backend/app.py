@@ -7,6 +7,157 @@ from datetime import datetime, timezone
 from collections import deque
 from email.mime.text import MIMEText
 
+
+# ─────────────────────────────────────────────────────────────────────────
+# A — REGEX PATTERN LIBRARY (single source of truth)
+# ─────────────────────────────────────────────────────────────────────────
+import re as _re
+PATTERNS = {
+    "LINK_STATE":      _re.compile(r"Interface\s([\w\/\.]+),\schanged state to\s(\w+)"),
+    "BGP_NOTIFY":      _re.compile(r"BGP-(\d+)-NOTIFICATION:\s(.+)\sfrom\s([\d.]+)"),
+    "SIGNAL_DBM":      _re.compile(r"Rx level[:\s]+([-\d.]+)\s*dBm", _re.I),
+    "MODBUS_EX":       _re.compile(r"Modbus Exception.*?0x([0-9A-Fa-f]{2})"),
+    "CONVEYOR_TRIP":   _re.compile(r"Conveyor\s([\w-]+)\strip(?:ped)?", _re.I),
+    "PUMP_CAVITATION": _re.compile(r"pump\s([\w-]+)\s(?:cavitat|pressure\sdrop)", _re.I),
+    "CBS_HOLD":        _re.compile(r"^CBS-HOLD:\s(SHAFT-[12]|SURFACE)\s@\s(\d{2}:\d{2}:\d{2})$"),
+    "CBS_CLEAR":       _re.compile(r"^CBS-CLEAR:\s(SHAFT-[12]|SURFACE)\s@\s(\d{2}:\d{2}:\d{2})$"),
+    "SCRIPT_INJECT":   _re.compile(r"<script|javascript:", _re.I),
+    "SQL_INJECT":      _re.compile(r"(\bDROP\b|\bDELETE\b|\bUNION\b)[\s\S]*?\bTABLE\b", _re.I),
+    "PATH_TRAVERSAL":  _re.compile(r"\.\./|\.\.\\ |%2e%2e", _re.I),
+}
+
+def parse_log(raw, source="api"):
+    base = {"raw":raw,"source":source,"parsed":None,"severity":"info","ts":datetime.now(timezone.utc).isoformat()}
+    for pname, sev, build in [
+        ("LINK_STATE",  "critical" if True else "info", lambda m: {"type":"LINK_STATE","iface":m.group(1),"state":m.group(2)}),
+        ("MODBUS_EX",   "warning",                      lambda m: {"type":"MODBUS_EX","code":m.group(1)}),
+        ("CONVEYOR_TRIP","critical",                    lambda m: {"type":"CONVEYOR_TRIP","unit":m.group(1)}),
+        ("PUMP_CAVITATION","warning",                   lambda m: {"type":"PUMP_CAVITATION","unit":m.group(1)}),
+    ]:
+        m = PATTERNS[pname].search(raw)
+        if m:
+            ev = {"type":pname}
+            try: ev.update(build(m))
+            except: pass
+            return {**base,"parsed":ev,"severity":sev}
+    return base
+
+def tag_incident(text):
+    tags=[]
+    if _re.search(r"pump|motor|bearing|vibrat",text,_re.I): tags.append("MECHANICAL")
+    if _re.search(r"conveyor|belt|chute",text,_re.I): tags.append("CONVEYOR")
+    if _re.search(r"ventilat|fan|airflow",text,_re.I): tags.append("VENTILATION")
+    if _re.search(r"shaft[-\s]?1",text,_re.I): tags.append("SHAFT-1")
+    if _re.search(r"shaft[-\s]?2",text,_re.I): tags.append("SHAFT-2")
+    if _re.search(r"network|router|switch|bgp",text,_re.I): tags.append("NETWORK")
+    if _re.search(r"signal|tower|base.?station|mw",text,_re.I): tags.append("TELECOM")
+    return tags
+
+_dedup_seen, _dedup_lock = {}, threading.Lock()
+DEDUP_WINDOW = 30
+
+def is_new_alert(raw):
+    fp = ((_re.search(r"Interface\s[\w\/]+|CBS-\w+|Conveyor\s[\w-]+|pump\s[\w-]+",raw,_re.I) or type("",(),{"group":lambda s,n:raw[:48]})()).group(0) if raw else raw[:48]).lower()
+    now = time.time()
+    with _dedup_lock:
+        if fp in _dedup_seen and now - _dedup_seen[fp] < DEDUP_WINDOW: return False
+        _dedup_seen[fp] = now
+        for k in [k for k,v in _dedup_seen.items() if now-v > DEDUP_WINDOW*2]: del _dedup_seen[k]
+    return True
+
+def handle_cbs_message(raw):
+    is_hold = bool(PATTERNS["CBS_HOLD"].match(raw))
+    is_clear = bool(PATTERNS["CBS_CLEAR"].match(raw))
+    if not is_hold and not is_clear:
+        return {"action":"HOLD","reason":"format_validation_failed","validated":False}
+    m = (PATTERNS["CBS_HOLD"] if is_hold else PATTERNS["CBS_CLEAR"]).match(raw)
+    return {"action":"HOLD" if is_hold else "CLEAR","section":m.group(1),"time":m.group(2),"validated":True}
+
+# ─────────────────────────────────────────────────────────────────────────
+# D — BEHAVIOUR SCORING
+# ─────────────────────────────────────────────────────────────────────────
+_behaviour_events = {}
+_behaviour_scores = {}
+
+def record_behaviour_event(device_id, health_score, anomaly_flag, was_critical):
+    if device_id not in _behaviour_events:
+        _behaviour_events[device_id] = {"anomaly_count":0,"breach_count":0,"recovery_count":0,"readings":0,"last_score":health_score}
+    ev = _behaviour_events[device_id]
+    ev["readings"] += 1
+    if anomaly_flag: ev["anomaly_count"] += 1
+    if health_score < 50: ev["breach_count"] += 1
+    if ev["last_score"] < 20 and health_score >= 50: ev["recovery_count"] += 1
+    ev["last_score"] = health_score
+
+def score_behaviour(device_id):
+    ev = _behaviour_events.get(device_id)
+    if not ev or ev["readings"] < 3: return {"score":None,"grade":"?","reason":"Insufficient readings"}
+    n = max(ev["readings"],1)
+    ar = ev["anomaly_count"]/n; br = ev["breach_count"]/n
+    rp = max(0, ev["breach_count"] - ev["recovery_count"]) / max(n,1)
+    score = round(max(0, min(100, 100 - ar*30 - br*30 - rp*20 - (0 if ev["recovery_count"]>0 else 10))))
+    grade = "A" if score>=90 else "B" if score>=75 else "C" if score>=55 else "D" if score>=35 else "F"
+    result = {"score":score,"grade":grade,"anomaly_rate":round(ar*100,1),"breach_rate":round(br*100,1),"recoveries":ev["recovery_count"],"total_readings":ev["readings"]}
+    _behaviour_scores[device_id] = {**result,"updated_at":datetime.now(timezone.utc).isoformat()}
+    return result
+
+DEVICE_MTBF = {"pump":8760,"conveyor":17520,"ventilation":26280,"plc":52560,"router":43800,"switch":43800,"base_station":35040,"network_tower":43800,"firewall":35000,"scada_node":26280,"power_meter":17520,"sensor":8760,"microwave_link":26280,"cbs_controller":52560,"wan_link":35000}
+
+def predict_next_maintenance(device_id, device_type, health_score):
+    beh = score_behaviour(device_id); b_score = beh.get("score") or 75
+    mtbf = DEVICE_MTBF.get(device_type, 26280)
+    hrs_run = _behaviour_events.get(device_id, {}).get("readings",0) * (10/60)
+    adj_mtbf = mtbf * (1 - (b_score/100)*0.4)
+    hrs_rem = max(0, (adj_mtbf - hrs_run) * (1 - (health_score/100)*0.5))
+    priority = "urgent" if hrs_rem<72 else "scheduled" if hrs_rem<240 else "routine"
+    return {"device_id":device_id,"device_type":device_type,"hours_remaining":round(hrs_rem),"priority":priority,"behaviour_score":b_score,"behaviour_grade":beh.get("grade","?")}
+
+# ─────────────────────────────────────────────────────────────────────────
+# E — TENANT CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────────
+TENANTS = {
+    "default":      {"name":"IISentinel — Full Platform","sectors":["network","telecom","mining","cbs","weather","intelligence"],"protocols":["SNMP","Profinet","Modbus TCP","DNP3","OPC-UA"],"cbs_mandatory":True},
+    "telecom-only": {"name":"TelecomCo Monitor","sectors":["telecom","weather","intelligence"],"protocols":["SNMP","LTE","MW_backhaul"],"cbs_mandatory":False},
+    "mining-only":  {"name":"MiningCo Safety Platform","sectors":["mining","cbs","weather","intelligence"],"protocols":["Profinet","Modbus TCP","OPC-UA","EtherNet/IP","DNP3"],"cbs_mandatory":True,"blast_cost_usd":500000},
+    "network-only": {"name":"Network / ISP Monitor","sectors":["network","weather","intelligence"],"protocols":["SNMP v3","BGP","OSPF","NetFlow","ICMP"],"cbs_mandatory":False},
+}
+ACTIVE_TENANT = os.environ.get("TENANT","default")
+
+# ─────────────────────────────────────────────────────────────────────────
+# F — EVENT ARCHIVE
+# ─────────────────────────────────────────────────────────────────────────
+_archive_buffer, _archive_lock2 = deque(maxlen=200), threading.Lock()
+
+def archive_event(event, tenant_id="default"):
+    record = {"tenant_id":tenant_id,"source":event.get("source","unknown"),"event_type":event.get("parsed",{}).get("type","raw") if event.get("parsed") else "raw","severity":event.get("severity","info"),"device_id":event.get("source",""),"raw":str(event.get("raw",""))[:500],"parsed":json.dumps(event.get("parsed") or {}),"ts":event.get("ts",datetime.now(timezone.utc).isoformat())}
+    with _archive_lock2: _archive_buffer.append(record)
+
+def _flush_archive():
+    while True:
+        time.sleep(10)
+        with _archive_lock2:
+            if not _archive_buffer: continue
+            batch=list(_archive_buffer); _archive_buffer.clear()
+        try:
+            for r in batch: supabase.table("event_archive").insert(r).execute()
+        except Exception as e:
+            print(f"[Archive] {e}")
+            with _archive_lock2:
+                for r in batch[:50]: _archive_buffer.appendleft(r)
+
+threading.Thread(target=_flush_archive, daemon=True).start()
+
+# ─────────────────────────────────────────────────────────────────────────
+# H — PRICING
+# ─────────────────────────────────────────────────────────────────────────
+PRICING = {
+    "network-only": {"model":"per_device","monthly_usd":{"min":15,"max":30},"billing_unit":"device","roi_example":"Avg 73% reduction in MTTR"},
+    "telecom-only": {"model":"per_site","monthly_usd":{"min":200,"max":500},"billing_unit":"tower site","roi_example":"Avg $12,000/hr prevented per outage"},
+    "mining-only":  {"model":"per_site","monthly_usd":{"min":2000,"max":5000},"billing_unit":"mine site","safety_surcharge":True,"roi_example":"$500,000+ protected per CBS event"},
+    "default":      {"model":"enterprise_annual","annual_usd":{"min":60000,"max":200000},"billing_unit":"site licence","roi_example":"Full-stack infrastructure intelligence"},
+}
+
+
 app = Flask(__name__, template_folder='templates')
 CORS(app)
 app.secret_key = os.environ.get('SECRET_KEY', 'iisentinel2026')
@@ -254,6 +405,61 @@ def get_command(device_id, device_type, health_score, blast_hold=False):
     return None
 
 # ── ROUTES ────────────────────────────────────────────────────────────────
+
+@app.route('/api/behaviour')
+def get_behaviour():
+    scores = {}
+    for did in device_history:
+        r = score_behaviour(did)
+        if r.get('score') is not None: scores[did] = r
+    ranked = sorted(scores.items(), key=lambda x: x[1]['score'])
+    return jsonify({'total':len(scores),'ranked':[{'device_id':k,**v} for k,v in ranked],'f_grade':[k for k,v in ranked if v['grade']=='F']})
+
+@app.route('/api/maintenance')
+def get_maintenance():
+    schedule = []
+    recent = {did: hist[-1] for did, hist in device_history.items() if hist}
+    type_map = {}
+    try:
+        resp = supabase.table('metrics').select('device_id,device_type').order('created_at',desc=True).limit(100).execute()
+        for row in resp.data: type_map[row['device_id']] = row['device_type']
+    except: pass
+    for did, score in recent.items():
+        schedule.append(predict_next_maintenance(did, type_map.get(did,'sensor'), score))
+    schedule.sort(key=lambda x: x['hours_remaining'])
+    urgent=[s for s in schedule if s['priority']=='urgent']
+    sched=[s for s in schedule if s['priority']=='scheduled']
+    routine=[s for s in schedule if s['priority']=='routine']
+    return jsonify({'total':len(schedule),'urgent':urgent,'scheduled':sched,'routine':routine,'summary':{'urgent_count':len(urgent),'scheduled_count':len(sched),'routine_count':len(routine)}})
+
+@app.route('/api/tenant')
+def get_tenant():
+    cfg = TENANTS.get(ACTIVE_TENANT, TENANTS['default'])
+    return jsonify({'tenant_key':ACTIVE_TENANT,'config':cfg,'all_tenants':list(TENANTS.keys())})
+
+@app.route('/api/archive')
+def get_archive():
+    tenant_id=request.args.get('tenant',ACTIVE_TENANT)
+    source=request.args.get('source')
+    limit=min(int(request.args.get('limit','100')),500)
+    try:
+        q=supabase.table('event_archive').select('*').eq('tenant_id',tenant_id).order('ts',desc=True).limit(limit)
+        if source: q=q.ilike('source',f'%{source}%')
+        resp=q.execute()
+        return jsonify({'tenant_id':tenant_id,'total':len(resp.data or []),'results':resp.data or []})
+    except Exception as e:
+        return jsonify({'error':str(e)})
+
+@app.route('/api/pricing')
+def get_pricing():
+    key=request.args.get('tenant',ACTIVE_TENANT)
+    p=PRICING.get(key,PRICING['default'])
+    devices=len(device_history)
+    if p['model']=='per_device' and devices>0: quote={'monthly_usd':devices*p['monthly_usd']['min'],'annual_usd':devices*p['monthly_usd']['min']*12,'devices':devices}
+    elif p['model']=='per_site': quote={'monthly_usd':p['monthly_usd']['min'],'annual_usd':p['monthly_usd']['min']*12}
+    else: quote={'annual_usd':p.get('annual_usd',{}).get('min',60000)}
+    return jsonify({'tenant_key':key,'pricing':p,'live_quote':quote,'all_tiers':PRICING})
+
 
 @app.route('/')
 def dashboard():
