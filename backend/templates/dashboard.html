@@ -11,7 +11,7 @@
 ═══════════════════════════════════════════════════════════════════ */
 :root{
   /* Deep Navy base — NOT black */
-  --bg:#060d1a;--s0:#090f1e;--s1:#0c1425;--s2:#101c32;--s3:#15243c;
+  --bg:#0d1928;--s0:#111e30;--s1:#152338;--s2:#1a2a42;--s3:#1f3150;
   --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--b3:rgba(255,255,255,.19);
   --txt:#e0eaf8;--mut:#7a8dae;--dim:#3a506a;
   /* Chromatic palette */
@@ -134,7 +134,7 @@ body.ops-focus header{margin-top:29px;border-bottom-color:rgba(240,46,80,.25)!im
 .ttitle{font-weight:700;font-size:12px;margin-bottom:3px;letter-spacing:-.01em}.tmsg{color:var(--mut);font-size:10.5px}
 
 /* ═══ HEADER ════════════════════════════════════════════════════ */
-header{background:rgba(6,13,26,.9);border-bottom:1px solid var(--b1);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:500;backdrop-filter:var(--blur);transition:margin-top .3s var(--ease),border-color .5s var(--ease)}
+header{background:rgba(12,23,36,.88);border-bottom:1px solid var(--b1);padding:10px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:500;backdrop-filter:var(--blur);transition:margin-top .3s var(--ease),border-color .5s var(--ease)}
 
 /* ─── SENTIENT LOGO — morphs color per section, 1.2s smooth ─── */
 .logo{display:flex;align-items:baseline;gap:0;cursor:pointer;user-select:none;position:relative;padding-bottom:14px}
@@ -171,14 +171,14 @@ body.ops-focus .ops-btn{background:rgba(240,46,80,.16);border-color:var(--red);a
 @keyframes opsBtnPulse{0%,100%{box-shadow:0 0 14px rgba(240,46,80,.35)}50%{box-shadow:0 0 26px rgba(240,46,80,.65)}}
 
 /* ═══ NAV ═══════════════════════════════════════════════════════ */
-nav.mnav{background:rgba(6,13,26,.84);border-bottom:1px solid var(--b1);padding:0 24px;display:flex;gap:0;overflow-x:auto;backdrop-filter:var(--blur);position:relative;z-index:400}
+nav.mnav{background:rgba(12,23,36,.84);border-bottom:1px solid var(--b1);padding:0 24px;display:flex;gap:0;overflow-x:auto;backdrop-filter:var(--blur);position:relative;z-index:400}
 nav.mnav::-webkit-scrollbar{display:none}
 .ntab{padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:.01em;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;transition:all .22s var(--ease);white-space:nowrap;user-select:none}
 .ntab:hover{color:var(--mut)}.ntab.active{color:var(--acc);border-bottom-color:var(--acc)}
 .ntab.t-sp.active{color:var(--pur);border-bottom-color:var(--pur)}.ntab.t-cbs.active{color:var(--red);border-bottom-color:var(--red)}
 
 /* ═══ SUBLOC ════════════════════════════════════════════════════ */
-.subloc{background:rgba(6,13,26,.74);border-bottom:1px solid var(--b1);padding:7px 24px;display:none;gap:6px;align-items:center;flex-wrap:wrap;backdrop-filter:var(--blur);z-index:300;position:relative}
+.subloc{background:rgba(12,23,36,.74);border-bottom:1px solid var(--b1);padding:7px 24px;display:none;gap:6px;align-items:center;flex-wrap:wrap;backdrop-filter:var(--blur);z-index:300;position:relative}
 .subloc.vis{display:flex;animation:fadeUp .22s var(--ease)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .sl-lbl{font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-right:4px}
@@ -212,14 +212,17 @@ nav.mnav::-webkit-scrollbar{display:none}
 /* Fallback gradient shown when PNG loads (behind image) */
 .hero-img .fb{position:absolute;inset:0;z-index:-1}
 /* Overlay gradients — make text readable while PNG shows through */
-.env-hero::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(108deg,rgba(6,13,26,.82) 0%,rgba(6,13,26,.4) 50%,rgba(6,13,26,.12) 100%),linear-gradient(to top,rgba(6,13,26,.76) 0%,transparent 50%)}
+.env-hero::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(108deg,rgba(13,25,40,.84) 0%,rgba(13,25,40,.42) 50%,rgba(13,25,40,.12) 100%),linear-gradient(to top,rgba(13,25,40,.78) 0%,transparent 50%)}
 /* Accent line at bottom of hero */
 .env-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1.5px;z-index:3;background:linear-gradient(90deg,transparent,var(--acc),transparent);opacity:.65;transition:background 1.3s var(--ease)}
 .env-hero>*:not(.hero-img){position:relative;z-index:2}
 .hero-ey{font-size:9px;font-weight:700;letter-spacing:.19em;text-transform:uppercase;color:var(--acc);margin-bottom:7px;text-shadow:0 1px 16px rgba(0,0,0,.8);transition:color 1.2s var(--ease)}
 .hero-h1{font-size:24px;font-weight:900;letter-spacing:-.048em;line-height:1;color:#fff;text-shadow:0 2px 24px rgba(0,0,0,.8);margin-bottom:8px}
-.hero-desc{font-size:11px;color:rgba(190,212,240,.85);line-height:1.6;text-shadow:0 1px 14px rgba(0,0,0,.9);max-width:580px}
-.hero-protos{position:absolute;top:18px;right:22px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.hero-desc{font-size:11px;color:rgba(195,215,242,.86);line-height:1.6;text-shadow:0 1px 14px rgba(0,0,0,.9)}
+/* Hero text wrapper — kept to left 60% so proto badges never overlap */
+.hero-text{max-width:calc(100% - 190px);padding-right:12px}
+@media(max-width:600px){.hero-text{max-width:100%;padding-right:0}.hero-protos{display:none}}
+.hero-protos{position:absolute;top:16px;right:20px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
 .hp{font-size:9px;padding:4px 11px;border-radius:30px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.14);color:rgba(210,228,255,.9);font-weight:700;letter-spacing:.05em;backdrop-filter:blur(10px);font-family:var(--mono);cursor:default;transition:all .2s var(--ease)}
 .hp:hover{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);border-color:var(--acc)}
 
@@ -822,7 +825,7 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
           </svg>
         </div>
       </div>
-      <div>
+      <div class="hero-text">
         <div class="hero-ey" style="color:var(--tel)">Network Monitoring · SNMP · BGP · Real-time</div>
         <div class="hero-h1">Network Infrastructure</div>
         <div class="hero-desc">Core routers · Distribution switches · Firewalls · WAN links<br>ICMP latency · SNMP v2/v3 · BGP/OSPF · NetFlow analysis</div>
@@ -843,6 +846,45 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
       <div class="esb-fill"></div>
       <div class="live-chip"><div class="ldot" style="background:var(--tel)"></div><span class="lc-l" style="color:var(--tel)">Live polling</span></div>
     </div>
+  </div>
+  <!-- NODE REGISTRY — SolarWinds-style: enter IP → auto-pings on load & every 30s -->
+  <div class="card" style="margin-bottom:14px;border-color:rgba(0,212,200,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+      <div class="ctitle" style="color:var(--tel);margin:0">⬡ Node Registry — Live Ping &amp; SNMP Monitor</div>
+      <div style="font-size:9px;color:var(--dim)">Pings every 30s · click row for specs · SNMP via <code style="font-family:var(--mono);color:var(--mut)">node_collector.py</code></div>
+    </div>
+    <!-- Add node form -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-sm)">
+      <input id="nr-ip" class="ainput" style="width:150px" placeholder="IP / hostname">
+      <input id="nr-label" class="ainput" style="width:130px" placeholder="Label (e.g. core-sw-1)">
+      <select id="nr-type" class="ainput" style="width:120px;cursor:pointer">
+        <option value="router">Router</option><option value="switch">Switch</option>
+        <option value="firewall">Firewall</option><option value="wan_link">WAN Link</option>
+        <option value="workstation">Workstation</option>
+      </select>
+      <select id="nr-proto" class="ainput" style="width:110px;cursor:pointer">
+        <option value="ICMP">ICMP ping</option><option value="SNMP">SNMP v2c</option>
+        <option value="SNMP3">SNMP v3</option><option value="HTTP">HTTP probe</option>
+      </select>
+      <button class="btn btn-acc" style="font-size:10px;padding:6px 14px" onclick="addNode('net')">+ Add Node</button>
+      <button class="btn" style="font-size:10px;padding:6px 14px;background:rgba(0,212,200,.12);color:var(--tel);border:1px solid rgba(0,212,200,.25)" onclick="pingAllNodes('net')">↺ Ping All</button>
+    </div>
+    <!-- Node table -->
+    <table style="width:100%;border-collapse:collapse;font-size:11px" id="nr-net-table">
+      <thead><tr style="border-bottom:1px solid var(--b1)">
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Label</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">IP / Host</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Type</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Protocol</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Latency</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Last seen</th>
+        <th style="padding:6px 10px"></th>
+      </tr></thead>
+      <tbody id="nr-net-body">
+        <tr><td colspan="8" style="padding:14px 10px;color:var(--dim);font-size:10px;text-align:center">No nodes registered — add an IP above to begin live polling</td></tr>
+      </tbody>
+    </table>
   </div>
   <div class="ggrid" id="g-net"></div>
   <div class="cgrid">
@@ -874,7 +916,7 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
           </svg>
         </div>
       </div>
-      <div>
+      <div class="hero-text">
         <div class="hero-ey" style="color:var(--blu)">Telecommunications · Live RF Monitoring · MW Backhaul</div>
         <div class="hero-h1" id="tc-env-title">TelecomCo — All Sites</div>
         <div class="hero-desc">Base stations · Network towers · Microwave backhaul<br>Bulawayo HQ · Harare · Mutare Eastern Highlands relay</div>
@@ -899,6 +941,42 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
     </div>
   </div>
   <div class="lcgrid" id="tc-loccards"></div>
+  <!-- TELECOM NODE REGISTRY — tower + MW link pinging -->
+  <div class="card" style="margin-bottom:14px;border-color:rgba(40,196,248,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px">
+      <div class="ctitle" style="color:var(--blu);margin:0">📡 RF Node Registry — Live Beacon &amp; SNMP Monitor</div>
+      <div style="font-size:9px;color:var(--dim)">Pings every 30s · SNMP OID polling via backend</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:11px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-sm)">
+      <input id="tc-ip" class="ainput" style="width:150px" placeholder="IP / hostname">
+      <input id="tc-label" class="ainput" style="width:130px" placeholder="Label (e.g. byo-tower-1)">
+      <select id="tc-type" class="ainput" style="width:130px;cursor:pointer">
+        <option value="base_station">Base Station</option><option value="network_tower">Network Tower</option>
+        <option value="microwave_link">Microwave Link</option>
+      </select>
+      <select id="tc-proto" class="ainput" style="width:110px;cursor:pointer">
+        <option value="SNMP">SNMP v2c</option><option value="ICMP">ICMP ping</option>
+        <option value="SNMP3">SNMP v3</option><option value="HTTP">HTTP probe</option>
+      </select>
+      <button class="btn btn-acc" style="font-size:10px;padding:6px 14px" onclick="addNode('tc')">+ Add Node</button>
+      <button class="btn" style="font-size:10px;padding:6px 14px;background:rgba(40,196,248,.1);color:var(--blu);border:1px solid rgba(40,196,248,.22)" onclick="pingAllNodes('tc')">↺ Ping All</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px" id="nr-tc-table">
+      <thead><tr style="border-bottom:1px solid var(--b1)">
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Status</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Label</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">IP / Host</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Type</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Protocol</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Latency</th>
+        <th style="text-align:left;padding:6px 10px;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700">Last seen</th>
+        <th style="padding:6px 10px"></th>
+      </tr></thead>
+      <tbody id="nr-tc-body">
+        <tr><td colspan="8" style="padding:14px 10px;color:var(--dim);font-size:10px;text-align:center">No nodes registered — add a tower or base station IP above</td></tr>
+      </tbody>
+    </table>
+  </div>
   <div class="ggrid" id="tc-gauges"></div>
   <div class="cgrid">
     <div class="card"><div class="ctitle">TelecomCo health trend</div><canvas id="cTcH"></canvas></div>
@@ -933,7 +1011,7 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
           </svg>
         </div>
       </div>
-      <div>
+      <div class="hero-text">
         <div class="hero-ey" style="color:var(--gld)">Industrial Operations · Safety Critical · DNP3 Monitored</div>
         <div class="hero-h1" id="mc-env-title">MiningCo — All Sections</div>
         <div class="hero-desc">PLCs · Pumps · Conveyors · Ventilation · CBS controller<br>Shaft 1 · Shaft 2 · Processing Plant · Surface Ops</div>
@@ -1061,7 +1139,7 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
         <img src="/static/mine-plant.png" alt="CBS Mine plant" loading="lazy" style="object-position:center 60%;filter:brightness(.5) saturate(.65) hue-rotate(-12deg)" onerror="this.style.display='none'">
         <div class="fb" style="background:linear-gradient(135deg,#140006 0%,#2e0010 35%,#0e0004 65%,#1a0008 100%);position:absolute;inset:0"></div>
       </div>
-      <div>
+      <div class="hero-text">
         <div class="hero-ey" style="color:var(--red)">Safety Critical · DNP3 Protocol · $500,000/blast</div>
         <div class="hero-h1">Centralised Blasting System</div>
         <div class="hero-desc">DNP3 Safety Monitor · Blast authorisation &amp; hold management<br>Auto-interlock below 90% link health · Zero tolerance for protocol deviation</div>
@@ -1379,18 +1457,28 @@ var cOpts = function(yMax) {
         },
         scales: {
             x: {
-                ticks: { color: '#3a506a', font: { size: 8 } },
-                grid: { color: 'rgba(255,255,255,.03)' }
+                ticks: {
+                    color: '#3a506a',
+                    font: { size: 8 }
+                },
+                grid: {
+                    color: 'rgba(255,255,255,.03)'
+                }
             },
             y: {
                 min: 0,
                 max: yMax || 100,
-                ticks: { color: '#3a506a', font: { size: 8 } },
-                grid: { color: 'rgba(255,255,255,.03)' }
+                ticks: {
+                    color: '#3a506a',
+                    font: { size: 8 }
+                },
+                grid: {
+                    color: 'rgba(255,255,255,.03)'
+                }
             }
         }
     };
-}; // <-- Only ONE closing brace + semicolon for the assignment.var mkC=function(id,type,lbl,col,yMax){return new Chart(document.getElementById(id),{type:type,data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col.replace('rgb','rgba').replace(')',',0.08)'),borderWidth:1.5,tension:.45,fill:true,pointRadius:2}]},options:cOpts(yMax||100)});};
+};var mkC=function(id,type,lbl,col,yMax){return new Chart(document.getElementById(id),{type:type,data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col.replace('rgb','rgba').replace(')',',0.08)'),borderWidth:1.5,tension:.45,fill:true,pointRadius:2}]},options:cOpts(yMax||100)});};
 var cMain  =mkC('cMain','line','Health','rgba(40,196,248,1)');
 var cDist  =new Chart(document.getElementById('cDist'),{type:'bar',data:{labels:['0–20','20–40','40–60','60–80','80–100'],datasets:[{label:'Devices',data:[0,0,0,0,0],backgroundColor:['rgba(240,46,80,.72)','rgba(242,149,16,.72)','rgba(242,149,16,.4)','rgba(34,224,122,.4)','rgba(34,224,122,.72)'],borderRadius:5}]},options:cOpts(20)});
 var cNet   =mkC('cNet','line','Network','rgba(0,212,200,1)');
@@ -1784,6 +1872,129 @@ function initSSE(){
   });
   _sseConn.onerror=function(){setTimeout(initSSE,5000);};
 }
+/* ═══ NODE REGISTRY — SolarWinds-style live ping ════════════════
+   Nodes stored in localStorage, pinged via /api/ping on backend.
+   Falls back to simulated ping if backend endpoint not available.
+═════════════════════════════════════════════════════════════════*/
+var nodeRegistries={net:[],tc:[]};
+/* Load persisted nodes */
+try{var _saved=localStorage.getItem('ii-nodes');if(_saved){nodeRegistries=JSON.parse(_saved);}}catch(e){}
+
+function saveNodes(){try{localStorage.setItem('ii-nodes',JSON.stringify(nodeRegistries));}catch(e){}}
+
+function addNode(sector){
+  var ipEl=document.getElementById(sector==='net'?'nr-ip':'tc-ip');
+  var lblEl=document.getElementById(sector==='net'?'nr-label':'tc-label');
+  var typeEl=document.getElementById(sector==='net'?'nr-type':'tc-type');
+  var protoEl=document.getElementById(sector==='net'?'nr-proto':'tc-proto');
+  var ip=(ipEl.value||'').trim();var lbl=(lblEl.value||'').trim();
+  if(!ip){toast('Node registry','Please enter an IP address or hostname','tw');return;}
+  var node={id:'node-'+Date.now(),ip:ip,label:lbl||ip,type:typeEl.value,proto:protoEl.value,status:'pending',latency:null,last_seen:null,error:null};
+  nodeRegistries[sector].push(node);saveNodes();
+  ipEl.value='';lblEl.value='';
+  renderNodeTable(sector);
+  pingNode(node,sector);
+  toast('Node added',node.label+' ('+ip+') registered — pinging…','');
+}
+
+function removeNode(sector,id){
+  nodeRegistries[sector]=nodeRegistries[sector].filter(function(n){return n.id!==id;});
+  saveNodes();renderNodeTable(sector);
+}
+
+function renderNodeTable(sector){
+  var bodyId=sector==='net'?'nr-net-body':'nr-tc-body';
+  var body=document.getElementById(bodyId);if(!body)return;
+  var nodes=nodeRegistries[sector];
+  if(!nodes.length){
+    body.innerHTML='<tr><td colspan="8" style="padding:14px 10px;color:var(--dim);font-size:10px;text-align:center">No nodes registered — add an IP above to begin live polling</td></tr>';
+    return;
+  }
+  body.innerHTML=nodes.map(function(n){
+    var statColor=n.status==='up'?'var(--grn)':n.status==='down'?'var(--red)':n.status==='pending'?'var(--amb)':'var(--dim)';
+    var statLabel=n.status==='up'?'● UP':n.status==='down'?'● DOWN':n.status==='pending'?'○ Pinging…':'● Unknown';
+    var latStr=n.latency!==null?n.latency+'ms':'--';
+    var lastStr=n.last_seen?new Date(n.last_seen).toLocaleTimeString():'--';
+    return'<tr style="border-bottom:1px solid var(--b1);transition:background .15s" onmouseover="this.style.background=\'rgba(255,255,255,.025)\'" onmouseout="this.style.background=\'\'">'+
+      '<td style="padding:7px 10px;font-family:var(--mono);font-size:10px;font-weight:700;color:'+statColor+'">'+statLabel+'</td>'+
+      '<td style="padding:7px 10px;font-weight:600;color:var(--txt)">'+n.label+'</td>'+
+      '<td style="padding:7px 10px;font-family:var(--mono);font-size:10px;color:var(--mut)">'+n.ip+'</td>'+
+      '<td style="padding:7px 10px;font-size:10px;color:var(--dim)">'+n.type+'</td>'+
+      '<td style="padding:7px 10px"><span style="font-size:8px;padding:2px 7px;border-radius:20px;border:1px solid var(--b2);color:var(--dim);font-family:var(--mono)">'+n.proto+'</span></td>'+
+      '<td style="padding:7px 10px;font-family:var(--mono);font-size:10px;color:'+(n.latency!==null&&n.latency<50?'var(--grn)':n.latency!==null&&n.latency<150?'var(--amb)':'var(--red)')+'">'+latStr+'</td>'+
+      '<td style="padding:7px 10px;font-size:10px;color:var(--dim)">'+lastStr+'</td>'+
+      '<td style="padding:7px 10px"><button onclick="removeNode(\''+sector+'\',\''+n.id+'\')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:2px 6px;border-radius:4px" title="Remove node">✕</button>'+
+      '<button onclick="pingNode(nodeRegistries[\''+sector+'\'].find(function(n){return n.id===\''+n.id+'\'}),\''+sector+'\')" style="background:none;border:none;color:var(--tel);cursor:pointer;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:2px" title="Ping now">↺</button>'+
+      '</td></tr>';
+  }).join('');
+}
+
+async function pingNode(node,sector){
+  if(!node)return;
+  node.status='pending';renderNodeTable(sector);
+  try{
+    /* Try backend /api/ping first */
+    var r=await fetch(B+'/api/ping',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ip:node.ip,device_id:node.label,device_type:node.type,protocol:node.proto})});
+    if(r.ok){
+      var d=await r.json();
+      node.status=d.status||'up';node.latency=d.latency_ms||null;node.last_seen=Date.now();
+      /* Also post to metrics so it appears in gauges */
+      if(d.latency_ms){
+        fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({device_id:node.label,device_type:node.type,protocol:node.proto,
+            metric_name:'latency_ms',metric_value:d.latency_ms,latency_ms:d.latency_ms,
+            signal_strength:d.status==='up'?Math.max(0,100-d.latency_ms*0.5):0})});
+      }
+    } else { throw new Error('backend unavailable'); }
+  } catch(e){
+    /* Fallback: fetch with timeout to test connectivity, measure round-trip */
+    var t0=performance.now();
+    try{
+      await Promise.race([
+        fetch('http://'+node.ip,{mode:'no-cors',signal:AbortSignal.timeout(3000)}),
+        new Promise(function(_,rej){setTimeout(function(){rej(new Error('timeout'));},3000)})
+      ]);
+      var rtt=Math.round(performance.now()-t0);
+      node.status='up';node.latency=rtt;node.last_seen=Date.now();
+    }catch(e2){
+      /* Network unreachable or CORS block — if timeout, it's down; if CORS, treat as reachable */
+      var isTimeout=e2.message==='timeout'||e2.name==='AbortError'||e2.name==='TimeoutError';
+      var rtt2=Math.round(performance.now()-t0);
+      if(isTimeout){node.status='down';node.latency=null;}
+      else{node.status='up';node.latency=rtt2;} /* CORS error = host responded */
+      node.last_seen=Date.now();
+    }
+    /* Post simulated metric */
+    if(node.status==='up'&&node.latency!==null){
+      try{fetch(B+'/api/metrics',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({device_id:node.label,device_type:node.type,protocol:node.proto,
+          metric_name:'latency_ms',metric_value:node.latency,latency_ms:node.latency,
+          signal_strength:Math.max(0,100-node.latency*0.5)})});}catch(ex){}
+    }
+  }
+  saveNodes();renderNodeTable(sector);
+}
+
+function pingAllNodes(sector){
+  var nodes=nodeRegistries[sector];
+  if(!nodes.length){toast('No nodes','Add nodes first','tw');return;}
+  nodes.forEach(function(n){pingNode(n,sector);});
+  toast('Pinging all','Polling '+nodes.length+' node'+(nodes.length>1?'s':'')+'…','');
+}
+
+/* Auto-ping on page open & every 30s */
+function initNodePolling(){
+  ['net','tc'].forEach(function(sector){
+    renderNodeTable(sector);
+    pingAllNodes(sector);
+  });
+  setInterval(function(){['net','tc'].forEach(pingAllNodes);},30000);
+}
+
+setTimeout(initNodePolling,5000);/* Wait for app to boot */
+/* ══════════════════════════════════════════════════════════════ */
+
 setTimeout(initSSE,4300);
 </script>
 </body>
