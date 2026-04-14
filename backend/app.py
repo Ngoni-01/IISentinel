@@ -12,12 +12,12 @@ from collections import deque
 from datetime import datetime, timezone
 from io import BytesIO
 from functools import wraps
-from email.mime.text import 
+from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import queue as _q
 import numpy as np
 import joblib
-import requests as reqMIMEText
+import requests as req
 from flask import Flask, request, jsonify, send_file, Response, stream_with_context
 
 # ── Optional flask_cors ───────────────────────────────────────────────────
