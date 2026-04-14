@@ -4,146 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>IISentinel&#8482; &#8212; Intelligent Infrastructure Platform</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
-/* ════ SECTOR SELECTOR ════ */
-var _activeSectors=['net','tc','mc'];
-function updateSectorPreview(){
-  var checked=Array.from(document.querySelectorAll('#ss-cards input[type=checkbox]:checked')).map(function(c){return c.value;});
-  document.querySelectorAll('#ss-cards label').forEach(function(card){
-    var cb=card.querySelector('input');card.classList.toggle('selected',cb&&cb.checked);
-  });
-  var btn=document.getElementById('ss-enter');if(btn){btn.disabled=checked.length===0;btn.style.opacity=checked.length?'1':'.25';}
-  var prev=document.getElementById('ss-preview');if(!prev)return;
-  if(!checked.length){prev.textContent='Select at least one sector above';return;}
-  var names={net:'Network',tc:'TelecomCo',mc:'MiningCo'};
-  var extra=[];if(checked.indexOf('mc')!==-1)extra.push('CBS Safety');extra.push('Weather','Intelligence','Specialist');
-  prev.innerHTML='<strong style="color:var(--acc)">You will access: </strong>'+checked.map(function(v){return names[v]||v;}).join(' + ')+' <span style="color:var(--dim)">· '+extra.join(' · ')+'</span>';
-}
-function quickSelect(sectors){
-  document.querySelectorAll('#ss-cards input[type=checkbox]').forEach(function(cb){cb.checked=sectors.indexOf(cb.value)!==-1;});
-  updateSectorPreview();
-}
-function enterWithSectors(){
-  var checked=Array.from(document.querySelectorAll('#ss-cards input[type=checkbox]:checked')).map(function(c){return c.value;});
-  if(!checked.length)return;
-  _activeSectors=checked;try{localStorage.setItem('ii-sectors',JSON.stringify(checked));}catch(e){}
-  applySectorTabs(checked);
-  var ss=document.getElementById('sector-selector');
-  if(ss){ss.style.transition='opacity .5s';ss.style.opacity='0';setTimeout(function(){ss.style.display='none';},500);}
-  fetchAll();setInterval(fetchAll,10000);fetchPlatform();setInterval(fetchPlatform,12000);
-  setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
-  setInterval(function(){if(_activeSectors.indexOf('net')!==-1)checkAllNodes('net');if(_activeSectors.indexOf('tc')!==-1)checkAllNodes('tc');},30000);
-}
-function applySectorTabs(sectors){
-  var always=['main','wx','intel','sp'];
-  var showCbs=sectors.indexOf('mc')!==-1;
-  document.querySelectorAll('.ntab').forEach(function(tab){
-    var oc=tab.getAttribute('onclick')||'';var page=(oc.match(/goPage\(this,'(\w+)'\)/)||[])[1]||'';
-    if(!page)return;
-    if(always.indexOf(page)!==-1){tab.style.display='';}
-    else if(page==='cbs'){tab.style.display=showCbs?'':'none';}
-    else{tab.style.display=(sectors.indexOf(page)!==-1)?'':'none';}
-  });
-}
-function showSectorSelector(){
-  var ss=document.getElementById('sector-selector');if(!ss)return;
-  ss.style.display='flex';ss.style.opacity='1';
-  document.querySelectorAll('#ss-cards input').forEach(function(cb){cb.checked=false;});
-  document.querySelectorAll('#ss-cards label').forEach(function(l){l.classList.remove('selected');});
-  updateSectorPreview();
-}
-/* Boot: check saved sectors or show selector */
-(function boot(){
-  var saved=null;try{saved=JSON.parse(localStorage.getItem('ii-sectors'));}catch(e){}
-  setTimeout(function(){
-    var ss=document.getElementById('sector-selector');
-    if(saved&&saved.length){
-      _activeSectors=saved;applySectorTabs(saved);if(ss)ss.style.display='none';
-      fetchAll();setInterval(fetchAll,10000);fetchPlatform();setInterval(fetchPlatform,12000);
-      setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
-      setInterval(function(){if(_activeSectors.indexOf('net')!==-1)checkAllNodes('net');if(_activeSectors.indexOf('tc')!==-1)checkAllNodes('tc');},30000);
-    }else{if(ss){ss.style.display='flex';ss.style.opacity='1';}}
-  },3200);
-})();
-
-/* ════ IP NODE MONITOR ════ */
-var _ipNodes={net:[],tc:[]};
-(function loadSavedIpNodes(){
-  try{var saved=JSON.parse(localStorage.getItem('ii-ip-nodes')||'{}');if(saved.net)_ipNodes.net=saved.net;if(saved.tc)_ipNodes.tc=saved.tc;}catch(e){}
-  setTimeout(function(){renderNodes('net');renderNodes('tc');checkAllNodes('net');checkAllNodes('tc');},4500);
-})();
-function saveNodes(){try{localStorage.setItem('ii-ip-nodes',JSON.stringify(_ipNodes));}catch(e){}}
-function addNode(sect){
-  var nameEl=document.getElementById('ip-name-'+sect);var addrEl=document.getElementById('ip-addr-'+sect);
-  var addr=(addrEl.value||'').trim();var name=(nameEl.value||'').trim()||addr;
-  if(!addr)return;
-  if(!addr.match(/^[\w\.\-\:]+$/)){toast('Invalid','Enter a valid IP or hostname','tc');return;}
-  if(_ipNodes[sect].find(function(n){return n.addr===addr;})){toast('Already added',addr+' is in the list','tw');return;}
-  _ipNodes[sect].push({name:name,addr:addr,status:'unknown',latency:null,checked:null,extra:null});
-  nameEl.value='';addrEl.value='';saveNodes();renderNodes(sect);checkNode(sect,addr);
-}
-function removeNode(sect,addr){
-  _ipNodes[sect]=_ipNodes[sect].filter(function(n){return n.addr!==addr;});saveNodes();renderNodes(sect);
-}
-function renderNodes(sect){
-  var grid=document.getElementById('ip-grid-'+sect);if(!grid)return;
-  var nodes=_ipNodes[sect];
-  if(!nodes.length){grid.innerHTML='<div style="color:var(--dim);font-size:11px;padding:10px;grid-column:1/-1">No nodes added</div>';return;}
-  grid.innerHTML=nodes.map(function(n){
-    var sc2=n.status;
-    var stxt=sc2==='up'?'Connected':sc2==='down'?'Unreachable':sc2==='checking'?'Checking\u2026':'Not checked';
-    var scol=sc2==='up'?'var(--grn)':sc2==='down'?'var(--red)':sc2==='checking'?'var(--amb)':'var(--dim)';
-    var lat=n.latency!==null?(n.latency<1?'<1 ms':n.latency+' ms'):'--';
-    var chk=n.checked?new Date(n.checked).toLocaleTimeString():'Never';
-    var ports='';
-    if(n.extra){
-      if(n.extra.tcp_22!==undefined)ports+='SSH '+(n.extra.tcp_22?'<span style="color:var(--grn)">&#9679;</span>':'<span style="color:var(--dim)">&#9675;</span>')+'  ';
-      if(n.extra.tcp_80!==undefined)ports+='HTTP '+(n.extra.tcp_80?'<span style="color:var(--grn)">&#9679;</span>':'<span style="color:var(--dim)">&#9675;</span>')+'  ';
-      if(n.extra.tcp_443!==undefined)ports+='HTTPS '+(n.extra.tcp_443?'<span style="color:var(--grn)">&#9679;</span>':'<span style="color:var(--dim)">&#9675;</span>')+'  ';
-      if(n.extra.tcp_161!==undefined)ports+='SNMP '+(n.extra.tcp_161?'<span style="color:var(--grn)">&#9679;</span>':'<span style="color:var(--dim)">&#9675;</span>');
-    }
-    return'<div class="ip-node '+sc2+'">'
-      +'<button class="ip-node-del" onclick="removeNode(\''+sect+'\',\''+n.addr+'\')">&#10005;</button>'
-      +'<div class="ip-node-name">'+n.name+'</div>'
-      +'<div class="ip-node-addr">'+n.addr+'</div>'
-      +'<div style="font-size:11px;font-weight:700;color:'+scol+'"><span class="ip-status-dot '+sc2+'"></span>'+stxt+'</div>'
-      +'<div style="font-size:10px;color:var(--dim);font-family:monospace;margin-top:3px">Response: '+lat+'</div>'
-      +(ports?'<div style="font-size:9px;color:var(--mut);margin-top:5px;line-height:1.8">'+ports+'</div>':'')
-      +'<div style="font-size:9px;color:var(--dim);margin-top:4px">Last checked: '+chk+'</div>'
-      +'</div>';
-  }).join('');
-}
-async function checkNode(sect,addr){
-  var node=_ipNodes[sect].find(function(n){return n.addr===addr;});if(!node)return;
-  node.status='checking';renderNodes(sect);
-  try{
-    var r=await fetch(B+'/api/check-node',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({host:addr})});
-    if(!r.ok)throw new Error('no-api');
-    var d=await r.json();
-    node.status=d.reachable?'up':'down';node.latency=d.latency_ms;node.extra=d.ports||null;
-  }catch(e){
-    /* Fallback: browser fetch — works for http endpoints, shows up if any response */
-    var t0=Date.now();
-    try{
-      await fetch('http://'+addr+'/',{mode:'no-cors',signal:AbortSignal.timeout(3500)});
-      node.status='up';node.latency=Date.now()-t0;node.extra=null;
-    }catch(fe){
-      /* Try https */
-      try{
-        var t1=Date.now();
-        await fetch('https://'+addr+'/',{mode:'no-cors',signal:AbortSignal.timeout(3500)});
-        node.status='up';node.latency=Date.now()-t1;node.extra=null;
-      }catch(fe2){node.status='down';node.latency=null;node.extra=null;}
-    }
-  }
-  node.checked=Date.now();saveNodes();renderNodes(sect);
-}
-function checkAllNodes(sect){(_ipNodes[sect]||[]).forEach(function(n){checkNode(sect,n.addr);});}
-
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-</style>:root{
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
   --bg:#080d18;--s1:#0c1122;--s2:#101628;--s3:#141c30;
   --b1:rgba(255,255,255,0.055);--b2:rgba(255,255,255,0.10);--b3:rgba(255,255,255,0.18);
   --txt:#e4eaf6;--mut:#8592a8;--dim:#4a5270;
@@ -1331,82 +1195,9 @@ function updTwinSel(dm){
 }
 
 async function runTwin(){const devId=document.getElementById('twin-sel').value;if(!devId)return;const scDiv=document.getElementById('twin-grid'),tDiv=document.getElementById('twin-trend');scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Running simulation via /api/twin/...</div>';try{const r=await fetch(B+'/api/twin/'+encodeURIComponent(devId));if(!r.ok){scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">No history for this device yet \u2014 need 3+ readings</div>';return;}const d=await r.json();scDiv.innerHTML='';const rate=COST_RATES[allData.find(r=>r.device_id===devId)?.device_type]||8000;d.scenarios.forEach(s=>{const col=s.risk==='safe'?'var(--grn)':s.risk==='warning'?'var(--amb)':'var(--red)';const impact=s.risk==='critical'?rate*.95:s.risk==='warning'?rate*.6:0;scDiv.innerHTML+=`<div class="twin-sc ${s.risk}"><div class="twin-load">Load ${s.load_increase}</div><div class="twin-score" style="color:${col}">${s.predicted_score}</div><div class="twin-risk" style="color:${col}">${s.risk}${s.anomaly_predicted?' \u00b7 ANOM':''}</div>${impact>0?`<div style="font-size:8px;color:${col};margin-top:3px">$${Math.round(impact/1000)}k/hr risk</div>`:''}</div>`;});const tr=d.trend;if(tr.direction!=='insufficient data'){const col=tr.direction==='declining'?'var(--red)':tr.direction==='improving'?'var(--grn)':'var(--mut)';tDiv.innerHTML=`Current: <strong>${d.current_score}</strong> \u00b7 Trend: <span style="color:${col}">${tr.direction}</span> (${tr.slope_per_reading>0?'+':''}${tr.slope_per_reading}/reading)${tr.readings_to_critical?` \u00b7 Critical in ~<strong>${tr.readings_to_critical} readings</strong>`:''}`;} else{tDiv.textContent='Accumulating readings for trend analysis...';}toast('Digital twin complete',`${sid(devId)}: safe at +10%, ${d.scenarios[1]?.risk||'?'} at +20% load`,'');}catch(e){scDiv.innerHTML=`<div style="color:var(--red);font-size:11px">Simulation error: ${e.message}</div>`;}}
-</script>
 
-function updEngDiag() {
-  const dm = {};
-  allData.forEach(r => {
-    if (!dm[r.device_id]) dm[r.device_id] = r;
-  });
-  const netDevs = Object.values(dm).filter(d => isNet(d)).slice(0, 6);
-  const ntbl = document.getElementById('en-net-table');
-  if (ntbl && netDevs.length) {
-    ntbl.innerHTML = netDevs.map(d => {
-      const s = Math.round(d.health_score);
-      const util = Math.min(100, Math.round(d.metric_value || 0));
-      const crcs = d.anomaly_flag ? Math.floor(Math.random() * 8) + 1 : 0;
-      const state = s > 70 ? '<span class="eb eb-ok">UP</span>' : s > 40 ? '<span class="eb eb-w">DEGRADED</span>' : '<span class="eb eb-r">DOWN</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${util > 80 ? 'ev-r' : util > 60 ? 'ev-w' : 'ev-ok'}">${util}%</td><td class="${crcs > 0 ? 'ev-w' : 'ev-ok'}">${crcs}</td><td>${state}</td></tr>`;
-    }).join('');
-  }
-  const rtrs = Object.values(dm).filter(d => d.device_type === 'router').slice(0, 5);
-  const btbl = document.getElementById('en-bgp-table');
-  if (btbl && rtrs.length) {
-    btbl.innerHTML = rtrs.map(d => {
-      const s = Math.round(d.health_score);
-      const nbrs = s > 70 ? Math.floor(Math.random() * 3) + 2 : s > 40 ? 1 : 0;
-      const state = s > 70 ? '<span class="eb eb-ok">ESTABLISHED</span>' : s > 40 ? '<span class="eb eb-w">IDLE</span>' : '<span class="eb eb-r">ACTIVE</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td>BGP/OSPF</td><td class="${nbrs < 2 ? 'ev-w' : 'ev-ok'}">${nbrs}</td><td>${state}</td></tr>`;
-    }).join('');
-  }
-  const tcDevs = Object.values(dm).filter(d => isTc(d)).slice(0, 5);
-  const rftbl = document.getElementById('en-rf-table');
-  if (rftbl && tcDevs.length) {
-    rftbl.innerHTML = tcDevs.map(d => {
-      const s = Math.round(d.health_score);
-      const rxDbm = s > 70 ? -(Math.random() * 10 + 48).toFixed(1) : s > 40 ? -(Math.random() * 15 + 65).toFixed(1) : -(Math.random() * 20 + 82).toFixed(1);
-      const snr = s > 70 ? (Math.random() * 10 + 22).toFixed(1) : s > 40 ? (Math.random() * 8 + 10).toFixed(1) : (Math.random() * 5 + 2).toFixed(1);
-      const ber = s > 70 ? `1e-${Math.floor(Math.random() * 3 + 7)}` : '1e-4';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${rxDbm < -75 ? 'ev-r' : rxDbm < -65 ? 'ev-w' : 'ev-ok'}">${rxDbm}</td><td class="${snr < 12 ? 'ev-r' : snr < 18 ? 'ev-w' : 'ev-ok'}">${snr}</td><td class="${ber === '1e-4' ? 'ev-r' : 'ev-ok'}">${ber}</td></tr>`;
-    }).join('');
-  }
-  const indDevs = Object.values(dm).filter(d => isMc(d)).slice(0, 5);
-  const itbl = document.getElementById('en-ind-table');
-  if (itbl && indDevs.length) {
-    itbl.innerHTML = indDevs.map(d => {
-      const s = Math.round(d.health_score);
-      // --- FIX: replaced optional chaining with a safe ternary ---
-      const lc = intel.lifecycles ? intel.lifecycles[d.device_id] : undefined;
-      const mtbf = lc ? Math.round(lc) : s > 70 ? Math.floor(Math.random() * 4000 + 3000) : Math.floor(Math.random() * 800 + 400);
-      const oee = s > 70 ? Math.floor(Math.random() * 12 + 82) : s > 40 ? Math.floor(Math.random() * 18 + 55) : Math.floor(Math.random() * 25 + 20);
-      const cond = s > 70 ? '<span class="eb eb-ok">NOMINAL</span>' : s > 40 ? '<span class="eb eb-w">MONITOR</span>' : '<span class="eb eb-r">CRITICAL</span>';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${mtbf < 800 ? 'ev-r' : mtbf < 2000 ? 'ev-w' : 'ev-ok'}">${mtbf.toLocaleString()}</td><td class="${oee < 60 ? 'ev-r' : oee < 75 ? 'ev-w' : 'ev-ok'}">${oee}</td><td>${cond}</td></tr>`;
-    }).join('');
-  }
-  const allDevs2 = Object.values(dm).slice(0, 5);
-  const qtbl = document.getElementById('en-qos-table');
-  if (qtbl && allDevs2.length) {
-    qtbl.innerHTML = allDevs2.map(d => {
-      const s = Math.round(d.health_score);
-      const jitter = s > 70 ? (Math.random() * 2 + .5).toFixed(1) : s > 40 ? (Math.random() * 8 + 3).toFixed(1) : (Math.random() * 20 + 10).toFixed(1);
-      const drops = s > 70 ? 0 : s > 40 ? Math.floor(Math.random() * 40) : Math.floor(Math.random() * 400 + 40);
-      const dscp = isNet(d) ? 'EF/AF41' : 'BE';
-      return `<tr><td>${sid(d.device_id)}</td><td class="${jitter > 5 ? 'ev-r' : jitter > 2 ? 'ev-w' : 'ev-ok'}">${jitter}</td><td class="${drops > 100 ? 'ev-r' : drops > 10 ? 'ev-w' : 'ev-ok'}">${drops}</td><td>${dscp}</td></tr>`;
-    }).join('');
-  }
-  const cbsDevs = Object.values(dm).filter(d => isCbs(d));
-  const ctbl = document.getElementById('en-cbs-table');
-  if (ctbl && cbsDevs.length) {
-    ctbl.innerHTML = cbsDevs.map(d => {
-      const s = Math.round(d.health_score);
-      const lq = s > 90 ? '<span class="eb eb-ok">GOOD</span>' : s > 70 ? '<span class="eb eb-w">MARGINAL</span>' : '<span class="eb eb-r">DEGRADED</span>';
-      const lastHold = s < 90 ? fmt(d.created_at) : 'None';
-      const mttr = Math.floor(Math.random() * 10 + 4);
-const styleColor = `color:${lastHold !== 'None' ? 'var(--amb)' : 'var(--grn)'};font-size:9px`;
-return `<tr><td>${sid(d.device_id)}</td><td>${lq}</td><td style="color:${lastHold !== 'None' ? 'var(--amb)' : 'var(--grn)'};font-size:9px">${lastHold}</td><td>${mttr}</td></tr>`;  } else if (ctbl) {
-    ctbl.innerHTML = '<tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr>';
-  }
-}
+function updEngDiag(){const dm={};allData.forEach(r=>{if(!dm[r.device_id])dm[r.device_id]=r;});const netDevs=Object.values(dm).filter(d=>isNet(d)).slice(0,6);const ntbl=document.getElementById('en-net-table');if(ntbl&&netDevs.length){ntbl.innerHTML=netDevs.map(d=>{const s=Math.round(d.health_score);const util=Math.min(100,Math.round(d.metric_value||0));const crcs=d.anomaly_flag?Math.floor(Math.random()*8)+1:0;const state=s>70?'<span class="eb eb-ok">UP</span>':s>40?'<span class="eb eb-w">DEGRADED</span>':'<span class="eb eb-r">DOWN</span>';return `<tr><td>${sid(d.device_id)}</td><td class="${util>80?'ev-r':util>60?'ev-w':'ev-ok'}">${util}%</td><td class="${crcs>0?'ev-w':'ev-ok'}">${crcs}</td><td>${state}</td></tr>`;}).join('');}const rtrs=Object.values(dm).filter(d=>d.device_type==='router').slice(0,5);const btbl=document.getElementById('en-bgp-table');if(btbl&&rtrs.length){btbl.innerHTML=rtrs.map(d=>{const s=Math.round(d.health_score);const nbrs=s>70?Math.floor(Math.random()*3)+2:s>40?1:0;const state=s>70?'<span class="eb eb-ok">ESTABLISHED</span>':s>40?'<span class="eb eb-w">IDLE</span>':'<span class="eb eb-r">ACTIVE</span>';return `<tr><td>${sid(d.device_id)}</td><td>BGP/OSPF</td><td class="${nbrs<2?'ev-w':'ev-ok'}">${nbrs}</td><td>${state}</td></tr>`;}).join('');}const tcDevs=Object.values(dm).filter(d=>isTc(d)).slice(0,5);const rftbl=document.getElementById('en-rf-table');if(rftbl&&tcDevs.length){rftbl.innerHTML=tcDevs.map(d=>{const s=Math.round(d.health_score);const rxDbm=s>70?-(Math.random()*10+48).toFixed(1):s>40?-(Math.random()*15+65).toFixed(1):-(Math.random()*20+82).toFixed(1);const snr=s>70?(Math.random()*10+22).toFixed(1):s>40?(Math.random()*8+10).toFixed(1):(Math.random()*5+2).toFixed(1);const ber=s>70?`1e-${Math.floor(Math.random()*3+7)}`:'1e-4';return `<tr><td>${sid(d.device_id)}</td><td class="${rxDbm<-75?'ev-r':rxDbm<-65?'ev-w':'ev-ok'}">${rxDbm}</td><td class="${snr<12?'ev-r':snr<18?'ev-w':'ev-ok'}">${snr}</td><td class="${ber==='1e-4'?'ev-r':'ev-ok'}">${ber}</td></tr>`;}).join('');}const indDevs=Object.values(dm).filter(d=>isMc(d)).slice(0,5);const itbl=document.getElementById('en-ind-table');if(itbl&&indDevs.length){itbl.innerHTML=indDevs.map(d=>{const s=Math.round(d.health_score);const lc=intel.lifecycles?.[d.device_id];const mtbf=lc?Math.round(lc):s>70?Math.floor(Math.random()*4000+3000):Math.floor(Math.random()*800+400);const oee=s>70?Math.floor(Math.random()*12+82):s>40?Math.floor(Math.random()*18+55):Math.floor(Math.random()*25+20);const cond=s>70?'<span class="eb eb-ok">NOMINAL</span>':s>40?'<span class="eb eb-w">MONITOR</span>':'<span class="eb eb-r">CRITICAL</span>';return `<tr><td>${sid(d.device_id)}</td><td class="${mtbf<800?'ev-r':mtbf<2000?'ev-w':'ev-ok'}">${mtbf.toLocaleString()}</td><td class="${oee<60?'ev-r':oee<75?'ev-w':'ev-ok'}">${oee}</td><td>${cond}</td></tr>`;}).join('');}const allDevs2=Object.values(dm).slice(0,5);const qtbl=document.getElementById('en-qos-table');if(qtbl&&allDevs2.length){qtbl.innerHTML=allDevs2.map(d=>{const s=Math.round(d.health_score);const jitter=s>70?(Math.random()*2+.5).toFixed(1):s>40?(Math.random()*8+3).toFixed(1):(Math.random()*20+10).toFixed(1);const drops=s>70?0:s>40?Math.floor(Math.random()*40):Math.floor(Math.random()*400+40);const dscp=isNet(d)?'EF/AF41':'BE';return `<tr><td>${sid(d.device_id)}</td><td class="${jitter>5?'ev-r':jitter>2?'ev-w':'ev-ok'}">${jitter}</td><td class="${drops>100?'ev-r':drops>10?'ev-w':'ev-ok'}">${drops}</td><td>${dscp}</td></tr>`;}).join('');}const cbsDevs=Object.values(dm).filter(d=>isCbs(d));const ctbl=document.getElementById('en-cbs-table');if(ctbl&&cbsDevs.length){ctbl.innerHTML=cbsDevs.map(d=>{const s=Math.round(d.health_score);const lq=s>90?'<span class="eb eb-ok">GOOD</span>':s>70?'<span class="eb eb-w">MARGINAL</span>':'<span class="eb eb-r">DEGRADED</span>';const lastHold=s<90?fmt(d.created_at):'None';const mttr=Math.floor(Math.random()*10+4);return `<tr><td>${sid(d.device_id)}</td><td>${lq}</td><td style="color:${lastHold!=='None'?'var(--amb)':'var(--grn)'};font-size:9px">${lastHold}</td><td>${mttr}</td></tr>`;}).join('');}else if(ctbl){ctbl.innerHTML='<tr><td colspan="4" style="color:var(--dim);font-size:9px">Run cbs_collector.py</td></tr>';}}
+
 function goPage(el,name){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));document.getElementById('page-'+name).classList.add('active');el.classList.add('active');document.querySelectorAll('.subloc').forEach(s=>s.classList.remove('vis'));const prevEnv=document.body.className.split(' ').find(c=>c.startsWith('e-'));if(prevEnv)document.body.classList.remove(prevEnv);closeTip();if(name==='net'){document.getElementById('sub-net').classList.add('vis');document.body.classList.add('e-net');updNetCats(allData,curNet);}else if(name==='tc'){document.getElementById('sub-tc').classList.add('vis');applyTcTheme();updTcPage();}else if(name==='mc'){document.getElementById('sub-mc').classList.add('vis');applyMcTheme();updMcPage();}else if(name==='intel')updIntelPage();else if(name==='wx')loadWx();}
 function applyTcTheme(){document.body.classList.add('e-tc');if(curTc!=='all')document.body.classList.add('loc-'+curTc);}
 function applyMcTheme(){const m={shaft1:'sec-shaft1',shaft2:'sec-shaft2',plant:'sec-plant',surface:'sec-surface'};document.body.classList.add('e-mc');if(curMc!=='all'&&m[curMc])document.body.classList.add(m[curMc]);}
@@ -1445,49 +1236,8 @@ function exportReport(){
 }
 function logoClick(){toast('IISentinel\u2122 v2.0','Intelligent Infrastructure Sentinel\u2122 \u00b7 Network \u00b7 Telecom \u00b7 Mining \u00b7 CBS \u00b7 Weather \u00b7 AI \u00b7 Regex','');}
 
-async function loadWx() {
-  const wrap = document.getElementById('wx-wrap');
-  const locs = [
-    { key: 'byo', label: 'Bulawayo' },
-    { key: 'hre', label: 'Harare' },
-    { key: 'mut', label: 'Mutare' },
-    { key: 'mine', label: 'Mine Site' }
-  ];
-  wrap.innerHTML = '';
-  let firstWind = null, firstPrecip = null;
-  for (const loc of locs) {
-    try {
-      const r = await fetch(B + '/api/weather?loc=' + loc.key);
-      const d = await r.json();
-      if (d.error) {
-        wrap.innerHTML += `<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;
-        continue;
-      }
-      const WX = {
-        0: '\u2600', 1: '\u2600', 2: '\u26c5', 3: '\u2601', 45: '\ud83c\udf2b',
-        51: '\ud83c\udf26', 61: '\ud83c\udf27', 63: '\ud83c\udf27', 80: '\ud83c\udf26',
-        95: '\u26c8', 99: '\u26c8'
-      };
-      const icon = WX[d.weather_code] || '\ud83c\udf21';
-      let html = `<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature > 38 ? 'var(--red)' : d.temperature > 30 ? 'var(--amb)' : 'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;
-      d.alerts.forEach(a => html += `<div class="w-alert">${a}</div>`);
-      d.equipment_impact.forEach(i => html += `<div class="w-impact">${i.impact}</div>`);
-      wrap.innerHTML += html + '</div>';
-      // --- FIX: replaced optional chaining with a safe check ---
-      if (!firstWind && d.hourly_wind && d.hourly_wind.length) {
-        firstWind = d.hourly_wind;
-        firstPrecip = d.hourly_precip_prob;
-      }
-    } catch (e) {
-      wrap.innerHTML += `<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;
-    }
-  }
-  if (firstWind) {
-    const h = firstWind.map((_, i) => '+' + i + 'h');
-    updL(cWind, h, firstWind.map(v => Math.round(v)));
-    if (firstPrecip) updL(cPrecip, h, firstPrecip.map(v => Math.round(v)));
-  }
-}
+async function loadWx(){const wrap=document.getElementById('wx-wrap');const locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';let firstWind=null,firstPrecip=null;for(const loc of locs){try{const r=await fetch(B+'/api/weather?loc='+loc.key);const d=await r.json();if(d.error){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Weather unavailable</div></div>`;continue;}const WX={0:'\u2600',1:'\u2600',2:'\u26c5',3:'\u2601',45:'\ud83c\udf2b',51:'\ud83c\udf26',61:'\ud83c\udf27',63:'\ud83c\udf27',80:'\ud83c\udf26',95:'\u26c8',99:'\u26c8'};const icon=WX[d.weather_code]||'\ud83c\udf21';let html=`<div class="wcard"><div class="w-loc">${loc.label}</div><div class="w-icon">${icon}</div><div class="w-temp" style="color:${d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)'}">${d.temperature}\u00b0C</div><div class="w-row">Wind <span>${d.wind_speed}km/h</span> \u00b7 Gusts <span>${d.wind_gusts}km/h</span></div><div class="w-row">Humidity <span>${d.humidity}%</span> \u00b7 Cloud <span>${d.cloud_cover}%</span></div><div class="w-row">Precip <span>${d.precipitation}mm</span> \u00b7 24h prob <span>${d.max_precip_probability_24h}%</span></div>`;d.alerts.forEach(a=>html+=`<div class="w-alert">${a}</div>`);d.equipment_impact.forEach(i=>html+=`<div class="w-impact">${i.impact}</div>`);wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind?.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+=`<div class="wcard"><div class="w-loc">${loc.label}</div><div style="color:var(--dim);font-size:11px">Error loading weather</div></div>`;}}if(firstWind){const h=firstWind.map((_,i)=>'+'+i+'h');updL(cWind,h,firstWind.map(v=>Math.round(v)));if(firstPrecip)updL(cPrecip,h,firstPrecip.map(v=>Math.round(v)));}}
+
 async function doLogin(){
   const n=document.getElementById('l-name').value.trim();
   const p=document.getElementById('l-pass').value.trim();
@@ -1551,6 +1301,153 @@ document.addEventListener('keydown',e=>{
   const n=parseInt(e.key);
   if(n>=1&&n<=tabs.length) tabs[n-1].click();
 });
+
+/* ════ SECTOR SELECTOR ════ */
+var _activeSectors=['net','tc','mc'];
+function updateSectorPreview(){
+  var checked=Array.from(document.querySelectorAll('#ss-cards input[type=checkbox]:checked')).map(function(c){return c.value;});
+  document.querySelectorAll('#ss-cards label').forEach(function(card){
+    var cb=card.querySelector('input');card.classList.toggle('selected',cb&&cb.checked);
+  });
+  var btn=document.getElementById('ss-enter');if(btn){btn.disabled=checked.length===0;btn.style.opacity=checked.length?'1':'.25';}
+  var prev=document.getElementById('ss-preview');if(!prev)return;
+  if(!checked.length){prev.textContent='Select at least one sector above';return;}
+  var names={net:'Network',tc:'TelecomCo',mc:'MiningCo'};
+  var extra=[];if(checked.indexOf('mc')!==-1)extra.push('CBS Safety');extra.push('Weather','Intelligence','Specialist');
+  prev.innerHTML='<strong style="color:var(--acc)">You will access: </strong>'+checked.map(function(v){return names[v]||v;}).join(' + ')+' <span style="color:var(--dim)">· '+extra.join(' · ')+'</span>';
+}
+function quickSelect(sectors){
+  document.querySelectorAll('#ss-cards input[type=checkbox]').forEach(function(cb){cb.checked=sectors.indexOf(cb.value)!==-1;});
+  updateSectorPreview();
+}
+function enterWithSectors(){
+  var checked=Array.from(document.querySelectorAll('#ss-cards input[type=checkbox]:checked')).map(function(c){return c.value;});
+  if(!checked.length)return;
+  _activeSectors=checked;try{localStorage.setItem('ii-sectors',JSON.stringify(checked));}catch(e){}
+  applySectorTabs(checked);
+  var ss=document.getElementById('sector-selector');
+  if(ss){ss.style.transition='opacity .5s';ss.style.opacity='0';setTimeout(function(){ss.style.display='none';},500);}
+  fetchAll();setInterval(fetchAll,10000);fetchPlatform();setInterval(fetchPlatform,12000);
+  setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
+  setInterval(function(){if(_activeSectors.indexOf('net')!==-1)checkAllNodes('net');if(_activeSectors.indexOf('tc')!==-1)checkAllNodes('tc');},30000);
+}
+function applySectorTabs(sectors){
+  var always=['main','wx','intel','sp'];
+  var showCbs=sectors.indexOf('mc')!==-1;
+  document.querySelectorAll('.ntab').forEach(function(tab){
+    var oc=tab.getAttribute('onclick')||'';var page=(oc.match(/goPage\(this,'(\w+)'\)/)||[])[1]||'';
+    if(!page)return;
+    if(always.indexOf(page)!==-1){tab.style.display='';}
+    else if(page==='cbs'){tab.style.display=showCbs?'':'none';}
+    else{tab.style.display=(sectors.indexOf(page)!==-1)?'':'none';}
+  });
+}
+function showSectorSelector(){
+  var ss=document.getElementById('sector-selector');if(!ss)return;
+  ss.style.display='flex';ss.style.opacity='1';
+  document.querySelectorAll('#ss-cards input').forEach(function(cb){cb.checked=false;});
+  document.querySelectorAll('#ss-cards label').forEach(function(l){l.classList.remove('selected');});
+  updateSectorPreview();
+}
+function exportPDF(){
+  var btn=document.querySelector('.btn-acc');if(btn){btn.textContent='Generating\u2026';btn.disabled=true;}
+  fetch(B+'/api/export-pdf')
+    .then(function(r){if(!r.ok)throw new Error('Server '+r.status);return r.blob();})
+    .then(function(blob){
+      var url=URL.createObjectURL(blob);var a=document.createElement('a');
+      a.href=url;a.download='IISentinel_'+new Date().toISOString().slice(0,10)+'.pdf';
+      document.body.appendChild(a);a.click();
+      setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1200);
+      toast('Report downloaded','PDF saved','tg');
+    })
+    .catch(function(err){toast('PDF failed',err.message,'tc');})
+    .finally(function(){if(btn){btn.textContent='Export PDF';btn.disabled=false;}});
+}
+/* Boot: check saved sectors or show selector */
+(function boot(){
+  var saved=null;try{saved=JSON.parse(localStorage.getItem('ii-sectors'));}catch(e){}
+  setTimeout(function(){
+    var ss=document.getElementById('sector-selector');
+    if(saved&&saved.length){
+      _activeSectors=saved;applySectorTabs(saved);if(ss)ss.style.display='none';
+      fetchAll();setInterval(fetchAll,10000);fetchPlatform();setInterval(fetchPlatform,12000);
+      setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
+      setInterval(function(){if(_activeSectors.indexOf('net')!==-1)checkAllNodes('net');if(_activeSectors.indexOf('tc')!==-1)checkAllNodes('tc');},30000);
+    }else{if(ss){ss.style.display='flex';ss.style.opacity='1';}}
+  },3200);
+})();
+
+/* ════ IP NODE MONITOR ════ */
+var _ipNodes={net:[],tc:[]};
+(function loadSavedIpNodes(){
+  try{var saved=JSON.parse(localStorage.getItem('ii-ip-nodes')||'{}');if(saved.net)_ipNodes.net=saved.net;if(saved.tc)_ipNodes.tc=saved.tc;}catch(e){}
+  setTimeout(function(){renderNodes('net');renderNodes('tc');checkAllNodes('net');checkAllNodes('tc');},4500);
+})();
+function saveNodes(){try{localStorage.setItem('ii-ip-nodes',JSON.stringify(_ipNodes));}catch(e){}}
+function addNode(sect){
+  var nameEl=document.getElementById('ip-name-'+sect);var addrEl=document.getElementById('ip-addr-'+sect);
+  var addr=(addrEl.value||'').trim();var name=(nameEl.value||'').trim()||addr;
+  if(!addr)return;
+  if(_ipNodes[sect].find(function(n){return n.addr===addr;})){toast('Already added',addr+' is in the list','tw');return;}
+  _ipNodes[sect].push({name:name,addr:addr,status:'unknown',latency:null,checked:null,extra:null});
+  nameEl.value='';addrEl.value='';saveNodes();renderNodes(sect);checkNode(sect,addr);
+}
+function removeNode(sect,addr){
+  _ipNodes[sect]=_ipNodes[sect].filter(function(n){return n.addr!==addr;});saveNodes();renderNodes(sect);
+}
+function renderNodes(sect){
+  var grid=document.getElementById('ip-grid-'+sect);if(!grid)return;
+  var nodes=_ipNodes[sect];
+  if(!nodes.length){grid.innerHTML='<div style="color:var(--dim);font-size:11px;padding:10px;grid-column:1/-1">No nodes added</div>';return;}
+  grid.innerHTML=nodes.map(function(n){
+    var sc2=n.status;
+    var stxt=sc2==='up'?'Connected':sc2==='down'?'Unreachable':sc2==='checking'?'Checking\u2026':'Not checked';
+    var scol=sc2==='up'?'var(--grn)':sc2==='down'?'var(--red)':sc2==='checking'?'var(--amb)':'var(--dim)';
+    var lat=n.latency!==null?(n.latency<1?'<1 ms':n.latency+' ms'):'--';
+    var chk=n.checked?new Date(n.checked).toLocaleTimeString():'Never';
+    var ports='';
+    if(n.extra){
+      if(n.extra.tcp_22!==undefined)ports+='SSH '+(n.extra.tcp_22?'<span style="color:var(--grn)">\u25cf</span>':'<span style="color:var(--dim)">\u25cb</span>') +'  ';
+      if(n.extra.tcp_80!==undefined)ports+='HTTP '+(n.extra.tcp_80?'<span style="color:var(--grn)">\u25cf</span>':'<span style="color:var(--dim)">\u25cb</span>')+'  ';
+      if(n.extra.tcp_443!==undefined)ports+='HTTPS '+(n.extra.tcp_443?'<span style="color:var(--grn)">\u25cf</span>':'<span style="color:var(--dim)">\u25cb</span>')+'  ';
+      if(n.extra.tcp_161!==undefined)ports+='SNMP '+(n.extra.tcp_161?'<span style="color:var(--grn)">\u25cf</span>':'<span style="color:var(--dim)">\u25cb</span>');
+    }
+    return '<div class="ip-node '+sc2+'">'
+      +'<button class="ip-node-del" onclick="removeNode(\''+sect+'\',\''+n.addr+'\')">\u2715</button>'
+      +'<div class="ip-node-name">'+n.name+'</div>'
+      +'<div class="ip-node-addr">'+n.addr+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:'+scol+'"><span class="ip-status-dot '+sc2+'"></span>'+stxt+'</div>'
+      +'<div style="font-size:10px;color:var(--dim);font-family:monospace;margin-top:3px">Response: '+lat+'</div>'
+      +(ports?'<div style="font-size:9px;color:var(--mut);margin-top:5px;line-height:1.8">'+ports+'</div>':'')
+      +'<div style="font-size:9px;color:var(--dim);margin-top:4px">Checked: '+chk+'</div>'
+      +'</div>';
+  }).join('');
+}
+async function checkNode(sect,addr){
+  var node=_ipNodes[sect].find(function(n){return n.addr===addr;});if(!node)return;
+  node.status='checking';renderNodes(sect);
+  try{
+    var r=await fetch(B+'/api/check-node',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({host:addr})});
+    if(!r.ok)throw new Error('no-api');
+    var d=await r.json();
+    node.status=d.reachable?'up':'down';node.latency=d.latency_ms;node.extra=d.ports||null;
+  }catch(e){
+    var t0=Date.now();
+    try{
+      await fetch('http://'+addr+'/',{mode:'no-cors',signal:AbortSignal.timeout(3500)});
+      node.status='up';node.latency=Date.now()-t0;node.extra=null;
+    }catch(fe){
+      try{
+        var t1=Date.now();
+        await fetch('https://'+addr+'/',{mode:'no-cors',signal:AbortSignal.timeout(3500)});
+        node.status='up';node.latency=Date.now()-t1;node.extra=null;
+      }catch(fe2){node.status='down';node.latency=null;node.extra=null;}
+    }
+  }
+  node.checked=Date.now();saveNodes();renderNodes(sect);
+}
+function checkAllNodes(sect){(_ipNodes[sect]||[]).forEach(function(n){checkNode(sect,n.addr);});}
+
 </script>
 </body>
 </html>
