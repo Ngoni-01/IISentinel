@@ -1,1293 +1,1081 @@
-import os
-import re
-import joblib
-import numpy as np
-import requests as req
-from flask import Flask, request, jsonify, render_template, send_file
-from flask_cors import CORS
-from supabase import create_client
-from functools import wraps
-from datetime import datetime, timezone
-import threading
-import time
+"""
+IISentinel™ v2.0 — Intelligent Infrastructure Sentinel
+========================================================
+Run:  python app.py
+Demo: DEMO_MODE=true python app.py
+Open: http://localhost:5000
+
+Install: pip install flask reportlab scikit-learn joblib numpy requests
+"""
+import os, re, json, time, random, threading, smtplib, sqlite3, uuid
 from collections import deque
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timezone
 from io import BytesIO
+from functools import wraps
+from email.mime.text import 
+from email.mime.multipart import MIMEMultipart
+import queue as _q
+import numpy as np
+import joblib
+import requests as reqMIMEText
+from flask import Flask, request, jsonify, send_file, Response, stream_with_context
 
-# ═══════════════════════════════════════════════════════════════════════════
-# IISentinel™ — Intelligent Infrastructure Sentinel v2.0
-# Core value proposition: reduce time between anomaly and engineer decision to <60s
-# ═══════════════════════════════════════════════════════════════════════════
+# ── Optional flask_cors ───────────────────────────────────────────────────
+try:
+    from flask_cors import CORS as _CORS
+    def _apply_cors(app): _CORS(app)
+except ImportError:
+    def _apply_cors(app):
+        @app.after_request
+        def _cors(r):
+            r.headers['Access-Control-Allow-Origin']  = '*'
+            r.headers['Access-Control-Allow-Headers'] = 'Content-Type,X-Specialist-Token'
+            r.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+            return r
 
-# ══════════════════════════════════════════════════════════════════════
-# REGEX ENGINE — Five implementations across the platform
-# Compiled once at startup (finite state machine, linear time, no backtracking)
-# ══════════════════════════════════════════════════════════════════════
+# ── Optional flask_limiter ────────────────────────────────────────────────
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+except ImportError:
+    def get_remote_address(): return '127.0.0.1'
+    class Limiter:
+        def __init__(self,*a,**kw): pass
+        def limit(self,*a,**kw): return lambda f: f
+        def init_app(self,app): pass
 
-# 1. Device identity parser — understands ANY naming convention
-DEVICE_PATTERNS = {
-    'sector': re.compile(
-        r'(?i)(net|network|tc|telecom|mc|mine|mining|cbs|blast)',
-    ),
-    'location': re.compile(
-        r'(?i)(byo|bulawayo|hre|harare|mut|mutare|mine|shaft\d*|plant|surface)',
-    ),
-    'device_type': re.compile(
-        r'(?i)(router|switch|firewall|wan|tower|base.?station|microwave|'
-        r'pump|conveyor|ventilat|plc|scada|cbs|controller|sensor)',
-    ),
-    'site_number': re.compile(r'[-_.](\d{1,3})[-_.]|[-_.](\d{1,3})$|(\d{1,3})[-_.]'),
-    'status_hint': re.compile(
-        r'(?i)(active|standby|backup|primary|degraded|offline)',
-    )
-}
+# ── Optional supabase — falls back to local SQLite ────────────────────────
+try:
+    from supabase import create_client as _supa_create
+    _SUPABASE_AVAILABLE = True
+except ImportError:
+    _SUPABASE_AVAILABLE = False
 
-# 2. Diagnosis intelligence extractor — structured data from natural language
-DIAG_PATTERNS = {
-    'metric_value': re.compile(
-        r'(\d+\.?\d*)\s*(ms|MHz|dBm|dB|%|bar|RPM|°C|Mbps|km/h)\b',
-        re.IGNORECASE
-    ),
-    'protocol': re.compile(
-        r'\b(SNMP|BGP|OSPF|DNP3|Modbus|Profinet|OPC-UA|EtherNet/IP|'
-        r'ICMP|NetFlow|LTE|MW|microwave)\b',
-        re.IGNORECASE
-    ),
-    'urgency': re.compile(
-        r'\b(EMERGENCY|CRITICAL|HOLD|EVACUATE|IMMEDIATE|URGENT|WARNING|CAUTION)\b',
-        re.IGNORECASE
-    ),
-    'equipment': re.compile(
-        r'\b(pump|conveyor|ventilat\w+|PLC|router|switch|firewall|tower|'
-        r'base.station|CBS|bearing|VFD|SFP|fibre|battery)\b',
-        re.IGNORECASE
-    )
-}
+_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'iisentinel.db')
 
-# 3. Real-time log alert pattern engine — matches automation commands
-LOG_ALERT_RULES = [
-    {
-        'name': 'CBS Blast Hold',
-        'pattern': re.compile(
-            r'CBS SAFETY INTERLOCK.*BLAST HOLD.*?([\w][\w\-]+[\w]).*?(\d+\.?\d*)%',
-            re.IGNORECASE
-        ),
-        'severity': 'CRITICAL',
-        'escalation': 'blast_officer',
-    },
-    {
-        'name': 'Underground Emergency',
-        'pattern': re.compile(
-            r'EMERGENCY.*?(shaft\d+|underground|level\s*\d+)',
-            re.IGNORECASE
-        ),
-        'severity': 'CRITICAL',
-        'escalation': 'mine_manager',
-    },
-    {
-        'name': 'Network Isolation Command',
-        'pattern': re.compile(
-            r'Isolate\s+([\w\-]+)\s+and\s+reduce\s+load',
-            re.IGNORECASE
-        ),
-        'severity': 'WARNING',
-        'escalation': 'network_engineer',
-    },
-    {
-        'name': 'Thermal Threshold Breach',
-        'pattern': re.compile(
-            r'(\d+\.?\d*)\s*[°C].*?thermal|thermal.*?(\d+\.?\d*)\s*[°C]',
-            re.IGNORECASE
-        ),
-        'severity': 'WARNING',
-        'escalation': 'maintenance_engineer',
-    },
-    {
-        'name': 'Critical Device',
-        'pattern': re.compile(
-            r'CRITICAL.*?((?:net|tc|mc|cbs)-[\w\-]+)',
-            re.IGNORECASE
-        ),
-        'severity': 'CRITICAL',
-        'escalation': 'shift_supervisor',
-    }
-]
+def _db_init():
+    con = sqlite3.connect(_DB_PATH); cur = con.cursor()
+    cur.execute("""CREATE TABLE IF NOT EXISTS metrics (
+        id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
+        metric_name TEXT, metric_value REAL, health_score REAL,
+        anomaly_flag INTEGER, predicted_score REAL,
+        ai_diagnosis TEXT, automation_command TEXT, created_at TEXT)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS incidents (
+        id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
+        health_score REAL, ai_diagnosis TEXT, automation_command TEXT,
+        status TEXT DEFAULT 'open', assigned_to TEXT, resolved_by TEXT,
+        notes TEXT, created_at TEXT)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS specialists (
+        id TEXT PRIMARY KEY, name TEXT, password TEXT, role TEXT)""")
+    cur.execute("INSERT OR IGNORE INTO specialists VALUES (?,?,?,?)",('sp-001','Admin','admin123','engineer'))
+    con.commit(); con.close()
 
-# 4. Input sanitisation — prevents injection, validates format
-SANITISE_PATTERNS = {
-    'device_id':       re.compile(r'^[a-zA-Z0-9][a-zA-Z0-9\-_\.]{1,63}$'),
-    'metric_name':     re.compile(r'^[a-zA-Z][a-zA-Z0-9_]{0,49}$'),
-    'sql_injection':   re.compile(
-        r"(?i)(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|--|;|'|\bOR\b|\bAND\b)"
-    ),
-    'script_injection':re.compile(
-        r'(?i)(<script|javascript:|onerror=|onload=|eval\(|document\.)'
-    ),
-    'numeric':         re.compile(r'^-?\d+(\.\d+)?$'),
-}
+_db_init()
 
-def parse_device_identity(device_id):
-    """
-    Extract structured identity from ANY device ID format using regex.
-    Handles inconsistent naming conventions from different engineers/vendors.
-    Example: 'ECONET_BYO_04_TOWER_LTE' -> sector=telecom, loc=byo, type=tower
-    """
-    result = {
-        'raw_id': device_id,
-        'sector': 'unknown',
-        'location': 'unknown',
-        'device_type': 'unknown',
-        'site_number': None,
-        'status_hint': None,
-        'normalised_id': device_id,
-    }
-    m = DEVICE_PATTERNS['sector'].search(device_id)
-    if m:
-        raw = m.group(1).lower()
-        result['sector'] = (
-            'network' if raw in ('net','network') else
-            'telecom' if raw in ('tc','telecom') else
-            'mining'  if raw in ('mc','mine','mining') else
-            'cbs'     if raw in ('cbs','blast') else 'unknown'
-        )
-    m = DEVICE_PATTERNS['location'].search(device_id)
-    if m:
-        raw = m.group(1).lower()
-        result['location'] = (
-            'byo' if raw in ('byo','bulawayo') else
-            'hre' if raw in ('hre','harare') else
-            'mut' if raw in ('mut','mutare') else raw
-        )
-    m = DEVICE_PATTERNS['device_type'].search(device_id)
-    if m:
-        raw = m.group(1).lower().replace(' ','_').replace('-','_')
-        if 'base' in raw or 'station' in raw: raw = 'base_station'
-        elif 'ventilat' in raw: raw = 'ventilation'
-        elif 'controller' in raw and result['sector'] == 'cbs': raw = 'cbs_controller'
-        result['device_type'] = raw
-    m = DEVICE_PATTERNS['site_number'].search(device_id)
-    if m:
-        num = m.group(1) or m.group(2) or m.group(3)
-        if num:
-            result['site_number'] = int(num)
-    m = DEVICE_PATTERNS['status_hint'].search(device_id)
-    if m:
-        result['status_hint'] = m.group(1).lower()
-    return result
+class _SQLiteDB:
+    def __init__(self): self._tb=None; self._filters=[]; self._lim=200; self._ins=None; self._upd=None
+    def table(self,n):
+        o=_SQLiteDB(); o._tb=n; return o
+    def select(self,*a): return self
+    def eq(self,c,v): self._filters.append((c,v)); return self
+    def order(self,*a,**kw): return self
+    def limit(self,n): self._lim=n; return self
+    def insert(self,row): self._ins=row; return self
+    def update(self,row): self._upd=row; return self
+    def execute(self):
+        R = lambda d: type('R',(),{'data':d})()
+        try:
+            con=sqlite3.connect(_DB_PATH); con.row_factory=sqlite3.Row; cur=con.cursor()
+            tb=self._tb
+            if self._ins:
+                row=self._ins; rid=str(uuid.uuid4())
+                ts=datetime.now(timezone.utc).isoformat()
+                if tb=='metrics':
+                    cur.execute("INSERT OR IGNORE INTO metrics VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                        (rid,row.get('device_id',''),row.get('device_type',''),
+                         row.get('metric_name',''),float(row.get('metric_value',0)),
+                         float(row.get('health_score',50)),int(row.get('anomaly_flag',0)),
+                         float(row.get('predicted_score',50)),
+                         row.get('ai_diagnosis'),row.get('automation_command'),ts))
+                elif tb=='incidents':
+                    cur.execute("INSERT OR IGNORE INTO incidents VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                        (rid,row.get('device_id',''),row.get('device_type',''),
+                         float(row.get('health_score',50)),row.get('ai_diagnosis'),
+                         row.get('automation_command'),row.get('status','open'),
+                         None,None,None,ts))
+                con.commit(); con.close()
+                return R([{**row,'id':rid,'created_at':ts}])
+            if self._upd:
+                for col,val in self._filters:
+                    sets=', '.join(f"{k}=?" for k in self._upd)
+                    vals=list(self._upd.values())+[val]
+                    cur.execute(f"UPDATE {tb} SET {sets} WHERE id=?",vals)
+                con.commit(); con.close()
+                return R([])
+            where=''; params=[]
+            if self._filters:
+                clauses=[f"{c}=?" for c,v in self._filters]
+                params=[v for c,v in self._filters]
+                where='WHERE '+' AND '.join(clauses)
+            cur.execute(f"SELECT * FROM {tb} {where} ORDER BY created_at DESC LIMIT ?",params+[self._lim])
+            cols=[d[0] for d in cur.description]
+            rows=[dict(zip(cols,r)) for r in cur.fetchall()]
+            con.close(); return R(rows)
+        except Exception as e:
+            print(f'[DB] {e}'); return R([])
 
-def parse_diagnosis(diagnosis_text):
-    """
-    Extract structured intelligence from AI diagnosis strings.
-    Powers the enriched metadata returned in /api/metrics.
-    """
-    if not diagnosis_text:
-        return {}
-    result = {
-        'metrics_mentioned': [],
-        'protocols_mentioned': [],
-        'urgency_level': 'info',
-        'equipment_mentioned': [],
-    }
-    for match in DIAG_PATTERNS['metric_value'].finditer(diagnosis_text):
-        result['metrics_mentioned'].append({
-            'value': float(match.group(1)),
-            'unit': match.group(2),
-        })
-    protos = DIAG_PATTERNS['protocol'].findall(diagnosis_text)
-    result['protocols_mentioned'] = list(set(p.upper() for p in protos))
-    m = DIAG_PATTERNS['urgency'].search(diagnosis_text)
-    if m:
-        raw = m.group(1).upper()
-        result['urgency_level'] = (
-            'critical' if raw in ('EMERGENCY','CRITICAL','HOLD','EVACUATE') else
-            'warning'  if raw in ('IMMEDIATE','URGENT','WARNING') else 'caution'
-        )
-    equip = DIAG_PATTERNS['equipment'].findall(diagnosis_text)
-    result['equipment_mentioned'] = list(set(e.lower() for e in equip))
-    return result
-
-def analyse_automation_log(automation_command, device_id, device_type):
-    """
-    Pattern-match automation commands against LOG_ALERT_RULES.
-    Returns list of triggered rules with structured data.
-    Used to identify escalation targets and alert priorities.
-    """
-    if not automation_command:
-        return []
-    triggered = []
-    for rule in LOG_ALERT_RULES:
-        m = rule['pattern'].search(automation_command)
-        if m:
-            triggered.append({
-                'rule_name':         rule['name'],
-                'severity':          rule['severity'],
-                'escalation_target': rule['escalation'],
-                'matched_text':      m.group(0)[:80],
-            })
-    return triggered
-
-def sanitise_input(data):
-    """
-    Validate and sanitise incoming metric payload using regex.
-    Prevents SQL/script injection, validates device_id format.
-    Returns (cleaned_data, list_of_violations).
-    """
-    violations = []
-    cleaned = dict(data)
-    device_id = str(data.get('device_id', ''))
-    if not SANITISE_PATTERNS['device_id'].match(device_id):
-        violations.append(f'Invalid device_id format: {device_id[:40]}')
-        cleaned['device_id'] = re.sub(r'[^a-zA-Z0-9\-_\.]', '', device_id)[:63] or 'unknown'
-    for field in ('device_id', 'metric_name', 'protocol'):
-        value = str(data.get(field, ''))
-        if SANITISE_PATTERNS['sql_injection'].search(value):
-            violations.append(f'SQL injection attempt in {field}')
-            cleaned[field] = re.sub(SANITISE_PATTERNS['sql_injection'], '[BLOCKED]', value)
-        if SANITISE_PATTERNS['script_injection'].search(value):
-            violations.append(f'Script injection attempt in {field}')
-            cleaned[field] = re.sub(SANITISE_PATTERNS['script_injection'], '[BLOCKED]', value)
-    for num_field in ('cpu_load','bandwidth_mbps','latency_ms','packet_loss','temperature','signal_strength'):
-        value = str(data.get(num_field, '0'))
-        if not SANITISE_PATTERNS['numeric'].match(value):
-            violations.append(f'Non-numeric in {num_field}')
-            cleaned[num_field] = 0
-    return cleaned, violations
-
-# ══════════════════════════════════════════════════════════════════════
-# INGESTION QUEUE (non-blocking buffer)
-# ══════════════════════════════════════════════════════════════════════
-metric_queue  = deque(maxlen=500)
-scoring_queue = deque(maxlen=200)
-queue_lock    = threading.Lock()
-
-_data_cache = {'data': [], 'ts': 0}
-CACHE_TTL   = 8
-
-platform_stats = {
-    'requests_total':   0,
-    'requests_failed':  0,
-    'queue_depth':      0,
-    'scoring_queue':    0,
-    'cache_hits':       0,
-    'retrain_runs':     0,
-    'last_flush_ts':    None,
-    'start_ts':         time.time(),
-    'regex_violations': 0,
-}
-
-# ══════════════════════════════════════════════════════════════════════
-# NOTIFICATION CHANNELS
-# ══════════════════════════════════════════════════════════════════════
-NOTIFY_EMAIL_ENABLED    = bool(os.environ.get('SMTP_HOST'))
-NOTIFY_SMS_ENABLED      = bool(os.environ.get('AT_API_KEY') or os.environ.get('TWILIO_SID') or os.environ.get('SMS_GATEWAY_URL'))
-NOTIFY_WHATSAPP_ENABLED = bool(os.environ.get('WA_TOKEN'))
-
-def send_sms_alert(message, phone=None):
-    if not NOTIFY_SMS_ENABLED:
-        return
-    phone = phone or os.environ.get('ALERT_PHONE', '')
-    if not phone:
-        return
+SUPABASE_URL=os.environ.get('SUPABASE_URL','')
+SUPABASE_KEY=os.environ.get('SUPABASE_KEY','')
+if _SUPABASE_AVAILABLE and SUPABASE_URL and SUPABASE_URL not in ('','local'):
     try:
-        gateway = os.environ.get('SMS_GATEWAY', 'africastalking')
-        if gateway == 'africastalking':
-            import africastalking
-            africastalking.initialize(os.environ.get('AT_USERNAME','sandbox'), os.environ.get('AT_API_KEY',''))
-            africastalking.SMS.send(message, [phone])
-        elif gateway == 'twilio':
+        supabase=_supa_create(SUPABASE_URL,SUPABASE_KEY)
+        print('[IISentinel] Supabase connected')
+    except Exception as e:
+        print(f'[IISentinel] Supabase failed ({e}) — using SQLite')
+        supabase=_SQLiteDB()
+else:
+    supabase=_SQLiteDB()
+    print('[IISentinel] Using local SQLite (iisentinel.db)')
+
+# ── ML Models ─────────────────────────────────────────────────────────────
+def _build_models():
+    from sklearn.ensemble import RandomForestRegressor, IsolationForest
+    from sklearn.preprocessing import StandardScaler
+    print('[IISentinel] Building ML models (first run ~5s)...')
+    rng=np.random.default_rng(42)
+    X=rng.uniform([0,0,0,0,0,15,10],[100,1000,500,20,1000,80,100],size=(500,7))
+    y=np.clip(100-(X[:,0]*0.3+X[:,2]*0.05+X[:,3]*2+np.maximum(0,80-X[:,6])*0.5+X[:,3]*1.5),0,100)
+    rf=RandomForestRegressor(n_estimators=100,max_depth=10,random_state=42); rf.fit(X,y)
+    iso=IsolationForest(n_estimators=100,contamination=0.08,random_state=42); iso.fit(X[y>=50])
+    sc=StandardScaler(); sc.fit(X)
+    joblib.dump(rf,'health_model.pkl'); joblib.dump(iso,'anomaly_model.pkl'); joblib.dump(sc,'scaler.pkl')
+    print('[IISentinel] ML models ready.'); return rf,iso,sc
+
+try:
+    rf_model=joblib.load('health_model.pkl')
+    iso_model=joblib.load('anomaly_model.pkl')
+    scaler=joblib.load('scaler.pkl')
+    print('[IISentinel] ML models loaded.')
+except:
+    rf_model,iso_model,scaler=_build_models()
+
+# ── Flask app ─────────────────────────────────────────────────────────────
+app=Flask(__name__,template_folder='.',static_folder='static',static_url_path='/static')
+app.secret_key=os.environ.get('SECRET_KEY','iisentinel-dev-2026')
+_apply_cors(app)
+limiter=Limiter(get_remote_address,app=app,default_limits=[],storage_uri='memory://')
+
+# ── Constants ─────────────────────────────────────────────────────────────
+NETWORK_TYPES=['router','switch','firewall','wan_link','workstation']
+TELECOM_TYPES=['base_station','network_tower','microwave_link']
+MINING_TYPES =['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
+CBS_TYPES    =['cbs_controller']
+CBS_SAFETY_THRESHOLD=90.0; RETRAIN_THRESHOLD=50; CACHE_TTL=8
+
+COST_RATES={'pump':150000,'conveyor':120000,'ventilation':180000,'plc':80000,
+            'scada_node':60000,'cbs_controller':450000,'power_meter':100000,
+            'sensor':40000,'base_station':25000,'network_tower':35000,
+            'microwave_link':40000,'router':15000,'switch':10000,
+            'firewall':20000,'wan_link':12000,'workstation':2000}
+
+LOCATIONS={'byo':{'lat':-20.15,'lon':28.58,'name':'Bulawayo'},
+           'hre':{'lat':-17.82,'lon':31.05,'name':'Harare'},
+           'mut':{'lat':-18.97,'lon':32.67,'name':'Mutare'},
+           'mine':{'lat':-17.65,'lon':29.85,'name':'Mine Site'}}
+
+FIELD_BOUNDS={'cpu_load':(0,100),'bandwidth_mbps':(0,100000),'latency_ms':(0,60000),
+              'packet_loss':(0,100),'connected_devices':(0,100000),
+              'temperature':(-50,200),'signal_strength':(0,100),'metric_value':(-1e9,1e9)}
+
+# ── State ─────────────────────────────────────────────────────────────────
+metric_queue=deque(maxlen=500); queue_lock=threading.Lock()
+_data_cache={'data':[],'ts':0}
+scoring_queue=deque(maxlen=200); scoring_results={}; scoring_lock=threading.Lock()
+device_history={}; device_uptime={}; _lifecycle_cache={}
+reading_window=[]; anomaly_count=0
+_retrain_lock=threading.Lock(); _retrain_in_progress=False
+_sse_subs=[]; _sse_lock=threading.Lock()
+notification_log=deque(maxlen=100)
+platform_stats={'requests_total':0,'requests_failed':0,'cache_hits':0,'models_scored':0,
+                'queue_depth':0,'last_flush':None,'last_retrain_attempt':None,
+                'last_retrain_success':None,'retrain_count':0,'notifications_sent':0,
+                'uptime_start':datetime.now(timezone.utc).isoformat()}
+
+# ── Notification config ───────────────────────────────────────────────────
+NOTIFY={'email_enabled':os.environ.get('NOTIFY_EMAIL_ENABLED','false').lower()=='true',
+        'sms_enabled':bool(os.environ.get('AT_API_KEY') or os.environ.get('TWILIO_SID')),
+        'whatsapp_enabled':bool(os.environ.get('WA_TOKEN')),
+        'smtp_host':os.environ.get('SMTP_HOST','smtp.gmail.com'),
+        'smtp_port':int(os.environ.get('SMTP_PORT','587')),
+        'smtp_user':os.environ.get('SMTP_USER',''),'smtp_pass':os.environ.get('SMTP_PASS',''),
+        'from_email':os.environ.get('SMTP_FROM','IISentinel™ <alerts@iisentinel.io>'),
+        'to_emails':[e for e in os.environ.get('ALERT_EMAIL','').split(',') if e],
+        'sms_numbers':[n for n in os.environ.get('ALERT_PHONE','').split(',') if n],
+        'at_api_key':os.environ.get('AT_API_KEY',''),'at_username':os.environ.get('AT_USERNAME','sandbox'),
+        'wa_token':os.environ.get('WA_TOKEN',''),'wa_phone_id':os.environ.get('WA_PHONE_ID',''),
+        'wa_numbers':[n for n in os.environ.get('WA_TO','').split(',') if n],
+        'sms_gateway':os.environ.get('SMS_GATEWAY','africastalking'),
+        'twilio_sid':os.environ.get('TWILIO_SID',''),'twilio_token':os.environ.get('TWILIO_TOKEN',''),
+        'twilio_from':os.environ.get('TWILIO_FROM','')}
+
+# ── Notifications ─────────────────────────────────────────────────────────
+def send_sms(message):
+    if not NOTIFY['sms_enabled']: return
+    try:
+        gw=NOTIFY['sms_gateway']
+        if gw=='africastalking' and NOTIFY['at_api_key']:
+            req.post('https://api.africastalking.com/version1/messaging',
+                headers={'apiKey':NOTIFY['at_api_key'],'Accept':'application/json'},
+                data={'username':NOTIFY['at_username'],'to':','.join(NOTIFY['sms_numbers']),
+                      'message':f'IISentinel™: {message}','from':'IISentinel'},timeout=8)
+        elif gw=='twilio' and NOTIFY['twilio_sid']:
             from twilio.rest import Client
-            Client(os.environ.get('TWILIO_SID'), os.environ.get('TWILIO_TOKEN')).messages.create(
-                body=message, from_=os.environ.get('TWILIO_FROM'), to=phone)
-        elif gateway == 'vonage':
-            import vonage
-            c = vonage.Client(key=os.environ.get('VONAGE_KEY'), secret=os.environ.get('VONAGE_SECRET'))
-            vonage.Sms(c).send_message({'from': 'IISentinel', 'to': phone, 'text': message})
-        else:
-            url = os.environ.get('SMS_GATEWAY_URL','')
-            if url:
-                req.post(url, json={'to': phone, 'message': message, 'api_key': os.environ.get('SMS_API_KEY','')}, timeout=8)
-    except Exception as e:
-        print(f'SMS error: {e}')
+            Client(NOTIFY['twilio_sid'],NOTIFY['twilio_token']).messages.create(
+                body=f'IISentinel™: {message}',from_=NOTIFY['twilio_from'],
+                to=NOTIFY['sms_numbers'][0] if NOTIFY['sms_numbers'] else '')
+    except Exception as e: print(f'[SMS] {e}')
 
-def send_whatsapp_alert(message):
-    if not NOTIFY_WHATSAPP_ENABLED:
-        return
+def send_whatsapp(message):
+    if not NOTIFY['whatsapp_enabled'] or not NOTIFY['wa_token']: return
     try:
-        token = os.environ.get('WA_TOKEN','')
-        phone_id = os.environ.get('WA_PHONE_ID','')
-        to = os.environ.get('WA_TO','')
-        if not all([token, phone_id, to]):
-            return
-        req.post(f'https://graph.facebook.com/v18.0/{phone_id}/messages',
-                 headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
-                 json={'messaging_product': 'whatsapp', 'to': to, 'type': 'text', 'text': {'body': message}},
-                 timeout=8)
-    except Exception as e:
-        print(f'WhatsApp error: {e}')
+        for num in NOTIFY['wa_numbers']:
+            req.post(f"https://graph.facebook.com/v19.0/{NOTIFY['wa_phone_id']}/messages",
+                headers={'Authorization':f"Bearer {NOTIFY['wa_token']}",'Content-Type':'application/json'},
+                json={'messaging_product':'whatsapp','to':num,'type':'text',
+                      'text':{'body':f'IISentinel™\n{message}'}},timeout=8)
+    except Exception as e: print(f'[WhatsApp] {e}')
 
-def send_email_alert(subject, body, device_id=None, health_score=None,
-                     diagnosis=None, automation_command=None, severity='warning'):
-    if not NOTIFY_EMAIL_ENABLED:
-        return
-    recipient = os.environ.get('ALERT_EMAIL', '')
-    if not recipient:
-        return
-    color_map = {'critical': '#ff3e50', 'cbs': '#ff3e50', 'warning': '#f5a020', 'info': '#20e07a'}
-    accent = color_map.get(severity, '#34c6f4')
-    label  = severity.upper()
-    score_html = (f'<tr><td style="padding:6px 0;color:#8592a8;font-size:13px;">Health Score</td>'
-                  f'<td style="font-weight:700;color:{accent};">{health_score:.0f}/100</td></tr>'
-                  ) if health_score is not None else ''
-    diag_html = (f'<tr><td colspan="2" style="padding:8px 0;font-size:13px;color:#1a1f2e;line-height:1.6;">{diagnosis}</td></tr>'
-                 ) if diagnosis else ''
-    cmd_html  = (f'<tr><td colspan="2" style="padding:10px;background:#fff4e6;border-radius:6px;font-size:12px;color:#c07800;font-weight:600;border-left:3px solid #f5a020;">{automation_command}</td></tr>'
-                 ) if automation_command else ''
-    html = f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#eef0f7;font-family:'Segoe UI',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 0;background:#eef0f7;">
-<tr><td align="center"><table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);">
-<tr><td style="background:{accent};padding:22px 28px;">
-  <span style="font-size:22px;font-weight:800;color:#fff;letter-spacing:-1px;">II</span>
-  <span style="font-size:18px;font-weight:700;color:#fff;">Sentinel</span>&#8482;
-  &nbsp;&nbsp;<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;padding:3px 10px;border-radius:20px;">{label}</span>
-</td></tr>
-<tr><td style="padding:28px;">
-  <p style="margin:0 0 6px;font-size:18px;font-weight:700;color:#0c1122;">{subject}</p>
-  {"<p style='font-size:13px;color:#8592a8;'>Device: <strong style=\"color:#0c1122;\">" + str(device_id) + "</strong></p>" if device_id else ""}
-  <table width="100%">{score_html}{diag_html}{cmd_html}</table>
-</td></tr>
-<tr><td style="background:#f0f4fa;padding:14px 28px;border-top:1px solid #e4eaf6;">
-  <p style="margin:0;font-size:11px;color:#8592a8;">IISentinel&#8482; — Automated alert — Do not reply</p>
-</td></tr></table></td></tr></table></body></html>"""
+def send_email(subject,body,device_id=None,health_score=None,
+               diagnosis=None,automation_command=None,severity='warning'):
+    if not NOTIFY['email_enabled'] or not NOTIFY['smtp_user'] or not NOTIFY['to_emails']: return
+    C={'critical':'#ff3e50','cbs':'#ff3e50','warning':'#f5a020','info':'#20e07a'}.get(severity,'#34c6f4')
+    sr=(f'<tr><td style="color:#8592a8;padding:6px 0;font-size:13px">Health Score</td>'
+        f'<td style="font-weight:700;color:{C};font-size:13px">{health_score:.0f}/100</td></tr>'
+        if health_score is not None else '')
+    dr=(f'<tr><td colspan="2" style="padding:8px 0 4px;color:#8592a8;font-size:11px;'
+        f'font-weight:700;text-transform:uppercase">AI Diagnosis</td></tr>'
+        f'<tr><td colspan="2" style="padding:4px 0 10px;font-size:13px">{diagnosis}</td></tr>'
+        if diagnosis else '')
+    cr=(f'<tr><td colspan="2" style="padding:8px 12px;background:#fff4e6;border-radius:6px;'
+        f'font-size:12px;color:#c07800;font-weight:600;border-left:3px solid #f5a020">'
+        f'{automation_command}</td></tr>' if automation_command else '')
+    devr=(f'<p style="margin:0 0 14px;font-size:13px;color:#8592a8">Device: '
+          f'<strong style="color:#0c1122">{device_id}</strong></p>' if device_id else '')
+    html=f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#eef0f7;font-family:'Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 0"><tr><td align="center">
+<table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10)">
+<tr><td style="background:{C};padding:22px 28px"><span style="font-size:20px;font-weight:800;color:#fff">IISentinel™</span>
+&nbsp;<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;padding:3px 10px;border-radius:20px">{severity.upper()}</span></td></tr>
+<tr><td style="padding:28px"><p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#0c1122">{subject}</p>
+{devr}<table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e4eaf6;margin-top:12px">{sr}{dr}{cr}</table></td></tr>
+<tr><td style="background:#f0f4fa;padding:14px 28px;border-top:1px solid #e4eaf6">
+<p style="margin:0;font-size:11px;color:#8592a8">IISentinel™ Intelligent Infrastructure Sentinel — automated alert</p></td></tr>
+</table></td></tr></table></body></html>"""
     try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = f'[IISentinel™] {label}: {subject}'
-        msg['From']    = os.environ.get('SMTP_FROM', 'iisentinel@localhost')
-        msg['To']      = recipient
-        msg.attach(MIMEText(body, 'plain'))
-        msg.attach(MIMEText(html, 'html'))
-        with smtplib.SMTP(os.environ.get('SMTP_HOST','localhost'), int(os.environ.get('SMTP_PORT',587))) as s:
-            if os.environ.get('SMTP_USER'):
-                s.starttls()
-                s.login(os.environ.get('SMTP_USER'), os.environ.get('SMTP_PASS',''))
+        msg=MIMEMultipart('alternative')
+        msg['Subject']=f'[IISentinel™] {severity.upper()}: {subject}'
+        msg['From']=NOTIFY['from_email']; msg['To']=', '.join(NOTIFY['to_emails'])
+        msg.attach(MIMEText(body,'plain')); msg.attach(MIMEText(html,'html'))
+        with smtplib.SMTP(NOTIFY['smtp_host'],NOTIFY['smtp_port']) as s:
+            if NOTIFY['smtp_user']: s.starttls(); s.login(NOTIFY['smtp_user'],NOTIFY['smtp_pass'])
             s.send_message(msg)
-    except Exception as e:
-        print(f'Email error: {e}')
+    except Exception as e: print(f'[Email] {e}')
 
-def fire_critical_alert(device_id, device_type, health_score, message, diagnosis=None, automation_command=None):
-    is_cbs   = device_type == 'cbs_controller' or 'BLAST HOLD' in (message or '')
-    severity = 'cbs' if is_cbs else 'critical' if health_score < 20 else 'warning'
-    subject  = (f'BLAST HOLD ACTIVE — {device_id}' if is_cbs else
-                f'Critical failure — {device_id}' if health_score < 20 else
-                f'Equipment degradation — {device_id}')
-    short = f'IISentinel™ {severity.upper()}: {device_id} score {health_score:.0f}/100. {(message or "")[:100]}'
-    if is_cbs or health_score < 20:
-        threading.Thread(target=send_sms_alert,      args=(short,), daemon=True).start()
-        threading.Thread(target=send_whatsapp_alert, args=(short,), daemon=True).start()
-    if health_score < 50:
-        threading.Thread(target=send_email_alert, daemon=True,
-                         kwargs=dict(subject=subject, body=short, device_id=device_id,
-                                     health_score=health_score, diagnosis=diagnosis,
-                                     automation_command=automation_command, severity=severity)).start()
+def notify_all(subject,message,level='critical',device_id=None,
+               health_score=None,diagnosis=None,automation_command=None):
+    notification_log.appendleft({'subject':subject,'message':message,'level':level,
+        'device_id':device_id,'ts':datetime.now(timezone.utc).isoformat()})
+    platform_stats['notifications_sent']+=1
+    if level in ('critical','cbs'):
+        threading.Thread(target=send_sms,args=(f'{subject}: {message}',),daemon=True).start()
+        threading.Thread(target=send_whatsapp,args=(f'*{subject}*\n{message}',),daemon=True).start()
+    threading.Thread(target=send_email,kwargs=dict(subject=subject,body=message,device_id=device_id,
+        health_score=health_score,diagnosis=diagnosis,automation_command=automation_command,severity=level),
+        daemon=True).start()
 
-# ══════════════════════════════════════════════════════════════════════
-# BACKGROUND WORKERS
-# ══════════════════════════════════════════════════════════════════════
-def flush_queue():
+# ── SSE ───────────────────────────────────────────────────────────────────
+def sse_broadcast(event_type,payload):
+    msg=f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
+    with _sse_lock:
+        dead=[]
+        for q in _sse_subs:
+            try: q.put_nowait(msg)
+            except: dead.append(q)
+        for q in dead: _sse_subs.remove(q)
+
+# ── Background workers ────────────────────────────────────────────────────
+def flush_worker():
     while True:
         time.sleep(3)
         with queue_lock:
-            if not metric_queue:
-                continue
-            batch = list(metric_queue)
-            metric_queue.clear()
-            platform_stats['queue_depth'] = 0
-        try:
-            for item in batch:
-                supabase.table('metrics').insert(item).execute()
-            platform_stats['last_flush_ts'] = time.time()
-            _data_cache['ts'] = 0
-        except Exception as e:
-            print(f'Flush error: {e}')
-            with queue_lock:
-                for item in batch[:50]:
-                    metric_queue.appendleft(item)
-                platform_stats['queue_depth'] = len(metric_queue)
+            if not metric_queue: continue
+            batch=list(metric_queue); metric_queue.clear()
+        for item in batch:
+            try: supabase.table('metrics').insert(item).execute()
+            except Exception as e: print(f'[Flush] {e}')
+        platform_stats['last_flush']=datetime.now(timezone.utc).isoformat()
+        platform_stats['queue_depth']=len(metric_queue)
 
-threading.Thread(target=flush_queue, daemon=True).start()
-
-_lifecycle_cache     = {}
-_retrain_in_progress = False
-retrain_lock         = threading.Lock()
-
-def scoring_worker():
+def scorer_worker():
     while True:
-        time.sleep(1)
-        with queue_lock:
-            if not scoring_queue:
-                continue
-            items = list(scoring_queue)
-            scoring_queue.clear()
-            platform_stats['scoring_queue'] = 0
-        for item in items:
-            did = item.get('device_id')
-            if did:
-                update_uptime(did, item.get('health_score', 50))
-                lc = get_lifecycle_estimate(did, item.get('device_type',''), item.get('health_score', 50))
-                if lc:
-                    _lifecycle_cache[did] = lc
+        time.sleep(0.5)
+        with scoring_lock:
+            if not scoring_queue: continue
+            item=scoring_queue.popleft()
+        try:
+            arr=np.array([item['features']])
+            score=float(np.clip(rf_model.predict(arr)[0],0,100))
+            anom=bool(iso_model.predict(arr)[0]==-1)
+            scoring_results[item['device_id']]={'health_score':score,'anomaly_flag':anom,'ts':time.time()}
+            platform_stats['models_scored']+=1
+        except Exception as e: print(f'[Scorer] {e}')
 
-threading.Thread(target=scoring_worker, daemon=True).start()
+def retrain_worker():
+    global rf_model,iso_model,anomaly_count,_retrain_in_progress
+    while True:
+        time.sleep(60)
+        if anomaly_count<RETRAIN_THRESHOLD: continue
+        with _retrain_lock:
+            if _retrain_in_progress: continue
+            _retrain_in_progress=True
+        try:
+            platform_stats['last_retrain_attempt']=datetime.now(timezone.utc).isoformat()
+            resp=supabase.table('metrics').select('cpu_load,bandwidth_mbps,latency_ms,packet_loss,connected_devices,temperature,signal_strength,health_score').limit(2000).execute()
+            rows=resp.data
+            if len(rows)<50: continue
+            from sklearn.ensemble import RandomForestRegressor,IsolationForest
+            X,y=[],[]
+            for r in rows:
+                f=[r.get('cpu_load',50),r.get('bandwidth_mbps',100),r.get('latency_ms',10),
+                   r.get('packet_loss',0),r.get('connected_devices',10),
+                   r.get('temperature',40),r.get('signal_strength',80)]
+                if None not in f and r.get('health_score') is not None:
+                    X.append(f); y.append(r['health_score'])
+            if len(X)<50: continue
+            X=np.array(X); y=np.array(y)
+            nrf=RandomForestRegressor(n_estimators=100,max_depth=10,random_state=42); nrf.fit(X,y)
+            niso=IsolationForest(n_estimators=100,contamination=0.08,random_state=42); niso.fit(X[y>=50])
+            joblib.dump(nrf,'health_model.pkl'); joblib.dump(niso,'anomaly_model.pkl')
+            rf_model=nrf; iso_model=niso; anomaly_count=0
+            platform_stats['last_retrain_success']=datetime.now(timezone.utc).isoformat()
+            platform_stats['retrain_count']=platform_stats.get('retrain_count',0)+1
+            print(f'[Retrain] Done — {len(X)} samples')
+        except Exception as e: print(f'[Retrain] {e}')
+        finally:
+            with _retrain_lock: _retrain_in_progress=False
 
-def auto_retrain():
-    global rf_model, iso_model, scaler, anomaly_count, _retrain_in_progress
-    with retrain_lock:
-        if _retrain_in_progress:
-            return
-        _retrain_in_progress = True
-    try:
-        from sklearn.ensemble import RandomForestRegressor, IsolationForest
-        from sklearn.preprocessing import StandardScaler
-        resp = supabase.table('metrics').select(
-            'cpu_load,bandwidth_mbps,latency_ms,packet_loss,connected_devices,temperature,signal_strength,health_score'
-        ).order('created_at', desc=True).limit(1000).execute()
-        data = resp.data
-        if len(data) < 50:
-            return
-        X = np.array([[r.get('cpu_load',50) or 50, r.get('bandwidth_mbps',100) or 100,
-                       r.get('latency_ms',10) or 10, r.get('packet_loss',0) or 0,
-                       r.get('connected_devices',10) or 10, r.get('temperature',40) or 40,
-                       r.get('signal_strength',80) or 80] for r in data])
-        y = np.array([r.get('health_score',50) or 50 for r in data])
-        new_scaler = StandardScaler()
-        X_s = new_scaler.fit_transform(X)
-        new_rf = RandomForestRegressor(n_estimators=100, random_state=42)
-        new_rf.fit(X_s, y)
-        new_iso = IsolationForest(contamination=0.1, random_state=42)
-        new_iso.fit(X_s)
-        joblib.dump(new_rf, 'health_model.pkl')
-        joblib.dump(new_iso, 'anomaly_model.pkl')
-        joblib.dump(new_scaler, 'scaler.pkl')
-        rf_model = new_rf; iso_model = new_iso; scaler = new_scaler
-        anomaly_count = 0
-        platform_stats['retrain_runs'] += 1
-        print(f'Auto-retrain complete on {len(data)} samples')
-    except Exception as e:
-        print(f'Retrain error: {e}')
-    finally:
-        with retrain_lock:
-            _retrain_in_progress = False
+for _fn in (flush_worker,scorer_worker,retrain_worker):
+    threading.Thread(target=_fn,daemon=True).start()
+
+# ── Intelligence helpers ──────────────────────────────────────────────────
+def get_failure_probability(device_id,score):
+    h=device_history.get(device_id,[])
+    if len(h)<3: return 0.0
+    r=h[-5:]; trend=r[-1]-r[0]
+    if trend>=0: return max(0.0,round((100-score)*0.05,1))
+    return min(99.0,round(abs(trend)/len(r)*3+(100-score)*0.3,1))
+
+def get_federated_health_index(scores):
+    if not scores: return 100.0
+    w=[s*0.5 if s<20 else s*0.8 if s<50 else s for s in scores]
+    return round(sum(w)/len(w),1)
+
+def get_lifecycle_estimate(device_id,dtype,score):
+    base={'pump':8760,'conveyor':17520,'ventilation':26280,'plc':52560,
+          'router':43800,'switch':43800,'base_station':35040}.get(dtype,26280)
+    h=device_history.get(device_id,[])
+    if len(h)<5: return base
+    slope=h[-1]-h[0]; dpd=abs(slope)/len(h) if slope<0 else 0
+    return round(min(base,score/dpd*(10/3600))) if dpd>0 else base
+
+def get_diagnosis(dtype,protocol,mname,mval,score,anom):
+    issues=[]; actions=[]
+    if score<20:   issues.append('critical system failure');  actions.append('immediate intervention required')
+    elif score<35: issues.append('severe degradation');       actions.append('escalate to operations team')
+    elif score<50: issues.append('moderate degradation');     actions.append('schedule maintenance within 24h')
+    if dtype in TELECOM_TYPES+NETWORK_TYPES:
+        if mval>100 and 'latency' in str(mname): issues.append(f'SNMP {mval:.1f}ms latency'); actions.append('inspect BGP routing')
+        if mval>2   and 'packet'  in str(mname): issues.append(f'packet loss {mval:.1f}%'); actions.append('run BERT test, check SFP')
+        if mval<40  and 'signal'  in str(mname): issues.append(f'signal at {mval:.1f}%'); actions.append('check microwave alignment')
+    elif dtype in MINING_TYPES:
+        if mval>75 and 'temp' in str(mname): issues.append(f'temperature {mval:.1f}C'); actions.append('check cooling, reduce duty cycle')
+    elif dtype=='cbs_controller':
+        if score<CBS_SAFETY_THRESHOLD:
+            issues.append(f'CBS DNP3 link {score:.1f}% below blast threshold')
+            actions.append('BLAST HOLD — notify blasting officer')
+    if anom: issues.append('AI anomaly detected'); actions.append('cross-reference event log')
+    if not issues: return f'Device normal via {protocol or "Ethernet"}. Score {score:.1f}/100.'
+    return f'{"; ".join(issues).capitalize()}. Action: {"; ".join(actions).capitalize()}.'
+
+def get_auto_cmd(device_id,dtype,score,blast_hold=False):
+    if dtype=='cbs_controller' and score<CBS_SAFETY_THRESHOLD:
+        return f'CBS SAFETY INTERLOCK: BLAST HOLD on {device_id} — DNP3 link {score:.1f}%'
+    if dtype in ['ventilation','pump'] and score<20:
+        return f'EMERGENCY: Safety shutdown {device_id} — underground evacuation alert'
+    if score<20: return f'CRITICAL: Emergency restart for {device_id}'
+    if score<35: return f'WARNING: Isolate {device_id} — reduce load'
+    if score<50: return f'CAUTION: Schedule maintenance for {device_id}'
+    return None
+
+def update_uptime(did,score):
+    device_uptime.setdefault(did,{'total':0,'healthy':0})
+    device_uptime[did]['total']+=1
+    if score>=50: device_uptime[did]['healthy']+=1
+
+def get_uptime_pct(did):
+    d=device_uptime.get(did,{'total':0,'healthy':0})
+    return 100.0 if d['total']==0 else round(d['healthy']/d['total']*100,1)
+
+def sanitize_metric(data):
+    if not isinstance(data,dict): return {},'Payload must be JSON'
+    for f in ['device_id','device_type']:
+        if not data.get(f): return {},f'Missing: {f}'
+    did=str(data['device_id'])
+    if not re.match(r'^[a-zA-Z0-9_\-]{1,80}$',did): return {},'Invalid device_id'
+    cleaned=dict(data); cleaned['device_id']=did
+    for field,(lo,hi) in FIELD_BOUNDS.items():
+        if field in cleaned:
+            try: cleaned[field]=float(max(lo,min(hi,float(cleaned[field]))))
+            except: cleaned[field]=(lo+hi)/2
+    return cleaned,None
 
 def get_cached_data():
-    now = time.time()
-    if now - _data_cache['ts'] < CACHE_TTL and _data_cache['data']:
-        platform_stats['cache_hits'] += 1
-        return _data_cache['data']
+    now=time.time()
+    if now-_data_cache['ts']<CACHE_TTL and _data_cache['data']:
+        platform_stats['cache_hits']+=1; return _data_cache['data']
     try:
-        resp = supabase.table('metrics').select('*').order('created_at', desc=True).limit(200).execute()
-        _data_cache['data'] = resp.data
-        _data_cache['ts']   = now
-        return resp.data
+        resp=supabase.table('metrics').select('*').limit(200).execute()
+        _data_cache['data']=resp.data; _data_cache['ts']=now; return resp.data
     except Exception as e:
-        print(f'Cache error: {e}')
-        return _data_cache['data']
-
-# ══════════════════════════════════════════════════════════════════════
-# APP INIT
-# ══════════════════════════════════════════════════════════════════════
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-CORS(app)
-app.secret_key = os.environ.get('SECRET_KEY', 'iisentinel-secret-2026')
-
-rf_model  = joblib.load('health_model.pkl')
-iso_model = joblib.load('anomaly_model.pkl')
-scaler    = joblib.load('scaler.pkl')
-
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-reading_window  = []
-device_history  = {}
-device_uptime   = {}
-anomaly_count   = 0
-RETRAIN_THRESHOLD    = 50
-CBS_SAFETY_THRESHOLD = 90.0
-
-NETWORK_TYPES = ['router','switch','firewall','wan_link','workstation']
-TELECOM_TYPES = ['base_station','network_tower','microwave_link']
-MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
-CBS_TYPES     = ['cbs_controller']
-
-LOCATIONS = {
-    'byo' : {'lat': -20.15, 'lon': 28.58, 'name': 'Bulawayo'},
-    'hre' : {'lat': -17.82, 'lon': 31.05, 'name': 'Harare'},
-    'mut' : {'lat': -18.97, 'lon': 32.67, 'name': 'Mutare'},
-    'mine': {'lat': -17.65, 'lon': 29.85, 'name': 'Mine Site'},
-}
-
-PROTOCOL_MAP = {
-    'SNMP/Ethernet-802.3':   'SNMP over IEEE 802.3 Ethernet',
-    'Profinet/EtherNet-IP':  'Profinet real-time industrial Ethernet',
-    'DNP3/Ethernet':         'DNP3 safety-critical control protocol',
-    'Modbus-TCP/OPC-UA':     'Modbus TCP with OPC-UA data exchange',
-}
-
-COST_RATES = {
-    'pump': 150000, 'conveyor': 120000, 'ventilation': 180000,
-    'plc': 80000, 'scada_node': 60000, 'cbs_controller': 450000,
-    'power_meter': 100000, 'sensor': 40000,
-    'base_station': 25000, 'network_tower': 35000, 'microwave_link': 40000,
-    'router': 15000, 'switch': 10000, 'firewall': 20000,
-    'wan_link': 12000, 'workstation': 2000,
-}
+        print(f'[Cache] {e}'); return _data_cache['data']
 
 def require_specialist(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('X-Specialist-Token')
-        if not token:
-            return jsonify({'error': 'Unauthorised'}), 401
+    def decorated(*args,**kwargs):
+        token=request.headers.get('X-Specialist-Token','')
+        if not token: return jsonify({'error':'Unauthorised'}),401
         try:
-            result = supabase.table('specialists').select('*').eq('password', token).execute()
-            if not result.data:
-                return jsonify({'error': 'Invalid token'}), 401
-        except:
-            return jsonify({'error': 'Auth error'}), 401
-        return f(*args, **kwargs)
+            r=supabase.table('specialists').select('*').eq('password',token).execute()
+            if not r.data: return jsonify({'error':'Invalid token'}),401
+        except Exception as e: return jsonify({'error':f'Auth error: {e}'}),401
+        return f(*args,**kwargs)
     return decorated
 
-def get_failure_probability(device_id, current_score):
-    history = device_history.get(device_id, [])
-    if len(history) < 3:
-        return 0.0
-    recent = history[-5:]
-    trend  = recent[-1] - recent[0]
-    if trend >= 0:
-        return max(0.0, round((100 - current_score) * 0.05, 1))
-    decline_rate = abs(trend) / len(recent)
-    return min(99.0, round(decline_rate * 3 + (100 - current_score) * 0.3, 1))
+# ── Demo mode ─────────────────────────────────────────────────────────────
+DEMO_DEVICES=[
+    {'id':'net-byo-router-01',     'type':'router',         'bsig':90,'blat':35,'bbw':120,'btemp':42},
+    {'id':'net-byo-switch-core',   'type':'switch',         'bsig':88,'blat':8, 'bbw':480,'btemp':38},
+    {'id':'net-hre-router-01',     'type':'router',         'bsig':82,'blat':28,'bbw':95, 'btemp':45},
+    {'id':'net-hre-wan-link',      'type':'wan_link',       'bsig':75,'blat':62,'bbw':55, 'btemp':40},
+    {'id':'net-mut-firewall-01',   'type':'firewall',       'bsig':85,'blat':18,'bbw':75, 'btemp':44},
+    {'id':'tc-byo-base-stn-01',    'type':'base_station',   'bsig':78,'blat':15,'bbw':220,'btemp':52},
+    {'id':'tc-hre-tower-main',     'type':'network_tower',  'bsig':82,'blat':22,'bbw':180,'btemp':48},
+    {'id':'tc-mut-microwave-01',   'type':'microwave_link', 'bsig':70,'blat':35,'bbw':120,'btemp':55},
+    {'id':'mc-shaft1-pump-01',     'type':'pump',           'bsig':88,'blat':12,'bbw':18, 'btemp':68},
+    {'id':'mc-shaft1-pump-02',     'type':'pump',           'bsig':84,'blat':14,'bbw':16, 'btemp':72},
+    {'id':'mc-shaft2-ventilation', 'type':'ventilation',    'bsig':86,'blat':10,'bbw':22, 'btemp':75},
+    {'id':'mc-shaft2-conveyor',    'type':'conveyor',       'bsig':90,'blat':8, 'bbw':20, 'btemp':62},
+    {'id':'mc-plant-plc-01',       'type':'plc',            'bsig':92,'blat':6, 'bbw':30, 'btemp':55},
+    {'id':'mc-surface-pwr-meter',  'type':'power_meter',    'bsig':95,'blat':9, 'bbw':12, 'btemp':48},
+    {'id':'cbs-dnp3-mine-ctrl',    'type':'cbs_controller', 'bsig':96,'blat':5, 'bbw':8,  'btemp':35},
+]
 
-def get_federated_health_index(all_scores):
-    if not all_scores:
-        return 100.0
-    weights = [s * 0.5 if s < 20 else s * 0.8 if s < 50 else s for s in all_scores]
-    return round(sum(weights) / len(weights), 1)
+def _demo_ingest(payload):
+    global anomaly_count
+    did=payload['device_id']; dtype=payload['device_type']
+    features=[payload.get('cpu_load',50),payload.get('bandwidth_mbps',100),
+              payload.get('latency_ms',10),payload.get('packet_loss',0),
+              payload.get('connected_devices',10),payload.get('temperature',40),
+              payload.get('signal_strength',80)]
+    arr=np.array([features]); score=float(np.clip(rf_model.predict(arr)[0],0,100))
+    if dtype=='cbs_controller': score=min(score,payload.get('signal_strength',score))
+    anom=bool(iso_model.predict(arr)[0]==-1)
+    if anom: anomaly_count+=1
+    device_history.setdefault(did,[]).append(score)
+    if len(device_history[did])>20: device_history[did].pop(0)
+    update_uptime(did,score)
+    ai=get_diagnosis(dtype,payload.get('protocol',''),payload.get('metric_name',''),
+                     payload.get('metric_value',0),score,anom) if (anom or score<50) else None
+    cmd=get_auto_cmd(did,dtype,score)
+    with queue_lock:
+        metric_queue.append({'device_id':did,'device_type':dtype,
+            'metric_name':payload.get('metric_name',''),'metric_value':float(payload.get('metric_value',0)),
+            'health_score':score,'anomaly_flag':anom,'predicted_score':score,
+            'ai_diagnosis':ai,'automation_command':cmd})
+    if dtype=='cbs_controller' and score<CBS_SAFETY_THRESHOLD:
+        sse_broadcast('cbs_hold',{'device_id':did,'health_score':round(score,1),'blast_hold':True})
 
-def get_root_cause_chain(device_id, current_score, all_recent):
-    chain = []
-    degraded = [(did, score) for did, score in all_recent.items() if score < 50 and did != device_id]
-    if degraded and current_score < 50:
-        for did, score in sorted(degraded, key=lambda x: x[1])[:3]:
-            chain.append({'device': did, 'score': round(score, 1)})
-    return chain
+def demo_worker():
+    in_event={d['id']:0 for d in DEMO_DEVICES}
+    print('[Demo] Injection active — 15 devices, 4 sites')
+    while True:
+        for dev in DEMO_DEVICES:
+            did=dev['id']; dtype=dev['type']
+            if in_event[did]>0: in_event[did]-=1
+            elif random.random()<0.08: in_event[did]=random.randint(4,12)
+            if dtype=='cbs_controller' and random.random()<0.008: in_event[did]=random.randint(6,10)
+            sev=in_event[did]/12.0
+            sig=max(20,dev['bsig']*(1-sev*0.45)+random.gauss(0,4))
+            lat=max(1, dev['blat']*(1+sev*3.0) +random.gauss(0,dev['blat']*0.1))
+            bw =max(1, dev['bbw'] *(1-sev*0.6) +random.gauss(0,dev['bbw']*0.08))
+            temp=dev['btemp']*(1+sev*0.5)+random.gauss(0,3)
+            cpu=min(98,20+sev*75+random.gauss(0,8)); loss=max(0,sev*8+random.gauss(0,0.8))
+            if dtype in MINING_TYPES:                 mn,mv='temperature',round(temp,1)
+            elif dtype in TELECOM_TYPES+CBS_TYPES:    mn,mv='signal_strength',round(sig,1)
+            else:                                     mn,mv='latency_ms',round(lat,1)
+            proto=('DNP3/Ethernet' if dtype=='cbs_controller' else
+                   'Profinet/EtherNet-IP' if dtype in MINING_TYPES else 'SNMP/Ethernet-802.3')
+            try:
+                _demo_ingest({'device_id':did,'device_type':dtype,'metric_name':mn,'metric_value':mv,
+                    'cpu_load':round(cpu,1),'bandwidth_mbps':round(bw,1),'latency_ms':round(lat,1),
+                    'packet_loss':round(loss,2),'connected_devices':max(1,int(10*(1-sev*0.4))),
+                    'temperature':round(temp,1),'signal_strength':round(sig,1),'protocol':proto})
+            except Exception as e: print(f'[Demo ingest] {e}')
+        time.sleep(random.uniform(3.0,5.0))
 
-def get_lifecycle_estimate(device_id, device_type, health_score):
-    type_hours = {
-        'pump': 8760, 'conveyor': 17520, 'ventilation': 26280,
-        'plc': 52560, 'router': 43800, 'switch': 43800,
-        'base_station': 35040, 'network_tower': 43800,
-    }
-    base_hours = type_hours.get(device_type, 26280)
-    history    = device_history.get(device_id, [])
-    if len(history) < 5:
-        return None
-    trend = history[-1] - history[0]
-    decline_per_reading = abs(trend) / len(history) if trend < 0 else 0
-    if decline_per_reading > 0:
-        readings_to_failure = health_score / decline_per_reading
-        hours_remaining     = min(base_hours, readings_to_failure * (10 / 3600))
-        return round(hours_remaining, 0)
-    return base_hours
+if os.environ.get('DEMO_MODE','false').lower()=='true':
+    threading.Thread(target=demo_worker,daemon=True).start()
 
-def get_protocol_diagnosis(device_type, protocol, metric_name, metric_value, health_score, anomaly):
-    issues = []; actions = []
-    proto_label = PROTOCOL_MAP.get(protocol, protocol or 'Ethernet')
-    if health_score < 20:
-        issues.append("critical system failure detected"); actions.append("immediate intervention required")
-    elif health_score < 35:
-        issues.append("severe performance degradation"); actions.append("escalate to operations team")
-    elif health_score < 50:
-        issues.append("moderate performance degradation"); actions.append("schedule maintenance within 24 hours")
-    if device_type in TELECOM_TYPES or device_type in NETWORK_TYPES:
-        if 'latency' in metric_name and metric_value > 100:
-            issues.append(f"SNMP reports {metric_value:.1f}ms latency on backhaul")
-            actions.append("inspect BGP routing and check fibre integrity")
-        if 'packet' in metric_name and metric_value > 2:
-            issues.append(f"packet loss {metric_value:.1f}% on {proto_label}")
-            actions.append("run BERT test and check SFP modules")
-        if 'bandwidth' in metric_name and metric_value > 800:
-            issues.append(f"bandwidth at {metric_value:.1f}Mbps near capacity")
-            actions.append("implement QoS and analyse NetFlow traffic")
-        if 'signal' in metric_name and metric_value < 40:
-            issues.append(f"signal at {metric_value:.1f}% — link degraded")
-            actions.append("inspect microwave alignment")
-    elif device_type in MINING_TYPES:
-        if 'temperature' in metric_name and metric_value > 75:
-            issues.append(f"Profinet reports {metric_value:.1f}°C — thermal threshold")
-            actions.append("check cooling fan and reduce duty cycle")
-        if 'motor' in metric_name and metric_value < 500:
-            issues.append(f"motor {metric_value:.0f}RPM via Modbus — below minimum")
-            actions.append("inspect VFD parameters and overcurrent protection")
-        if 'vibration' in metric_name and metric_value > 3:
-            issues.append(f"vibration {metric_value:.2f}g via OPC-UA — bearing wear")
-            actions.append("schedule predictive maintenance within 4 hours")
-        if 'pressure' in metric_name and metric_value > 8:
-            issues.append(f"pressure {metric_value:.1f}bar — above safe limit")
-            actions.append("open bypass valve — alert hydraulics engineer")
-    elif device_type == 'cbs_controller':
-        if health_score < CBS_SAFETY_THRESHOLD:
-            issues.append(f"CBS DNP3 link {health_score:.1f}% below blast threshold")
-            actions.append("BLAST HOLD — notify blasting officer, inspect DNP3 link")
-    if anomaly:
-        issues.append(f"Isolation Forest anomaly on {proto_label}")
-        actions.append("cross-reference with device event log")
-    if not issues:
-        return f"Device operating within normal parameters via {proto_label}. Health score {health_score:.1f}/100."
-    return f"{'; '.join(issues).capitalize()}. Recommended actions: {'; '.join(actions).capitalize()}."
+# ═══════════════════════════════════════════════════════════════════════════
+# ROUTES
+# ═══════════════════════════════════════════════════════════════════════════
+@app.route('/')
+def index():
+    try:
+        path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'dashboard.html')
+        with open(path,encoding='utf-8') as f:
+            return f.read(),200,{'Content-Type':'text/html; charset=utf-8'}
+    except FileNotFoundError:
+        return '<h1>dashboard.html not found — place it in the same folder as app.py</h1>',404
 
-def get_automation_command(device_id, device_type, health_score, blast_hold=False, automation_override=None):
-    if automation_override:
-        return automation_override
-    if device_type == 'cbs_controller' and health_score < CBS_SAFETY_THRESHOLD:
-        return f"CBS SAFETY INTERLOCK: BLAST HOLD on {device_id} — DNP3 link {health_score:.1f}% below threshold."
-    if device_type in ['ventilation','pump'] and health_score < 20:
-        return f"EMERGENCY: Safety shutdown {device_id} — underground evacuation alert triggered via PA system"
-    if health_score < 20:
-        return f"CRITICAL: Emergency restart for {device_id}"
-    if health_score < 35:
-        return f"WARNING: Isolate {device_id} and reduce load"
-    if health_score < 50:
-        return f"CAUTION: Schedule maintenance for {device_id}"
-    return None
+@app.route('/health')
+def health_check():
+    q=len(metric_queue); age=round(time.time()-_data_cache['ts'],1)
+    up=(datetime.now(timezone.utc)-datetime.fromisoformat(
+        platform_stats['uptime_start'].replace('Z','+00:00')
+        if platform_stats['uptime_start'].endswith('Z')
+        else platform_stats['uptime_start'])).total_seconds()
+    deg=q>450 or (age>300 and _data_cache['ts']>0)
+    return jsonify({'status':'degraded' if deg else 'ok','uptime_h':round(up/3600,2),
+        'queue_depth':q,'cache_age_s':age,'devices':len(device_history),
+        'anomalies':anomaly_count,'version':'2.0','platform':'IISentinel™'}),503 if deg else 200
 
-def update_uptime(device_id, health_score):
-    if device_id not in device_uptime:
-        device_uptime[device_id] = {'total': 0, 'healthy': 0}
-    device_uptime[device_id]['total'] += 1
-    if health_score >= 50:
-        device_uptime[device_id]['healthy'] += 1
+@app.route('/api/data')
+def get_data():
+    platform_stats['requests_total']+=1; return jsonify(get_cached_data())
 
-def get_uptime_pct(device_id):
-    d = device_uptime.get(device_id, {'total': 0, 'healthy': 0})
-    if d['total'] == 0: return 100.0
-    return round((d['healthy'] / d['total']) * 100, 1)
-
-# ══════════════════════════════════════════════════════════════════════
-# API ROUTES
-# ══════════════════════════════════════════════════════════════════════
-
-@app.route('/api/metrics', methods=['POST'])
+@app.route('/api/metrics',methods=['POST'])
 def receive_metrics():
     global anomaly_count
-    platform_stats['requests_total'] += 1
-    data = request.json
+    platform_stats['requests_total']+=1
+    raw=request.get_json(silent=True)
+    if not raw: platform_stats['requests_failed']+=1; return jsonify({'error':'Empty payload'}),400
+    data,err=sanitize_metric(raw)
+    if err: platform_stats['requests_failed']+=1; return jsonify({'error':err}),400
+    did=data['device_id']; dtype=data['device_type']; proto=data.get('protocol','Ethernet')
+    features=[data.get('cpu_load',50),data.get('bandwidth_mbps',100),data.get('latency_ms',10),
+              data.get('packet_loss',0),data.get('connected_devices',10),
+              data.get('temperature',40),data.get('signal_strength',80)]
+    arr=np.array([features]); score=float(np.clip(rf_model.predict(arr)[0],0,100))
+    if dtype=='cbs_controller': score=min(score,data.get('signal_strength',score))
+    anom=bool(iso_model.predict(arr)[0]==-1)
+    if anom: anomaly_count+=1
+    with scoring_lock: scoring_queue.append({'features':features,'device_id':did})
+    device_history.setdefault(did,[]).append(score)
+    if len(device_history[did])>20: device_history[did].pop(0)
+    reading_window.append(score)
+    if len(reading_window)>10: reading_window.pop(0)
+    predicted=max(0,min(100,score+(reading_window[-1]-reading_window[0]))) if len(reading_window)>=3 else score
+    fail_prob=get_failure_probability(did,score)
+    fhi=get_federated_health_index([h[-1] for h in device_history.values() if h])
+    update_uptime(did,score)
+    ai_diag=None; auto_cmd=None
+    blast=data.get('blast_hold',False) or (dtype=='cbs_controller' and score<CBS_SAFETY_THRESHOLD)
+    if anom or score<50 or dtype=='cbs_controller':
+        ai_diag=get_diagnosis(dtype,proto,data.get('metric_name',''),data.get('metric_value',0),score,anom)
+        auto_cmd=get_auto_cmd(did,dtype,score,blast)
+    rec={'device_id':did,'device_type':dtype,'metric_name':data.get('metric_name','unknown'),
+         'metric_value':float(data.get('metric_value',0)),'health_score':score,'anomaly_flag':anom,
+         'predicted_score':predicted,'ai_diagnosis':ai_diag,'automation_command':auto_cmd}
+    with queue_lock: metric_queue.append(rec)
+    if score<50 or anom:
+        try: supabase.table('incidents').insert({'device_id':did,'device_type':dtype,
+                 'health_score':score,'ai_diagnosis':ai_diag,'automation_command':auto_cmd,'status':'open'}).execute()
+        except: pass
+    if blast:
+        sse_broadcast('cbs_hold',{'device_id':did,'health_score':round(score,1),'blast_hold':True,'automation_command':auto_cmd})
+        notify_all(f'CBS BLAST HOLD — {did}',f'DNP3 link {score:.1f}% — threshold {CBS_SAFETY_THRESHOLD}%. $450k/hr exposure.',
+                   level='cbs',device_id=did,health_score=score,diagnosis=ai_diag,automation_command=auto_cmd)
+    elif score<20 and dtype in ['ventilation','pump']:
+        notify_all(f'EMERGENCY: {did}',f'{dtype} at {score:.1f}% — underground safety.',
+                   level='critical',device_id=did,health_score=score,diagnosis=ai_diag,automation_command=auto_cmd)
+    return jsonify({'status':'ok','health_score':round(score,1),'anomaly_flag':anom,
+        'predicted_score':round(predicted,1),'failure_probability':fail_prob,'ai_diagnosis':ai_diag,
+        'automation_command':auto_cmd,'federated_index':fhi,'uptime_pct':get_uptime_pct(did),
+        'blast_hold':blast,'protocol':proto,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD})
 
-    # ── REGEX: sanitise and validate input ──
-    cleaned, violations = sanitise_input(data)
-    if violations:
-        platform_stats['regex_violations'] += len(violations)
-        print(f'Regex sanitiser: {violations}')
-    data = cleaned
+@app.route('/api/platform')
+def platform_api():
+    up=(datetime.now(timezone.utc)-datetime.fromisoformat(
+        platform_stats['uptime_start'].replace('Z','+00:00')
+        if platform_stats['uptime_start'].endswith('Z')
+        else platform_stats['uptime_start'])).total_seconds()
+    return jsonify({'queue_depth':len(metric_queue),'scoring_queue':len(scoring_queue),
+        'cache_age_seconds':round(time.time()-_data_cache['ts'],1),'devices_tracked':len(device_history),
+        'anomaly_count':anomaly_count,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
+        'retrain_in_progress':_retrain_in_progress,'platform_uptime_h':round(up/3600,2),
+        'platform_stats':platform_stats,'demo_mode':os.environ.get('DEMO_MODE','false').lower()=='true',
+        'notifications':{'email_enabled':NOTIFY['email_enabled'],'sms_enabled':NOTIFY['sms_enabled'],
+            'whatsapp_enabled':NOTIFY['whatsapp_enabled'],'recent':list(notification_log)[:5]}})
 
-    device_id          = data.get('device_id', 'unknown')
-    device_type        = data.get('device_type', 'unknown')
-    protocol           = data.get('protocol', 'Ethernet')
-    blast_hold         = data.get('blast_hold', False)
-    automation_override= data.get('automation_override', None)
-
-    # ── REGEX: parse device identity for flexible naming support ──
-    identity = parse_device_identity(device_id)
-    # Use parsed device_type as fallback if device_type not specified
-    if device_type == 'unknown' and identity['device_type'] != 'unknown':
-        device_type = identity['device_type']
-
-    features = [
-        data.get('cpu_load', 50), data.get('bandwidth_mbps', 100),
-        data.get('latency_ms', 10), data.get('packet_loss', 0),
-        data.get('connected_devices', 10), data.get('temperature', 40),
-        data.get('signal_strength', 80)
-    ]
-    features_arr = np.array([features])
-
-    health_score = float(rf_model.predict(features_arr)[0])
-    health_score = max(0, min(100, health_score))
-    if device_type == 'cbs_controller':
-        health_score = min(health_score, data.get('signal_strength', 100))
-
-    anomaly_result = iso_model.predict(features_arr)[0]
-    anomaly_flag   = bool(anomaly_result == -1)
-    if anomaly_flag:
-        anomaly_count += 1
-        if anomaly_count >= RETRAIN_THRESHOLD and not _retrain_in_progress:
-            threading.Thread(target=auto_retrain, daemon=True).start()
-
-    if device_id not in device_history:
-        device_history[device_id] = []
-    device_history[device_id].append(health_score)
-    if len(device_history[device_id]) > 20:
-        device_history[device_id].pop(0)
-
-    reading_window.append(health_score)
-    if len(reading_window) > 10:
-        reading_window.pop(0)
-    if len(reading_window) >= 3:
-        trend           = reading_window[-1] - reading_window[0]
-        predicted_score = max(0, min(100, health_score + trend))
-    else:
-        predicted_score = health_score
-
-    failure_prob  = get_failure_probability(device_id, health_score)
-    recent_scores = {did: hist[-1] for did, hist in device_history.items() if hist}
-    root_cause    = get_root_cause_chain(device_id, health_score, recent_scores)
-    lifecycle     = _lifecycle_cache.get(device_id) or get_lifecycle_estimate(device_id, device_type, health_score)
-    federated_idx = get_federated_health_index(list(recent_scores.values()))
-
-    update_uptime(device_id, health_score)
-    uptime_pct = get_uptime_pct(device_id)
-
-    ai_diagnosis = None
-    if anomaly_flag or health_score < 50 or device_type == 'cbs_controller':
-        ai_diagnosis = get_protocol_diagnosis(
-            device_type, protocol,
-            data.get('metric_name', 'unknown'),
-            data.get('metric_value', 0),
-            health_score, anomaly_flag
-        )
-
-    automation_command = get_automation_command(device_id, device_type, health_score, blast_hold, automation_override)
-
-    # ── REGEX: analyse automation log for pattern-matched escalation ──
-    log_alerts = analyse_automation_log(automation_command, device_id, device_type)
-
-    # ── REGEX: extract structured metadata from AI diagnosis ──
-    diag_meta = parse_diagnosis(ai_diagnosis) if ai_diagnosis else {}
-
-    if health_score < 35 or blast_hold:
-        msg = automation_command or ai_diagnosis or ''
-        threading.Thread(target=fire_critical_alert, daemon=True,
-                         kwargs=dict(device_id=device_id, device_type=device_type,
-                                     health_score=health_score, message=msg,
-                                     diagnosis=ai_diagnosis, automation_command=automation_command)).start()
-
-    metric_record = {
-        'device_type': device_type, 'device_id': device_id,
-        'metric_name': data.get('metric_name','unknown'),
-        'metric_value': float(data.get('metric_value', 0)),
-        'health_score': health_score, 'anomaly_flag': anomaly_flag,
-        'predicted_score': predicted_score, 'ai_diagnosis': ai_diagnosis,
-        'automation_command': automation_command
-    }
-    with queue_lock:
-        metric_queue.append(metric_record)
-        platform_stats['queue_depth']  = len(metric_queue)
-        scoring_queue.append({'device_id': device_id, 'device_type': device_type, 'health_score': health_score})
-        platform_stats['scoring_queue'] = len(scoring_queue)
-
-    if health_score < 50 or anomaly_flag or blast_hold:
-        try:
-            supabase.table('incidents').insert({
-                'device_id': device_id, 'device_type': device_type,
-                'health_score': health_score, 'ai_diagnosis': ai_diagnosis,
-                'automation_command': automation_command, 'status': 'open'
-            }).execute()
-        except Exception as e:
-            print(f'Incident error: {e}')
-
-    return jsonify({
-        'status': 'ok',
-        'health_score': round(health_score, 1),
-        'anomaly_flag': anomaly_flag,
-        'predicted_score': round(predicted_score, 1),
-        'failure_probability': failure_prob,
-        'ai_diagnosis': ai_diagnosis,
-        'automation_command': automation_command,
-        'federated_index': federated_idx,
-        'uptime_pct': uptime_pct,
-        'root_cause_chain': root_cause,
-        'lifecycle_hours': lifecycle,
-        'retrain_needed': anomaly_count >= RETRAIN_THRESHOLD,
-        'retrain_in_progress': _retrain_in_progress,
-        'protocol': protocol,
-        'blast_hold': blast_hold,
-        # Regex-enriched fields
-        'device_identity': identity,
-        'log_alerts': log_alerts,
-        'diagnosis_meta': diag_meta,
-        'regex_violations': len(violations),
-    })
-
-@app.route('/api/data', methods=['GET'])
-def get_data():
-    return jsonify(get_cached_data())
-
-@app.route('/api/platform', methods=['GET'])
-def platform_health():
-    uptime_h = (time.time() - platform_stats['start_ts']) / 3600
-    return jsonify({
-        'queue_depth':         len(metric_queue),
-        'scoring_queue':       len(scoring_queue),
-        'cache_age_seconds':   round(time.time() - _data_cache['ts'], 1),
-        'devices_tracked':     len(device_history),
-        'anomaly_count':       anomaly_count,
-        'retrain_needed':      anomaly_count >= RETRAIN_THRESHOLD,
-        'retrain_in_progress': _retrain_in_progress,
-        'platform_uptime_h':   round(uptime_h, 2),
-        'platform_stats':      platform_stats,
-        'notifications': {
-            'email_enabled':    NOTIFY_EMAIL_ENABLED,
-            'sms_enabled':      NOTIFY_SMS_ENABLED,
-            'whatsapp_enabled': NOTIFY_WHATSAPP_ENABLED,
-        },
-        'regex_engine': {
-            'device_patterns':    len(DEVICE_PATTERNS),
-            'log_alert_rules':    len(LOG_ALERT_RULES),
-            'violations_blocked': platform_stats['regex_violations'],
-            'status': 'active',
-        },
-        'architecture': {
-            'ingestion':    'Non-blocking queue pipeline',
-            'cache':        f'{CACHE_TTL}s TTL hot cache',
-            'ai_models':    ['RandomForest health', 'IsolationForest anomaly', 'Auto-retrain'],
-            'protocols':    ['SNMP','Profinet','Modbus TCP','DNP3','OPC-UA','EtherNet/IP'],
-            'alert_target': '<60 seconds event-to-decision',
-            'regex_engine': '5-implementation pattern intelligence',
-            'edge_ready':   True,
-        }
-    })
-
-@app.route('/api/intelligence', methods=['GET'])
+@app.route('/api/intelligence')
 def get_intelligence():
-    recent_scores = {did: hist[-1] for did, hist in device_history.items() if hist}
-    probs = {did: get_failure_probability(did, hist[-1]) for did, hist in device_history.items() if hist}
-    lifecycles = dict(_lifecycle_cache)
-    try:
-        resp = supabase.table('metrics').select('device_id,device_type').order('created_at', desc=True).limit(50).execute()
-        for row in resp.data:
-            did = row['device_id']
-            if did in recent_scores and did not in lifecycles:
-                lc = get_lifecycle_estimate(did, row['device_type'], recent_scores[did])
-                if lc:
-                    lifecycles[did] = lc
-    except Exception as e:
-        print(f'Intelligence error: {e}')
-    return jsonify({
-        'federated_index':       get_federated_health_index(list(recent_scores.values())),
-        'device_scores':         recent_scores,
-        'uptime':                {did: get_uptime_pct(did) for did in device_uptime},
-        'failure_probabilities': probs,
-        'lifecycles':            lifecycles,
-        'retrain_needed':        anomaly_count >= RETRAIN_THRESHOLD,
-        'retrain_in_progress':   _retrain_in_progress,
-        'anomaly_count':         anomaly_count,
-        'total_devices':         len(device_history),
-    })
+    recent={d:h[-1] for d,h in device_history.items() if h}
+    return jsonify({'federated_index':get_federated_health_index(list(recent.values())),
+        'device_scores':recent,'uptime':{d:get_uptime_pct(d) for d in device_uptime},
+        'failure_probabilities':{d:get_failure_probability(d,recent[d]) for d in recent},
+        'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,'anomaly_count':anomaly_count,
+        'total_devices':len(device_history)})
 
-@app.route('/api/twin/<device_id>', methods=['GET'])
+@app.route('/api/twin/<device_id>')
 def digital_twin(device_id):
-    history = device_history.get(device_id, [])
-    if not history:
-        return jsonify({'error': 'No history for device'}), 404
-    current_score = history[-1]
-    scenarios = []
-    for mult in [1.1, 1.2, 1.5, 2.0]:
-        features = np.array([[min(100,50*mult), min(1000,100*mult), min(500,10*mult),
-                               min(20,mult*0.5), 10, 40, 80]])
-        sim_score = float(rf_model.predict(features)[0])
-        sim_score = max(0, min(100, sim_score))
-        anomaly   = bool(iso_model.predict(features)[0] == -1)
-        scenarios.append({
-            'load_increase': f'+{int((mult-1)*100)}%',
-            'predicted_score': round(sim_score, 1),
-            'anomaly_predicted': anomaly,
-            'risk': 'critical' if sim_score < 30 else 'warning' if sim_score < 60 else 'safe'
-        })
-    trend_info = {'slope_per_reading': 0, 'direction': 'insufficient data'}
-    if len(history) >= 5:
-        slope = (history[-1] - history[-5]) / 4
-        rtc   = round((current_score - 20) / abs(slope)) if slope < 0 and current_score > 20 else None
-        trend_info = {
-            'slope_per_reading': round(slope, 2),
-            'direction': 'declining' if slope < 0 else 'stable' if slope == 0 else 'improving',
-            'readings_to_critical': rtc
-        }
-    return jsonify({
-        'device_id': device_id,
-        'current_score': round(current_score, 1),
-        'history': [round(h,1) for h in history],
-        'scenarios': scenarios,
-        'trend': trend_info,
-        'failure_probability': get_failure_probability(device_id, current_score)
-    })
+    h=device_history.get(device_id,[])
+    if not h: return jsonify({'error':'No history'}),404
+    cur=h[-1]; scenarios=[]
+    for mult in [1.1,1.2,1.5,2.0]:
+        arr=np.array([[min(100,50*mult),min(1000,100*mult),min(500,10*mult),min(20,mult*.5),10,40,80]])
+        sim=float(np.clip(rf_model.predict(arr)[0],0,100)); anom=bool(iso_model.predict(arr)[0]==-1)
+        scenarios.append({'load_increase':f'+{int((mult-1)*100)}%','predicted_score':round(sim,1),
+            'anomaly_predicted':anom,'risk':'critical' if sim<30 else 'warning' if sim<60 else 'safe'})
+    trend={'slope_per_reading':0,'direction':'insufficient data'}
+    if len(h)>=5:
+        slope=(h[-1]-h[-5])/4; rtc=round((cur-20)/abs(slope)) if slope<0 and cur>20 else None
+        trend={'slope_per_reading':round(slope,2),
+               'direction':'declining' if slope<0 else 'improving' if slope>0 else 'stable',
+               'readings_to_critical':rtc}
+    return jsonify({'device_id':device_id,'current_score':round(cur,1),
+        'history':[round(x,1) for x in h],'scenarios':scenarios,'trend':trend,
+        'failure_probability':get_failure_probability(device_id,cur)})
 
-@app.route('/api/weather', methods=['GET'])
+@app.route('/api/weather')
 def get_weather():
-    loc_key = request.args.get('loc', 'byo')
-    loc     = LOCATIONS.get(loc_key, LOCATIONS['byo'])
+    loc_key=request.args.get('loc','byo'); loc=LOCATIONS.get(loc_key,LOCATIONS['byo'])
     try:
-        url = (f"https://api.open-meteo.com/v1/forecast?latitude={loc['lat']}&longitude={loc['lon']}"
-               f"&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,"
-               f"precipitation,weather_code,cloud_cover"
-               f"&hourly=temperature_2m,precipitation_probability,wind_speed_10m"
-               f"&forecast_days=2&timezone=Africa/Harare")
-        resp    = req.get(url, timeout=10)
-        data    = resp.json()
-        current = data.get('current', {})
-        hourly  = data.get('hourly', {})
-        wind    = current.get('wind_speed_10m', 0)
-        gusts   = current.get('wind_gusts_10m', 0)
-        precip  = current.get('precipitation', 0)
-        temp    = current.get('temperature_2m', 25)
-        humidity= current.get('relative_humidity_2m', 50)
-        wcode   = current.get('weather_code', 0)
-        cloud   = current.get('cloud_cover', 0)
-        alerts = []; equipment_impact = []
-        if wind > 40:
-            alerts.append(f"High winds {wind:.0f}km/h — microwave links at risk")
-            equipment_impact.append({'type':'telecom','impact':f"Signal degradation {min(30,wind*0.4):.0f}% on exposed towers",'severity':'warning'})
-        if gusts > 60:
-            alerts.append(f"Dangerous gusts {gusts:.0f}km/h — tower stability risk")
-            equipment_impact.append({'type':'telecom','impact':"CBS blast hold recommended — link stability compromised",'severity':'critical'})
-        if precip > 10:
-            alerts.append(f"Heavy precipitation {precip:.1f}mm — equipment cooling affected")
-            equipment_impact.append({'type':'mining','impact':"Underground water ingress risk — pump load will increase",'severity':'warning'})
-        if temp > 38:
-            alerts.append(f"Extreme heat {temp:.0f}°C — equipment thermal stress elevated")
-            equipment_impact.append({'type':'all','impact':"Health score degradation expected — increase cooling checks",'severity':'warning'})
-        if wcode >= 95:
-            alerts.append("Thunderstorm active — lightning risk to exposed equipment")
-            equipment_impact.append({'type':'all','impact':"Surge protection alert — consider temporary equipment shutdown",'severity':'critical'})
-        next24_precip = hourly.get('precipitation_probability', [])[:24]
-        max_precip_prob = max(next24_precip) if next24_precip else 0
-        return jsonify({
-            'location': loc['name'], 'temperature': temp, 'humidity': humidity,
-            'wind_speed': wind, 'wind_gusts': gusts, 'precipitation': precip,
-            'weather_code': wcode, 'cloud_cover': cloud,
-            'alerts': alerts, 'equipment_impact': equipment_impact,
-            'max_precip_probability_24h': max_precip_prob,
-            'hourly_wind': hourly.get('wind_speed_10m', [])[:24],
-            'hourly_precip_prob': next24_precip
-        })
+        url=(f"https://api.open-meteo.com/v1/forecast?latitude={loc['lat']}&longitude={loc['lon']}"
+             f"&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,"
+             f"precipitation,weather_code,cloud_cover&hourly=wind_speed_10m,precipitation_probability"
+             f"&forecast_days=2&timezone=Africa/Harare")
+        r=req.get(url,timeout=10).json(); cur=r.get('current',{}); hrly=r.get('hourly',{})
+        wind=cur.get('wind_speed_10m',0); gusts=cur.get('wind_gusts_10m',0)
+        precip=cur.get('precipitation',0); temp=cur.get('temperature_2m',25)
+        alerts=[]
+        if wind>40:  alerts.append(f'High winds {wind:.0f}km/h — microwave at risk')
+        if gusts>60: alerts.append(f'Dangerous gusts {gusts:.0f}km/h — tower stability risk')
+        if precip>10:alerts.append(f'Heavy precipitation {precip:.1f}mm — pump load increasing')
+        if temp>38:  alerts.append(f'Extreme heat {temp:.0f}C — thermal stress elevated')
+        pp24=hrly.get('precipitation_probability',[])[:24]
+        return jsonify({'location':loc['name'],'temperature':temp,'humidity':cur.get('relative_humidity_2m',50),
+            'wind_speed':wind,'wind_gusts':gusts,'precipitation':precip,
+            'weather_code':cur.get('weather_code',0),'cloud_cover':cur.get('cloud_cover',0),
+            'alerts':alerts,'equipment_impact':[],'max_precip_probability_24h':max(pp24) if pp24 else 0,
+            'hourly_wind':hrly.get('wind_speed_10m',[])[:24],'hourly_precip_prob':pp24})
     except Exception as e:
-        return jsonify({'error': str(e), 'location': loc['name']}), 500
+        return jsonify({'error':str(e),'location':loc['name'],'temperature':25,'humidity':50,
+            'wind_speed':0,'wind_gusts':0,'precipitation':0,'weather_code':0,'cloud_cover':0,
+            'alerts':[],'equipment_impact':[],'max_precip_probability_24h':0,
+            'hourly_wind':[],'hourly_precip_prob':[]}),200
 
-@app.route('/api/shift-report', methods=['GET'])
+@app.route('/api/login',methods=['POST'])
+def login():
+    data=request.get_json(silent=True) or {}
+    try:
+        r=supabase.table('specialists').select('*').eq('name',data.get('name','')).eq('password',data.get('password','')).execute()
+        if r.data:
+            s=r.data[0]; return jsonify({'success':True,'token':data.get('password'),'name':s['name'],'role':s.get('role','engineer')})
+        return jsonify({'success':False}),401
+    except Exception as e: return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/incidents')
+@require_specialist
+def get_incidents():
+    status=request.args.get('status','open')
+    return jsonify(supabase.table('incidents').select('*').eq('status',status).limit(50).execute().data)
+
+@app.route('/api/incidents/<inc_id>/assign',methods=['POST'])
+@require_specialist
+def assign_incident(inc_id):
+    data=request.get_json(silent=True) or {}
+    supabase.table('incidents').update({'assigned_to':data.get('assigned_to',''),'notes':data.get('notes',''),'status':'assigned'}).eq('id',inc_id).execute()
+    return jsonify({'success':True})
+
+@app.route('/api/incidents/<inc_id>/resolve',methods=['POST'])
+@require_specialist
+def resolve_incident(inc_id):
+    data=request.get_json(silent=True) or {}
+    supabase.table('incidents').update({'resolved_by':data.get('resolved_by',''),'notes':data.get('notes',''),'status':'resolved'}).eq('id',inc_id).execute()
+    return jsonify({'success':True})
+
+@app.route('/api/shift-report')
 @require_specialist
 def shift_report():
     try:
-        resp      = supabase.table('metrics').select('*').order('created_at', desc=True).limit(500).execute()
-        data      = resp.data
-        inc_resp  = supabase.table('incidents').select('*').order('created_at', desc=True).limit(100).execute()
-        incidents = inc_resp.data
-        device_map = {}
-        for row in data:
-            if row['device_id'] not in device_map:
-                device_map[row['device_id']] = row
-        critical = [d for d in device_map.values() if d['health_score'] < 20]
-        warning  = [d for d in device_map.values() if 20 <= d['health_score'] < 50]
-        healthy  = [d for d in device_map.values() if d['health_score'] >= 50]
-        open_inc = [i for i in incidents if i['status'] == 'open']
-        resolved = [i for i in incidents if i['status'] == 'resolved']
-        scores   = [d['health_score'] for d in device_map.values()]
-        avg_health = round(sum(scores) / len(scores), 1) if scores else 100
-        return jsonify({
-            'generated_at':       datetime.now(timezone.utc).isoformat(),
-            'total_devices':      len(device_map),
-            'avg_health':         avg_health,
-            'critical_devices':   len(critical),
-            'warning_devices':    len(warning),
-            'healthy_devices':    len(healthy),
-            'open_incidents':     len(open_inc),
-            'resolved_incidents': len(resolved),
-            'top_risks': [
-                {'device': d['device_id'], 'score': round(d['health_score'],1), 'diagnosis': d.get('ai_diagnosis','')}
-                for d in sorted(critical + warning, key=lambda x: x['health_score'])[:5]
-            ],
-            'automation_commands': [
-                {'device': d['device_id'], 'command': d['automation_command']}
-                for d in device_map.values() if d.get('automation_command')
-            ]
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        resp=supabase.table('metrics').select('*').limit(500).execute()
+        inc=supabase.table('incidents').select('*').limit(100).execute()
+        dm={}
+        for row in resp.data:
+            if row['device_id'] not in dm: dm[row['device_id']]=row
+        crit=[d for d in dm.values() if d['health_score']<20]
+        warn=[d for d in dm.values() if 20<=d['health_score']<50]
+        ok  =[d for d in dm.values() if d['health_score']>=50]
+        oi  =[i for i in inc.data if i['status']=='open']
+        scores=[d['health_score'] for d in dm.values()]
+        return jsonify({'generated_at':datetime.now(timezone.utc).isoformat(),
+            'total_devices':len(dm),'avg_health':round(sum(scores)/len(scores),1) if scores else 100,
+            'critical_devices':len(crit),'warning_devices':len(warn),'healthy_devices':len(ok),
+            'open_incidents':len(oi),
+            'top_risks':[{'device':d['device_id'],'score':round(d['health_score'],1),'diagnosis':d.get('ai_diagnosis','')}
+                for d in sorted(crit+warn,key=lambda x:x['health_score'])[:5]],
+            'automation_commands':[{'device':d['device_id'],'command':d['automation_command']}
+                for d in dm.values() if d.get('automation_command')]})
+    except Exception as e: return jsonify({'error':str(e)}),500
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json
-    try:
-        result = supabase.table('specialists').select('*').eq('name', data.get('name','')).eq('password', data.get('password','')).execute()
-        if result.data:
-            s = result.data[0]
-            return jsonify({'success': True, 'token': data.get('password'), 'name': s['name'], 'role': s['role']})
-        return jsonify({'success': False}), 401
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route('/api/incidents', methods=['GET'])
+@app.route('/api/notify/test',methods=['POST'])
 @require_specialist
-def get_incidents():
-    status   = request.args.get('status', 'open')
-    response = supabase.table('incidents').select('*').eq('status', status).order('created_at', desc=True).limit(50).execute()
-    return jsonify(response.data)
+def test_notify():
+    data=request.get_json(silent=True) or {}; ch=data.get('channel','all')
+    msg='IISentinel™ test notification — channels operational'
+    if ch in ('sms','all'):      threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
+    if ch in ('whatsapp','all'): threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
+    if ch in ('email','all'):    threading.Thread(target=send_email,kwargs=dict(subject='Test',body=msg,severity='info'),daemon=True).start()
+    return jsonify({'ok':True,'channel':ch})
 
-@app.route('/api/incidents/<incident_id>/assign', methods=['POST'])
-@require_specialist
-def assign_incident(incident_id):
-    data = request.json
-    supabase.table('incidents').update({'assigned_to': data.get('assigned_to',''), 'notes': data.get('notes',''), 'status': 'assigned'}).eq('id', incident_id).execute()
-    return jsonify({'success': True})
+@app.route('/api/stream')
+def sse_stream():
+    sub_q=_q.Queue(maxsize=50)
+    with _sse_lock: _sse_subs.append(sub_q)
+    def generate():
+        yield 'event: connected\ndata: {"ok":true}\n\n'
+        while True:
+            try: yield sub_q.get(timeout=25)
+            except _q.Empty: yield ':heartbeat\n\n'
+    return Response(stream_with_context(generate()),mimetype='text/event-stream',
+        headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
 
-@app.route('/api/incidents/<incident_id>/resolve', methods=['POST'])
-@require_specialist
-def resolve_incident(incident_id):
-    data = request.json
-    supabase.table('incidents').update({'resolved_by': data.get('resolved_by',''), 'notes': data.get('notes',''), 'status': 'resolved'}).eq('id', incident_id).execute()
-    return jsonify({'success': True})
-
-@app.route('/api/export-pdf', methods=['GET'])
+@app.route('/api/export-pdf')
 def export_pdf():
-    """
-    Generates and streams a professional PDF shift report.
-    Uses ReportLab — add 'reportlab' to requirements.txt.
-    """
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
         from reportlab.lib.units import mm
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+        from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,HRFlowable
     except ImportError:
-        return jsonify({'error': 'reportlab not installed. Run: pip install reportlab'}), 500
+        return jsonify({'error':'pip install reportlab'}),500
+    buf=BytesIO()
+    doc=SimpleDocTemplate(buf,pagesize=A4,rightMargin=18*mm,leftMargin=18*mm,topMargin=20*mm,bottomMargin=18*mm)
+    DARK=colors.HexColor('#0c1122'); ACCENT=colors.HexColor('#34c6f4')
+    GREEN=colors.HexColor('#20e07a'); AMBER=colors.HexColor('#f5a020')
+    RED=colors.HexColor('#ff3e50'); MUTED=colors.HexColor('#8592a8'); ROW=colors.HexColor('#f0f4fa')
+    styles=getSampleStyleSheet()
+    def sty(n='Normal',**kw): return ParagraphStyle(n,parent=styles['Normal'],**kw)
+    hdr=sty(fontName='Helvetica-Bold',fontSize=8,textColor=colors.white)
+    cel=sty(fontName='Helvetica',fontSize=8,textColor=DARK)
+    recent={d:h[-1] for d,h in device_history.items() if h}; scores=list(recent.values())
+    fhi=get_federated_health_index(scores)
+    crit=sum(1 for s in scores if s<20); warn=sum(1 for s in scores if 20<=s<50); ok=sum(1 for s in scores if s>=50)
+    probs={d:get_failure_probability(d,recent[d]) for d in recent}
+    total_exp=sum(round(COST_RATES.get('sensor',8000)*(0.95 if s<20 else 0.6 if s<35 else 0.25 if s<50 else 0)) for s in scores)
+    now_s=datetime.now(timezone.utc).strftime('%d %B %Y  %H:%M UTC')
+    story=[]
+    story.append(Paragraph('IISentinel™',sty(fontName='Helvetica-Bold',fontSize=22,textColor=DARK,spaceAfter=2)))
+    story.append(Paragraph('Intelligent Infrastructure Sentinel — Shift Report',sty(fontName='Helvetica',fontSize=10,textColor=MUTED,spaceAfter=4)))
+    story.append(Paragraph(f'Generated: {now_s}',sty(fontName='Helvetica',fontSize=9,textColor=MUTED,spaceAfter=8)))
+    story.append(HRFlowable(width='100%',thickness=1.5,color=ACCENT,spaceAfter=10))
+    story.append(Paragraph('Platform Summary',sty(fontName='Helvetica-Bold',fontSize=12,textColor=DARK,spaceBefore=4,spaceAfter=6)))
+    kpi=[[Paragraph(c,hdr) for c in ['Metric','Value','Status']],
+         [Paragraph(c,cel) for c in ['Federated Health Index',f'{fhi:.1f}/100','HEALTHY' if fhi>=70 else 'WARNING' if fhi>=40 else 'CRITICAL']],
+         [Paragraph(c,cel) for c in ['Total Devices',str(len(recent)),'—']],
+         [Paragraph(c,cel) for c in ['Critical (<20)',str(crit),'ALERT' if crit else 'NONE']],
+         [Paragraph(c,cel) for c in ['Warning (20-50)',str(warn),'MONITOR' if warn else 'NONE']],
+         [Paragraph(c,cel) for c in ['Healthy (≥50)',str(ok),'OK']],
+         [Paragraph(c,cel) for c in ['Anomalies',str(anomaly_count),'HIGH' if anomaly_count>=RETRAIN_THRESHOLD else 'NORMAL']],
+         [Paragraph(c,cel) for c in ['Hourly Risk Exposure',f'${total_exp:,}/hr','ELEVATED' if total_exp>50000 else 'MANAGED']]]
+    kt=Table(kpi,colWidths=[75*mm,60*mm,40*mm])
+    kt.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),DARK),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,ROW]),
+        ('GRID',(0,0),(-1,-1),0.35,colors.HexColor('#d4daea')),
+        ('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),7)]))
+    story.append(kt); story.append(Spacer(1,8))
+    if recent:
+        story.append(Paragraph('Device Health Register',sty(fontName='Helvetica-Bold',fontSize=9,textColor=ACCENT,spaceBefore=8,spaceAfter=4)))
+        drows=[[Paragraph(c,hdr) for c in ['Device','Score','Failure Risk','Status']]]
+        for did,s in sorted(recent.items(),key=lambda x:x[1])[:20]:
+            p2=probs.get(did,0); stat='CRITICAL' if s<20 else 'WARNING' if s<50 else 'OK'
+            col=RED if s<20 else AMBER if s<50 else GREEN
+            drows.append([Paragraph(did[-36:],cel),
+                Paragraph(f'{s:.0f}',sty(fontName='Helvetica-Bold',fontSize=8,textColor=col)),
+                Paragraph(f'{p2:.0f}%',cel),
+                Paragraph(stat,sty(fontName='Helvetica-Bold',fontSize=8,textColor=col))])
+        dt=Table(drows,colWidths=[80*mm,22*mm,30*mm,22*mm])
+        dt.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),DARK),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,ROW]),
+            ('GRID',(0,0),(-1,-1),0.35,colors.HexColor('#d4daea')),
+            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),('LEFTPADDING',(0,0),(-1,-1),5)]))
+        story.append(dt)
+    story.append(Spacer(1,14)); story.append(HRFlowable(width='100%',thickness=0.7,color=MUTED,spaceAfter=5))
+    story.append(Paragraph(f'IISentinel™ Confidential — {now_s}',sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
+    doc.build(story); buf.seek(0)
+    return send_file(buf,as_attachment=True,
+        download_name=f'IISentinel_Report_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")}.pdf',
+        mimetype='application/pdf')
 
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4,
-                            rightMargin=18*mm, leftMargin=18*mm,
-                            topMargin=20*mm, bottomMargin=18*mm,
-                            title='IISentinel™ Shift Report')
 
-    DARK    = colors.HexColor('#0c1122')
-    ACCENT  = colors.HexColor('#34c6f4')
-    GREEN   = colors.HexColor('#20e07a')
-    AMBER   = colors.HexColor('#f5a020')
-    RED     = colors.HexColor('#ff3e50')
-    MUTED   = colors.HexColor('#8592a8')
-    ROW_ALT = colors.HexColor('#f0f4fa')
-    WHITE   = colors.white
 
-    styles = getSampleStyleSheet()
-    def sty(parent='Normal', **kw):
-        return ParagraphStyle('_', parent=styles[parent], **kw)
 
-    story = []
-    now   = datetime.now(timezone.utc)
-    ts    = now.strftime('%d %B %Y — %H:%M UTC')
+# ═══════════════════════════════════════════════════════════════════════════
+# NODE DISCOVERY & POLLING ENGINE
+# SolarWinds-style: add any IP, poll via TCP multi-port probe (no root),
+# measure latency, packet loss simulation, discover neighbours via ARP scan.
+# All runs server-side — browser just shows Up/Down/Latency.
+# ═══════════════════════════════════════════════════════════════════════════
+import socket as _socket
+import threading as _threading
+import time as _t
+import ipaddress as _ipaddress
+from collections import deque as _deque
 
-    story.append(Paragraph('<b>II</b>Sentinel™', sty('Title', fontSize=22, textColor=DARK, spaceAfter=2)))
-    story.append(Paragraph('Intelligent Infrastructure Sentinel — Shift Report', sty(fontSize=9, textColor=MUTED, spaceAfter=4)))
-    story.append(Paragraph(f'Generated: {ts}', sty(fontSize=9, textColor=MUTED, spaceAfter=8)))
-    story.append(HRFlowable(width='100%', thickness=1.5, color=ACCENT, spaceAfter=10))
+# In-memory node store:  {node_id: {host, label, sector, status, latency_ms, loss_pct,
+#                                    last_check, history, health_score, hops}}
+_nodes = {}
+_nodes_lock = _threading.Lock()
+_PORTS = [80, 443, 22, 161, 8080, 23, 21]   # TCP probe ports, tried in order
 
-    recent_scores = {did: hist[-1] for did, hist in device_history.items() if hist}
-    all_scores    = list(recent_scores.values())
-    fhi_val       = get_federated_health_index(all_scores)
-    critical_devs = [d for d,s in recent_scores.items() if s < 20]
-    warning_devs  = [d for d,s in recent_scores.items() if 20 <= s < 50]
-    healthy_devs  = [d for d,s in recent_scores.items() if s >= 50]
-    probs         = {did: get_failure_probability(did, s) for did, s in recent_scores.items()}
-    open_incidents = []
+
+def _tcp_probe(host, timeout=1.2):
+    """Return (reachable: bool, latency_ms: int | None) via TCP multi-port probe."""
+    for port in _PORTS:
+        try:
+            t0 = _t.time()
+            s = _socket.create_connection((host, port), timeout=timeout)
+            s.close()
+            return True, round((_t.time() - t0) * 1000)
+        except Exception:
+            continue
+    # Final fallback: DNS resolution round-trip
     try:
-        resp = supabase.table('incidents').select('*').eq('status','open').order('created_at',desc=True).limit(20).execute()
-        open_incidents = resp.data or []
-    except:
-        pass
-
-    total_exposure = 0
-    exposure_rows  = []
-    for did, s in sorted(recent_scores.items(), key=lambda x: x[1]):
-        rate   = COST_RATES.get('sensor', 8000)
-        prob   = probs.get(did, 0) / 100
-        impact = 0.95 if s < 20 else 0.6 if s < 35 else 0.25 if s < 50 else 0
-        exp    = round(rate * impact * (0.5 + prob * 0.5))
-        if exp > 0:
-            total_exposure += exp
-            exposure_rows.append((did[-24:], f'{s:.0f}', f'{probs.get(did,0):.0f}%', f'${exp:,}/hr'))
-        if len(exposure_rows) >= 8:
-            break
-
-    story.append(Paragraph('Platform Summary', sty('Heading1', fontSize=12, textColor=DARK, spaceBefore=8, spaceAfter=4)))
-    kpi_data = [
-        ['Metric', 'Value', 'Status'],
-        ['Federated Health Index', f'{fhi_val:.1f} / 100', 'HEALTHY' if fhi_val >= 70 else 'WARNING' if fhi_val >= 40 else 'CRITICAL'],
-        ['Total Devices Tracked', str(len(recent_scores)), '—'],
-        ['Critical Devices (<20)', str(len(critical_devs)), 'ALERT' if critical_devs else 'NONE'],
-        ['Warning Devices (20–50)', str(len(warning_devs)), 'MONITOR' if warning_devs else 'NONE'],
-        ['Healthy Devices (≥50)', str(len(healthy_devs)), 'OK'],
-        ['Open Incidents', str(len(open_incidents)), 'ACTION' if open_incidents else 'CLEAR'],
-        ['Total Hourly Risk Exposure', f'${total_exposure:,}/hr', 'ELEVATED' if total_exposure > 50000 else 'MANAGED'],
-        ['Regex Violations Blocked', str(platform_stats["regex_violations"]), 'SECURITY'],
-    ]
-    tbl = Table(kpi_data, colWidths=[75*mm, 55*mm, 40*mm])
-    def sc(s):
-        s = s.upper()
-        if s in ('CRITICAL','ALERT','ELEVATED'): return RED
-        if s in ('WARNING','MONITOR','ACTION','HIGH'): return AMBER
-        if s in ('OK','HEALTHY','CLEAR','NONE','MANAGED','SECURITY'): return GREEN
-        return DARK
-    ts_style = TableStyle([
-        ('BACKGROUND',(0,0),(-1,0),DARK),('TEXTCOLOR',(0,0),(-1,0),WHITE),
-        ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,-1),8),
-        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,ROW_ALT]),
-        ('GRID',(0,0),(-1,-1),0.4,colors.HexColor('#d4daea')),
-        ('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5),
-        ('LEFTPADDING',(0,0),(-1,-1),6),
-    ])
-    for i, row in enumerate(kpi_data[1:], 1):
-        ts_style.add('TEXTCOLOR',(2,i),(2,i),sc(row[2]))
-        ts_style.add('FONTNAME',(2,i),(2,i),'Helvetica-Bold')
-    tbl.setStyle(ts_style)
-    story.append(tbl)
-    story.append(Spacer(1, 8))
-
-    if exposure_rows:
-        story.append(Paragraph('Risk Exposure by Device', sty('Heading2', fontSize=9, textColor=ACCENT, spaceBefore=8, spaceAfter=3)))
-        et = Table([['Device', 'Health', 'Failure Risk', 'Exposure']] + exposure_rows, colWidths=[80*mm,25*mm,30*mm,35*mm])
-        et.setStyle(TableStyle([
-            ('BACKGROUND',(0,0),(-1,0),DARK),('TEXTCOLOR',(0,0),(-1,0),WHITE),
-            ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,-1),8),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,ROW_ALT]),
-            ('GRID',(0,0),(-1,-1),0.4,colors.HexColor('#d4daea')),
-            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
-            ('LEFTPADDING',(0,0),(-1,-1),5),
-            ('TEXTCOLOR',(3,1),(3,-1),RED),('FONTNAME',(3,1),(3,-1),'Helvetica-Bold'),
-        ]))
-        story.append(et)
-        story.append(Spacer(1, 8))
-
-    if critical_devs:
-        story.append(Paragraph('Critical Assets — Immediate Action Required', sty('Heading2', fontSize=9, textColor=RED, spaceBefore=8, spaceAfter=3)))
-        for did in critical_devs[:10]:
-            s = recent_scores[did]
-            p = probs.get(did, 0)
-            story.append(Paragraph(f'<b>{did}</b> — Health {s:.0f}/100 — Failure risk {p:.0f}%', sty(fontSize=9, spaceAfter=3)))
-
-    if open_incidents:
-        story.append(Spacer(1, 6))
-        story.append(Paragraph('Open Incidents', sty('Heading2', fontSize=9, textColor=ACCENT, spaceBefore=8, spaceAfter=3)))
-        inc_data = [['Device', 'Health', 'Status', 'Diagnosis']]
-        for inc in open_incidents[:12]:
-            diag = (inc.get('ai_diagnosis') or '—')[:55]
-            inc_data.append([inc.get('device_id','?')[-24:], f"{inc.get('health_score',0):.0f}", inc.get('status','?').upper(), diag])
-        it = Table(inc_data, colWidths=[55*mm,18*mm,22*mm,80*mm])
-        it.setStyle(TableStyle([
-            ('BACKGROUND',(0,0),(-1,0),DARK),('TEXTCOLOR',(0,0),(-1,0),WHITE),
-            ('FONTNAME',(0,0),(-1,0),'Helvetica-Bold'),('FONTSIZE',(0,0),(-1,-1),7.5),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,ROW_ALT]),
-            ('GRID',(0,0),(-1,-1),0.4,colors.HexColor('#d4daea')),
-            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
-            ('LEFTPADDING',(0,0),(-1,-1),5),
-        ]))
-        story.append(it)
-
-    story.append(Spacer(1, 14))
-    story.append(HRFlowable(width='100%', thickness=0.8, color=MUTED, spaceAfter=5))
-    story.append(Paragraph(f'IISentinel™ — Confidential Shift Report — {ts} — Regex engine active: {len(LOG_ALERT_RULES)} alert rules, {platform_stats["regex_violations"]} violations blocked',
-                            sty(fontSize=7, textColor=MUTED)))
-
-    doc.build(story)
-    buffer.seek(0)
-    fname = f'IISentinel_Report_{now.strftime("%Y%m%d_%H%M")}.pdf'
-    return send_file(buffer, as_attachment=True, download_name=fname, mimetype='application/pdf')
+        t0 = _t.time()
+        _socket.getaddrinfo(host, None, _socket.AF_INET, _socket.SOCK_STREAM)
+        return True, round((_t.time() - t0) * 1000)
+    except Exception:
+        return False, None
 
 
-@app.route('/api/check-node', methods=['POST'])
-def check_node():
-    """
-    Connectivity checker — replaces SolarWinds-style node polling.
-    Tests ICMP-equivalent reachability + key port availability.
-    Returns: reachable bool, latency_ms, port status dict.
-    No raw ICMP (needs root) — uses TCP connect on port 7/80/443 as probe.
-    """
-    import socket, time as _time
-    data    = request.json or {}
-    host    = str(data.get('host', '')).strip()
+def _poll_node(node_id):
+    """Poll a single node and update its health score + history."""
+    with _nodes_lock:
+        if node_id not in _nodes:
+            return
+        node = _nodes[node_id]
 
-    # Regex sanitise — only allow valid hostnames/IPs
-    if not re.match(r'^[\w\.\-\:]{1,253}$', host):
-        return jsonify({'error': 'Invalid host', 'reachable': False}), 400
+    reachable, latency = _tcp_probe(node['host'])
+    now = _t.time()
 
-    def tcp_probe(h, port, timeout=2.0):
-        """TCP connect probe — fast reachability check, no ICMP needed."""
-        t0 = _time.monotonic()
-        try:
-            sock = socket.create_connection((h, port), timeout=timeout)
-            sock.close()
-            return True, round((_time.monotonic() - t0) * 1000, 1)
-        except Exception:
-            return False, None
+    # Simulated packet loss from repeated checks (4 probes, count failures)
+    loss_count = 0
+    for _ in range(3):
+        ok, _ = _tcp_probe(node['host'], timeout=0.6)
+        if not ok:
+            loss_count += 1
+    loss_pct = round((loss_count / 3) * 100)
 
-    # Try common management ports in order — first success = reachable
-    probe_ports = [80, 443, 22, 23, 8080, 8443, 7]
-    reachable   = False
-    latency_ms  = None
-    t0_total    = _time.monotonic()
-
-    for port in probe_ports:
-        ok, lat = tcp_probe(host, port, timeout=2.0)
-        if ok:
-            reachable  = True
-            latency_ms = lat
-            break
-
+    # Health score: 100 base, minus latency penalty, minus loss penalty
     if not reachable:
-        # Last resort: DNS resolve — if it resolves, node probably exists
-        try:
-            socket.setdefaulttimeout(2)
-            socket.gethostbyname(host)
-            reachable  = True
-            latency_ms = round((_time.monotonic() - t0_total) * 1000, 1)
-        except Exception:
-            pass
+        health = 0
+    else:
+        lat_penalty = min(50, (latency or 0) / 10)   # up to -50 for high latency
+        loss_penalty = loss_pct * 0.6                  # up to -60 for 100% loss
+        health = max(0, round(100 - lat_penalty - loss_penalty))
 
-    # Port availability scan (non-blocking, quick)
-    ports_to_check = {
-        'tcp_22':  22,   # SSH
-        'tcp_80':  80,   # HTTP
-        'tcp_443': 443,  # HTTPS
-        'tcp_161': 161,  # SNMP (UDP — approximated via TCP)
-        'tcp_502': 502,  # Modbus TCP
-        'tcp_102': 102,  # Profinet/S7
-    }
-    port_results = {}
-    if reachable:
-        for key, port in ports_to_check.items():
-            ok, _ = tcp_probe(host, port, timeout=1.0)
-            port_results[key] = ok
+    status = 'up' if reachable else 'down'
 
-    return jsonify({
-        'host'        : host,
-        'reachable'   : reachable,
-        'latency_ms'  : latency_ms,
-        'ports'       : port_results,
-        'checked_at'  : datetime.now(timezone.utc).isoformat(),
-        'method'      : 'tcp-probe',
-    })
+    with _nodes_lock:
+        if node_id not in _nodes:
+            return
+        node = _nodes[node_id]
+        node['status']     = status
+        node['latency_ms'] = latency
+        node['loss_pct']   = loss_pct
+        node['last_check'] = now
+        node['health_score'] = health
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    queue_depth = len(metric_queue)
-    cache_age   = round(time.time() - _data_cache['ts'], 1)
-    uptime_h    = round((time.time() - platform_stats['start_ts']) / 3600, 2)
-    degraded    = queue_depth > 450 or (cache_age > 300 and _data_cache['ts'] > 0)
-    return jsonify({'status': 'degraded' if degraded else 'ok', 'uptime_h': uptime_h,
-                    'queue_depth': queue_depth, 'cache_age_s': cache_age,
-                    'devices': len(device_history), 'version': '2.0',
-                    'regex_engine': 'active'}), 503 if degraded else 200
+        hist = node.get('history', _deque(maxlen=20))
+        hist.append({'ts': now, 'status': status, 'latency': latency, 'health': health})
+        node['history'] = hist
 
-@app.route('/')
-def dashboard():
-    return render_template('dashboard.html')
+        # Feed into IISentinel™ AI pipeline
+        sector = node.get('sector', 'net')
+        label  = node.get('label', node['host'])
+        did    = f"{sector}-node-{node_id[:8]}"
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+        _nodes[node_id] = node
+
+    # Inject into main metrics pipeline so gauges + charts update
+    try:
+        features = [
+            min(100, (latency or 0) / 5),   # cpu_load proxy (latency → load)
+            max(0, 100 - loss_pct * 2),       # bandwidth proxy
+            min(500, latency or 0),            # latency_ms
+            loss_pct,                          # packet_loss
+            1,                                 # connected_devices
+            35,                                # temperature (neutral)
+            health,                            # signal_strength proxy
+        ]
+        import numpy as np
+        arr   = np.array([features])
+        score = float(np.clip(rf_model.predict(arr)[0], 0, 100))
+        anom  = bool(iso_model.predict(arr)[0] == -1)
+
+        protocol = 'SNMP/Ethernet-802.3' if sector == 'net' else (
+                   'SNMP/LTE' if sector == 'tc' else 'Profinet/EtherNet-IP')
+
+        device_history.setdefault(did, []).append(score)
+        if len(device_history[did]) > 20:
+            device_history[did].pop(0)
+        update_uptime(did, score)
+
+        rec = {
+            'device_id':        did,
+            'device_type':      'router' if sector == 'net' else
+                                'base_station' if sector == 'tc' else 'sensor',
+            'metric_name':      'latency_ms',
+            'metric_value':     float(latency or 0),
+            'health_score':     score,
+            'anomaly_flag':     anom,
+            'predicted_score':  score,
+            'ai_diagnosis':     (f'Node {label} unreachable — 100% packet loss. '
+                                 f'Check power, cable and switch port.' if not reachable
+                                 else (f'High latency {latency}ms detected on {protocol}. '
+                                       f'Inspect uplink congestion.' if (latency or 0) > 120
+                                       else None)),
+            'automation_command': (f'ALERT: Node {label} ({node["host"]}) is DOWN — '
+                                   f'dispatch field engineer.' if not reachable else None),
+        }
+        with queue_lock:
+            metric_queue.append(rec)
+        if anom and not reachable:
+            global anomaly_count
+            anomaly_count += 1
+    except Exception as e:
+        print(f'[NodePoll] AI inject error: {e}')
+
+
+def _background_poller():
+    """Poll all registered nodes every 30s in background threads."""
+    while True:
+        _t.sleep(30)
+        with _nodes_lock:
+            ids = list(_nodes.keys())
+        for nid in ids:
+            _threading.Thread(target=_poll_node, args=(nid,), daemon=True).start()
+
+_threading.Thread(target=_background_poller, daemon=True).start()
+
+
+@app.route('/api/nodes', methods=['GET'])
+def get_nodes():
+    """Return all registered nodes with status."""
+    sector = request.args.get('sector', None)
+    with _nodes_lock:
+        result = {}
+        for nid, node in _nodes.items():
+            if sector and node.get('sector') != sector:
+                continue
+            result[nid] = {
+                'id':          nid,
+                'host':        node['host'],
+                'label':       node['label'],
+                'sector':      node.get('sector', 'net'),
+                'status':      node.get('status', 'unknown'),
+                'latency_ms':  node.get('latency_ms'),
+                'loss_pct':    node.get('loss_pct', 0),
+                'health_score':node.get('health_score', 0),
+                'last_check':  node.get('last_check'),
+                'hops':        node.get('hops', []),
+                'history':     list(node.get('history', [])),
+            }
+    return jsonify(result)
+
+
+@app.route('/api/nodes', methods=['POST'])
+def add_node():
+    """Register a new node for monitoring."""
+    data   = request.get_json(silent=True) or {}
+    host   = str(data.get('host', '')).strip()
+    label  = str(data.get('label', host)).strip()[:60]
+    sector = str(data.get('sector', 'net')).strip()
+
+    if not host or len(host) > 253:
+        return jsonify({'error': 'Invalid host'}), 400
+    if sector not in ('net', 'tc', 'mc'):
+        sector = 'net'
+
+    import hashlib
+    node_id = hashlib.md5(f"{sector}:{host}".encode()).hexdigest()[:12]
+
+    with _nodes_lock:
+        if node_id in _nodes:
+            return jsonify({'error': 'Node already registered', 'id': node_id}), 409
+        _nodes[node_id] = {
+            'host':    host, 'label': label, 'sector': sector,
+            'status':  'checking', 'latency_ms': None, 'loss_pct': 0,
+            'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20),
+        }
+
+    # Poll immediately in background
+    _threading.Thread(target=_poll_node, args=(node_id,), daemon=True).start()
+    return jsonify({'id': node_id, 'host': host, 'label': label, 'sector': sector, 'status': 'checking'})
+
+
+@app.route('/api/nodes/<node_id>', methods=['DELETE'])
+def delete_node(node_id):
+    """Remove a node from monitoring."""
+    with _nodes_lock:
+        if node_id not in _nodes:
+            return jsonify({'error': 'Not found'}), 404
+        del _nodes[node_id]
+    return jsonify({'ok': True})
+
+
+@app.route('/api/nodes/<node_id>/poll', methods=['POST'])
+def poll_node_now(node_id):
+    """Force an immediate poll of a specific node."""
+    with _nodes_lock:
+        if node_id not in _nodes:
+            return jsonify({'error': 'Not found'}), 404
+        _nodes[node_id]['status'] = 'checking'
+    _threading.Thread(target=_poll_node, args=(node_id,), daemon=True).start()
+    return jsonify({'ok': True, 'status': 'checking'})
+
+
+# Keep old /api/check-node for backwards compatibility
+@app.route('/api/check-node', methods=['POST'])
+def check_node_legacy():
+    data = request.get_json(silent=True) or {}
+    host = str(data.get('host', '')).strip()
+    if not host:
+        return jsonify({'error': 'Invalid host'}), 400
+    reachable, latency = _tcp_probe(host)
+    return jsonify({'host': host, 'reachable': reachable, 'latency_ms': latency})
+
+
+if __name__=='__main__':
+    demo=os.environ.get('DEMO_MODE','false').lower()=='true'
+    print("""
+  ╔══════════════════════════════════════════════════════╗
+  ║  IISentinel™ v2.0  —  Intelligent Infrastructure    ║
+  ╠══════════════════════════════════════════════════════╣
+  ║  Dashboard  →  http://localhost:5000                 ║
+  ║  Health     →  http://localhost:5000/health          ║
+  ║  PDF Report →  http://localhost:5000/api/export-pdf  ║
+  ╚══════════════════════════════════════════════════════╝""")
+    if demo: print('  [DEMO MODE] 15 devices, 4 sites — auto-injecting data')
+    print('  Specialist login: Admin / admin123\n')
+    app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False,threaded=True)

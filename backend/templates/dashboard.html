@@ -381,6 +381,61 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
   .dm-grid{grid-template-columns:repeat(2,1fr)}.twin-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media print{header,nav,#toasts,#sector-selector,.ops-banner,#amb,#grain,#ambient-svg,#detail-overlay{display:none!important}body{background:#fff!important;color:#000!important}.page{display:block!important}}
+
+/* ══ NODE MONITOR — SolarWinds-style ══════════════════════════════════════ */
+.nm-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;box-shadow:var(--sh-xs)}
+.nm-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:13px}
+.nm-input{flex:1;min-width:140px;padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:var(--r-sm);color:var(--txt);font-size:12px;outline:none;transition:border-color .2s;font-family:inherit}
+.nm-input:focus{border-color:var(--acc)}
+body.light .nm-input{background:rgba(0,0,0,.04);color:var(--txt)}
+.nm-input-label{font-size:9px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;display:block}
+.nm-field{display:flex;flex-direction:column;flex:1;min-width:120px}
+.nm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px}
+
+/* Node card */
+.nm-node{background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-md);padding:14px 14px 12px;position:relative;transition:all .28s var(--ease);cursor:default}
+.nm-node:hover{transform:translateY(-2px);box-shadow:var(--sh-sm)}
+.nm-node.nm-up{border-left:3px solid var(--grn)}
+.nm-node.nm-down{border-left:3px solid var(--red);animation:cbsPulse 2s ease-in-out infinite}
+.nm-node.nm-checking{border-left:3px solid var(--amb)}
+.nm-node.nm-unknown{border-left:3px solid var(--dim)}
+
+/* Status icon */
+.nm-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-bottom:10px}
+.nm-icon.up  {background:rgba(34,224,122,.15);box-shadow:0 0 18px rgba(34,224,122,.25)}
+.nm-icon.down{background:rgba(255,62,80,.15);box-shadow:0 0 18px rgba(255,62,80,.25);animation:pulse .9s ease infinite}
+.nm-icon.checking{background:rgba(245,160,32,.12)}
+.nm-icon.unknown {background:rgba(255,255,255,.05)}
+
+.nm-label{font-size:12px;font-weight:700;color:var(--txt);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm-host{font-size:10px;color:var(--dim);font-family:monospace;margin-bottom:10px}
+.nm-status-line{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.nm-status-text{font-size:11px;font-weight:700}
+.nm-status-text.up{color:var(--grn)}.nm-status-text.down{color:var(--red)}.nm-status-text.checking{color:var(--amb)}.nm-status-text.unknown{color:var(--dim)}
+.nm-metrics{display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--b1)}
+.nm-metric{display:flex;flex-direction:column;gap:1px}
+.nm-metric-v{font-size:14px;font-weight:700;font-family:monospace;line-height:1}
+.nm-metric-l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.nm-del{position:absolute;top:9px;right:9px;width:20px;height:20px;border-radius:4px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .18s;padding:0}
+.nm-del:hover{color:var(--red);background:var(--reda)}
+.nm-poll{position:absolute;top:9px;right:33px;width:20px;height:20px;border-radius:4px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .18s;padding:0}
+.nm-poll:hover{color:var(--acc);background:var(--acca)}
+.nm-health-bar{height:3px;background:rgba(255,255,255,.05);border-radius:2px;margin-top:8px;overflow:hidden}
+.nm-health-fill{height:100%;border-radius:2px;transition:width .8s var(--ease)}
+.nm-empty{color:var(--dim);font-size:11px;padding:18px;text-align:center;grid-column:1/-1;line-height:1.65}
+
+/* TC/MC data collection info card */
+.dc-panel{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;box-shadow:var(--sh-xs)}
+.dc-method{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-sm);margin-bottom:8px;transition:border-color .2s}
+.dc-method:hover{border-color:var(--b2)}
+.dc-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.dc-title{font-size:11px;font-weight:700;color:var(--txt);margin-bottom:2px}
+.dc-desc{font-size:10px;color:var(--dim);line-height:1.55}
+.dc-badge{display:inline-block;font-size:8px;padding:2px 7px;border-radius:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.dc-badge.live{background:var(--grna);color:var(--grn)}
+.dc-badge.manual{background:var(--amba);color:var(--amb)}
+.dc-badge.auto{background:var(--blua);color:var(--blu)}
+
 </style>
 </head>
 <body>
@@ -634,6 +689,30 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
       <div class="live-chip"><div class="ldot" style="background:var(--tel)"></div><span class="lc-l" style="color:var(--tel)">Live polling</span></div>
     </div>
   </div>
+  <!-- ═══ NODE MONITOR ═════════════════════════════════════════════════ -->
+  <div class="nm-wrap">
+    <div class="sl" style="margin-bottom:11px">Node monitor &#8212; add any device by IP or hostname to track up/down status</div>
+    <div class="nm-toolbar">
+      <div class="nm-field">
+        <span class="nm-input-label">Label</span>
+        <input class="nm-input" id="nm-label-net" placeholder="e.g. Core Router 1" maxlength="48">
+      </div>
+      <div class="nm-field" style="flex:1.5">
+        <span class="nm-input-label">IP address or hostname</span>
+        <input class="nm-input" id="nm-host-net" placeholder="192.168.1.1" maxlength="253" onkeydown="if(event.key==='Enter')nmAdd('net')">
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:1px">
+        <button class="btn btn-acc" onclick="nmAdd('net')" style="font-size:11px;padding:8px 14px">&#43; Add node</button>
+        <button class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="nmPollAll('net')" title="Poll all nodes now">&#8635;</button>
+      </div>
+    </div>
+    <div class="nm-grid" id="nm-grid-net">
+      <div class="nm-empty">No nodes yet &#8212; enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel&#8482; will probe connectivity every 30 seconds automatically</span></div>
+    </div>
+  </div>
+
+  <!-- Demo injected nodes from backend data -->
+  <div class="sl">All network devices &#8212; click any gauge for engineering detail</div>
   <div class="ggrid" id="g-net"></div>
   <div class="cgrid">
     <div class="card"><div class="ctitle">Network health trend</div><canvas id="cNet"></canvas></div>
@@ -680,6 +759,56 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
     </div>
   </div>
   <div class="lcgrid" id="tc-loccards"></div>
+
+  <!-- ═══ TC NODE MONITOR ═══════════════════════════════════════════════ -->
+  <div class="nm-wrap">
+    <div class="sl" style="margin-bottom:11px">Tower &amp; base station nodes &#8212; monitor any site endpoint live</div>
+    <div class="nm-toolbar">
+      <div class="nm-field">
+        <span class="nm-input-label">Site label</span>
+        <input class="nm-input" id="nm-label-tc" placeholder="e.g. Bulawayo Tower 1" maxlength="48">
+      </div>
+      <div class="nm-field" style="flex:1.5">
+        <span class="nm-input-label">IP address or hostname</span>
+        <input class="nm-input" id="nm-host-tc" placeholder="10.10.1.1" maxlength="253" onkeydown="if(event.key==='Enter')nmAdd('tc')">
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:1px">
+        <button class="btn btn-acc" onclick="nmAdd('tc')" style="font-size:11px;padding:8px 14px">&#43; Add node</button>
+        <button class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="nmPollAll('tc')">&#8635;</button>
+      </div>
+    </div>
+    <div class="nm-grid" id="nm-grid-tc">
+      <div class="nm-empty">No tower nodes yet &#8212; enter a base station or tower management IP above</div>
+    </div>
+  </div>
+
+  <!-- TC data collection methods -->
+  <div class="dc-panel">
+    <div class="sl" style="margin-bottom:10px">How TelecomCo data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(52,198,244,.15)">&#128225;</div>
+      <div>
+        <div class="dc-title">Node Monitor (above) <span class="dc-badge live">Live</span></div>
+        <div class="dc-desc">Add your base station management IPs. IISentinel&#8482; probes TCP connectivity every 30s, measures round-trip latency, detects outages, and feeds health scores into the AI pipeline automatically. No SNMP agent required.</div>
+      </div>
+    </div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(0,229,212,.15)">&#128194;</div>
+      <div>
+        <div class="dc-title">SNMP collector script <span class="dc-badge manual">Optional</span></div>
+        <div class="dc-desc">Run <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">demo_collector.py --event cbs</code> to inject simulated readings. For real equipment: configure SNMP v2c on your base stations and POST to <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">/api/metrics</code> with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">device_type: base_station</code>.</div>
+      </div>
+    </div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div>
+      <div>
+        <div class="dc-title">Demo mode <span class="dc-badge auto">Auto</span></div>
+        <div class="dc-desc">Start the server with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">DEMO_MODE=true python app.py</code> to inject 15 realistic devices across all sectors including 3 TelecomCo nodes with simulated degradation events.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl">TelecomCo devices &#8212; click any gauge for engineering detail</div>
   <div class="ggrid" id="tc-gauges"></div>
   <div class="cgrid">
     <div class="card"><div class="ctitle">TelecomCo health trend</div><canvas id="cTcH"></canvas></div>
@@ -728,6 +857,34 @@ body.light .ss-box{background:rgba(240,244,252,.99)}
     </div>
   </div>
   <div class="lcgrid" id="mc-seccards"></div>
+
+  <!-- MC data collection info -->
+  <div class="dc-panel">
+    <div class="sl" style="margin-bottom:10px">How MiningCo equipment data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div>
+      <div>
+        <div class="dc-title">Demo mode &#8212; instant data <span class="dc-badge live">Live</span></div>
+        <div class="dc-desc">Run <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">DEMO_MODE=true python app.py</code>. Realistic data from 9 mining devices (pumps, conveyors, ventilation, PLC, CBS controller) injects automatically, simulating degradation events, CBS holds, and auto-retrain triggers.</div>
+      </div>
+    </div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(255,62,80,.15)">&#128273;</div>
+      <div>
+        <div class="dc-title">Live PLC/SCADA integration <span class="dc-badge manual">Production</span></div>
+        <div class="dc-desc">Deploy a lightweight Python collector on your site server. It reads Profinet, Modbus TCP, or OPC-UA registers from your PLCs and POSTs to <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">/api/metrics</code>. The demo_collector.py script is your starting template &#8212; replace simulated values with real register reads.</div>
+      </div>
+    </div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(176,136,250,.15)">&#9889;</div>
+      <div>
+        <div class="dc-title">CBS DNP3 monitor <span class="dc-badge auto">Auto-interlock</span></div>
+        <div class="dc-desc">POST readings with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">device_type: cbs_controller</code>. When link health drops below 90%, IISentinel&#8482; automatically issues a blast hold, fires SMS, and logs the incident. No manual intervention needed.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sl">Mining &amp; CBS devices &#8212; click any gauge for engineering detail</div>
   <div class="ggrid" id="mc-gauges"></div>
   <div class="cgrid">
     <div class="card"><div class="ctitle">Equipment health trend</div><canvas id="cMcH"></canvas></div>
@@ -1388,6 +1545,173 @@ function initSSE(){
   _sseConn.onerror=function(){setTimeout(initSSE,5000);};
 }
 setTimeout(initSSE,4300);
+
+/* ════════════════════════════════════════════════════════
+   NODE MONITOR — SolarWinds-style
+   All probing happens server-side (/api/nodes).
+   Frontend just shows: Up/Down icon, latency, packet loss.
+   Nodes persist in server memory and auto-poll every 30s.
+════════════════════════════════════════════════════════ */
+
+// Icon SVGs for node status
+var NM_ICONS = {
+  up:       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(34,224,122,.2)"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#20e07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  down:     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,62,80,.2)"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ff3e50" stroke-width="2" stroke-linecap="round"/></svg>',
+  checking: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(245,160,32,.15)"/><path d="M12 7v5l3 3" stroke="#f5a020" stroke-width="2" stroke-linecap="round"/></svg>',
+  unknown:  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>',
+};
+
+function nmStatusLabel(status) {
+  return status === 'up' ? 'Online' : status === 'down' ? 'Offline' : status === 'checking' ? 'Checking…' : 'Unknown';
+}
+
+function nmLatencyColor(ms) {
+  if (!ms) return 'var(--dim)';
+  if (ms < 20)  return 'var(--grn)';
+  if (ms < 80)  return 'var(--acc)';
+  if (ms < 200) return 'var(--amb)';
+  return 'var(--red)';
+}
+
+function nmRenderGrid(sector, nodes) {
+  var grid = document.getElementById('nm-grid-' + sector);
+  if (!grid) return;
+
+  var entries = Object.values(nodes || {}).filter(function(n) { return n.sector === sector; });
+
+  if (!entries.length) {
+    grid.innerHTML = '<div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel™ will probe connectivity every 30 seconds automatically</span></div>';
+    return;
+  }
+
+  grid.innerHTML = entries.map(function(n) {
+    var st  = n.status || 'unknown';
+    var lat = n.latency_ms != null ? n.latency_ms + 'ms' : '—';
+    var loss = (n.loss_pct != null && n.loss_pct > 0) ? n.loss_pct + '%' : '0%';
+    var h   = n.health_score != null ? Math.round(n.health_score) : 0;
+    var hcol = h >= 70 ? 'var(--grn)' : h >= 40 ? 'var(--amb)' : 'var(--red)';
+    var latcol = nmLatencyColor(n.latency_ms);
+    var checked = n.last_check ? new Date(n.last_check * 1000).toLocaleTimeString() : 'Never';
+
+    return [
+     '<div class="nm-node nm-' + st + '">',
+'<button class="nm-del" onclick="nmDelete(\'' + n.id + '\',\'' + sector + '\')" title="Remove node">✕</button>',
+'<button class="nm-poll" onclick="nmPollOne(\'' + n.id + '\',\'' + sector + '\')" title="Poll now">↺</button>',
+        '<div class="nm-icon ' + st + '">' + (NM_ICONS[st] || NM_ICONS.unknown) + '</div>',
+        '<div class="nm-label">' + (n.label || n.host) + '</div>',
+        '<div class="nm-host">' + n.host + '</div>',
+        '<div class="nm-status-line">',
+          '<div class="nm-status-text ' + st + '">' + nmStatusLabel(st) + '</div>',
+          (n.loss_pct > 10 ? '<div style="font-size:9px;color:var(--amb);margin-left:6px">' + n.loss_pct + '% loss</div>' : ''),
+        '</div>',
+        '<div class="nm-metrics">',
+          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + latcol + '">' + lat + '</div><div class="nm-metric-l">Response</div></div>',
+          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + (n.loss_pct > 5 ? 'var(--amb)' : 'var(--dim)') + '">' + loss + '</div><div class="nm-metric-l">Loss</div></div>',
+          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + hcol + '">' + h + '</div><div class="nm-metric-l">Health</div></div>',
+        '</div>',
+        '<div class="nm-health-bar"><div class="nm-health-fill" style="width:' + h + '%;background:' + hcol + '"></div></div>',
+        '<div style="font-size:9px;color:var(--dim);margin-top:6px">Polled: ' + checked + '</div>',
+      '</div>'
+    ].join('');
+  }).join('');
+}
+
+// Global node state
+var _nmNodes = {};
+
+function nmRefresh() {
+  fetch(B + '/api/nodes')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _nmNodes = data;
+      nmRenderGrid('net', data);
+      nmRenderGrid('tc', data);
+    })
+    .catch(function() {});
+}
+
+function nmAdd(sector) {
+  var hostEl  = document.getElementById('nm-host-' + sector);
+  var labelEl = document.getElementById('nm-label-' + sector);
+  var host    = (hostEl  ? hostEl.value.trim()  : '');
+  var label   = (labelEl ? labelEl.value.trim() : '') || host;
+
+  if (!host) { toast('Node monitor', 'Enter an IP address or hostname', 'tw'); return; }
+
+  // Optimistic UI: show checking card immediately
+  var tempId = 'temp-' + Date.now();
+  _nmNodes[tempId] = { id: tempId, host: host, label: label, sector: sector, status: 'checking', latency_ms: null, loss_pct: 0, health_score: 0, last_check: null };
+  nmRenderGrid(sector, _nmNodes);
+
+  fetch(B + '/api/nodes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ host: host, label: label, sector: sector })
+  })
+  .then(function(r) {
+    if (r.status === 409) {
+      toast('Already monitoring', host + ' is already in the node list', 'tw');
+      delete _nmNodes[tempId]; nmRenderGrid(sector, _nmNodes);
+      return null;
+    }
+    return r.json();
+  })
+  .then(function(d) {
+    if (!d) return;
+    delete _nmNodes[tempId];
+    _nmNodes[d.id] = d;
+    nmRenderGrid(sector, _nmNodes);
+    if (hostEl)  hostEl.value  = '';
+    if (labelEl) labelEl.value = '';
+    toast('Node added', label + ' (' + host + ') — probing…', '');
+    // Refresh after 3s to get first result
+    setTimeout(nmRefresh, 3000);
+  })
+  .catch(function(e) {
+    delete _nmNodes[tempId]; nmRenderGrid(sector, _nmNodes);
+    toast('Error', e.message, 'tc');
+  });
+}
+
+function nmDelete(nodeId, sector) {
+  fetch(B + '/api/nodes/' + nodeId, { method: 'DELETE' })
+    .then(function() {
+      delete _nmNodes[nodeId];
+      nmRenderGrid(sector, _nmNodes);
+      toast('Node removed', 'Node removed from monitor', '');
+    })
+    .catch(function() {});
+}
+
+function nmPollOne(nodeId, sector) {
+  // Mark as checking immediately
+  if (_nmNodes[nodeId]) {
+    _nmNodes[nodeId].status = 'checking';
+    nmRenderGrid(sector, _nmNodes);
+  }
+  fetch(B + '/api/nodes/' + nodeId + '/poll', { method: 'POST' })
+    .then(function() { setTimeout(nmRefresh, 3500); })
+    .catch(function() {});
+}
+
+function nmPollAll(sector) {
+  var ids = Object.keys(_nmNodes).filter(function(id) { return _nmNodes[id].sector === sector; });
+  if (!ids.length) { toast('No nodes', 'Add nodes first', 'tw'); return; }
+  ids.forEach(function(id) {
+    if (_nmNodes[id]) _nmNodes[id].status = 'checking';
+  });
+  nmRenderGrid(sector, _nmNodes);
+  toast('Polling', 'Probing ' + ids.length + ' node' + (ids.length > 1 ? 's' : '') + '…', '');
+  Promise.all(ids.map(function(id) {
+    return fetch(B + '/api/nodes/' + id + '/poll', { method: 'POST' }).catch(function(){});
+  })).then(function() { setTimeout(nmRefresh, 4000); });
+}
+
+// Auto-refresh node status every 35s
+nmRefresh();
+setInterval(nmRefresh, 35000);
+
+
 </script>
 </body>
 </html>
