@@ -1051,39 +1051,40 @@ var TC=['base_station','network_tower','microwave_link'];
 var MC=['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node'];
 var CBS=['cbs_controller'];
 var COST={pump:150000,conveyor:120000,ventilation:180000,plc:80000,scada_node:60000,cbs_controller:450000,power_meter:100000,sensor:40000,base_station:25000,network_tower:35000,microwave_link:40000,router:15000,switch:10000,firewall:20000,wan_link:12000,workstation:2000};
-var TC_META={byo:{label:'Bulawayo HQ',sub:'Home base &#8212; Matabeleland NOC'},hre:{label:'Harare',sub:'Capital &#8212; Mashonaland hub'},mut:{label:'Mutare',sub:'Eastern Highlands relay'}};
-var MC_META={shaft1:{label:'Shaft 1',sub:'Primary extraction &#8212; underground'},shaft2:{label:'Shaft 2',sub:'Secondary extraction &#8212; deepest'},plant:{label:'Processing Plant',sub:'Ore processing'},surface:{label:'Surface',sub:'Power, water, CBS'}};
+var TC_META={byo:{label:'Bulawayo HQ',sub:'Home base — Matabeleland NOC'},hre:{label:'Harare',sub:'Capital — Mashonaland hub'},mut:{label:'Mutare',sub:'Eastern Highlands relay'}};
+var MC_META={shaft1:{label:'Shaft 1',sub:'Primary extraction — underground'},shaft2:{label:'Shaft 2',sub:'Secondary extraction — deepest'},plant:{label:'Processing Plant',sub:'Ore processing'},surface:{label:'Surface',sub:'Power, water, CBS'}};
 var HW_SPECS={
-  router:{proto:'SNMP v3 / BGP',fw:'IOS XE 17.x',ports:'24&#215; GbE + 4&#215; SFP+',throughput:'10 Gbps',mtbf:'43,800h',power:'150W',rack:'1U'},
-  switch:{proto:'SNMP v2c / OSPF',fw:'NX-OS 10.x',ports:'48&#215; GbE + 4&#215; 10G SFP',throughput:'176 Gbps',mtbf:'43,800h',power:'65W',rack:'1U'},
-  firewall:{proto:'SNMP v3 / NetFlow',fw:'ASA 9.x',ports:'8&#215; GbE',throughput:'2 Gbps',mtbf:'35,000h',power:'45W',rack:'1U'},
-  wan_link:{proto:'BGP / OSPF',fw:'N/A',ports:'2&#215; SFP+',throughput:'1 Gbps',mtbf:'35,000h',power:'20W',rack:'0U'},
-  base_station:{proto:'SNMP / LTE Cat-20',fw:'eNB 4.8.x',ports:'6&#215; CPRI',throughput:'2 Gbps DL',mtbf:'35,040h',power:'1,200W',rack:'Outdoor'},
-  network_tower:{proto:'SNMP / AISG',fw:'Tower OS 3.x',ports:'4&#215; Antenna + 2&#215; Eth',throughput:'N/A',mtbf:'43,800h',power:'800W',rack:'Tower-mounted'},
-  microwave_link:{proto:'SNMP / E-band',fw:'MW OS 2.x',ports:'2&#215; Eth + 1&#215; RF',throughput:'10 Gbps',mtbf:'26,280h',power:'60W',rack:'Outdoor'},
-  pump:{proto:'Modbus TCP / OPC-UA',fw:'PLC FW 3.2',ports:'4&#215; 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'45kW',rack:'Floor'},
-  conveyor:{proto:'Profinet / EtherNet/IP',fw:'Siemens S7-1500',ports:'8&#215; DI/O',throughput:'N/A',mtbf:'17,520h',power:'90kW',rack:'Floor'},
-  ventilation:{proto:'Modbus TCP',fw:'VFD FW 2.1',ports:'4&#215; 4-20mA',throughput:'N/A',mtbf:'26,280h',power:'132kW',rack:'Floor'},
-  plc:{proto:'Profinet / OPC-UA',fw:'Siemens S7-1200',ports:'16&#215; DI + 8&#215; DO',throughput:'N/A',mtbf:'52,560h',power:'25W',rack:'DIN'},
-  cbs_controller:{proto:'DNP3 / EtherNet/IP',fw:'CBS SafeOS 5.4',ports:'4&#215; DNP3 + 2&#215; Eth',throughput:'N/A',mtbf:'52,560h',power:'80W',rack:'Panel'},
-  sensor:{proto:'Modbus TCP',fw:'Sensor FW 1.8',ports:'2&#215; 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'3W',rack:'Field'},
-  scada_node:{proto:'OPC-UA / Modbus TCP',fw:'WinCC 7.x',ports:'4&#215; Eth + 2&#215; RS485',throughput:'N/A',mtbf:'26,280h',power:'150W',rack:'Panel'},
+  router:{proto:'SNMP v3 / BGP',fw:'IOS XE 17.x',ports:'24× GbE + 4× SFP+',throughput:'10 Gbps',mtbf:'43,800h',power:'150W',rack:'1U'},
+  switch:{proto:'SNMP v2c / OSPF',fw:'NX-OS 10.x',ports:'48× GbE + 4× 10G SFP',throughput:'176 Gbps',mtbf:'43,800h',power:'65W',rack:'1U'},
+  firewall:{proto:'SNMP v3 / NetFlow',fw:'ASA 9.x',ports:'8× GbE',throughput:'2 Gbps',mtbf:'35,000h',power:'45W',rack:'1U'},
+  wan_link:{proto:'BGP / OSPF',fw:'N/A',ports:'2× SFP+',throughput:'1 Gbps',mtbf:'35,000h',power:'20W',rack:'0U'},
+  base_station:{proto:'SNMP / LTE Cat-20',fw:'eNB 4.8.x',ports:'6× CPRI',throughput:'2 Gbps DL',mtbf:'35,040h',power:'1,200W',rack:'Outdoor'},
+  network_tower:{proto:'SNMP / AISG',fw:'Tower OS 3.x',ports:'4× Antenna + 2× Eth',throughput:'N/A',mtbf:'43,800h',power:'800W',rack:'Tower-mounted'},
+  microwave_link:{proto:'SNMP / E-band',fw:'MW OS 2.x',ports:'2× Eth + 1× RF',throughput:'10 Gbps',mtbf:'26,280h',power:'60W',rack:'Outdoor'},
+  pump:{proto:'Modbus TCP / OPC-UA',fw:'PLC FW 3.2',ports:'4× 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'45kW',rack:'Floor'},
+  conveyor:{proto:'Profinet / EtherNet/IP',fw:'Siemens S7-1500',ports:'8× DI/O',throughput:'N/A',mtbf:'17,520h',power:'90kW',rack:'Floor'},
+  ventilation:{proto:'Modbus TCP',fw:'VFD FW 2.1',ports:'4× 4-20mA',throughput:'N/A',mtbf:'26,280h',power:'132kW',rack:'Floor'},
+  plc:{proto:'Profinet / OPC-UA',fw:'Siemens S7-1200',ports:'16× DI + 8× DO',throughput:'N/A',mtbf:'52,560h',power:'25W',rack:'DIN'},
+  cbs_controller:{proto:'DNP3 / EtherNet/IP',fw:'CBS SafeOS 5.4',ports:'4× DNP3 + 2× Eth',throughput:'N/A',mtbf:'52,560h',power:'80W',rack:'Panel'},
+  sensor:{proto:'Modbus TCP',fw:'Sensor FW 1.8',ports:'2× 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'3W',rack:'Field'},
+  scada_node:{proto:'OPC-UA / Modbus TCP',fw:'WinCC 7.x',ports:'4× Eth + 2× RS485',throughput:'N/A',mtbf:'26,280h',power:'150W',rack:'Panel'}
 };
-var DEFAULT_HW={proto:'Ethernet / SNMP',fw:'Vendor OS',ports:'4&#215; Eth',throughput:'1 Gbps',mtbf:'17,520h',power:'N/A',rack:'N/A'};
+var DEFAULT_HW={proto:'Ethernet / SNMP',fw:'Vendor OS',ports:'4× Eth',throughput:'1 Gbps',mtbf:'17,520h',power:'N/A',rack:'N/A'};
 var LOGO={
-  main:{a:'#28c4f8',b:'#22e07a',ii:'#28c4f8',tag:'&#8212; Platform'},
-  net:{a:'#00d4c8',b:'#28c4f8',ii:'#00d4c8',tag:'&#8212; Network'},
-  tc:{a:'#28c4f8',b:'#a27cf8',ii:'#4dc8f8',tag:'&#8212; TelecomCo'},
-  mc:{a:'#f5c420',b:'#22e07a',ii:'#f5c420',tag:'&#8212; MiningCo'},
-  wx:{a:'#60d8f8',b:'#22e07a',ii:'#60d8f8',tag:'&#8212; Weather'},
-  intel:{a:'#a27cf8',b:'#28c4f8',ii:'#a27cf8',tag:'&#8212; Intelligence'},
-  cbs:{a:'#f02e50',b:'#ff7050',ii:'#f02e50',tag:'&#8212; CBS Safety'},
-  sp:{a:'#a27cf8',b:'#f02e50',ii:'#a27cf8',tag:'&#8212; Specialist'},
+  main:{a:'#28c4f8',b:'#22e07a',ii:'#28c4f8',tag:'— Platform'},
+  net:{a:'#00d4c8',b:'#28c4f8',ii:'#00d4c8',tag:'— Network'},
+  tc:{a:'#28c4f8',b:'#a27cf8',ii:'#4dc8f8',tag:'— TelecomCo'},
+  mc:{a:'#f5c420',b:'#22e07a',ii:'#f5c420',tag:'— MiningCo'},
+  wx:{a:'#60d8f8',b:'#22e07a',ii:'#60d8f8',tag:'— Weather'},
+  intel:{a:'#a27cf8',b:'#28c4f8',ii:'#a27cf8',tag:'— Intelligence'},
+  cbs:{a:'#f02e50',b:'#ff7050',ii:'#f02e50',tag:'— CBS Safety'},
+  sp:{a:'#a27cf8',b:'#f02e50',ii:'#a27cf8',tag:'— Specialist'}
 };
+
 function setLogoPage(page){
   var p=LOGO[page]||LOGO.main;var r=document.documentElement;
   r.style.setProperty('--logo-ii',p.ii);r.style.setProperty('--logo-a',p.a);r.style.setProperty('--logo-b',p.b);
-  var stag=document.getElementById('logo-stag');if(stag){stag.textContent=p.tag.replace(/&#8212;/g,'—');stag.style.color=p.a;}
+  var stag=document.getElementById('logo-stag');if(stag){stag.textContent=p.tag;stag.style.color=p.a;}
   var accMap={net:'var(--tel)',tc:'var(--blu)',mc:'var(--gld)',wx:'var(--blu)',intel:'var(--pur)',cbs:'var(--red)',sp:'var(--pur)'};
   var accAMap={net:'var(--tela)',tc:'var(--blua)',mc:'var(--glda)',wx:'var(--blua)',intel:'var(--pura)',cbs:'var(--reda)',sp:'var(--pura)'};
   r.style.setProperty('--acc',accMap[page]||'var(--blu)');r.style.setProperty('--acca',accAMap[page]||'var(--blua)');
@@ -1133,7 +1134,7 @@ function openDetail(devId){
   var metricData=[
     {l:'Health Score',v:s+'/100',c:col},{l:'Failure Risk',v:prob+'%',c:prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'},
     {l:'Uptime',v:up+'%',c:up>98?'var(--grn)':up>90?'var(--amb)':'var(--red)'},{l:'Anomaly',v:d.anomaly_flag?'DETECTED':'Clear',c:d.anomaly_flag?'var(--red)':'var(--grn)'},
-    {l:'Exposure',v:exposure>0?'$'+exposure.toLocaleString()+'/hr':'$0',c:exposure>0?'var(--red)':'var(--grn)'},{l:'Sector',v:isCbs(d)?'CBS':isNet(d)?'Network':isTc(d)?'Telecom':isMc(d)?'Mining':'Other',c:'var(--acc)'},
+    {l:'Exposure',v:exposure>0?'$'+exposure.toLocaleString()+'/hr':'$0',c:exposure>0?'var(--red)':'var(--grn)'},{l:'Sector',v:isCbs(d)?'CBS':isNet(d)?'Network':isTc(d)?'Telecom':isMc(d)?'Mining':'Other',c:'var(--acc)'}
   ];
   var mg=document.getElementById('dm-metrics');
   mg.innerHTML=metricData.map(function(m){return'<div class="dm-card"><div class="dm-card-l">'+m.l+'</div><div class="dm-card-v" style="color:'+m.c+'">'+m.v+'</div></div>';}).join('');
@@ -1168,7 +1169,7 @@ function mkGauges(data,cid,filterFn,locFilter){
     var prob=(intel.failure_probabilities&&intel.failure_probabilities[d.device_id])||0;
     var up=Math.round((intel.uptime&&intel.uptime[d.device_id])||100);
     var isc=isCbs(d);var label=sid(d.device_id);
-    var etaHtml='';if(prob>65&&d.health_score<40){var eta=Math.round((100-prob)/10*45);etaHtml='<div class="g-eta">&#9888; ~'+eta+'min</div>';}
+    var etaHtml='';if(prob>65&&d.health_score<40){var eta=Math.round((100-prob)/10*45);etaHtml='<div class="g-eta">⚠ ~'+eta+'min</div>';}
     el.innerHTML+='<div class="gc '+(s>=70?'g-ok':s>=40?'g-w':'g-r')+(isc?' gcbs':'')+'" onclick="openDetail(\''+d.device_id+'\')">'
       +'<div class="gid">'+label+(d.anomaly_flag?'<span class="gpill g-pill-anom"> ANOM</span>':'')+'</div>'
       +'<div class="gw">'+gSvg(s,col)+'<div class="gval" style="color:'+col+'">'+s+'</div></div>'
@@ -1548,23 +1549,18 @@ setTimeout(initSSE,4300);
 
 /* ════════════════════════════════════════════════════════
    NODE MONITOR — SolarWinds-style
-   All probing happens server-side (/api/nodes).
-   Frontend just shows: Up/Down icon, latency, packet loss.
-   Nodes persist in server memory and auto-poll every 30s.
 ════════════════════════════════════════════════════════ */
 
-// Icon SVGs for node status
 var NM_ICONS = {
   up:       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(34,224,122,.2)"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#20e07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   down:     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,62,80,.2)"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ff3e50" stroke-width="2" stroke-linecap="round"/></svg>',
   checking: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(245,160,32,.15)"/><path d="M12 7v5l3 3" stroke="#f5a020" stroke-width="2" stroke-linecap="round"/></svg>',
-  unknown:  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  unknown:  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>'
 };
 
 function nmStatusLabel(status) {
   return status === 'up' ? 'Online' : status === 'down' ? 'Offline' : status === 'checking' ? 'Checking…' : 'Unknown';
 }
-
 function nmLatencyColor(ms) {
   if (!ms) return 'var(--dim)';
   if (ms < 20)  return 'var(--grn)';
@@ -1573,6 +1569,7 @@ function nmLatencyColor(ms) {
   return 'var(--red)';
 }
 
+// ✅ CORRECTED nmRenderGrid — using a single template literal
 function nmRenderGrid(sector, nodes) {
   var grid = document.getElementById('nm-grid-' + sector);
   if (!grid) return;
@@ -1580,7 +1577,7 @@ function nmRenderGrid(sector, nodes) {
   var entries = Object.values(nodes || {}).filter(function(n) { return n.sector === sector; });
 
   if (!entries.length) {
-    grid.innerHTML = '<div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel™ will probe connectivity every 30 seconds automatically</span></div>';
+    grid.innerHTML = `<div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel™ will probe connectivity every 30 seconds automatically</span></div>`;
     return;
   }
 
@@ -1593,30 +1590,29 @@ function nmRenderGrid(sector, nodes) {
     var latcol = nmLatencyColor(n.latency_ms);
     var checked = n.last_check ? new Date(n.last_check * 1000).toLocaleTimeString() : 'Never';
 
-    return [
-      '<div class="nm-node nm-' + st + '">',
-`<button class="nm-del" onclick="nmDelete('${n.id}','${sector}')" title="Remove node">✕</button>`
-`<button class="nm-poll" onclick="nmPollOne('${n.id}','${sector}')" title="Poll now">↺</button>`    
-    '<div class="nm-icon ' + st + '">' + (NM_ICONS[st] || NM_ICONS.unknown) + '</div>',
-        '<div class="nm-label">' + (n.label || n.host) + '</div>',
-        '<div class="nm-host">' + n.host + '</div>',
-        '<div class="nm-status-line">',
-          '<div class="nm-status-text ' + st + '">' + nmStatusLabel(st) + '</div>',
-          (n.loss_pct > 10 ? '<div style="font-size:9px;color:var(--amb);margin-left:6px">' + n.loss_pct + '% loss</div>' : ''),
-        '</div>',
-        '<div class="nm-metrics">',
-          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + latcol + '">' + lat + '</div><div class="nm-metric-l">Response</div></div>',
-          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + (n.loss_pct > 5 ? 'var(--amb)' : 'var(--dim)') + '">' + loss + '</div><div class="nm-metric-l">Loss</div></div>',
-          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + hcol + '">' + h + '</div><div class="nm-metric-l">Health</div></div>',
-        '</div>',
-        '<div class="nm-health-bar"><div class="nm-health-fill" style="width:' + h + '%;background:' + hcol + '"></div></div>',
-        '<div style="font-size:9px;color:var(--dim);margin-top:6px">Polled: ' + checked + '</div>',
-      '</div>'
-    ].join('');
+    return `
+      <div class="nm-node nm-${st}">
+        <button class="nm-del" onclick="nmDelete('${n.id}','${sector}')" title="Remove node">✕</button>
+        <button class="nm-poll" onclick="nmPollOne('${n.id}','${sector}')" title="Poll now">↺</button>
+        <div class="nm-icon ${st}">${NM_ICONS[st] || NM_ICONS.unknown}</div>
+        <div class="nm-label">${n.label || n.host}</div>
+        <div class="nm-host">${n.host}</div>
+        <div class="nm-status-line">
+          <div class="nm-status-text ${st}">${nmStatusLabel(st)}</div>
+          ${n.loss_pct > 10 ? `<div style="font-size:9px;color:var(--amb);margin-left:6px">${n.loss_pct}% loss</div>` : ''}
+        </div>
+        <div class="nm-metrics">
+          <div class="nm-metric"><div class="nm-metric-v" style="color:${latcol}">${lat}</div><div class="nm-metric-l">Response</div></div>
+          <div class="nm-metric"><div class="nm-metric-v" style="color:${n.loss_pct > 5 ? 'var(--amb)' : 'var(--dim)'}">${loss}</div><div class="nm-metric-l">Loss</div></div>
+          <div class="nm-metric"><div class="nm-metric-v" style="color:${hcol}">${h}</div><div class="nm-metric-l">Health</div></div>
+        </div>
+        <div class="nm-health-bar"><div class="nm-health-fill" style="width:${h}%;background:${hcol}"></div></div>
+        <div style="font-size:9px;color:var(--dim);margin-top:6px">Polled: ${checked}</div>
+      </div>
+    `;
   }).join('');
 }
 
-// Global node state
 var _nmNodes = {};
 
 function nmRefresh() {
@@ -1638,7 +1634,6 @@ function nmAdd(sector) {
 
   if (!host) { toast('Node monitor', 'Enter an IP address or hostname', 'tw'); return; }
 
-  // Optimistic UI: show checking card immediately
   var tempId = 'temp-' + Date.now();
   _nmNodes[tempId] = { id: tempId, host: host, label: label, sector: sector, status: 'checking', latency_ms: null, loss_pct: 0, health_score: 0, last_check: null };
   nmRenderGrid(sector, _nmNodes);
@@ -1664,7 +1659,6 @@ function nmAdd(sector) {
     if (hostEl)  hostEl.value  = '';
     if (labelEl) labelEl.value = '';
     toast('Node added', label + ' (' + host + ') — probing…', '');
-    // Refresh after 3s to get first result
     setTimeout(nmRefresh, 3000);
   })
   .catch(function(e) {
@@ -1684,7 +1678,6 @@ function nmDelete(nodeId, sector) {
 }
 
 function nmPollOne(nodeId, sector) {
-  // Mark as checking immediately
   if (_nmNodes[nodeId]) {
     _nmNodes[nodeId].status = 'checking';
     nmRenderGrid(sector, _nmNodes);
@@ -1707,11 +1700,8 @@ function nmPollAll(sector) {
   })).then(function() { setTimeout(nmRefresh, 4000); });
 }
 
-// Auto-refresh node status every 35s
 nmRefresh();
 setInterval(nmRefresh, 35000);
-
-
 </script>
 </body>
 </html>
