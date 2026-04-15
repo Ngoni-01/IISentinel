@@ -67,6 +67,9 @@ def _db_init():
         notes TEXT, created_at TEXT)""")
     cur.execute("""CREATE TABLE IF NOT EXISTS specialists (
         id TEXT PRIMARY KEY, name TEXT, password TEXT, role TEXT)""")
+    cur.execute("""CREATE TABLE IF NOT EXISTS nodes (
+        id TEXT PRIMARY KEY, host TEXT NOT NULL, label TEXT,
+        sector TEXT DEFAULT 'net', created_at TEXT)""")
     cur.execute("INSERT OR IGNORE INTO specialists VALUES (?,?,?,?)",('sp-001','Admin','admin123','engineer'))
     con.commit(); con.close()
 
@@ -978,6 +981,31 @@ def _background_poller():
 
 _threading.Thread(target=_background_poller, daemon=True).start()
 
+def _restore_nodes_from_db():
+    """Load persisted nodes from SQLite on startup."""
+    _t.sleep(2)  # wait for DB init
+    try:
+        import sqlite3 as _sq3
+        con = _sq3.connect(_DB_PATH)
+        rows = con.execute("SELECT id,host,label,sector FROM nodes").fetchall()
+        con.close()
+        for row in rows:
+            nid, host, label, sector = row
+            with _nodes_lock:
+                if nid not in _nodes:
+                    _nodes[nid] = {
+                        'host': host, 'label': label, 'sector': sector,
+                        'status': 'checking', 'latency_ms': None, 'loss_pct': 0,
+                        'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20),
+                    }
+            _threading.Thread(target=_poll_node, args=(nid,), daemon=True).start()
+        if rows:
+            print(f'[Nodes] Restored {len(rows)} nodes from SQLite')
+    except Exception as e:
+        print(f'[Nodes] Restore error: {e}')
+
+_threading.Thread(target=_restore_nodes_from_db, daemon=True).start()
+
 
 @app.route('/api/nodes', methods=['GET'])
 def get_nodes():
@@ -1006,7 +1034,7 @@ def get_nodes():
 
 @app.route('/api/nodes', methods=['POST'])
 def add_node():
-    """Register a new node for monitoring."""
+    """Register a new node for monitoring — persisted to SQLite."""
     data   = request.get_json(silent=True) or {}
     host   = str(data.get('host', '')).strip()
     label  = str(data.get('label', host)).strip()[:60]
@@ -1024,23 +1052,39 @@ def add_node():
         if node_id in _nodes:
             return jsonify({'error': 'Node already registered', 'id': node_id}), 409
         _nodes[node_id] = {
-            'host':    host, 'label': label, 'sector': sector,
-            'status':  'checking', 'latency_ms': None, 'loss_pct': 0,
+            'host': host, 'label': label, 'sector': sector,
+            'status': 'checking', 'latency_ms': None, 'loss_pct': 0,
             'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20),
         }
 
-    # Poll immediately in background
+    # Persist to SQLite so nodes survive restarts
+    try:
+        import sqlite3 as _sq3
+        con = _sq3.connect(_DB_PATH)
+        con.execute("INSERT OR REPLACE INTO nodes (id,host,label,sector,created_at) VALUES (?,?,?,?,?)",
+                    (node_id, host, label, sector, datetime.utcnow().isoformat()))
+        con.commit(); con.close()
+    except Exception as e:
+        print(f'[Nodes] SQLite persist error: {e}')
+
     _threading.Thread(target=_poll_node, args=(node_id,), daemon=True).start()
     return jsonify({'id': node_id, 'host': host, 'label': label, 'sector': sector, 'status': 'checking'})
 
 
 @app.route('/api/nodes/<node_id>', methods=['DELETE'])
 def delete_node(node_id):
-    """Remove a node from monitoring."""
+    """Remove a node from monitoring and SQLite."""
     with _nodes_lock:
         if node_id not in _nodes:
             return jsonify({'error': 'Not found'}), 404
         del _nodes[node_id]
+    try:
+        import sqlite3 as _sq3
+        con = _sq3.connect(_DB_PATH)
+        con.execute("DELETE FROM nodes WHERE id=?", (node_id,))
+        con.commit(); con.close()
+    except Exception as e:
+        print(f'[Nodes] SQLite delete error: {e}')
     return jsonify({'ok': True})
 
 
@@ -1064,6 +1108,51 @@ def check_node_legacy():
         return jsonify({'error': 'Invalid host'}), 400
     reachable, latency = _tcp_probe(host)
     return jsonify({'host': host, 'reachable': reachable, 'latency_ms': latency})
+
+
+
+@app.route('/api/nodes/scan', methods=['POST'])
+def scan_subnet():
+    """
+    Scan a CIDR subnet for live hosts (e.g. 192.168.1.0/24).
+    Returns up to 30 reachable hosts found via TCP probe.
+    Runs in background — poll /api/nodes/scan-status for progress.
+    """
+    data = request.get_json(silent=True) or {}
+    cidr = str(data.get('cidr', '')).strip()
+    sector = str(data.get('sector', 'net')).strip()
+
+    try:
+        net = _ipaddress.ip_network(cidr, strict=False)
+    except ValueError:
+        return jsonify({'error': 'Invalid CIDR. Use format: 192.168.1.0/24'}), 400
+
+    hosts = list(net.hosts())
+    if len(hosts) > 254:
+        return jsonify({'error': 'Subnet too large — use /24 or smaller'}), 400
+
+    scan_id = f"scan-{int(_t.time())}"
+
+    def _do_scan():
+        found = []
+        for ip in hosts:
+            ok, lat = _tcp_probe(str(ip), timeout=0.8)
+            if ok:
+                found.append({'host': str(ip), 'latency': lat})
+            if len(found) >= 30:
+                break
+        _scan_results[scan_id] = {'done': True, 'found': found, 'sector': sector}
+
+    _scan_results[scan_id] = {'done': False, 'found': [], 'sector': sector}
+    _threading.Thread(target=_do_scan, daemon=True).start()
+    return jsonify({'scan_id': scan_id, 'hosts_to_scan': len(hosts)})
+
+_scan_results = {}
+
+@app.route('/api/nodes/scan-status/<scan_id>', methods=['GET'])
+def scan_status(scan_id):
+    result = _scan_results.get(scan_id, {'done': False, 'found': []})
+    return jsonify(result)
 
 
 if __name__=='__main__':
