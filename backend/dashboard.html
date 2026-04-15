@@ -436,314 +436,6 @@ body.light .nm-input{background:rgba(0,0,0,.04);color:var(--txt)}
 .dc-badge.manual{background:var(--amba);color:var(--amb)}
 .dc-badge.auto{background:var(--blua);color:var(--blu)}
 
-
-/* ══════════════════════════════════════════════════════════════════════════
-   IISENTINEL™ — REDESIGN 2025
-   Aesthetic: Industrial Precision — NOT AI-cliché.
-   Dark forge steel (#0a0c12 base), copper/brass accents, sharp geometry,
-   Barlow Condensed display + IBM Plex Mono data. Brutally legible.
-   No purple gradients. No frosted glass everywhere. No orbs.
-   Everything has a PURPOSE: edges, pipes, signal lines, stamped labels.
-══════════════════════════════════════════════════════════════════════════ */
-
-/* Import new fonts */
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;700&family=Barlow:wght@400;500;600&display=swap');
-
-/* ── Forge Steel palette ── */
-:root {
-  --forge:#0a0c12;--forge1:#0e1118;--forge2:#131720;--forge3:#191f2a;
-  --steel:#1e2535;--steel2:#252d3d;--wire:rgba(255,255,255,.055);
-  --pipe:rgba(255,255,255,.10);--rivet:rgba(255,255,255,.18);
-  --txt:#dce6f5;--mut:#7a8fa8;--dim:#3d5070;
-  --copper:#d4832a;--coppa:rgba(212,131,42,.12);
-  --signal:#00e5c8;--signa:rgba(0,229,200,.10);
-  --ember:#ff4a2b;--emba:rgba(255,74,43,.10);
-  --volt:#d4e020;--volta:rgba(212,224,32,.09);
-  --ice:#50c8f0;--icea:rgba(80,200,240,.09);
-  --display:'Barlow Condensed',sans-serif;
-  --data:'IBM Plex Mono',monospace;
-  --body-font:'Barlow',system-ui,sans-serif;
-}
-
-/* Override body font to Barlow */
-body { font-family: var(--body-font) !important; }
-
-/* ── STAMPED SECTION LABELS (replace .sl) ── */
-.sl {
-  font-family: var(--display) !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  letter-spacing: .18em !important;
-  color: var(--copper) !important;
-  text-transform: uppercase !important;
-}
-.sl::before {
-  content: '' !important;
-  width: 3px !important; height: 3px !important;
-  border-radius: 0 !important;
-  background: var(--copper) !important;
-  box-shadow: none !important;
-  transform: rotate(45deg);
-  display: inline-block !important;
-}
-
-/* ── HEADER — forge plate ── */
-header {
-  background: var(--forge1) !important;
-  border-bottom: 1px solid var(--wire) !important;
-  border-top: 2px solid var(--copper) !important;
-}
-.logo-ii {
-  font-family: var(--display) !important;
-  font-size: 22px !important;
-  font-weight: 900 !important;
-  color: var(--copper) !important;
-  letter-spacing: -.02em !important;
-  text-shadow: none !important;
-}
-.logo-sent {
-  font-family: var(--display) !important;
-  font-size: 20px !important;
-  font-weight: 700 !important;
-  letter-spacing: .04em !important;
-  background: linear-gradient(90deg,var(--copper),var(--signal)) !important;
-  background-size: 200% auto !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-}
-.hctr-a { font-family: var(--display) !important; font-size: 12px !important; letter-spacing: .08em !important; }
-.hctr-b { font-family: var(--data) !important; font-size: 9px !important; }
-
-/* ── NAV — pipe tabs ── */
-nav.mnav {
-  background: var(--forge1) !important;
-  border-bottom: 1px solid var(--wire) !important;
-}
-.ntab {
-  font-family: var(--display) !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  letter-spacing: .1em !important;
-}
-.ntab.active {
-  color: var(--copper) !important;
-  border-bottom-color: var(--copper) !important;
-}
-.ntab.t-sp.active { color: var(--signal) !important; border-bottom-color: var(--signal) !important; }
-.ntab.t-cbs.active { color: var(--ember) !important; border-bottom-color: var(--ember) !important; }
-
-/* ── BANNER CARDS — stamped plates ── */
-.bc {
-  background: var(--forge2) !important;
-  border: 1px solid var(--wire) !important;
-  border-top: 2px solid var(--copper) !important;
-  border-radius: 0 !important;
-  position: relative !important;
-}
-.bc::after {
-  content: '';
-  position: absolute;
-  bottom: 4px; right: 6px;
-  width: 4px; height: 4px;
-  border-radius: 50%;
-  background: var(--copper);
-  opacity: .35;
-}
-.bl { font-family: var(--display) !important; font-size: 10px !important; letter-spacing: .12em !important; }
-.bv { font-family: var(--data) !important; font-size: 24px !important; }
-
-/* ── KPI BAR — forge plate ── */
-.kpi-bar {
-  background: var(--forge2) !important;
-  border: 1px solid var(--wire) !important;
-  border-left: 3px solid var(--copper) !important;
-  border-radius: 0 !important;
-}
-.kpi-v { font-family: var(--data) !important; }
-.kpi-l { font-family: var(--display) !important; letter-spacing: .1em !important; font-size: 10px !important; }
-
-/* ── GAUGE GRID — precision instruments ── */
-.gc {
-  background: var(--forge2) !important;
-  border: 1px solid var(--wire) !important;
-  border-radius: 0 !important;
-  border-bottom: 2px solid transparent !important;
-}
-.gc.g-ok { border-bottom-color: var(--signal) !important; }
-.gc.g-w  { border-bottom-color: var(--copper) !important; }
-.gc.g-r  { border-bottom-color: var(--ember) !important; }
-.gid { font-family: var(--data) !important; font-size: 10px !important; }
-.gtype { font-family: var(--display) !important; letter-spacing: .08em !important; }
-.gval { font-family: var(--data) !important; }
-.gpill { border-radius: 0 !important; font-family: var(--data) !important; font-size: 8px !important; }
-.gup,.gprob { font-family: var(--data) !important; }
-
-/* ── CARDS ── */
-.card,.ccard,.fcard,.icard,.twin-wrap,.lcard,.wcard,.en-panel {
-  background: var(--forge2) !important;
-  border: 1px solid var(--wire) !important;
-  border-radius: 0 !important;
-}
-.ctitle { font-family: var(--display) !important; letter-spacing: .1em !important; font-size: 11px !important; color: var(--copper) !important; }
-
-/* ── STATBAR — signal panel ── */
-.statbar {
-  border-radius: 0 !important;
-}
-.statbar.sb-net { background: linear-gradient(90deg,#001810,#001c14,#000e0a) !important; }
-.statbar.sb-tc  { background: linear-gradient(90deg,#00101c,#001520,#000a12) !important; }
-.statbar.sb-mc  { background: linear-gradient(90deg,#1a0c00,#1e1000,#100800) !important; }
-.statbar.sb-cbs { background: linear-gradient(90deg,#180004,#1e0008,#0e0002) !important; }
-.statbar::after { background: var(--copper) !important; }
-.esb-v { font-family: var(--data) !important; font-size: 22px !important; font-weight: 700 !important; }
-.esb-l { font-family: var(--display) !important; letter-spacing: .1em !important; }
-
-/* ── DUAL BANNER ── */
-.dual-banner { border-radius: 0 !important; }
-.env-hero { border-radius: 0 !important; }
-.hero-h1 { font-family: var(--display) !important; font-size: 32px !important; font-weight: 900 !important; letter-spacing: -.01em !important; }
-.hero-ey { font-family: var(--display) !important; letter-spacing: .18em !important; font-size: 10px !important; }
-.hero-desc { font-family: var(--body-font) !important; }
-.hp { border-radius: 0 !important; font-family: var(--data) !important; font-size: 9px !important; }
-
-/* ── LIVE PILL ── */
-.live-pill {
-  border-radius: 0 !important;
-  background: rgba(0,229,200,.06) !important;
-  border-color: rgba(0,229,200,.2) !important;
-}
-.ltxt { font-family: var(--data) !important; color: var(--signal) !important; }
-.ldot { background: var(--signal) !important; border-radius: 0 !important; width: 5px !important; height: 5px !important; transform: rotate(45deg); }
-
-/* ── BUTTONS ── */
-.btn, .btn-acc, .ops-btn {
-  border-radius: 0 !important;
-  font-family: var(--display) !important;
-  font-weight: 700 !important;
-  letter-spacing: .08em !important;
-}
-.btn-acc { background: var(--copper) !important; color: #1a0800 !important; }
-
-/* ── FEED ITEMS ── */
-.fitem { border-radius: 0 !important; border-left: 2px solid var(--copper) !important; padding-left: 12px !important; }
-.fitem.fi-ok { border-left-color: var(--signal) !important; }
-.fitem.fi-w  { border-left-color: var(--copper) !important; }
-.fitem.fi-r  { border-left-color: var(--ember) !important; }
-.fitem::before { display: none !important; }
-.fdev { font-family: var(--data) !important; font-size: 11px !important; color: var(--copper) !important; }
-.ftime { font-family: var(--data) !important; }
-
-/* ── TOAST — teletype alerts ── */
-.toast {
-  border-radius: 0 !important;
-  border: 1px solid var(--wire) !important;
-  border-left: 3px solid var(--copper) !important;
-  border-top: none !important;
-  background: var(--forge1) !important;
-  font-family: var(--body-font) !important;
-}
-.toast.tc { border-left-color: var(--ember) !important; }
-.toast.tw { border-left-color: var(--copper) !important; }
-.toast.tg { border-left-color: var(--signal) !important; }
-.ttitle { font-family: var(--display) !important; letter-spacing: .06em !important; font-size: 13px !important; }
-.tmsg { font-family: var(--body-font) !important; }
-
-/* ── SPECIALIST / LOGIN ── */
-.lbox { border-radius: 0 !important; border: 1px solid var(--wire) !important; border-top: 2px solid var(--signal) !important; }
-.ltitle { font-family: var(--display) !important; font-size: 18px !important; letter-spacing: .06em !important; color: var(--signal) !important; }
-.li { border-radius: 0 !important; font-family: var(--data) !important; }
-.li:focus { border-color: var(--copper) !important; box-shadow: 0 0 0 2px var(--coppa) !important; }
-
-/* ── CBS SECTION ── */
-.cbsouter { border-radius: 0 !important; border-color: rgba(255,74,43,.35) !important; }
-.cbs-dev  { border-radius: 0 !important; }
-
-/* ── SECTOR SELECTOR — command panel ── */
-.ss-cards .ss-card-name { font-family: var(--display) !important; font-size: 18px !important; letter-spacing: .04em !important; }
-
-/* ── WEATHER CARDS ── */
-.wcard { border-radius: 0 !important; }
-.w-temp { font-family: var(--data) !important; }
-.w-loc { font-family: var(--display) !important; letter-spacing: .14em !important; }
-
-/* ── NODE MONITOR RESKIN ── */
-.nm-wrap { border-radius: 0 !important; background: var(--forge2) !important; }
-.nm-node { border-radius: 0 !important; }
-.nm-label { font-family: var(--display) !important; font-size: 13px !important; letter-spacing: .04em !important; }
-.nm-host  { font-family: var(--data) !important; }
-.nm-status-text { font-family: var(--display) !important; letter-spacing: .08em !important; }
-.nm-metric-v { font-family: var(--data) !important; font-size: 15px !important; }
-.nm-metric-l { font-family: var(--display) !important; letter-spacing: .1em !important; }
-.nm-input { border-radius: 0 !important; font-family: var(--data) !important; }
-.nm-input-label { font-family: var(--display) !important; letter-spacing: .12em !important; }
-.nm-node.nm-up   { border-left-color: var(--signal) !important; }
-.nm-node.nm-down { border-left-color: var(--ember) !important; }
-.nm-node.nm-checking { border-left-color: var(--copper) !important; }
-.nm-icon.up   { background: rgba(0,229,200,.12) !important; }
-.nm-icon.down { background: rgba(255,74,43,.12) !important; }
-.nm-health-bar { height: 2px !important; }
-
-/* ── DATA COLLECTION PANEL ── */
-.dc-panel { border-radius: 0 !important; background: var(--forge2) !important; }
-.dc-method { border-radius: 0 !important; }
-.dc-title { font-family: var(--display) !important; letter-spacing: .05em !important; }
-.dc-badge { border-radius: 0 !important; font-family: var(--data) !important; }
-
-/* ── SUBLOC BAR ── */
-.stab { border-radius: 0 !important; font-family: var(--display) !important; font-weight: 700 !important; letter-spacing: .08em !important; }
-.stab.active { background: var(--copper) !important; color: #1a0800 !important; border-color: var(--copper) !important; }
-
-/* ── INTELLIGENCE CARDS ── */
-.icard { border-radius: 0 !important; border-bottom: 2px solid var(--copper) !important; }
-.ititle { font-family: var(--display) !important; letter-spacing: .12em !important; font-size: 10px !important; color: var(--copper) !important; }
-.ival { font-family: var(--data) !important; font-size: 24px !important; }
-.isub { font-family: var(--display) !important; letter-spacing: .06em !important; }
-
-/* ── PROTO TAGS ── */
-.ptag { border-radius: 0 !important; font-family: var(--data) !important; font-size: 9px !important; }
-
-/* ── DETAIL MODAL ── */
-.detail-modal-inner { border-radius: 0 !important; background: var(--forge1) !important; }
-.dm-title { font-family: var(--display) !important; font-size: 20px !important; letter-spacing: .06em !important; }
-.dm-section { font-family: var(--display) !important; letter-spacing: .12em !important; color: var(--copper) !important; }
-.dm-card { border-radius: 0 !important; }
-.dm-card-l { font-family: var(--display) !important; letter-spacing: .1em !important; }
-.dm-card-v { font-family: var(--data) !important; }
-.dm-spec-table td { font-family: var(--data) !important; }
-
-/* ── OPS FOCUS — forge emergency ── */
-body.ops-focus .gc.g-r { border-bottom-color: var(--ember) !important; }
-body.ops-focus .gc.g-w { border-bottom-color: var(--copper) !important; }
-.ops-btn { border-radius: 0 !important; font-family: var(--display) !important; letter-spacing: .1em !important; border-color: rgba(255,74,43,.3) !important; color: var(--ember) !important; }
-body.ops-focus .ops-btn { border-color: var(--ember) !important; background: rgba(255,74,43,.1) !important; }
-
-/* ── SCAN RESULTS PANEL ── */
-.scan-wrap { background: var(--forge2); border: 1px solid var(--wire); border-left: 3px solid var(--signal); padding: 14px; margin-top: 12px; }
-.scan-result { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--wire); font-size: 11px; }
-.scan-result:last-child { border-bottom: none; }
-.scan-ip { font-family: var(--data); color: var(--signal); flex: 1; }
-.scan-lat { font-family: var(--data); font-size: 10px; color: var(--mut); }
-
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--forge1); }
-::-webkit-scrollbar-thumb { background: var(--copper); border-radius: 0; }
-
-/* ── GRID TICKS — subtle forge floor ── */
-.wrap::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    linear-gradient(var(--wire) 1px, transparent 1px),
-    linear-gradient(90deg, var(--wire) 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: .28;
-}
-
 </style>
 </head>
 <body>
@@ -1015,17 +707,7 @@ body.ops-focus .ops-btn { border-color: var(--ember) !important; background: rgb
       </div>
     </div>
     <div class="nm-grid" id="nm-grid-net">
-      <div class="nm-empty" id="nm-empty-net">No nodes yet &#8212; enter an IP address above and click <strong>Add node</strong>,<br>or use the subnet scanner below to auto-discover live hosts</div>
-    </div>
-
-    <!-- Subnet scanner -->
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--wire)">
-      <div class="nm-input-label" style="margin-bottom:6px">Auto-discover &#8212; scan a subnet for live hosts</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input class="nm-input" id="nm-scan-cidr-net" placeholder="192.168.1.0/24" style="max-width:200px" onkeydown="if(event.key==='Enter')nmScan('net')">
-        <button class="btn" style="background:rgba(0,229,200,.1);border:1px solid rgba(0,229,200,.25);color:var(--signal);font-family:var(--display);font-weight:700;letter-spacing:.08em;font-size:11px;padding:8px 14px;border-radius:0" onclick="nmScan('net')">&#9998; Scan subnet</button>
-      </div>
-      <div id="nm-scan-results-net" class="scan-wrap" style="display:none;margin-top:10px"></div>
+      <div class="nm-empty">No nodes yet &#8212; enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel&#8482; will probe connectivity every 30 seconds automatically</span></div>
     </div>
   </div>
 
@@ -1096,65 +778,33 @@ body.ops-focus .ops-btn { border-color: var(--ember) !important; background: rgb
       </div>
     </div>
     <div class="nm-grid" id="nm-grid-tc">
-      <div class="nm-empty" id="nm-empty-tc">No tower nodes yet &#8212; enter a management IP or scan a subnet to discover live sites</div>
-    </div>
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--wire)">
-      <div class="nm-input-label" style="margin-bottom:6px">Discover tower management IPs</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <input class="nm-input" id="nm-scan-cidr-tc" placeholder="10.10.0.0/24" style="max-width:200px" onkeydown="if(event.key==='Enter')nmScan('tc')">
-        <button class="btn" style="background:rgba(40,196,248,.08);border:1px solid rgba(40,196,248,.22);color:var(--blu);font-family:var(--display);font-weight:700;letter-spacing:.08em;font-size:11px;padding:8px 14px;border-radius:0" onclick="nmScan('tc')">&#9998; Scan subnet</button>
-      </div>
-      <div id="nm-scan-results-tc" class="scan-wrap" style="display:none;margin-top:10px"></div>
+      <div class="nm-empty">No tower nodes yet &#8212; enter a base station or tower management IP above</div>
     </div>
   </div>
 
-  <!-- TC LIVE FEED + PRACTICAL COLLECTOR GUIDE -->
-  <div class="nm-wrap" style="border-color:rgba(40,196,248,.18)">
-    <div class="sl" style="margin-bottom:11px;color:var(--blu)">Live signal feed &#8212; push real readings from your telecom equipment</div>
-
-    <!-- Quick POST tool: paste or type a real metric reading -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px" id="tc-quick-push">
+  <!-- TC data collection methods -->
+  <div class="dc-panel">
+    <div class="sl" style="margin-bottom:10px">How TelecomCo data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(52,198,244,.15)">&#128225;</div>
       <div>
-        <span class="nm-input-label">Device ID (e.g. tc-byo-bs-1)</span>
-        <input class="nm-input" id="tc-push-id" placeholder="tc-byo-tower-1" value="tc-byo-bs-1">
-      </div>
-      <div>
-        <span class="nm-input-label">Signal strength % (0&#8211;100)</span>
-        <input class="nm-input" id="tc-push-sig" type="number" min="0" max="100" placeholder="e.g. 78" value="78">
-      </div>
-      <div>
-        <span class="nm-input-label">Device type</span>
-        <select class="nm-input" id="tc-push-type">
-          <option value="base_station">Base Station</option>
-          <option value="network_tower">Network Tower</option>
-          <option value="microwave_link">Microwave Link</option>
-        </select>
-      </div>
-      <div>
-        <span class="nm-input-label">Site</span>
-        <select class="nm-input" id="tc-push-site">
-          <option value="byo">Bulawayo HQ</option>
-          <option value="hre">Harare</option>
-          <option value="mut">Mutare</option>
-        </select>
+        <div class="dc-title">Node Monitor (above) <span class="dc-badge live">Live</span></div>
+        <div class="dc-desc">Add your base station management IPs. IISentinel&#8482; probes TCP connectivity every 30s, measures round-trip latency, detects outages, and feeds health scores into the AI pipeline automatically. No SNMP agent required.</div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
-      <button class="btn btn-acc" onclick="tcPushReading()" style="font-size:11px;padding:8px 16px">&#9654; Push live reading</button>
-      <button class="btn" style="background:rgba(255,255,255,.04);color:var(--mut);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="tcSimDegrade()">&#8811; Simulate degradation</button>
-      <span id="tc-push-status" style="font-size:10px;color:var(--grn)"></span>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(0,229,212,.15)">&#128194;</div>
+      <div>
+        <div class="dc-title">SNMP collector script <span class="dc-badge manual">Optional</span></div>
+        <div class="dc-desc">Run <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">demo_collector.py --event cbs</code> to inject simulated readings. For real equipment: configure SNMP v2c on your base stations and POST to <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">/api/metrics</code> with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">device_type: base_station</code>.</div>
+      </div>
     </div>
-
-    <!-- cURL snippet for real integration -->
-    <div style="background:rgba(0,0,0,.35);border:1px solid var(--b1);border-radius:var(--r-sm);padding:12px;font-family:monospace;font-size:10px;color:var(--mut);line-height:1.8;position:relative">
-      <div style="font-size:9px;color:var(--dim);margin-bottom:6px;font-family:inherit;letter-spacing:.06em;text-transform:uppercase">Real integration &#8212; run from your base station controller or SNMP trap receiver:</div>
-      <div style="color:var(--tel)">curl -X POST <span style="color:var(--txt)">http://your-server:5000/api/metrics</span> \</div>
-      <div style="padding-left:16px;color:var(--txt)">-H <span style="color:var(--grn)">"Content-Type: application/json"</span> \</div>
-      <div style="padding-left:16px;color:var(--txt)">-d <span style="color:var(--grn)">'{"device_id":"tc-byo-bs-1","device_type":"base_station",</span></div>
-      <div style="padding-left:24px;color:var(--grn)">"metric_name":"signal_strength","metric_value":78,</div>
-      <div style="padding-left:24px;color:var(--grn)">"signal_strength":78,"latency_ms":12,"protocol":"SNMP"}'</div>
-      <!-- ✅ FIXED BUTTON — uses a simple helper function (no escaping headaches) -->
-      <button onclick="copyTcCurl()" style="position:absolute;top:9px;right:9px;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:5px;color:var(--dim);cursor:pointer;font-size:9px;padding:3px 9px;font-family:inherit">copy</button>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div>
+      <div>
+        <div class="dc-title">Demo mode <span class="dc-badge auto">Auto</span></div>
+        <div class="dc-desc">Start the server with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">DEMO_MODE=true python app.py</code> to inject 15 realistic devices across all sectors including 3 TelecomCo nodes with simulated degradation events.</div>
+      </div>
     </div>
   </div>
 
@@ -1208,47 +858,29 @@ body.ops-focus .ops-btn { border-color: var(--ember) !important; background: rgb
   </div>
   <div class="lcgrid" id="mc-seccards"></div>
 
-  <!-- MC LIVE INJECTOR + CBS TEST -->
-  <div class="nm-wrap" style="border-color:rgba(245,196,32,.18)">
-    <div class="sl" style="margin-bottom:11px;color:var(--gld)">Live asset readings &#8212; push real sensor data or test CBS safety interlock</div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px">
+  <!-- MC data collection info -->
+  <div class="dc-panel">
+    <div class="sl" style="margin-bottom:10px">How MiningCo equipment data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div>
       <div>
-        <span class="nm-input-label">Asset ID (e.g. mc-shaft1-pump-1)</span>
-        <input class="nm-input" id="mc-push-id" placeholder="mc-shaft1-pump-1" value="mc-shaft1-pump-1">
-      </div>
-      <div>
-        <span class="nm-input-label">Asset type</span>
-        <select class="nm-input" id="mc-push-type">
-          <option value="pump">Pump</option>
-          <option value="conveyor">Conveyor</option>
-          <option value="ventilation">Ventilation</option>
-          <option value="plc">PLC</option>
-          <option value="sensor">Sensor</option>
-          <option value="cbs_controller">CBS Controller</option>
-        </select>
-      </div>
-      <div>
-        <span class="nm-input-label">Temperature &#176;C</span>
-        <input class="nm-input" id="mc-push-temp" type="number" placeholder="e.g. 65" value="65">
+        <div class="dc-title">Demo mode &#8212; instant data <span class="dc-badge live">Live</span></div>
+        <div class="dc-desc">Run <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">DEMO_MODE=true python app.py</code>. Realistic data from 9 mining devices (pumps, conveyors, ventilation, PLC, CBS controller) injects automatically, simulating degradation events, CBS holds, and auto-retrain triggers.</div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-      <button class="btn btn-acc" onclick="mcPushReading()" style="font-size:11px;padding:8px 16px;background:var(--gld);color:#1a0a00">&#9654; Push asset reading</button>
-      <button class="btn btn-red" onclick="mcCbsHold()" style="font-size:11px;padding:8px 14px">&#9888; Trigger CBS hold</button>
-      <button class="btn" style="background:rgba(34,224,122,.12);border:1px solid rgba(34,224,122,.25);color:var(--grn);font-size:11px;padding:8px 14px" onclick="mcCbsClear()">&#10003; CBS all-clear</button>
-      <span id="mc-push-status" style="font-size:10px;color:var(--grn)"></span>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(255,62,80,.15)">&#128273;</div>
+      <div>
+        <div class="dc-title">Live PLC/SCADA integration <span class="dc-badge manual">Production</span></div>
+        <div class="dc-desc">Deploy a lightweight Python collector on your site server. It reads Profinet, Modbus TCP, or OPC-UA registers from your PLCs and POSTs to <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">/api/metrics</code>. The demo_collector.py script is your starting template &#8212; replace simulated values with real register reads.</div>
+      </div>
     </div>
-
-    <div style="background:rgba(0,0,0,.35);border:1px solid var(--b1);border-radius:var(--r-sm);padding:12px;font-family:monospace;font-size:10px;color:var(--mut);line-height:1.8;position:relative">
-      <div style="font-size:9px;color:var(--dim);margin-bottom:6px;font-family:inherit;letter-spacing:.06em;text-transform:uppercase">From your site server / PLC gateway (Modbus TCP &#8594; HTTP bridge):</div>
-      <div style="color:var(--gld)">curl -X POST <span style="color:var(--txt)">http://your-server:5000/api/metrics</span> \</div>
-      <div style="padding-left:16px;color:var(--txt)">-H <span style="color:var(--grn)">"Content-Type: application/json"</span> \</div>
-      <div style="padding-left:16px;color:var(--grn)">-d '{"device_id":"mc-shaft1-pump-1","device_type":"pump",</div>
-      <div style="padding-left:24px;color:var(--grn)">"metric_name":"temperature","metric_value":65,</div>
-      <div style="padding-left:24px;color:var(--grn)">"temperature":65,"protocol":"Modbus TCP"}'</div>
-      <!-- ✅ FIXED BUTTON — same pattern, no escaping errors -->
-      <button onclick="copyMcCurl()" style="position:absolute;top:9px;right:9px;background:rgba(255,255,255,.06);border:1px solid var(--b1);border-radius:5px;color:var(--dim);cursor:pointer;font-size:9px;padding:3px 9px;font-family:inherit">copy</button>
+    <div class="dc-method">
+      <div class="dc-icon" style="background:rgba(176,136,250,.15)">&#9889;</div>
+      <div>
+        <div class="dc-title">CBS DNP3 monitor <span class="dc-badge auto">Auto-interlock</span></div>
+        <div class="dc-desc">POST readings with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">device_type: cbs_controller</code>. When link health drops below 90%, IISentinel&#8482; automatically issues a blast hold, fires SMS, and logs the incident. No manual intervention needed.</div>
+      </div>
     </div>
   </div>
 
@@ -1419,40 +1051,39 @@ var TC=['base_station','network_tower','microwave_link'];
 var MC=['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node'];
 var CBS=['cbs_controller'];
 var COST={pump:150000,conveyor:120000,ventilation:180000,plc:80000,scada_node:60000,cbs_controller:450000,power_meter:100000,sensor:40000,base_station:25000,network_tower:35000,microwave_link:40000,router:15000,switch:10000,firewall:20000,wan_link:12000,workstation:2000};
-var TC_META={byo:{label:'Bulawayo HQ',sub:'Home base — Matabeleland NOC'},hre:{label:'Harare',sub:'Capital — Mashonaland hub'},mut:{label:'Mutare',sub:'Eastern Highlands relay'}};
-var MC_META={shaft1:{label:'Shaft 1',sub:'Primary extraction — underground'},shaft2:{label:'Shaft 2',sub:'Secondary extraction — deepest'},plant:{label:'Processing Plant',sub:'Ore processing'},surface:{label:'Surface',sub:'Power, water, CBS'}};
+var TC_META={byo:{label:'Bulawayo HQ',sub:'Home base &#8212; Matabeleland NOC'},hre:{label:'Harare',sub:'Capital &#8212; Mashonaland hub'},mut:{label:'Mutare',sub:'Eastern Highlands relay'}};
+var MC_META={shaft1:{label:'Shaft 1',sub:'Primary extraction &#8212; underground'},shaft2:{label:'Shaft 2',sub:'Secondary extraction &#8212; deepest'},plant:{label:'Processing Plant',sub:'Ore processing'},surface:{label:'Surface',sub:'Power, water, CBS'}};
 var HW_SPECS={
-  router:{proto:'SNMP v3 / BGP',fw:'IOS XE 17.x',ports:'24× GbE + 4× SFP+',throughput:'10 Gbps',mtbf:'43,800h',power:'150W',rack:'1U'},
-  switch:{proto:'SNMP v2c / OSPF',fw:'NX-OS 10.x',ports:'48× GbE + 4× 10G SFP',throughput:'176 Gbps',mtbf:'43,800h',power:'65W',rack:'1U'},
-  firewall:{proto:'SNMP v3 / NetFlow',fw:'ASA 9.x',ports:'8× GbE',throughput:'2 Gbps',mtbf:'35,000h',power:'45W',rack:'1U'},
-  wan_link:{proto:'BGP / OSPF',fw:'N/A',ports:'2× SFP+',throughput:'1 Gbps',mtbf:'35,000h',power:'20W',rack:'0U'},
-  base_station:{proto:'SNMP / LTE Cat-20',fw:'eNB 4.8.x',ports:'6× CPRI',throughput:'2 Gbps DL',mtbf:'35,040h',power:'1,200W',rack:'Outdoor'},
-  network_tower:{proto:'SNMP / AISG',fw:'Tower OS 3.x',ports:'4× Antenna + 2× Eth',throughput:'N/A',mtbf:'43,800h',power:'800W',rack:'Tower-mounted'},
-  microwave_link:{proto:'SNMP / E-band',fw:'MW OS 2.x',ports:'2× Eth + 1× RF',throughput:'10 Gbps',mtbf:'26,280h',power:'60W',rack:'Outdoor'},
-  pump:{proto:'Modbus TCP / OPC-UA',fw:'PLC FW 3.2',ports:'4× 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'45kW',rack:'Floor'},
-  conveyor:{proto:'Profinet / EtherNet/IP',fw:'Siemens S7-1500',ports:'8× DI/O',throughput:'N/A',mtbf:'17,520h',power:'90kW',rack:'Floor'},
-  ventilation:{proto:'Modbus TCP',fw:'VFD FW 2.1',ports:'4× 4-20mA',throughput:'N/A',mtbf:'26,280h',power:'132kW',rack:'Floor'},
-  plc:{proto:'Profinet / OPC-UA',fw:'Siemens S7-1200',ports:'16× DI + 8× DO',throughput:'N/A',mtbf:'52,560h',power:'25W',rack:'DIN'},
-  cbs_controller:{proto:'DNP3 / EtherNet/IP',fw:'CBS SafeOS 5.4',ports:'4× DNP3 + 2× Eth',throughput:'N/A',mtbf:'52,560h',power:'80W',rack:'Panel'},
-  sensor:{proto:'Modbus TCP',fw:'Sensor FW 1.8',ports:'2× 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'3W',rack:'Field'},
-  scada_node:{proto:'OPC-UA / Modbus TCP',fw:'WinCC 7.x',ports:'4× Eth + 2× RS485',throughput:'N/A',mtbf:'26,280h',power:'150W',rack:'Panel'}
+  router:{proto:'SNMP v3 / BGP',fw:'IOS XE 17.x',ports:'24&#215; GbE + 4&#215; SFP+',throughput:'10 Gbps',mtbf:'43,800h',power:'150W',rack:'1U'},
+  switch:{proto:'SNMP v2c / OSPF',fw:'NX-OS 10.x',ports:'48&#215; GbE + 4&#215; 10G SFP',throughput:'176 Gbps',mtbf:'43,800h',power:'65W',rack:'1U'},
+  firewall:{proto:'SNMP v3 / NetFlow',fw:'ASA 9.x',ports:'8&#215; GbE',throughput:'2 Gbps',mtbf:'35,000h',power:'45W',rack:'1U'},
+  wan_link:{proto:'BGP / OSPF',fw:'N/A',ports:'2&#215; SFP+',throughput:'1 Gbps',mtbf:'35,000h',power:'20W',rack:'0U'},
+  base_station:{proto:'SNMP / LTE Cat-20',fw:'eNB 4.8.x',ports:'6&#215; CPRI',throughput:'2 Gbps DL',mtbf:'35,040h',power:'1,200W',rack:'Outdoor'},
+  network_tower:{proto:'SNMP / AISG',fw:'Tower OS 3.x',ports:'4&#215; Antenna + 2&#215; Eth',throughput:'N/A',mtbf:'43,800h',power:'800W',rack:'Tower-mounted'},
+  microwave_link:{proto:'SNMP / E-band',fw:'MW OS 2.x',ports:'2&#215; Eth + 1&#215; RF',throughput:'10 Gbps',mtbf:'26,280h',power:'60W',rack:'Outdoor'},
+  pump:{proto:'Modbus TCP / OPC-UA',fw:'PLC FW 3.2',ports:'4&#215; 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'45kW',rack:'Floor'},
+  conveyor:{proto:'Profinet / EtherNet/IP',fw:'Siemens S7-1500',ports:'8&#215; DI/O',throughput:'N/A',mtbf:'17,520h',power:'90kW',rack:'Floor'},
+  ventilation:{proto:'Modbus TCP',fw:'VFD FW 2.1',ports:'4&#215; 4-20mA',throughput:'N/A',mtbf:'26,280h',power:'132kW',rack:'Floor'},
+  plc:{proto:'Profinet / OPC-UA',fw:'Siemens S7-1200',ports:'16&#215; DI + 8&#215; DO',throughput:'N/A',mtbf:'52,560h',power:'25W',rack:'DIN'},
+  cbs_controller:{proto:'DNP3 / EtherNet/IP',fw:'CBS SafeOS 5.4',ports:'4&#215; DNP3 + 2&#215; Eth',throughput:'N/A',mtbf:'52,560h',power:'80W',rack:'Panel'},
+  sensor:{proto:'Modbus TCP',fw:'Sensor FW 1.8',ports:'2&#215; 4-20mA',throughput:'N/A',mtbf:'8,760h',power:'3W',rack:'Field'},
+  scada_node:{proto:'OPC-UA / Modbus TCP',fw:'WinCC 7.x',ports:'4&#215; Eth + 2&#215; RS485',throughput:'N/A',mtbf:'26,280h',power:'150W',rack:'Panel'},
 };
-var DEFAULT_HW={proto:'Ethernet / SNMP',fw:'Vendor OS',ports:'4× Eth',throughput:'1 Gbps',mtbf:'17,520h',power:'N/A',rack:'N/A'};
+var DEFAULT_HW={proto:'Ethernet / SNMP',fw:'Vendor OS',ports:'4&#215; Eth',throughput:'1 Gbps',mtbf:'17,520h',power:'N/A',rack:'N/A'};
 var LOGO={
-  main:{a:'#28c4f8',b:'#22e07a',ii:'#28c4f8',tag:'— Platform'},
-  net:{a:'#00d4c8',b:'#28c4f8',ii:'#00d4c8',tag:'— Network'},
-  tc:{a:'#28c4f8',b:'#a27cf8',ii:'#4dc8f8',tag:'— TelecomCo'},
-  mc:{a:'#f5c420',b:'#22e07a',ii:'#f5c420',tag:'— MiningCo'},
-  wx:{a:'#60d8f8',b:'#22e07a',ii:'#60d8f8',tag:'— Weather'},
-  intel:{a:'#a27cf8',b:'#28c4f8',ii:'#a27cf8',tag:'— Intelligence'},
-  cbs:{a:'#f02e50',b:'#ff7050',ii:'#f02e50',tag:'— CBS Safety'},
-  sp:{a:'#a27cf8',b:'#f02e50',ii:'#a27cf8',tag:'— Specialist'}
+  main:{a:'#28c4f8',b:'#22e07a',ii:'#28c4f8',tag:'&#8212; Platform'},
+  net:{a:'#00d4c8',b:'#28c4f8',ii:'#00d4c8',tag:'&#8212; Network'},
+  tc:{a:'#28c4f8',b:'#a27cf8',ii:'#4dc8f8',tag:'&#8212; TelecomCo'},
+  mc:{a:'#f5c420',b:'#22e07a',ii:'#f5c420',tag:'&#8212; MiningCo'},
+  wx:{a:'#60d8f8',b:'#22e07a',ii:'#60d8f8',tag:'&#8212; Weather'},
+  intel:{a:'#a27cf8',b:'#28c4f8',ii:'#a27cf8',tag:'&#8212; Intelligence'},
+  cbs:{a:'#f02e50',b:'#ff7050',ii:'#f02e50',tag:'&#8212; CBS Safety'},
+  sp:{a:'#a27cf8',b:'#f02e50',ii:'#a27cf8',tag:'&#8212; Specialist'},
 };
-
 function setLogoPage(page){
   var p=LOGO[page]||LOGO.main;var r=document.documentElement;
   r.style.setProperty('--logo-ii',p.ii);r.style.setProperty('--logo-a',p.a);r.style.setProperty('--logo-b',p.b);
-  var stag=document.getElementById('logo-stag');if(stag){stag.textContent=p.tag;stag.style.color=p.a;}
+  var stag=document.getElementById('logo-stag');if(stag){stag.textContent=p.tag.replace(/&#8212;/g,'—');stag.style.color=p.a;}
   var accMap={net:'var(--tel)',tc:'var(--blu)',mc:'var(--gld)',wx:'var(--blu)',intel:'var(--pur)',cbs:'var(--red)',sp:'var(--pur)'};
   var accAMap={net:'var(--tela)',tc:'var(--blua)',mc:'var(--glda)',wx:'var(--blua)',intel:'var(--pura)',cbs:'var(--reda)',sp:'var(--pura)'};
   r.style.setProperty('--acc',accMap[page]||'var(--blu)');r.style.setProperty('--acca',accAMap[page]||'var(--blua)');
@@ -1502,7 +1133,7 @@ function openDetail(devId){
   var metricData=[
     {l:'Health Score',v:s+'/100',c:col},{l:'Failure Risk',v:prob+'%',c:prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'},
     {l:'Uptime',v:up+'%',c:up>98?'var(--grn)':up>90?'var(--amb)':'var(--red)'},{l:'Anomaly',v:d.anomaly_flag?'DETECTED':'Clear',c:d.anomaly_flag?'var(--red)':'var(--grn)'},
-    {l:'Exposure',v:exposure>0?'$'+exposure.toLocaleString()+'/hr':'$0',c:exposure>0?'var(--red)':'var(--grn)'},{l:'Sector',v:isCbs(d)?'CBS':isNet(d)?'Network':isTc(d)?'Telecom':isMc(d)?'Mining':'Other',c:'var(--acc)'}
+    {l:'Exposure',v:exposure>0?'$'+exposure.toLocaleString()+'/hr':'$0',c:exposure>0?'var(--red)':'var(--grn)'},{l:'Sector',v:isCbs(d)?'CBS':isNet(d)?'Network':isTc(d)?'Telecom':isMc(d)?'Mining':'Other',c:'var(--acc)'},
   ];
   var mg=document.getElementById('dm-metrics');
   mg.innerHTML=metricData.map(function(m){return'<div class="dm-card"><div class="dm-card-l">'+m.l+'</div><div class="dm-card-v" style="color:'+m.c+'">'+m.v+'</div></div>';}).join('');
@@ -1537,7 +1168,7 @@ function mkGauges(data,cid,filterFn,locFilter){
     var prob=(intel.failure_probabilities&&intel.failure_probabilities[d.device_id])||0;
     var up=Math.round((intel.uptime&&intel.uptime[d.device_id])||100);
     var isc=isCbs(d);var label=sid(d.device_id);
-    var etaHtml='';if(prob>65&&d.health_score<40){var eta=Math.round((100-prob)/10*45);etaHtml='<div class="g-eta">⚠ ~'+eta+'min</div>';}
+    var etaHtml='';if(prob>65&&d.health_score<40){var eta=Math.round((100-prob)/10*45);etaHtml='<div class="g-eta">&#9888; ~'+eta+'min</div>';}
     el.innerHTML+='<div class="gc '+(s>=70?'g-ok':s>=40?'g-w':'g-r')+(isc?' gcbs':'')+'" onclick="openDetail(\''+d.device_id+'\')">'
       +'<div class="gid">'+label+(d.anomaly_flag?'<span class="gpill g-pill-anom"> ANOM</span>':'')+'</div>'
       +'<div class="gw">'+gSvg(s,col)+'<div class="gval" style="color:'+col+'">'+s+'</div></div>'
@@ -1917,18 +1548,23 @@ setTimeout(initSSE,4300);
 
 /* ════════════════════════════════════════════════════════
    NODE MONITOR — SolarWinds-style
+   All probing happens server-side (/api/nodes).
+   Frontend just shows: Up/Down icon, latency, packet loss.
+   Nodes persist in server memory and auto-poll every 30s.
 ════════════════════════════════════════════════════════ */
 
+// Icon SVGs for node status
 var NM_ICONS = {
   up:       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(34,224,122,.2)"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#20e07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   down:     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,62,80,.2)"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ff3e50" stroke-width="2" stroke-linecap="round"/></svg>',
   checking: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(245,160,32,.15)"/><path d="M12 7v5l3 3" stroke="#f5a020" stroke-width="2" stroke-linecap="round"/></svg>',
-  unknown:  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>'
+  unknown:  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>',
 };
 
 function nmStatusLabel(status) {
   return status === 'up' ? 'Online' : status === 'down' ? 'Offline' : status === 'checking' ? 'Checking…' : 'Unknown';
 }
+
 function nmLatencyColor(ms) {
   if (!ms) return 'var(--dim)';
   if (ms < 20)  return 'var(--grn)';
@@ -1944,7 +1580,7 @@ function nmRenderGrid(sector, nodes) {
   var entries = Object.values(nodes || {}).filter(function(n) { return n.sector === sector; });
 
   if (!entries.length) {
-    grid.innerHTML = `<div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel™ will probe connectivity every 30 seconds automatically</span></div>`;
+    grid.innerHTML = '<div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel™ will probe connectivity every 30 seconds automatically</span></div>';
     return;
   }
 
@@ -1957,29 +1593,30 @@ function nmRenderGrid(sector, nodes) {
     var latcol = nmLatencyColor(n.latency_ms);
     var checked = n.last_check ? new Date(n.last_check * 1000).toLocaleTimeString() : 'Never';
 
-    return `
-      <div class="nm-node nm-${st}">
-        <button class="nm-del" onclick="nmDelete('${n.id}','${sector}')" title="Remove node">✕</button>
-        <button class="nm-poll" onclick="nmPollOne('${n.id}','${sector}')" title="Poll now">↺</button>
-        <div class="nm-icon ${st}">${NM_ICONS[st] || NM_ICONS.unknown}</div>
-        <div class="nm-label">${n.label || n.host}</div>
-        <div class="nm-host">${n.host}</div>
-        <div class="nm-status-line">
-          <div class="nm-status-text ${st}">${nmStatusLabel(st)}</div>
-          ${n.loss_pct > 10 ? `<div style="font-size:9px;color:var(--amb);margin-left:6px">${n.loss_pct}% loss</div>` : ''}
-        </div>
-        <div class="nm-metrics">
-          <div class="nm-metric"><div class="nm-metric-v" style="color:${latcol}">${lat}</div><div class="nm-metric-l">Response</div></div>
-          <div class="nm-metric"><div class="nm-metric-v" style="color:${n.loss_pct > 5 ? 'var(--amb)' : 'var(--dim)'}">${loss}</div><div class="nm-metric-l">Loss</div></div>
-          <div class="nm-metric"><div class="nm-metric-v" style="color:${hcol}">${h}</div><div class="nm-metric-l">Health</div></div>
-        </div>
-        <div class="nm-health-bar"><div class="nm-health-fill" style="width:${h}%;background:${hcol}"></div></div>
-        <div style="font-size:9px;color:var(--dim);margin-top:6px">Polled: ${checked}</div>
-      </div>
-    `;
+    return [
+      '<div class="nm-node nm-' + st + '">',
+`<button class="nm-del" onclick="nmDelete('${n.id}','${sector}')" title="Remove node">✕</button>`
+`<button class="nm-poll" onclick="nmPollOne('${n.id}','${sector}')" title="Poll now">↺</button>`    
+    '<div class="nm-icon ' + st + '">' + (NM_ICONS[st] || NM_ICONS.unknown) + '</div>',
+        '<div class="nm-label">' + (n.label || n.host) + '</div>',
+        '<div class="nm-host">' + n.host + '</div>',
+        '<div class="nm-status-line">',
+          '<div class="nm-status-text ' + st + '">' + nmStatusLabel(st) + '</div>',
+          (n.loss_pct > 10 ? '<div style="font-size:9px;color:var(--amb);margin-left:6px">' + n.loss_pct + '% loss</div>' : ''),
+        '</div>',
+        '<div class="nm-metrics">',
+          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + latcol + '">' + lat + '</div><div class="nm-metric-l">Response</div></div>',
+          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + (n.loss_pct > 5 ? 'var(--amb)' : 'var(--dim)') + '">' + loss + '</div><div class="nm-metric-l">Loss</div></div>',
+          '<div class="nm-metric"><div class="nm-metric-v" style="color:' + hcol + '">' + h + '</div><div class="nm-metric-l">Health</div></div>',
+        '</div>',
+        '<div class="nm-health-bar"><div class="nm-health-fill" style="width:' + h + '%;background:' + hcol + '"></div></div>',
+        '<div style="font-size:9px;color:var(--dim);margin-top:6px">Polled: ' + checked + '</div>',
+      '</div>'
+    ].join('');
   }).join('');
 }
 
+// Global node state
 var _nmNodes = {};
 
 function nmRefresh() {
@@ -2001,6 +1638,7 @@ function nmAdd(sector) {
 
   if (!host) { toast('Node monitor', 'Enter an IP address or hostname', 'tw'); return; }
 
+  // Optimistic UI: show checking card immediately
   var tempId = 'temp-' + Date.now();
   _nmNodes[tempId] = { id: tempId, host: host, label: label, sector: sector, status: 'checking', latency_ms: null, loss_pct: 0, health_score: 0, last_check: null };
   nmRenderGrid(sector, _nmNodes);
@@ -2026,6 +1664,7 @@ function nmAdd(sector) {
     if (hostEl)  hostEl.value  = '';
     if (labelEl) labelEl.value = '';
     toast('Node added', label + ' (' + host + ') — probing…', '');
+    // Refresh after 3s to get first result
     setTimeout(nmRefresh, 3000);
   })
   .catch(function(e) {
@@ -2045,6 +1684,7 @@ function nmDelete(nodeId, sector) {
 }
 
 function nmPollOne(nodeId, sector) {
+  // Mark as checking immediately
   if (_nmNodes[nodeId]) {
     _nmNodes[nodeId].status = 'checking';
     nmRenderGrid(sector, _nmNodes);
@@ -2067,188 +1707,10 @@ function nmPollAll(sector) {
   })).then(function() { setTimeout(nmRefresh, 4000); });
 }
 
+// Auto-refresh node status every 35s
 nmRefresh();
 setInterval(nmRefresh, 35000);
 
-/* ══════════════════════════════════════════════════════════════════════
-   LIVE PUSH FUNCTIONS & SUBNET SCANNER
-══════════════════════════════════════════════════════════════════════ */
-
-function tcPushReading() {
-  var id   = document.getElementById('tc-push-id').value.trim();
-  var sig  = parseFloat(document.getElementById('tc-push-sig').value) || 78;
-  var type = document.getElementById('tc-push-type').value;
-  var site = document.getElementById('tc-push-site').value;
-  var status = document.getElementById('tc-push-status');
-  if (!id) { toast('TC Push', 'Enter a device ID', 'tw'); return; }
-  var devId = id.includes('-') ? id : ('tc-' + site + '-' + id);
-  var payload = {
-    device_id: devId, device_type: type,
-    metric_name: 'signal_strength', metric_value: sig,
-    signal_strength: sig, latency_ms: Math.round(5 + Math.random()*15),
-    bandwidth_mbps: Math.round(sig * 12), temperature: Math.round(28 + (100-sig)*0.4),
-    protocol: 'SNMP/Ethernet-802.3'
-  };
-  if (status) { status.textContent = 'Pushing...'; status.style.color = 'var(--amb)'; }
-  fetch(B + '/api/metrics', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  }).then(function(r){ return r.json(); })
-  .then(function(d){
-    if (status) { status.textContent = '✓ Score: ' + d.health_score + '/100'; status.style.color = 'var(--grn)'; }
-    toast('TC reading pushed', devId + ' → health ' + d.health_score + '/100' + (d.anomaly_flag ? ' ⚠ ANOMALY' : ''), d.health_score < 40 ? 'tc' : 'tg');
-    setTimeout(fetchAll, 1200);
-    setTimeout(function(){ if(status) status.textContent = ''; }, 5000);
-  }).catch(function(e){ toast('Push error', e.message, 'tc'); });
-}
-
-function tcSimDegrade() {
-  var site = document.getElementById('tc-push-site').value;
-  var type = document.getElementById('tc-push-type').value;
-  var devId = 'tc-' + site + '-' + type + '-sim';
-  var sig = Math.round(15 + Math.random() * 25);
-  fetch(B + '/api/metrics', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      device_id: devId, device_type: type, metric_name: 'signal_strength',
-      metric_value: sig, signal_strength: sig, latency_ms: 280 + Math.round(Math.random()*120),
-      bandwidth_mbps: sig * 8, temperature: 72, protocol: 'SNMP/Ethernet-802.3'
-    })
-  }).then(function(r){ return r.json(); })
-  .then(function(d){
-    toast('Degradation injected', devId + ' signal ' + sig + '% → score ' + d.health_score, 'tc');
-    setTimeout(fetchAll, 1200);
-  });
-}
-
-function mcPushReading() {
-  var id   = document.getElementById('mc-push-id').value.trim();
-  var temp = parseFloat(document.getElementById('mc-push-temp').value) || 65;
-  var type = document.getElementById('mc-push-type').value;
-  var status = document.getElementById('mc-push-status');
-  if (!id) { toast('MC Push', 'Enter an asset ID', 'tw'); return; }
-  var payload = {
-    device_id: id, device_type: type,
-    metric_name: 'temperature', metric_value: temp,
-    temperature: temp, cpu_load: Math.round(30 + temp*0.4),
-    bandwidth_mbps: 10, latency_ms: 8,
-    protocol: type === 'cbs_controller' ? 'DNP3/Ethernet' : 'Modbus TCP'
-  };
-  if (status) { status.textContent = 'Pushing...'; status.style.color = 'var(--amb)'; }
-  fetch(B + '/api/metrics', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  }).then(function(r){ return r.json(); })
-  .then(function(d){
-    if (status) { status.textContent = '✓ Score: ' + d.health_score + '/100'; status.style.color = 'var(--grn)'; }
-    toast('Asset reading pushed', id + ' → health ' + d.health_score + '/100', d.health_score < 40 ? 'tc' : 'tg');
-    setTimeout(fetchAll, 1200);
-    setTimeout(function(){ if(status) status.textContent = ''; }, 5000);
-  }).catch(function(e){ toast('Push error', e.message, 'tc'); });
-}
-
-function mcCbsHold() {
-  fetch(B + '/api/metrics', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      device_id: 'cbs-dnp3-shaft2-1', device_type: 'cbs_controller',
-      metric_name: 'link_health', metric_value: 58,
-      latency_ms: 95, cpu_load: 18, bandwidth_mbps: 6,
-      signal_strength: 58, temperature: 34, blast_hold: true,
-      protocol: 'DNP3/Ethernet'
-    })
-  }).then(function(r){ return r.json(); })
-  .then(function(d){
-    toast('⚠ CBS BLAST HOLD', 'DNP3 link ' + d.health_score + '/100 — Interlock fired — $450k/hr exposure', 'tc');
-    setTimeout(fetchAll, 1200);
-  });
-}
-
-function mcCbsClear() {
-  fetch(B + '/api/metrics', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-      device_id: 'cbs-dnp3-shaft2-1', device_type: 'cbs_controller',
-      metric_name: 'link_health', metric_value: 97,
-      latency_ms: 4, cpu_load: 12, bandwidth_mbps: 20,
-      signal_strength: 97, temperature: 31, blast_hold: false,
-      protocol: 'DNP3/Ethernet'
-    })
-  }).then(function(r){ return r.json(); })
-  .then(function(d){
-    toast('✓ CBS All-clear', 'DNP3 link restored — ' + d.health_score + '/100 — ARMED', 'tg');
-    setTimeout(fetchAll, 1200);
-  });
-}
-
-var _scanInProgress = false;
-function nmScan(sector) {
-  var cidrEl = document.getElementById('nm-scan-cidr-' + sector);
-  if (!cidrEl) return;
-  var cidr = cidrEl.value.trim();
-  if (!cidr) { toast('Scanner', 'Enter a subnet e.g. 192.168.1.0/24', 'tw'); return; }
-  if (_scanInProgress) { toast('Scanner', 'Scan already in progress', 'tw'); return; }
-  _scanInProgress = true;
-
-  var resultsDiv = document.getElementById('nm-scan-results-' + sector);
-  if (resultsDiv) {
-    resultsDiv.style.display = 'block';
-    resultsDiv.innerHTML = `<div style="color:var(--copper);font-family:var(--data);font-size:11px;padding:8px">▶ Scanning ${cidr}...</div>`;
-  }
-  toast('Network scan started', 'Probing ' + cidr + ' for live hosts…', '');
-
-  fetch(B + '/api/nodes/scan', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ cidr: cidr, sector: sector })
-  }).then(function(r){ return r.json(); })
-  .then(function(d){
-    if (d.error) { toast('Scan error', d.error, 'tc'); _scanInProgress = false; return; }
-    _pollScanResult(d.scan_id, sector, resultsDiv);
-  }).catch(function(e){ toast('Scan error', e.message, 'tc'); _scanInProgress = false; });
-}
-
-function _pollScanResult(scanId, sector, resultsDiv) {
-  fetch(B + '/api/nodes/scan-status/' + scanId)
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if (!d.done) {
-      setTimeout(function(){ _pollScanResult(scanId, sector, resultsDiv); }, 1200);
-      return;
-    }
-    _scanInProgress = false;
-    var found = d.found || [];
-    if (!found.length) {
-      if (resultsDiv) resultsDiv.innerHTML = '<div style="color:var(--dim);font-size:11px;padding:8px">No live hosts found in this subnet.</div>';
-      toast('Scan complete', 'No live hosts found', 'tw');
-      return;
-    }
-    toast('Scan complete', found.length + ' live hosts discovered', 'tg');
-    if (resultsDiv) {
-      resultsDiv.innerHTML = `<div style="font-family:var(--display);font-size:10px;letter-spacing:.1em;color:var(--copper);padding:6px 10px;border-bottom:1px solid var(--wire)">${found.length} HOSTS FOUND — click + to add to monitor</div>`
-        + found.map(function(h){
-          return `<div class="scan-result"><span class="scan-ip">${h.host}</span><span class="scan-lat">${h.latency || '?'}ms</span><button onclick="nmAddFromScan('${h.host}','${sector}')" style="background:var(--copper);border:none;color:#1a0800;cursor:pointer;font-family:var(--display);font-size:11px;font-weight:700;padding:4px 10px">+</button></div>`;
-        }).join('');
-    }
-  }).catch(function(){ _scanInProgress = false; });
-}
-
-function nmAddFromScan(host, sector) {
-  var labelEl = document.getElementById('nm-label-' + sector);
-  var hostEl  = document.getElementById('nm-host-' + sector);
-  if (hostEl)  hostEl.value  = host;
-  if (labelEl) labelEl.value = host;
-  nmAdd(sector);
-}
-
-function copyTcCurl() {
-  navigator.clipboard.writeText('curl -X POST http://your-server:5000/api/metrics -H "Content-Type: application/json" -d \'{"device_id":"tc-byo-bs-1","device_type":"base_station","metric_name":"signal_strength","metric_value":78,"signal_strength":78,"latency_ms":12}\'')
-    .then(() => toast('Copied','cURL command copied to clipboard','tg'));
-}
-
-function copyMcCurl() {
-  navigator.clipboard.writeText('curl -X POST http://your-server:5000/api/metrics -H "Content-Type: application/json" -d \'{"device_id":"mc-shaft1-pump-1","device_type":"pump","metric_name":"temperature","metric_value":65,"temperature":65}\'')
-    .then(() => toast('Copied','cURL copied','tg'));
-}
 
 </script>
 </body>
