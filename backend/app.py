@@ -1,11 +1,12 @@
 """
-IISentinel™ v2.0 — Intelligent Infrastructure Sentinel
-========================================================
+IISentinel(tm) v2.1 -- Intelligent Infrastructure Sentinel
+==========================================================
 Run:  python app.py
 Demo: DEMO_MODE=true python app.py
 Open: http://localhost:5000
 
 Install: pip install flask reportlab scikit-learn joblib numpy requests
+         pip install quart uvicorn  (optional -- for async mode)
 """
 import os, re, json, time, random, threading, smtplib, sqlite3, uuid
 from collections import deque
@@ -20,7 +21,6 @@ import joblib
 import requests as req
 from flask import Flask, request, jsonify, send_file, Response, stream_with_context
 
-# ── Optional flask_cors ───────────────────────────────────────────────────
 try:
     from flask_cors import CORS as _CORS
     def _apply_cors(app): _CORS(app)
@@ -33,7 +33,6 @@ except ImportError:
             r.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
             return r
 
-# ── Optional flask_limiter ────────────────────────────────────────────────
 try:
     from flask_limiter import Limiter
     from flask_limiter.util import get_remote_address
@@ -44,7 +43,6 @@ except ImportError:
         def limit(self,*a,**kw): return lambda f: f
         def init_app(self,app): pass
 
-# ── Optional supabase — falls back to local SQLite ────────────────────────
 try:
     from supabase import create_client as _supa_create
     _SUPABASE_AVAILABLE = True
@@ -70,7 +68,8 @@ def _db_init():
     cur.execute("""CREATE TABLE IF NOT EXISTS nodes (
         id TEXT PRIMARY KEY, host TEXT NOT NULL, label TEXT,
         sector TEXT DEFAULT 'net', created_at TEXT)""")
-    cur.execute("INSERT OR IGNORE INTO specialists VALUES (?,?,?,?)",('sp-001','Admin','admin123','engineer'))
+    cur.execute("INSERT OR IGNORE INTO specialists VALUES (?,?,?,?)",
+                ('sp-001','Admin','admin123','engineer'))
     con.commit(); con.close()
 
 _db_init()
@@ -134,13 +133,12 @@ if _SUPABASE_AVAILABLE and SUPABASE_URL and SUPABASE_URL not in ('','local'):
         supabase=_supa_create(SUPABASE_URL,SUPABASE_KEY)
         print('[IISentinel] Supabase connected')
     except Exception as e:
-        print(f'[IISentinel] Supabase failed ({e}) — using SQLite')
+        print(f'[IISentinel] Supabase failed ({e}) -- using SQLite')
         supabase=_SQLiteDB()
 else:
     supabase=_SQLiteDB()
     print('[IISentinel] Using local SQLite (iisentinel.db)')
 
-# ── ML Models ─────────────────────────────────────────────────────────────
 def _build_models():
     from sklearn.ensemble import RandomForestRegressor, IsolationForest
     from sklearn.preprocessing import StandardScaler
@@ -162,13 +160,11 @@ try:
 except:
     rf_model,iso_model,scaler=_build_models()
 
-# ── Flask app ─────────────────────────────────────────────────────────────
 app=Flask(__name__,template_folder='.',static_folder='static',static_url_path='/static')
 app.secret_key=os.environ.get('SECRET_KEY','iisentinel-dev-2026')
 _apply_cors(app)
 limiter=Limiter(get_remote_address,app=app,default_limits=[],storage_uri='memory://')
 
-# ── Constants ─────────────────────────────────────────────────────────────
 NETWORK_TYPES=['router','switch','firewall','wan_link','workstation']
 TELECOM_TYPES=['base_station','network_tower','microwave_link']
 MINING_TYPES =['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
@@ -190,11 +186,11 @@ FIELD_BOUNDS={'cpu_load':(0,100),'bandwidth_mbps':(0,100000),'latency_ms':(0,600
               'packet_loss':(0,100),'connected_devices':(0,100000),
               'temperature':(-50,200),'signal_strength':(0,100),'metric_value':(-1e9,1e9)}
 
-# ── State ─────────────────────────────────────────────────────────────────
 metric_queue=deque(maxlen=500); queue_lock=threading.Lock()
 _data_cache={'data':[],'ts':0}
 scoring_queue=deque(maxlen=200); scoring_results={}; scoring_lock=threading.Lock()
 device_history={}; device_uptime={}; _lifecycle_cache={}
+device_vibration={}
 reading_window=[]; anomaly_count=0
 _retrain_lock=threading.Lock(); _retrain_in_progress=False
 _sse_subs=[]; _sse_lock=threading.Lock()
@@ -204,14 +200,13 @@ platform_stats={'requests_total':0,'requests_failed':0,'cache_hits':0,'models_sc
                 'last_retrain_success':None,'retrain_count':0,'notifications_sent':0,
                 'uptime_start':datetime.now(timezone.utc).isoformat()}
 
-# ── Notification config ───────────────────────────────────────────────────
 NOTIFY={'email_enabled':os.environ.get('NOTIFY_EMAIL_ENABLED','false').lower()=='true',
         'sms_enabled':bool(os.environ.get('AT_API_KEY') or os.environ.get('TWILIO_SID')),
         'whatsapp_enabled':bool(os.environ.get('WA_TOKEN')),
         'smtp_host':os.environ.get('SMTP_HOST','smtp.gmail.com'),
         'smtp_port':int(os.environ.get('SMTP_PORT','587')),
         'smtp_user':os.environ.get('SMTP_USER',''),'smtp_pass':os.environ.get('SMTP_PASS',''),
-        'from_email':os.environ.get('SMTP_FROM','IISentinel™ <alerts@iisentinel.io>'),
+        'from_email':os.environ.get('SMTP_FROM','IISentinel(tm) <alerts@iisentinel.io>'),
         'to_emails':[e for e in os.environ.get('ALERT_EMAIL','').split(',') if e],
         'sms_numbers':[n for n in os.environ.get('ALERT_PHONE','').split(',') if n],
         'at_api_key':os.environ.get('AT_API_KEY',''),'at_username':os.environ.get('AT_USERNAME','sandbox'),
@@ -221,7 +216,6 @@ NOTIFY={'email_enabled':os.environ.get('NOTIFY_EMAIL_ENABLED','false').lower()==
         'twilio_sid':os.environ.get('TWILIO_SID',''),'twilio_token':os.environ.get('TWILIO_TOKEN',''),
         'twilio_from':os.environ.get('TWILIO_FROM','')}
 
-# ── Notifications ─────────────────────────────────────────────────────────
 def send_sms(message):
     if not NOTIFY['sms_enabled']: return
     try:
@@ -230,11 +224,11 @@ def send_sms(message):
             req.post('https://api.africastalking.com/version1/messaging',
                 headers={'apiKey':NOTIFY['at_api_key'],'Accept':'application/json'},
                 data={'username':NOTIFY['at_username'],'to':','.join(NOTIFY['sms_numbers']),
-                      'message':f'IISentinel™: {message}','from':'IISentinel'},timeout=8)
+                      'message':f'IISentinel(tm): {message}','from':'IISentinel'},timeout=8)
         elif gw=='twilio' and NOTIFY['twilio_sid']:
             from twilio.rest import Client
             Client(NOTIFY['twilio_sid'],NOTIFY['twilio_token']).messages.create(
-                body=f'IISentinel™: {message}',from_=NOTIFY['twilio_from'],
+                body=f'IISentinel(tm): {message}',from_=NOTIFY['twilio_from'],
                 to=NOTIFY['sms_numbers'][0] if NOTIFY['sms_numbers'] else '')
     except Exception as e: print(f'[SMS] {e}')
 
@@ -245,7 +239,7 @@ def send_whatsapp(message):
             req.post(f"https://graph.facebook.com/v19.0/{NOTIFY['wa_phone_id']}/messages",
                 headers={'Authorization':f"Bearer {NOTIFY['wa_token']}",'Content-Type':'application/json'},
                 json={'messaging_product':'whatsapp','to':num,'type':'text',
-                      'text':{'body':f'IISentinel™\n{message}'}},timeout=8)
+                      'text':{'body':f'IISentinel(tm)\n{message}'}},timeout=8)
     except Exception as e: print(f'[WhatsApp] {e}')
 
 def send_email(subject,body,device_id=None,health_score=None,
@@ -267,16 +261,16 @@ def send_email(subject,body,device_id=None,health_score=None,
     html=f"""<!DOCTYPE html><html><body style="margin:0;padding:0;background:#eef0f7;font-family:'Segoe UI',Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 0"><tr><td align="center">
 <table width="580" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10)">
-<tr><td style="background:{C};padding:22px 28px"><span style="font-size:20px;font-weight:800;color:#fff">IISentinel™</span>
+<tr><td style="background:{C};padding:22px 28px"><span style="font-size:20px;font-weight:800;color:#fff">IISentinel(tm)</span>
 &nbsp;<span style="font-size:11px;font-weight:700;background:rgba(255,255,255,.2);color:#fff;padding:3px 10px;border-radius:20px">{severity.upper()}</span></td></tr>
 <tr><td style="padding:28px"><p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#0c1122">{subject}</p>
 {devr}<table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e4eaf6;margin-top:12px">{sr}{dr}{cr}</table></td></tr>
 <tr><td style="background:#f0f4fa;padding:14px 28px;border-top:1px solid #e4eaf6">
-<p style="margin:0;font-size:11px;color:#8592a8">IISentinel™ Intelligent Infrastructure Sentinel — automated alert</p></td></tr>
+<p style="margin:0;font-size:11px;color:#8592a8">IISentinel(tm) Intelligent Infrastructure Sentinel -- automated alert</p></td></tr>
 </table></td></tr></table></body></html>"""
     try:
         msg=MIMEMultipart('alternative')
-        msg['Subject']=f'[IISentinel™] {severity.upper()}: {subject}'
+        msg['Subject']=f'[IISentinel(tm)] {severity.upper()}: {subject}'
         msg['From']=NOTIFY['from_email']; msg['To']=', '.join(NOTIFY['to_emails'])
         msg.attach(MIMEText(body,'plain')); msg.attach(MIMEText(html,'html'))
         with smtplib.SMTP(NOTIFY['smtp_host'],NOTIFY['smtp_port']) as s:
@@ -296,7 +290,6 @@ def notify_all(subject,message,level='critical',device_id=None,
         health_score=health_score,diagnosis=diagnosis,automation_command=automation_command,severity=level),
         daemon=True).start()
 
-# ── SSE ───────────────────────────────────────────────────────────────────
 def sse_broadcast(event_type,payload):
     msg=f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
     with _sse_lock:
@@ -306,7 +299,6 @@ def sse_broadcast(event_type,payload):
             except: dead.append(q)
         for q in dead: _sse_subs.remove(q)
 
-# ── Background workers ────────────────────────────────────────────────────
 def flush_worker():
     while True:
         time.sleep(3)
@@ -343,7 +335,7 @@ def retrain_worker():
             _retrain_in_progress=True
         try:
             platform_stats['last_retrain_attempt']=datetime.now(timezone.utc).isoformat()
-            resp=supabase.table('metrics').select('cpu_load,bandwidth_mbps,latency_ms,packet_loss,connected_devices,temperature,signal_strength,health_score').limit(2000).execute()
+            resp=supabase.table('metrics').select('*').limit(2000).execute()
             rows=resp.data
             if len(rows)<50: continue
             from sklearn.ensemble import RandomForestRegressor,IsolationForest
@@ -362,7 +354,7 @@ def retrain_worker():
             rf_model=nrf; iso_model=niso; anomaly_count=0
             platform_stats['last_retrain_success']=datetime.now(timezone.utc).isoformat()
             platform_stats['retrain_count']=platform_stats.get('retrain_count',0)+1
-            print(f'[Retrain] Done — {len(X)} samples')
+            print(f'[Retrain] Done -- {len(X)} samples')
         except Exception as e: print(f'[Retrain] {e}')
         finally:
             with _retrain_lock: _retrain_in_progress=False
@@ -370,13 +362,37 @@ def retrain_worker():
 for _fn in (flush_worker,scorer_worker,retrain_worker):
     threading.Thread(target=_fn,daemon=True).start()
 
-# ── Intelligence helpers ──────────────────────────────────────────────────
 def get_failure_probability(device_id,score):
     h=device_history.get(device_id,[])
     if len(h)<3: return 0.0
     r=h[-5:]; trend=r[-1]-r[0]
     if trend>=0: return max(0.0,round((100-score)*0.05,1))
     return min(99.0,round(abs(trend)/len(r)*3+(100-score)*0.3,1))
+
+def get_ttf_minutes(device_id, score):
+    h = device_history.get(device_id, [])
+    if len(h) < 3:
+        return None
+    if score >= 90:
+        return None
+    recent = h[-min(10, len(h)):]
+    if len(recent) < 2:
+        return None
+    deltas = [recent[i] - recent[i-1] for i in range(1, len(recent))]
+    avg_delta = sum(deltas) / len(deltas)
+    if avg_delta >= -0.05:
+        if score < 50:
+            return max(45, int(score * 6))
+        return None
+    readings_to_critical = (score - 20) / abs(avg_delta)
+    return max(5, int(readings_to_critical * 4))
+
+def get_cbs_integrity_score(link_health, vibration_score=None):
+    if vibration_score is None:
+        vib = min(100.0, max(0.0, link_health + random.gauss(3, 6)))
+    else:
+        vib = float(vibration_score)
+    return round(link_health * 0.6 + vib * 0.4, 1)
 
 def get_federated_health_index(scores):
     if not scores: return 100.0
@@ -391,7 +407,7 @@ def get_lifecycle_estimate(device_id,dtype,score):
     slope=h[-1]-h[0]; dpd=abs(slope)/len(h) if slope<0 else 0
     return round(min(base,score/dpd*(10/3600))) if dpd>0 else base
 
-def get_diagnosis(dtype,protocol,mname,mval,score,anom):
+def get_diagnosis(dtype, protocol, mname, mval, score, anom, integrity_score=None):
     issues=[]; actions=[]
     if score<20:   issues.append('critical system failure');  actions.append('immediate intervention required')
     elif score<35: issues.append('severe degradation');       actions.append('escalate to operations team')
@@ -403,20 +419,26 @@ def get_diagnosis(dtype,protocol,mname,mval,score,anom):
     elif dtype in MINING_TYPES:
         if mval>75 and 'temp' in str(mname): issues.append(f'temperature {mval:.1f}C'); actions.append('check cooling, reduce duty cycle')
     elif dtype=='cbs_controller':
-        if score<CBS_SAFETY_THRESHOLD:
-            issues.append(f'CBS DNP3 link {score:.1f}% below blast threshold')
-            actions.append('BLAST HOLD — notify blasting officer')
+        eff = integrity_score if integrity_score is not None else score
+        if eff < CBS_SAFETY_THRESHOLD:
+            issues.append(f'CBS integrity {eff:.1f}% below blast threshold')
+            if score < CBS_SAFETY_THRESHOLD * 0.85:
+                actions.append('DNP3 link degraded -- BLAST HOLD, notify blasting officer')
+            else:
+                actions.append('Vibration elevated -- verify site conditions, hold pending review')
     if anom: issues.append('AI anomaly detected'); actions.append('cross-reference event log')
     if not issues: return f'Device normal via {protocol or "Ethernet"}. Score {score:.1f}/100.'
     return f'{"; ".join(issues).capitalize()}. Action: {"; ".join(actions).capitalize()}.'
 
-def get_auto_cmd(device_id,dtype,score,blast_hold=False):
-    if dtype=='cbs_controller' and score<CBS_SAFETY_THRESHOLD:
-        return f'CBS SAFETY INTERLOCK: BLAST HOLD on {device_id} — DNP3 link {score:.1f}%'
+def get_auto_cmd(device_id, dtype, score, blast_hold=False, integrity_score=None):
+    if dtype=='cbs_controller':
+        eff = integrity_score if integrity_score is not None else score
+        if eff < CBS_SAFETY_THRESHOLD:
+            return f'CBS SAFETY INTERLOCK: BLAST HOLD on {device_id} -- Integrity {eff:.1f}%'
     if dtype in ['ventilation','pump'] and score<20:
-        return f'EMERGENCY: Safety shutdown {device_id} — underground evacuation alert'
+        return f'EMERGENCY: Safety shutdown {device_id} -- underground evacuation alert'
     if score<20: return f'CRITICAL: Emergency restart for {device_id}'
-    if score<35: return f'WARNING: Isolate {device_id} — reduce load'
+    if score<35: return f'WARNING: Isolate {device_id} -- reduce load'
     if score<50: return f'CAUTION: Schedule maintenance for {device_id}'
     return None
 
@@ -464,23 +486,22 @@ def require_specialist(f):
         return f(*args,**kwargs)
     return decorated
 
-# ── Demo mode ─────────────────────────────────────────────────────────────
 DEMO_DEVICES=[
-    {'id':'net-byo-router-01',     'type':'router',         'bsig':90,'blat':35,'bbw':120,'btemp':42},
-    {'id':'net-byo-switch-core',   'type':'switch',         'bsig':88,'blat':8, 'bbw':480,'btemp':38},
-    {'id':'net-hre-router-01',     'type':'router',         'bsig':82,'blat':28,'bbw':95, 'btemp':45},
-    {'id':'net-hre-wan-link',      'type':'wan_link',       'bsig':75,'blat':62,'bbw':55, 'btemp':40},
-    {'id':'net-mut-firewall-01',   'type':'firewall',       'bsig':85,'blat':18,'bbw':75, 'btemp':44},
-    {'id':'tc-byo-base-stn-01',    'type':'base_station',   'bsig':78,'blat':15,'bbw':220,'btemp':52},
-    {'id':'tc-hre-tower-main',     'type':'network_tower',  'bsig':82,'blat':22,'bbw':180,'btemp':48},
-    {'id':'tc-mut-microwave-01',   'type':'microwave_link', 'bsig':70,'blat':35,'bbw':120,'btemp':55},
-    {'id':'mc-shaft1-pump-01',     'type':'pump',           'bsig':88,'blat':12,'bbw':18, 'btemp':68},
-    {'id':'mc-shaft1-pump-02',     'type':'pump',           'bsig':84,'blat':14,'bbw':16, 'btemp':72},
-    {'id':'mc-shaft2-ventilation', 'type':'ventilation',    'bsig':86,'blat':10,'bbw':22, 'btemp':75},
-    {'id':'mc-shaft2-conveyor',    'type':'conveyor',       'bsig':90,'blat':8, 'bbw':20, 'btemp':62},
-    {'id':'mc-plant-plc-01',       'type':'plc',            'bsig':92,'blat':6, 'bbw':30, 'btemp':55},
-    {'id':'mc-surface-pwr-meter',  'type':'power_meter',    'bsig':95,'blat':9, 'bbw':12, 'btemp':48},
-    {'id':'cbs-dnp3-mine-ctrl',    'type':'cbs_controller', 'bsig':96,'blat':5, 'bbw':8,  'btemp':35},
+    {'id':'net-byo-router-01',     'type':'router',         'bsig':90,'blat':35,'bbw':120,'btemp':42,'bvib':88},
+    {'id':'net-byo-switch-core',   'type':'switch',         'bsig':88,'blat':8, 'bbw':480,'btemp':38,'bvib':92},
+    {'id':'net-hre-router-01',     'type':'router',         'bsig':82,'blat':28,'bbw':95, 'btemp':45,'bvib':80},
+    {'id':'net-hre-wan-link',      'type':'wan_link',       'bsig':75,'blat':62,'bbw':55, 'btemp':40,'bvib':74},
+    {'id':'net-mut-firewall-01',   'type':'firewall',       'bsig':85,'blat':18,'bbw':75, 'btemp':44,'bvib':84},
+    {'id':'tc-byo-base-stn-01',    'type':'base_station',   'bsig':78,'blat':15,'bbw':220,'btemp':52,'bvib':76},
+    {'id':'tc-hre-tower-main',     'type':'network_tower',  'bsig':82,'blat':22,'bbw':180,'btemp':48,'bvib':80},
+    {'id':'tc-mut-microwave-01',   'type':'microwave_link', 'bsig':70,'blat':35,'bbw':120,'btemp':55,'bvib':68},
+    {'id':'mc-shaft1-pump-01',     'type':'pump',           'bsig':88,'blat':12,'bbw':18, 'btemp':68,'bvib':86},
+    {'id':'mc-shaft1-pump-02',     'type':'pump',           'bsig':84,'blat':14,'bbw':16, 'btemp':72,'bvib':82},
+    {'id':'mc-shaft2-ventilation', 'type':'ventilation',    'bsig':86,'blat':10,'bbw':22, 'btemp':75,'bvib':85},
+    {'id':'mc-shaft2-conveyor',    'type':'conveyor',       'bsig':90,'blat':8, 'bbw':20, 'btemp':62,'bvib':91},
+    {'id':'mc-plant-plc-01',       'type':'plc',            'bsig':92,'blat':6, 'bbw':30, 'btemp':55,'bvib':94},
+    {'id':'mc-surface-pwr-meter',  'type':'power_meter',    'bsig':95,'blat':9, 'bbw':12, 'btemp':48,'bvib':96},
+    {'id':'cbs-dnp3-mine-ctrl',    'type':'cbs_controller', 'bsig':96,'blat':5, 'bbw':8,  'btemp':35,'bvib':95},
 ]
 
 def _demo_ingest(payload):
@@ -491,26 +512,41 @@ def _demo_ingest(payload):
               payload.get('connected_devices',10),payload.get('temperature',40),
               payload.get('signal_strength',80)]
     arr=np.array([features]); score=float(np.clip(rf_model.predict(arr)[0],0,100))
-    if dtype=='cbs_controller': score=min(score,payload.get('signal_strength',score))
+
+    integrity_score=None
+    if dtype=='cbs_controller':
+        score=min(score,payload.get('signal_strength',score))
+        vib=float(payload.get('vibration_score', min(100,max(0,score+random.gauss(2,5)))))
+        device_vibration[did]=vib
+        integrity_score=get_cbs_integrity_score(score, vib)
+
     anom=bool(iso_model.predict(arr)[0]==-1)
     if anom: anomaly_count+=1
     device_history.setdefault(did,[]).append(score)
     if len(device_history[did])>20: device_history[did].pop(0)
     update_uptime(did,score)
+
+    ttf=get_ttf_minutes(did,score)
     ai=get_diagnosis(dtype,payload.get('protocol',''),payload.get('metric_name',''),
-                     payload.get('metric_value',0),score,anom) if (anom or score<50) else None
-    cmd=get_auto_cmd(did,dtype,score)
+                     payload.get('metric_value',0),score,anom,integrity_score) if (anom or score<50) else None
+    cmd=get_auto_cmd(did,dtype,score,integrity_score=integrity_score)
+
     with queue_lock:
         metric_queue.append({'device_id':did,'device_type':dtype,
             'metric_name':payload.get('metric_name',''),'metric_value':float(payload.get('metric_value',0)),
             'health_score':score,'anomaly_flag':anom,'predicted_score':score,
-            'ai_diagnosis':ai,'automation_command':cmd})
-    if dtype=='cbs_controller' and score<CBS_SAFETY_THRESHOLD:
-        sse_broadcast('cbs_hold',{'device_id':did,'health_score':round(score,1),'blast_hold':True})
+            'ai_diagnosis':ai,'automation_command':cmd,
+            'ttf_minutes':ttf,'integrity_score':integrity_score})
+
+    eff=integrity_score if integrity_score is not None else score
+    if dtype=='cbs_controller' and eff<CBS_SAFETY_THRESHOLD:
+        sse_broadcast('cbs_hold',{'device_id':did,'health_score':round(score,1),
+            'integrity_score':round(integrity_score,1) if integrity_score else None,
+            'blast_hold':True})
 
 def demo_worker():
     in_event={d['id']:0 for d in DEMO_DEVICES}
-    print('[Demo] Injection active — 15 devices, 4 sites')
+    print('[Demo] Injection active -- 15 devices, 4 sites')
     while True:
         for dev in DEMO_DEVICES:
             did=dev['id']; dtype=dev['type']
@@ -523,25 +559,24 @@ def demo_worker():
             bw =max(1, dev['bbw'] *(1-sev*0.6) +random.gauss(0,dev['bbw']*0.08))
             temp=dev['btemp']*(1+sev*0.5)+random.gauss(0,3)
             cpu=min(98,20+sev*75+random.gauss(0,8)); loss=max(0,sev*8+random.gauss(0,0.8))
-            if dtype in MINING_TYPES:                 mn,mv='temperature',round(temp,1)
-            elif dtype in TELECOM_TYPES+CBS_TYPES:    mn,mv='signal_strength',round(sig,1)
-            else:                                     mn,mv='latency_ms',round(lat,1)
+            vib=max(0,dev['bvib']*(1-sev*0.55)+random.gauss(0,5))
+            if dtype in MINING_TYPES:              mn,mv='temperature',round(temp,1)
+            elif dtype in TELECOM_TYPES+CBS_TYPES: mn,mv='signal_strength',round(sig,1)
+            else:                                  mn,mv='latency_ms',round(lat,1)
             proto=('DNP3/Ethernet' if dtype=='cbs_controller' else
                    'Profinet/EtherNet-IP' if dtype in MINING_TYPES else 'SNMP/Ethernet-802.3')
             try:
                 _demo_ingest({'device_id':did,'device_type':dtype,'metric_name':mn,'metric_value':mv,
                     'cpu_load':round(cpu,1),'bandwidth_mbps':round(bw,1),'latency_ms':round(lat,1),
                     'packet_loss':round(loss,2),'connected_devices':max(1,int(10*(1-sev*0.4))),
-                    'temperature':round(temp,1),'signal_strength':round(sig,1),'protocol':proto})
+                    'temperature':round(temp,1),'signal_strength':round(sig,1),
+                    'vibration_score':round(vib,1),'protocol':proto})
             except Exception as e: print(f'[Demo ingest] {e}')
         time.sleep(random.uniform(3.0,5.0))
 
 if os.environ.get('DEMO_MODE','false').lower()=='true':
     threading.Thread(target=demo_worker,daemon=True).start()
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ROUTES
-# ═══════════════════════════════════════════════════════════════════════════
 @app.route('/')
 def index():
     try:
@@ -549,7 +584,7 @@ def index():
         with open(path,encoding='utf-8') as f:
             return f.read(),200,{'Content-Type':'text/html; charset=utf-8'}
     except FileNotFoundError:
-        return '<h1>dashboard.html not found — place it in the same folder as app.py</h1>',404
+        return '<h1>dashboard.html not found -- place it in the same folder as app.py</h1>',404
 
 @app.route('/health')
 def health_check():
@@ -561,11 +596,24 @@ def health_check():
     deg=q>450 or (age>300 and _data_cache['ts']>0)
     return jsonify({'status':'degraded' if deg else 'ok','uptime_h':round(up/3600,2),
         'queue_depth':q,'cache_age_s':age,'devices':len(device_history),
-        'anomalies':anomaly_count,'version':'2.0','platform':'IISentinel™'}),503 if deg else 200
+        'anomalies':anomaly_count,'version':'2.1','platform':'IISentinel(tm)'}),503 if deg else 200
 
 @app.route('/api/data')
 def get_data():
-    platform_stats['requests_total']+=1; return jsonify(get_cached_data())
+    platform_stats['requests_total']+=1
+    rows = get_cached_data()
+    enhanced = []
+    for row in rows:
+        r = dict(row)
+        did = r.get('device_id','')
+        score = r.get('health_score', 50)
+        r['ttf_minutes'] = get_ttf_minutes(did, score)
+        if r.get('device_type') == 'cbs_controller':
+            vib = device_vibration.get(did)
+            r['integrity_score'] = get_cbs_integrity_score(score, vib)
+            r['vibration_score'] = round(vib, 1) if vib is not None else None
+        enhanced.append(r)
+    return jsonify(enhanced)
 
 @app.route('/api/metrics',methods=['POST'])
 def receive_metrics():
@@ -580,7 +628,14 @@ def receive_metrics():
               data.get('packet_loss',0),data.get('connected_devices',10),
               data.get('temperature',40),data.get('signal_strength',80)]
     arr=np.array([features]); score=float(np.clip(rf_model.predict(arr)[0],0,100))
-    if dtype=='cbs_controller': score=min(score,data.get('signal_strength',score))
+
+    integrity_score=None
+    if dtype=='cbs_controller':
+        score=min(score,data.get('signal_strength',score))
+        vib=float(data.get('vibration_score', min(100,max(0,score+random.gauss(2,5)))))
+        device_vibration[did]=vib
+        integrity_score=get_cbs_integrity_score(score, vib)
+
     anom=bool(iso_model.predict(arr)[0]==-1)
     if anom: anomaly_count+=1
     with scoring_lock: scoring_queue.append({'features':features,'device_id':did})
@@ -590,32 +645,39 @@ def receive_metrics():
     if len(reading_window)>10: reading_window.pop(0)
     predicted=max(0,min(100,score+(reading_window[-1]-reading_window[0]))) if len(reading_window)>=3 else score
     fail_prob=get_failure_probability(did,score)
+    ttf=get_ttf_minutes(did,score)
     fhi=get_federated_health_index([h[-1] for h in device_history.values() if h])
     update_uptime(did,score)
     ai_diag=None; auto_cmd=None
-    blast=data.get('blast_hold',False) or (dtype=='cbs_controller' and score<CBS_SAFETY_THRESHOLD)
+    eff=integrity_score if integrity_score is not None else score
+    blast=data.get('blast_hold',False) or (dtype=='cbs_controller' and eff<CBS_SAFETY_THRESHOLD)
     if anom or score<50 or dtype=='cbs_controller':
-        ai_diag=get_diagnosis(dtype,proto,data.get('metric_name',''),data.get('metric_value',0),score,anom)
-        auto_cmd=get_auto_cmd(did,dtype,score,blast)
+        ai_diag=get_diagnosis(dtype,proto,data.get('metric_name',''),data.get('metric_value',0),score,anom,integrity_score)
+        auto_cmd=get_auto_cmd(did,dtype,score,blast,integrity_score)
     rec={'device_id':did,'device_type':dtype,'metric_name':data.get('metric_name','unknown'),
          'metric_value':float(data.get('metric_value',0)),'health_score':score,'anomaly_flag':anom,
-         'predicted_score':predicted,'ai_diagnosis':ai_diag,'automation_command':auto_cmd}
+         'predicted_score':predicted,'ai_diagnosis':ai_diag,'automation_command':auto_cmd,
+         'ttf_minutes':ttf,'integrity_score':integrity_score}
     with queue_lock: metric_queue.append(rec)
     if score<50 or anom:
         try: supabase.table('incidents').insert({'device_id':did,'device_type':dtype,
                  'health_score':score,'ai_diagnosis':ai_diag,'automation_command':auto_cmd,'status':'open'}).execute()
         except: pass
     if blast:
-        sse_broadcast('cbs_hold',{'device_id':did,'health_score':round(score,1),'blast_hold':True,'automation_command':auto_cmd})
-        notify_all(f'CBS BLAST HOLD — {did}',f'DNP3 link {score:.1f}% — threshold {CBS_SAFETY_THRESHOLD}%. $450k/hr exposure.',
+        sse_broadcast('cbs_hold',{'device_id':did,'health_score':round(score,1),
+            'integrity_score':round(integrity_score,1) if integrity_score is not None else None,
+            'blast_hold':True,'automation_command':auto_cmd})
+        notify_all(f'CBS BLAST HOLD -- {did}',
+                   f'Integrity {round(eff,1)}% -- threshold {CBS_SAFETY_THRESHOLD}%. $450k/hr exposure.',
                    level='cbs',device_id=did,health_score=score,diagnosis=ai_diag,automation_command=auto_cmd)
     elif score<20 and dtype in ['ventilation','pump']:
-        notify_all(f'EMERGENCY: {did}',f'{dtype} at {score:.1f}% — underground safety.',
+        notify_all(f'EMERGENCY: {did}',f'{dtype} at {score:.1f}% -- underground safety.',
                    level='critical',device_id=did,health_score=score,diagnosis=ai_diag,automation_command=auto_cmd)
     return jsonify({'status':'ok','health_score':round(score,1),'anomaly_flag':anom,
         'predicted_score':round(predicted,1),'failure_probability':fail_prob,'ai_diagnosis':ai_diag,
         'automation_command':auto_cmd,'federated_index':fhi,'uptime_pct':get_uptime_pct(did),
-        'blast_hold':blast,'protocol':proto,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD})
+        'blast_hold':blast,'protocol':proto,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
+        'ttf_minutes':ttf,'integrity_score':round(integrity_score,1) if integrity_score is not None else None})
 
 @app.route('/api/platform')
 def platform_api():
@@ -634,9 +696,14 @@ def platform_api():
 @app.route('/api/intelligence')
 def get_intelligence():
     recent={d:h[-1] for d,h in device_history.items() if h}
+    ttfs={d:get_ttf_minutes(d,s) for d,s in recent.items()}
+    integrity={d:round(get_cbs_integrity_score(s, device_vibration.get(d)),1)
+               for d,s in recent.items()
+               if any(dev['id']==d and dev['type']=='cbs_controller' for dev in DEMO_DEVICES)}
     return jsonify({'federated_index':get_federated_health_index(list(recent.values())),
         'device_scores':recent,'uptime':{d:get_uptime_pct(d) for d in device_uptime},
         'failure_probabilities':{d:get_failure_probability(d,recent[d]) for d in recent},
+        'ttf_minutes':ttfs,'integrity_scores':integrity,
         'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,'anomaly_count':anomaly_count,
         'total_devices':len(device_history)})
 
@@ -658,7 +725,8 @@ def digital_twin(device_id):
                'readings_to_critical':rtc}
     return jsonify({'device_id':device_id,'current_score':round(cur,1),
         'history':[round(x,1) for x in h],'scenarios':scenarios,'trend':trend,
-        'failure_probability':get_failure_probability(device_id,cur)})
+        'failure_probability':get_failure_probability(device_id,cur),
+        'ttf_minutes':get_ttf_minutes(device_id,cur)})
 
 @app.route('/api/weather')
 def get_weather():
@@ -672,10 +740,10 @@ def get_weather():
         wind=cur.get('wind_speed_10m',0); gusts=cur.get('wind_gusts_10m',0)
         precip=cur.get('precipitation',0); temp=cur.get('temperature_2m',25)
         alerts=[]
-        if wind>40:  alerts.append(f'High winds {wind:.0f}km/h — microwave at risk')
-        if gusts>60: alerts.append(f'Dangerous gusts {gusts:.0f}km/h — tower stability risk')
-        if precip>10:alerts.append(f'Heavy precipitation {precip:.1f}mm — pump load increasing')
-        if temp>38:  alerts.append(f'Extreme heat {temp:.0f}C — thermal stress elevated')
+        if wind>40:   alerts.append(f'High winds {wind:.0f}km/h -- microwave at risk')
+        if gusts>60:  alerts.append(f'Dangerous gusts {gusts:.0f}km/h -- tower stability risk')
+        if precip>10: alerts.append(f'Heavy precipitation {precip:.1f}mm -- pump load increasing')
+        if temp>38:   alerts.append(f'Extreme heat {temp:.0f}C -- thermal stress elevated')
         pp24=hrly.get('precipitation_probability',[])[:24]
         return jsonify({'location':loc['name'],'temperature':temp,'humidity':cur.get('relative_humidity_2m',50),
             'wind_speed':wind,'wind_gusts':gusts,'precipitation':precip,
@@ -746,7 +814,7 @@ def shift_report():
 @require_specialist
 def test_notify():
     data=request.get_json(silent=True) or {}; ch=data.get('channel','all')
-    msg='IISentinel™ test notification — channels operational'
+    msg='IISentinel(tm) test notification -- channels operational'
     if ch in ('sms','all'):      threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
     if ch in ('whatsapp','all'): threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
     if ch in ('email','all'):    threading.Thread(target=send_email,kwargs=dict(subject='Test',body=msg,severity='info'),daemon=True).start()
@@ -762,7 +830,7 @@ def sse_stream():
             try: yield sub_q.get(timeout=25)
             except _q.Empty: yield ':heartbeat\n\n'
     return Response(stream_with_context(generate()),mimetype='text/event-stream',
-        headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no'})
+        headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no','Connection':'keep-alive'})
 
 @app.route('/api/export-pdf')
 def export_pdf():
@@ -787,20 +855,21 @@ def export_pdf():
     fhi=get_federated_health_index(scores)
     crit=sum(1 for s in scores if s<20); warn=sum(1 for s in scores if 20<=s<50); ok=sum(1 for s in scores if s>=50)
     probs={d:get_failure_probability(d,recent[d]) for d in recent}
+    ttfs={d:get_ttf_minutes(d,recent[d]) for d in recent}
     total_exp=sum(round(COST_RATES.get('sensor',8000)*(0.95 if s<20 else 0.6 if s<35 else 0.25 if s<50 else 0)) for s in scores)
     now_s=datetime.now(timezone.utc).strftime('%d %B %Y  %H:%M UTC')
     story=[]
-    story.append(Paragraph('IISentinel™',sty(fontName='Helvetica-Bold',fontSize=22,textColor=DARK,spaceAfter=2)))
-    story.append(Paragraph('Intelligent Infrastructure Sentinel — Shift Report',sty(fontName='Helvetica',fontSize=10,textColor=MUTED,spaceAfter=4)))
+    story.append(Paragraph('IISentinel(tm)',sty(fontName='Helvetica-Bold',fontSize=22,textColor=DARK,spaceAfter=2)))
+    story.append(Paragraph('Intelligent Infrastructure Sentinel -- Shift Report',sty(fontName='Helvetica',fontSize=10,textColor=MUTED,spaceAfter=4)))
     story.append(Paragraph(f'Generated: {now_s}',sty(fontName='Helvetica',fontSize=9,textColor=MUTED,spaceAfter=8)))
     story.append(HRFlowable(width='100%',thickness=1.5,color=ACCENT,spaceAfter=10))
     story.append(Paragraph('Platform Summary',sty(fontName='Helvetica-Bold',fontSize=12,textColor=DARK,spaceBefore=4,spaceAfter=6)))
     kpi=[[Paragraph(c,hdr) for c in ['Metric','Value','Status']],
          [Paragraph(c,cel) for c in ['Federated Health Index',f'{fhi:.1f}/100','HEALTHY' if fhi>=70 else 'WARNING' if fhi>=40 else 'CRITICAL']],
-         [Paragraph(c,cel) for c in ['Total Devices',str(len(recent)),'—']],
+         [Paragraph(c,cel) for c in ['Total Devices',str(len(recent)),'--']],
          [Paragraph(c,cel) for c in ['Critical (<20)',str(crit),'ALERT' if crit else 'NONE']],
          [Paragraph(c,cel) for c in ['Warning (20-50)',str(warn),'MONITOR' if warn else 'NONE']],
-         [Paragraph(c,cel) for c in ['Healthy (≥50)',str(ok),'OK']],
+         [Paragraph(c,cel) for c in ['Healthy (>=50)',str(ok),'OK']],
          [Paragraph(c,cel) for c in ['Anomalies',str(anomaly_count),'HIGH' if anomaly_count>=RETRAIN_THRESHOLD else 'NORMAL']],
          [Paragraph(c,cel) for c in ['Hourly Risk Exposure',f'${total_exp:,}/hr','ELEVATED' if total_exp>50000 else 'MANAGED']]]
     kt=Table(kpi,colWidths=[75*mm,60*mm,40*mm])
@@ -810,50 +879,41 @@ def export_pdf():
     story.append(kt); story.append(Spacer(1,8))
     if recent:
         story.append(Paragraph('Device Health Register',sty(fontName='Helvetica-Bold',fontSize=9,textColor=ACCENT,spaceBefore=8,spaceAfter=4)))
-        drows=[[Paragraph(c,hdr) for c in ['Device','Score','Failure Risk','Status']]]
+        drows=[[Paragraph(c,hdr) for c in ['Device','Score','Risk','Est. Failure','Status']]]
         for did,s in sorted(recent.items(),key=lambda x:x[1])[:20]:
             p2=probs.get(did,0); stat='CRITICAL' if s<20 else 'WARNING' if s<50 else 'OK'
             col=RED if s<20 else AMBER if s<50 else GREEN
+            t=ttfs.get(did); tstr='--'
+            if t:
+                h2,m2=divmod(t,60); tstr=f'{h2}h {m2}m' if h2 else f'{m2}m'
             drows.append([Paragraph(did[-36:],cel),
                 Paragraph(f'{s:.0f}',sty(fontName='Helvetica-Bold',fontSize=8,textColor=col)),
                 Paragraph(f'{p2:.0f}%',cel),
+                Paragraph(tstr,sty(fontName='Helvetica-Bold',fontSize=8,textColor=col if t else MUTED)),
                 Paragraph(stat,sty(fontName='Helvetica-Bold',fontSize=8,textColor=col))])
-        dt=Table(drows,colWidths=[80*mm,22*mm,30*mm,22*mm])
+        dt=Table(drows,colWidths=[68*mm,18*mm,22*mm,28*mm,18*mm])
         dt.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),DARK),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,ROW]),
             ('GRID',(0,0),(-1,-1),0.35,colors.HexColor('#d4daea')),
             ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),('LEFTPADDING',(0,0),(-1,-1),5)]))
         story.append(dt)
     story.append(Spacer(1,14)); story.append(HRFlowable(width='100%',thickness=0.7,color=MUTED,spaceAfter=5))
-    story.append(Paragraph(f'IISentinel™ Confidential — {now_s}',sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
+    story.append(Paragraph(f'IISentinel(tm) Confidential -- {now_s}',sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
     doc.build(story); buf.seek(0)
     return send_file(buf,as_attachment=True,
         download_name=f'IISentinel_Report_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")}.pdf',
         mimetype='application/pdf')
 
-
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# NODE DISCOVERY & POLLING ENGINE
-# SolarWinds-style: add any IP, poll via TCP multi-port probe (no root),
-# measure latency, packet loss simulation, discover neighbours via ARP scan.
-# All runs server-side — browser just shows Up/Down/Latency.
-# ═══════════════════════════════════════════════════════════════════════════
 import socket as _socket
 import threading as _threading
 import time as _t
 import ipaddress as _ipaddress
 from collections import deque as _deque
 
-# In-memory node store:  {node_id: {host, label, sector, status, latency_ms, loss_pct,
-#                                    last_check, history, health_score, hops}}
 _nodes = {}
 _nodes_lock = _threading.Lock()
-_PORTS = [80, 443, 22, 161, 8080, 23, 21]   # TCP probe ports, tried in order
-
+_PORTS = [80, 443, 22, 161, 8080, 23, 21]
 
 def _tcp_probe(host, timeout=1.2):
-    """Return (reachable: bool, latency_ms: int | None) via TCP multi-port probe."""
     for port in _PORTS:
         try:
             t0 = _t.time()
@@ -862,7 +922,6 @@ def _tcp_probe(host, timeout=1.2):
             return True, round((_t.time() - t0) * 1000)
         except Exception:
             continue
-    # Final fallback: DNS resolution round-trip
     try:
         t0 = _t.time()
         _socket.getaddrinfo(host, None, _socket.AF_INET, _socket.SOCK_STREAM)
@@ -870,120 +929,72 @@ def _tcp_probe(host, timeout=1.2):
     except Exception:
         return False, None
 
-
 def _poll_node(node_id):
-    """Poll a single node and update its health score + history."""
     with _nodes_lock:
         if node_id not in _nodes:
             return
         node = _nodes[node_id]
-
     reachable, latency = _tcp_probe(node['host'])
     now = _t.time()
-
-    # Simulated packet loss from repeated checks (4 probes, count failures)
     loss_count = 0
     for _ in range(3):
         ok, _ = _tcp_probe(node['host'], timeout=0.6)
-        if not ok:
-            loss_count += 1
+        if not ok: loss_count += 1
     loss_pct = round((loss_count / 3) * 100)
-
-    # Health score: 100 base, minus latency penalty, minus loss penalty
     if not reachable:
         health = 0
     else:
-        lat_penalty = min(50, (latency or 0) / 10)   # up to -50 for high latency
-        loss_penalty = loss_pct * 0.6                  # up to -60 for 100% loss
+        lat_penalty = min(50, (latency or 0) / 10)
+        loss_penalty = loss_pct * 0.6
         health = max(0, round(100 - lat_penalty - loss_penalty))
-
     status = 'up' if reachable else 'down'
-
     with _nodes_lock:
-        if node_id not in _nodes:
-            return
+        if node_id not in _nodes: return
         node = _nodes[node_id]
-        node['status']     = status
-        node['latency_ms'] = latency
-        node['loss_pct']   = loss_pct
-        node['last_check'] = now
-        node['health_score'] = health
-
+        node['status'] = status; node['latency_ms'] = latency
+        node['loss_pct'] = loss_pct; node['last_check'] = now; node['health_score'] = health
         hist = node.get('history', _deque(maxlen=20))
         hist.append({'ts': now, 'status': status, 'latency': latency, 'health': health})
         node['history'] = hist
-
-        # Feed into IISentinel™ AI pipeline
         sector = node.get('sector', 'net')
         label  = node.get('label', node['host'])
         did    = f"{sector}-node-{node_id[:8]}"
-
         _nodes[node_id] = node
-
-    # Inject into main metrics pipeline so gauges + charts update
     try:
-        features = [
-            min(100, (latency or 0) / 5),   # cpu_load proxy (latency → load)
-            max(0, 100 - loss_pct * 2),       # bandwidth proxy
-            min(500, latency or 0),            # latency_ms
-            loss_pct,                          # packet_loss
-            1,                                 # connected_devices
-            35,                                # temperature (neutral)
-            health,                            # signal_strength proxy
-        ]
+        features = [min(100,(latency or 0)/5), max(0,100-loss_pct*2),
+                    min(500,latency or 0), loss_pct, 1, 35, health]
         import numpy as np
         arr   = np.array([features])
         score = float(np.clip(rf_model.predict(arr)[0], 0, 100))
         anom  = bool(iso_model.predict(arr)[0] == -1)
-
-        protocol = 'SNMP/Ethernet-802.3' if sector == 'net' else (
-                   'SNMP/LTE' if sector == 'tc' else 'Profinet/EtherNet-IP')
-
+        protocol = 'SNMP/Ethernet-802.3' if sector == 'net' else ('SNMP/LTE' if sector == 'tc' else 'Profinet/EtherNet-IP')
         device_history.setdefault(did, []).append(score)
-        if len(device_history[did]) > 20:
-            device_history[did].pop(0)
+        if len(device_history[did]) > 20: device_history[did].pop(0)
         update_uptime(did, score)
-
-        rec = {
-            'device_id':        did,
-            'device_type':      'router' if sector == 'net' else
-                                'base_station' if sector == 'tc' else 'sensor',
-            'metric_name':      'latency_ms',
-            'metric_value':     float(latency or 0),
-            'health_score':     score,
-            'anomaly_flag':     anom,
-            'predicted_score':  score,
-            'ai_diagnosis':     (f'Node {label} unreachable — 100% packet loss. '
-                                 f'Check power, cable and switch port.' if not reachable
-                                 else (f'High latency {latency}ms detected on {protocol}. '
-                                       f'Inspect uplink congestion.' if (latency or 0) > 120
-                                       else None)),
-            'automation_command': (f'ALERT: Node {label} ({node["host"]}) is DOWN — '
-                                   f'dispatch field engineer.' if not reachable else None),
-        }
-        with queue_lock:
-            metric_queue.append(rec)
+        rec = {'device_id': did,
+               'device_type': 'router' if sector == 'net' else 'base_station' if sector == 'tc' else 'sensor',
+               'metric_name': 'latency_ms', 'metric_value': float(latency or 0),
+               'health_score': score, 'anomaly_flag': anom, 'predicted_score': score,
+               'ttf_minutes': get_ttf_minutes(did, score), 'integrity_score': None,
+               'ai_diagnosis': (f'Node {label} unreachable -- 100% packet loss. Check power, cable and switch port.' if not reachable
+                                else (f'High latency {latency}ms detected on {protocol}. Inspect uplink congestion.' if (latency or 0) > 120 else None)),
+               'automation_command': (f'ALERT: Node {label} ({node["host"]}) is DOWN -- dispatch field engineer.' if not reachable else None)}
+        with queue_lock: metric_queue.append(rec)
         if anom and not reachable:
             global anomaly_count
             anomaly_count += 1
-    except Exception as e:
-        print(f'[NodePoll] AI inject error: {e}')
-
+    except Exception as e: print(f'[NodePoll] AI inject error: {e}')
 
 def _background_poller():
-    """Poll all registered nodes every 30s in background threads."""
     while True:
         _t.sleep(30)
-        with _nodes_lock:
-            ids = list(_nodes.keys())
-        for nid in ids:
-            _threading.Thread(target=_poll_node, args=(nid,), daemon=True).start()
+        with _nodes_lock: ids = list(_nodes.keys())
+        for nid in ids: _threading.Thread(target=_poll_node, args=(nid,), daemon=True).start()
 
 _threading.Thread(target=_background_poller, daemon=True).start()
 
 def _restore_nodes_from_db():
-    """Load persisted nodes from SQLite on startup."""
-    _t.sleep(2)  # wait for DB init
+    _t.sleep(2)
     try:
         import sqlite3 as _sq3
         con = _sq3.connect(_DB_PATH)
@@ -993,156 +1004,102 @@ def _restore_nodes_from_db():
             nid, host, label, sector = row
             with _nodes_lock:
                 if nid not in _nodes:
-                    _nodes[nid] = {
-                        'host': host, 'label': label, 'sector': sector,
+                    _nodes[nid] = {'host': host, 'label': label, 'sector': sector,
                         'status': 'checking', 'latency_ms': None, 'loss_pct': 0,
-                        'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20),
-                    }
+                        'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20)}
             _threading.Thread(target=_poll_node, args=(nid,), daemon=True).start()
-        if rows:
-            print(f'[Nodes] Restored {len(rows)} nodes from SQLite')
-    except Exception as e:
-        print(f'[Nodes] Restore error: {e}')
+        if rows: print(f'[Nodes] Restored {len(rows)} nodes from SQLite')
+    except Exception as e: print(f'[Nodes] Restore error: {e}')
 
 _threading.Thread(target=_restore_nodes_from_db, daemon=True).start()
 
-
 @app.route('/api/nodes', methods=['GET'])
 def get_nodes():
-    """Return all registered nodes with status."""
     sector = request.args.get('sector', None)
     with _nodes_lock:
         result = {}
         for nid, node in _nodes.items():
-            if sector and node.get('sector') != sector:
-                continue
-            result[nid] = {
-                'id':          nid,
-                'host':        node['host'],
-                'label':       node['label'],
-                'sector':      node.get('sector', 'net'),
-                'status':      node.get('status', 'unknown'),
-                'latency_ms':  node.get('latency_ms'),
-                'loss_pct':    node.get('loss_pct', 0),
-                'health_score':node.get('health_score', 0),
-                'last_check':  node.get('last_check'),
-                'hops':        node.get('hops', []),
-                'history':     list(node.get('history', [])),
-            }
+            if sector and node.get('sector') != sector: continue
+            result[nid] = {'id': nid, 'host': node['host'], 'label': node['label'],
+                'sector': node.get('sector', 'net'), 'status': node.get('status', 'unknown'),
+                'latency_ms': node.get('latency_ms'), 'loss_pct': node.get('loss_pct', 0),
+                'health_score': node.get('health_score', 0), 'last_check': node.get('last_check'),
+                'hops': node.get('hops', []), 'history': list(node.get('history', []))}
     return jsonify(result)
-
 
 @app.route('/api/nodes', methods=['POST'])
 def add_node():
-    """Register a new node for monitoring — persisted to SQLite."""
     data   = request.get_json(silent=True) or {}
     host   = str(data.get('host', '')).strip()
     label  = str(data.get('label', host)).strip()[:60]
     sector = str(data.get('sector', 'net')).strip()
-
-    if not host or len(host) > 253:
-        return jsonify({'error': 'Invalid host'}), 400
-    if sector not in ('net', 'tc', 'mc'):
-        sector = 'net'
-
+    if not host or len(host) > 253: return jsonify({'error': 'Invalid host'}), 400
+    if sector not in ('net', 'tc', 'mc'): sector = 'net'
     import hashlib
     node_id = hashlib.md5(f"{sector}:{host}".encode()).hexdigest()[:12]
-
     with _nodes_lock:
-        if node_id in _nodes:
-            return jsonify({'error': 'Node already registered', 'id': node_id}), 409
-        _nodes[node_id] = {
-            'host': host, 'label': label, 'sector': sector,
+        if node_id in _nodes: return jsonify({'error': 'Node already registered', 'id': node_id}), 409
+        _nodes[node_id] = {'host': host, 'label': label, 'sector': sector,
             'status': 'checking', 'latency_ms': None, 'loss_pct': 0,
-            'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20),
-        }
-
-    # Persist to SQLite so nodes survive restarts
+            'last_check': None, 'health_score': 0, 'hops': [], 'history': _deque(maxlen=20)}
     try:
         import sqlite3 as _sq3
         con = _sq3.connect(_DB_PATH)
         con.execute("INSERT OR REPLACE INTO nodes (id,host,label,sector,created_at) VALUES (?,?,?,?,?)",
                     (node_id, host, label, sector, datetime.utcnow().isoformat()))
         con.commit(); con.close()
-    except Exception as e:
-        print(f'[Nodes] SQLite persist error: {e}')
-
+    except Exception as e: print(f'[Nodes] SQLite persist error: {e}')
     _threading.Thread(target=_poll_node, args=(node_id,), daemon=True).start()
     return jsonify({'id': node_id, 'host': host, 'label': label, 'sector': sector, 'status': 'checking'})
 
-
 @app.route('/api/nodes/<node_id>', methods=['DELETE'])
 def delete_node(node_id):
-    """Remove a node from monitoring and SQLite."""
     with _nodes_lock:
-        if node_id not in _nodes:
-            return jsonify({'error': 'Not found'}), 404
+        if node_id not in _nodes: return jsonify({'error': 'Not found'}), 404
         del _nodes[node_id]
     try:
         import sqlite3 as _sq3
         con = _sq3.connect(_DB_PATH)
         con.execute("DELETE FROM nodes WHERE id=?", (node_id,))
         con.commit(); con.close()
-    except Exception as e:
-        print(f'[Nodes] SQLite delete error: {e}')
+    except Exception as e: print(f'[Nodes] SQLite delete error: {e}')
     return jsonify({'ok': True})
-
 
 @app.route('/api/nodes/<node_id>/poll', methods=['POST'])
 def poll_node_now(node_id):
-    """Force an immediate poll of a specific node."""
     with _nodes_lock:
-        if node_id not in _nodes:
-            return jsonify({'error': 'Not found'}), 404
+        if node_id not in _nodes: return jsonify({'error': 'Not found'}), 404
         _nodes[node_id]['status'] = 'checking'
     _threading.Thread(target=_poll_node, args=(node_id,), daemon=True).start()
     return jsonify({'ok': True, 'status': 'checking'})
 
-
-# Keep old /api/check-node for backwards compatibility
 @app.route('/api/check-node', methods=['POST'])
 def check_node_legacy():
     data = request.get_json(silent=True) or {}
     host = str(data.get('host', '')).strip()
-    if not host:
-        return jsonify({'error': 'Invalid host'}), 400
+    if not host: return jsonify({'error': 'Invalid host'}), 400
     reachable, latency = _tcp_probe(host)
     return jsonify({'host': host, 'reachable': reachable, 'latency_ms': latency})
 
-
-
 @app.route('/api/nodes/scan', methods=['POST'])
 def scan_subnet():
-    """
-    Scan a CIDR subnet for live hosts (e.g. 192.168.1.0/24).
-    Returns up to 30 reachable hosts found via TCP probe.
-    Runs in background — poll /api/nodes/scan-status for progress.
-    """
     data = request.get_json(silent=True) or {}
     cidr = str(data.get('cidr', '')).strip()
     sector = str(data.get('sector', 'net')).strip()
-
     try:
         net = _ipaddress.ip_network(cidr, strict=False)
     except ValueError:
         return jsonify({'error': 'Invalid CIDR. Use format: 192.168.1.0/24'}), 400
-
     hosts = list(net.hosts())
-    if len(hosts) > 254:
-        return jsonify({'error': 'Subnet too large — use /24 or smaller'}), 400
-
+    if len(hosts) > 254: return jsonify({'error': 'Subnet too large -- use /24 or smaller'}), 400
     scan_id = f"scan-{int(_t.time())}"
-
     def _do_scan():
         found = []
         for ip in hosts:
             ok, lat = _tcp_probe(str(ip), timeout=0.8)
-            if ok:
-                found.append({'host': str(ip), 'latency': lat})
-            if len(found) >= 30:
-                break
+            if ok: found.append({'host': str(ip), 'latency': lat})
+            if len(found) >= 30: break
         _scan_results[scan_id] = {'done': True, 'found': found, 'sector': sector}
-
     _scan_results[scan_id] = {'done': False, 'found': [], 'sector': sector}
     _threading.Thread(target=_do_scan, daemon=True).start()
     return jsonify({'scan_id': scan_id, 'hosts_to_scan': len(hosts)})
@@ -1151,20 +1108,18 @@ _scan_results = {}
 
 @app.route('/api/nodes/scan-status/<scan_id>', methods=['GET'])
 def scan_status(scan_id):
-    result = _scan_results.get(scan_id, {'done': False, 'found': []})
-    return jsonify(result)
-
+    return jsonify(_scan_results.get(scan_id, {'done': False, 'found': []}))
 
 if __name__=='__main__':
     demo=os.environ.get('DEMO_MODE','false').lower()=='true'
     print("""
-  ╔══════════════════════════════════════════════════════╗
-  ║  IISentinel™ v2.0  —  Intelligent Infrastructure    ║
-  ╠══════════════════════════════════════════════════════╣
-  ║  Dashboard  →  http://localhost:5000                 ║
-  ║  Health     →  http://localhost:5000/health          ║
-  ║  PDF Report →  http://localhost:5000/api/export-pdf  ║
-  ╚══════════════════════════════════════════════════════╝""")
-    if demo: print('  [DEMO MODE] 15 devices, 4 sites — auto-injecting data')
+  +======================================================+
+  |  IISentinel(tm) v2.1  --  Intelligent Infrastructure |
+  +======================================================+
+  |  Dashboard  ->  http://localhost:5000                 |
+  |  Health     ->  http://localhost:5000/health          |
+  |  PDF Report ->  http://localhost:5000/api/export-pdf  |
+  +======================================================+""")
+    if demo: print('  [DEMO MODE] 15 devices, 4 sites -- auto-injecting data')
     print('  Specialist login: Admin / admin123\n')
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False,threaded=True)
