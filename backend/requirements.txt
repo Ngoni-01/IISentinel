@@ -1,11 +1,9 @@
-flask
-flask-cors
-gunicorn
+quart
+hypercorn
 supabase
 joblib
 scikit-learn
 numpy
-pandas
 requests
 reportlab
 python-dotenv
