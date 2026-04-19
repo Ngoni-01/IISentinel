@@ -1025,8 +1025,33 @@ function mkLocCards(data,cid,meta,filterFn){
   });
 }
 Chart.defaults.font.family="'Sora',system-ui,sans-serif";
-var cOpts=function(yMax){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a8dae',font:{size:9},boxWidth:10}}},scales:{x:{ticks:{color:'#3a506a',font:{size:8}},grid:{color:'rgba(255,255,255,.03)'}},y:{min:0,max:yMax||100,ticks:{color:'#3a506a',font:{size:8}},grid:{color:'rgba(255,255,255,.03)'}}}}};};
-var mkC=function(id,type,lbl,col,yMax){return new Chart(document.getElementById(id),{type:type,data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col.replace('rgb','rgba').replace(')',',0.08)'),borderWidth:1.5,tension:.45,fill:true,pointRadius:2}]},options:cOpts(yMax||100)});};
+var cOpts = function(yMax) {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#7a8dae',
+                    font: { size: 9 },
+                    boxWidth: 10
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#3a506a', font: { size: 8 } },
+                grid: { color: 'rgba(255,255,255,.03)' }
+            },
+            y: {
+                min: 0,
+                max: yMax || 100,
+                ticks: { color: '#3a506a', font: { size: 8 } },
+                grid: { color: 'rgba(255,255,255,.03)' }
+            }
+        }
+    };
+};var mkC=function(id,type,lbl,col,yMax){return new Chart(document.getElementById(id),{type:type,data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col.replace('rgb','rgba').replace(')',',0.08)'),borderWidth:1.5,tension:.45,fill:true,pointRadius:2}]},options:cOpts(yMax||100)});};
 var cMain=mkC('cMain','line','Health','rgba(40,196,248,1)');
 var cDist=new Chart(document.getElementById('cDist'),{type:'bar',data:{labels:['0-20','20-40','40-60','60-80','80-100'],datasets:[{label:'Devices',data:[0,0,0,0,0],backgroundColor:['rgba(240,46,80,.72)','rgba(242,149,16,.72)','rgba(242,149,16,.4)','rgba(34,224,122,.4)','rgba(34,224,122,.72)'],borderRadius:5}]},options:cOpts(20)});
 var cNet=mkC('cNet','line','Network','rgba(0,212,200,1)');
