@@ -526,8 +526,7 @@ def _get_token():
 # ─────────────────────────────────────────────────────────────────────────────
 @app.route('/')
 def root():
-    """Serve index.html from the project root."""
-    return send_from_directory('.', 'index.html')
+    return send_from_directory('.', 'dashboard.html')
 
 @app.after_request
 def set_headers(resp):
