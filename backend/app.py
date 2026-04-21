@@ -483,15 +483,26 @@ def get_cached_data():
     except Exception as e:
         print(f'[Cache] {e}'); return _data_cache['data']
 
+def _sqlite_specialist_check(name=None, password=None, token=None):
+    """Auth ALWAYS uses local SQLite -- Supabase may not have a specialists table."""
+    try:
+        con = sqlite3.connect(_DB_PATH); con.row_factory = sqlite3.Row; cur = con.cursor()
+        if token:
+            cur.execute("SELECT * FROM specialists WHERE password=?", (token,))
+        else:
+            cur.execute("SELECT * FROM specialists WHERE name=? AND password=?", (name, password))
+        rows = [dict(r) for r in cur.fetchall()]; con.close()
+        return rows
+    except Exception as e:
+        print(f'[Auth] SQLite error: {e}'); return []
+
 def require_specialist(f):
     @wraps(f)
     def decorated(*args,**kwargs):
         token = request.headers.get('X-Specialist-Token','')
         if not token: return jsonify({'error':'Unauthorised'}),401
-        try:
-            r = supabase.table('specialists').select('*').eq('password',token).execute()
-            if not r.data: return jsonify({'error':'Invalid token'}),401
-        except Exception as e: return jsonify({'error':f'Auth error: {e}'}),401
+        if not _sqlite_specialist_check(token=token):
+            return jsonify({'error':'Invalid token'}),401
         return f(*args,**kwargs)
     return decorated
 
@@ -760,15 +771,12 @@ def login():
     name=data.get('name','').strip(); password=data.get('password','').strip()
     if not name or not password:
         return jsonify({'success':False,'error':'Name and password required'}),400
-    try:
-        r=supabase.table('specialists').select('*').eq('name',name).eq('password',password).execute()
-        if r.data:
-            s=r.data[0]
-            return jsonify({'success':True,'token':password,'name':s['name'],'role':s.get('role','engineer')})
-        return jsonify({'success':False,'error':'Invalid credentials'}),401
-    except Exception as e:
-        print(f'[Login] {e}')
-        return jsonify({'success':False,'error':str(e)}),500
+    # Always check SQLite -- Supabase may not have a specialists table
+    rows = _sqlite_specialist_check(name=name, password=password)
+    if rows:
+        s = rows[0]
+        return jsonify({'success':True,'token':password,'name':s['name'],'role':s.get('role','engineer')})
+    return jsonify({'success':False,'error':'Invalid credentials'}),401
 
 @app.route('/api/incidents')
 @require_specialist
