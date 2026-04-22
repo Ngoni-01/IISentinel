@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    /* ===== ORIGINAL CSS + PATCHES ===== */
+    /* ===== FULL CSS (as previously provided) ===== */
     :root {
       --bg: #0d1928; --s0: #111e30; --s1: #152338; --s2: #1a2a42; --s3: #1f3150;
       --b1: rgba(255,255,255,.06); --b2: rgba(255,255,255,.11); --b3: rgba(255,255,255,.19);
@@ -194,7 +194,7 @@
     .statbar.sb-tc { background: linear-gradient(90deg, #000d1e, #001428, #000816); box-shadow: inset 0 0 60px rgba(40,196,248,.04); }
     .statbar.sb-mc { background: linear-gradient(90deg, #120900, #1e0e00, #0e0500); box-shadow: inset 0 0 60px rgba(245,196,32,.04); }
     .statbar.sb-cbs { background: linear-gradient(90deg, #140003, #1e0007, #0e0002); box-shadow: inset 0 0 60px rgba(240,46,80,.06); }
-    .statbar::after { display: none; } /* PATCH: removed left stripe */
+    .statbar::after { display: none; }
     @keyframes esbBreathGrn { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(34,224,122,.55); } 50% { opacity: .72; text-shadow: 0 0 26px rgba(34,224,122,.9); } }
     @keyframes esbBreathAmb { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(242,149,16,.55); } 50% { opacity: .68; text-shadow: 0 0 26px rgba(242,149,16,.9); } }
     @keyframes esbBreathRed { 0%,100% { opacity: 1; text-shadow: 0 0 14px rgba(240,46,80,.6); } 50% { opacity: .55; text-shadow: 0 0 32px rgba(240,46,80,1); } }
@@ -400,10 +400,7 @@
     .dc-badge { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
     .dc-badge.live { background: var(--grna); color: var(--grn); } .dc-badge.manual { background: var(--amba); color: var(--amb); } .dc-badge.auto { background: var(--blua); color: var(--blu); }
     .cg { color: var(--grn); } .cw { color: var(--amb); } .cr { color: var(--red); } .ca { color: var(--acc); } .cp { color: var(--pur); } .cgld { color: var(--gld); }
-
-    /* PATCH: Remove env-hero bottom gradient line */
     .env-hero::after { display: none; }
-
     @media (max-width: 660px) {
       .cgrid, .fgrid, .twin-grid { grid-template-columns: 1fr; }
       .banner { grid-template-columns: repeat(2, 1fr); }
@@ -420,9 +417,7 @@
   </style>
 </head>
 <body>
-
-
-<div id="amb" aria-hidden="true"></div>
+ <div id="amb" aria-hidden="true"></div>
 <div id="grain" aria-hidden="true"></div>
 <svg id="ambient-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <g id="svg-net" fill="none" stroke="none">
@@ -879,10 +874,24 @@
   </div>
 </div>
 </div>
+ 
 
-  <!-- ========== ENHANCED JAVASCRIPT (REPLACES ORIGINAL SCRIPT BLOCK) ========== -->
-  <script>
-    /* IISentinel v3.0 — Enhanced JavaScript */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ <script>
+    // ===== ENHANCED JAVASCRIPT (FULL) =====
     var B=window.location.origin;
     var spToken=null,spName=null,intel={},allData=[];
     var curNet='all',curTc='all',curMc='all';
@@ -899,6 +908,512 @@
     var DEFAULT_HW={proto:'Ethernet / SNMP',fw:'Vendor OS',ports:'4x Eth',throughput:'1 Gbps',mtbf:'17,520h',power:'N/A',rack:'N/A'};
     var LOGO={main:{a:'#28c4f8',b:'#22e07a',ii:'#28c4f8',tag:'Platform'},net:{a:'#00d4c8',b:'#28c4f8',ii:'#00d4c8',tag:'Network'},tc:{a:'#28c4f8',b:'#a27cf8',ii:'#4dc8f8',tag:'TelecomCo'},mc:{a:'#f5c420',b:'#22e07a',ii:'#f5c420',tag:'MiningCo'},wx:{a:'#60d8f8',b:'#22e07a',ii:'#60d8f8',tag:'Weather'},intel:{a:'#a27cf8',b:'#28c4f8',ii:'#a27cf8',tag:'Intelligence'},cbs:{a:'#f02e50',b:'#ff7050',ii:'#f02e50',tag:'CBS Safety'},sp:{a:'#a27cf8',b:'#f02e50',ii:'#a27cf8',tag:'Specialist'}};
 
+    function setLogoPage(page){var p=LOGO[page]||LOGO.main;var r=document.documentElement;r.style.setProperty('--logo-ii',p.ii);r.style.setProperty('--logo-a',p.a);r.style.setProperty('--logo-b',p.b);var stag=document.getElementById('logo-stag');if(stag){stag.textContent=p.tag;stag.style.color=p.a;}var accMap={net:'var(--tel)',tc:'var(--blu)',mc:'var(--gld)',wx:'var(--blu)',intel:'var(--pur)',cbs:'var(--red)',sp:'var(--pur)'};var accAMap={net:'var(--tela)',tc:'var(--blua)',mc:'var(--glda)',wx:'var(--blua)',intel:'var(--pura)',cbs:'var(--reda)',sp:'var(--pura)'};r.style.setProperty('--acc',accMap[page]||'var(--blu)');r.style.setProperty('--acca',accAMap[page]||'var(--blua)');switchAmbientSVG(page);}
+    function switchAmbientSVG(page){['svg-net','svg-tc','svg-mc'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});var svgMap={net:'svg-net',tc:'svg-tc',mc:'svg-mc'};var target=svgMap[page];if(target){var el=document.getElementById(target);if(el){el.style.display='block';document.getElementById('ambient-svg').style.opacity='.08';}}else{document.getElementById('ambient-svg').style.opacity='0';}}
+    function updateAmbient(score){if(opsFocusOn)return;var tH=score>=70?152:score>=40?30:355;var tS=score>=70?72:62;var alpha=score>=70?.07:score>=40?.1:.15;_ambH+=( tH-_ambH)*.1;_ambS+=( tS-_ambS)*.1;var el=document.getElementById('amb');if(!el)return;el.style.background='radial-gradient(ellipse 140% 70% at 50% 114%, hsla('+Math.round(_ambH)+','+Math.round(_ambS)+'%,48%,'+alpha+') 0%, transparent 68%)';}
+    function sc(s){return s>=70?'var(--grn)':s>=40?'var(--amb)':'var(--red)';}
+    function scc(s){return s>=70?'cg':s>=40?'cw':'cr';}
+    function fmt(ts){return ts?new Date(ts).toLocaleTimeString():'--';}
+    function sid(id){return(id||'').split('-').slice(-2).join('-');}
+    function fhi(arr){if(!arr||!arr.length)return 100;var w=arr.map(function(s){return s<20?s*.5:s<50?s*.8:s;});return Math.round(w.reduce(function(a,b){return a+b;},0)/w.length);}
+    function isNet(r){return NET.indexOf(r.device_type)>=0||(r.device_id||'').startsWith('net-');}
+    function isTc(r){return TC.indexOf(r.device_type)>=0||(r.device_id||'').startsWith('tc-');}
+    function isMc(r){return MC.indexOf(r.device_type)>=0&&!isCbs(r)||((r.device_id||'').startsWith('mc-')&&!isCbs(r));}
+    function isCbs(r){return CBS.indexOf(r.device_type)>=0||(r.device_id||'').startsWith('cbs');}
+    function toast(title,msg,type){var c=document.getElementById('toasts');if(!c)return;var el=document.createElement('div');el.className='toast '+(type||'');el.innerHTML='<div class="ttitle">'+title+'</div><div class="tmsg">'+msg+'</div>';c.insertBefore(el,c.firstChild);if(c.children.length>4)c.lastChild.remove();setTimeout(function(){el.style.transition='opacity .4s';el.style.opacity='0';setTimeout(function(){el.remove();},400);},6200);}
+    function openDetail(devId){var d=allData.find(function(r){return r.device_id===devId;});if(!d)return;var s=Math.round(d.health_score);var col=sc(s);var prob=(intel.failure_probabilities&&intel.failure_probabilities[devId])||0;var up=Math.round((intel.uptime&&intel.uptime[devId])||100);var hw=HW_SPECS[d.device_type]||DEFAULT_HW;var rate=COST[d.device_type]||8000;var impact=s<20?.95:s<35?.6:s<50?.25:0;var exposure=Math.round(rate*impact);var ttf=(intel.ttf_minutes&&intel.ttf_minutes[devId]);var ttfStr=ttf===undefined||ttf===null?'Stable':ttf===0?'Now':ttf<60?ttf+'min':(Math.floor(ttf/60)+'h '+(ttf%60)+'m');document.getElementById('dm-title').textContent=devId;document.getElementById('dm-title').style.color=col;document.getElementById('dm-subtitle').textContent=d.device_type+' · Protocol: '+hw.proto;document.getElementById('dm-score-val').textContent=s+'/100';document.getElementById('dm-score-val').style.color=col;document.getElementById('dm-health-fill').style.width=s+'%';document.getElementById('dm-health-fill').style.background=col;var metricData=[{l:'Health Score',v:s+'/100',c:col},{l:'Failure Risk',v:prob+'%',c:prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)'},{l:'Est. Time to Fail',v:ttfStr,c:ttf!==null&&ttf!==undefined&&ttf<60?'var(--red)':ttf!==null&&ttf!==undefined&&ttf<180?'var(--amb)':'var(--grn)'},{l:'Uptime',v:up+'%',c:up>98?'var(--grn)':up>90?'var(--amb)':'var(--red)'},{l:'Anomaly',v:d.anomaly_flag?'DETECTED':'Clear',c:d.anomaly_flag?'var(--red)':'var(--grn)'},{l:'Exposure',v:exposure>0?'$'+exposure.toLocaleString()+'/hr':'$0',c:exposure>0?'var(--red)':'var(--grn)'},{l:'Sector',v:isCbs(d)?'CBS':isNet(d)?'Network':isTc(d)?'Telecom':isMc(d)?'Mining':'Other',c:'var(--acc)'}];if(d.integrity_score!==undefined){metricData.splice(3,0,{l:'CBS Integrity',v:d.integrity_score+'%',c:d.integrity_score>=90?'var(--grn)':d.integrity_score>=70?'var(--amb)':'var(--red)'});}var mg=document.getElementById('dm-metrics');mg.innerHTML=metricData.map(function(m){return'<div class="dm-card"><div class="dm-card-l">'+m.l+'</div><div class="dm-card-v" style="color:'+m.c+'">'+m.v+'</div></div>';}).join('');var specRows=[['Protocol',hw.proto],['Firmware',hw.fw],['Ports / I/O',hw.ports],['Throughput',hw.throughput],['MTBF',hw.mtbf],['Power draw',hw.power],['Form factor',hw.rack],['Last reading',fmt(d.created_at)],['Metric value',d.metric_value!==undefined?d.metric_value.toFixed(2)+' '+d.metric_name:'N/A']];document.getElementById('dm-specs').innerHTML=specRows.map(function(r){return'<tr><td>'+r[0]+'</td><td style="color:var(--txt)">'+r[1]+'</td></tr>';}).join('');document.getElementById('dm-diag').textContent=d.ai_diagnosis||'No diagnosis available.';var cmd=document.getElementById('dm-cmd');if(d.automation_command){cmd.style.display='block';cmd.textContent='Command: '+d.automation_command;}else{cmd.style.display='none';}document.getElementById('detail-overlay').classList.add('open');}
+    function closeDetail(e){if(e.target===document.getElementById('detail-overlay'))closeDetailDirect();}
+    function closeDetailDirect(){document.getElementById('detail-overlay').classList.remove('open');}
+    function gSvg(s,col){var r=30,cx=37,cy=37,ci=2*Math.PI*r;var d=(ci*(s/100)).toFixed(2);var o=(ci*0.25).toFixed(2);var gid='g'+Math.random().toString(36).slice(2,7);return'<svg viewBox="0 0 74 74"><defs><linearGradient id="'+gid+'" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="'+col+'" stop-opacity=".7"/><stop offset="100%" stop-color="'+col+'"/></linearGradient></defs><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="6"/><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+col+'" stroke-width="6" opacity=".08"/><circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="url(#'+gid+')" stroke-width="6" stroke-dasharray="'+d+' '+ci.toFixed(2)+'" stroke-dashoffset="'+o+'" stroke-linecap="round" style="transition:stroke-dasharray 1.1s cubic-bezier(.34,1.56,.64,1)"/></svg>';}
+    function mkGauges(data,cid,filterFn,locFilter){var el=document.getElementById(cid);if(!el)return;var dm={};data.filter(function(r){return filterFn(r)&&(!locFilter||locFilter==='all'||(r.device_id||'').includes('-'+locFilter+'-'));}).forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var entries=Object.values(dm);if(!entries.length){el.innerHTML='<div class="gc" style="cursor:default;grid-column:1/-1"><div style="color:var(--dim);font-size:11px;text-align:center;padding:22px">No data</div></div>';return;}el.innerHTML='';entries.forEach(function(d){var s=Math.round(d.health_score);var col=sc(s);var prob=(intel.failure_probabilities&&intel.failure_probabilities[d.device_id])||0;var up=Math.round((intel.uptime&&intel.uptime[d.device_id])||100);var isc=isCbs(d);var label=sid(d.device_id);var ttf=intel.ttf_minutes&&intel.ttf_minutes[d.device_id];var ettfHtml='';if(ttf!==undefined&&ttf!==null){var ttfCol=ttf<30?'var(--red)':ttf<120?'var(--amb)':'var(--grn)';var ttfStr=ttf===0?'Failing now':ttf<60?ttf+'min':Math.floor(ttf/60)+'h '+(ttf%60)+'m';ettfHtml='<div class="g-eta" style="color:'+ttfCol+'">Fail: '+ttfStr+'</div>';}else if(prob>65&&d.health_score<40){ettfHtml='<div class="g-eta" style="color:var(--amb)">~'+Math.round((100-prob)/10*45)+'min</div>';}var integHtml='';if(d.integrity_score!==undefined){var ic=d.integrity_score>=90?'var(--grn)':d.integrity_score>=70?'var(--amb)':'var(--red)';integHtml='<div style="font-size:8px;margin-top:2px;font-family:var(--mono);color:'+ic+'">Integrity: '+d.integrity_score+'%</div>';}el.innerHTML+='<div class="gc '+(s>=70?'g-ok':s>=40?'g-w':'g-r')+(isc?' gcbs':'')+'" onclick="openDetail(\''+d.device_id+'\')">'+'<div class="gid">'+label+(d.anomaly_flag?'<span class="gpill g-pill-anom"> ANOM</span>':'')+'</div>'+'<div class="gw">'+gSvg(s,col)+'<div class="gval" style="color:'+col+'">'+s+'</div></div>'+'<div class="gtype">'+d.device_type+'</div>'+'<div class="gpill">'+d.device_type+'</div>'+'<div class="gprob" style="color:'+(prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)')+'">Risk: '+prob+'%</div>'+'<div class="gup">Uptime: '+up+'%</div>'+ettfHtml+integHtml+'<div class="gc-hint">click for specs</div>'+'</div>';});}
+    function mkLocCards(data,cid,meta,filterFn){var el=document.getElementById(cid);if(!el)return;el.innerHTML='';Object.entries(meta).forEach(function(kv){var k=kv[0],info=kv[1];var rd=data.filter(function(r){return filterFn(r)&&(r.device_id||'').includes('-'+k+'-');});var dm={};rd.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var sc2=Object.values(dm).map(function(d){return d.health_score;});
+      var f2=sc2.length?fhi(sc2):0;var faults=rd.filter(function(r){return r.health_score<50;}).length;var col=sc(f2);
+      el.innerHTML+='<div class="lcard"><div class="lcard-title" style="color:'+col+'">'+info.label+'<span style="font-size:9px;color:var(--dim);margin-left:6px">'+sc2.length+' devices</span></div><div class="lcard-sub">'+info.sub+'</div><div class="lstat"><span style="color:var(--mut)">Health index</span><span style="color:'+col+';font-weight:700">'+f2+'/100</span></div><div class="lbar"><div class="lbar-fill" style="width:'+f2+'%;background:'+col+'"></div></div><div class="lstat" style="margin-top:9px"><span style="color:var(--mut)">Open faults</span><span style="color:'+(faults>0?'var(--red)':'var(--grn)')+';font-weight:700">'+faults+'</span></div></div>';
+    });
+    }
+
+    Chart.defaults.font.family="'Sora',system-ui,sans-serif";
+    var cOpts=function(yMax){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a8dae',font:{size:9},boxWidth:10}}},scales:{x:{ticks:{color:'#3a506a',font:{size:8}},grid:{color:'rgba(255,255,255,.03)'}},y:{min:0,max:yMax||100,ticks:{color:'#3a506a',font:{size:8}},grid:{color:'rgba(255,255,255,.03)'}}}};};
+    var mkC=function(id,type,lbl,col,yMax){return new Chart(document.getElementById(id),{type:type,data:{labels:[],datasets:[{label:lbl,data:[],borderColor:col,backgroundColor:col.replace('rgb','rgba').replace(')',',0.08)'),borderWidth:1.5,tension:.45,fill:true,pointRadius:2}]},options:cOpts(yMax||100)});};
+    var cMain=mkC('cMain','line','Health','rgba(40,196,248,1)');
+    var cDist=new Chart(document.getElementById('cDist'),{type:'bar',data:{labels:['0-20','20-40','40-60','60-80','80-100'],datasets:[{label:'Devices',data:[0,0,0,0,0],backgroundColor:['rgba(240,46,80,.72)','rgba(242,149,16,.72)','rgba(242,149,16,.4)','rgba(34,224,122,.4)','rgba(34,224,122,.72)'],borderRadius:5}]},options:cOpts(20)});
+    var cNet=mkC('cNet','line','Network','rgba(0,212,200,1)');
+    var cNetL=mkC('cNetL','line','Latency ms','rgba(242,149,16,1)',500);
+    var cTcH=mkC('cTcH','line','TelecomCo','rgba(40,196,248,1)');
+    var cTcS=mkC('cTcS','line','Signal %','rgba(0,212,200,1)');
+    var cMcH=mkC('cMcH','line','MiningCo','rgba(245,196,32,1)');
+    var cMcT=mkC('cMcT','line','Temp C','rgba(240,46,80,1)',120);
+    var cCbs=new Chart(document.getElementById('cCbs'),{type:'line',data:{labels:[],datasets:[{label:'CBS health',data:[],borderColor:'rgba(240,46,80,1)',backgroundColor:'rgba(240,46,80,0.08)',borderWidth:1.5,tension:.45,fill:true,pointRadius:2},{label:'Threshold 90%',data:[],borderColor:'rgba(242,149,16,.8)',borderDash:[5,5],borderWidth:1.5,pointRadius:0}]},options:cOpts(100)});
+    var cUp=new Chart(document.getElementById('cUp'),{type:'bar',data:{labels:[],datasets:[{label:'Uptime %',data:[],backgroundColor:'rgba(40,196,248,.6)',borderRadius:5}]},options:cOpts(100)});
+    var cWind=mkC('cWind','line','Wind km/h','rgba(0,212,200,1)',120);
+    var cPrecip=mkC('cPrecip','line','Precip %','rgba(40,196,248,1)');
+
+    function updL(ch,lb,dt){ch.data.labels=lb;ch.data.datasets[0].data=dt;ch.update('none');}
+    function updD(ch,lb,d1,d2){ch.data.labels=lb;ch.data.datasets[0].data=d1;ch.data.datasets[1].data=d2;ch.update('none');}
+    function diagItem(r){var cls=r.health_score<35?'fi-r':r.health_score<70?'fi-w':'fi-ok';return'<div class="fitem '+cls+'"><div class="ftime">'+fmt(r.created_at)+'</div><div class="fdev">'+sid(r.device_id)+' — '+Math.round(r.health_score)+'/100</div><div>'+r.ai_diagnosis+'</div></div>';}
+    function autoItem(r){var cbs=r.automation_command&&r.automation_command.includes('CBS');return'<div class="fitem '+(cbs?'fi-cbs':'fi-p')+'"><div class="ftime">'+fmt(r.created_at)+'</div><div class="fdev">'+sid(r.device_id)+'</div><div>'+r.automation_command+'</div></div>';}
+    function setFeed(id,rows,fn){var el=document.getElementById(id);if(!el)return;if(!rows.length){el.innerHTML='<div class="fitem fi-ok"><div>No data — POST readings to /api/metrics</div></div>';return;}el.innerHTML=rows.slice(0,8).map(fn).join('');}
+    function setEl(id,v,cls){var el=document.getElementById(id);if(!el)return;el.textContent=v;if(cls)el.className='kpi-v '+cls;}
+
+    async function fetchIntel(){try{var r=await fetch(B+'/api/intelligence');intel=await r.json();}catch(e){}}
+
+    async function fetchAll(){
+      try{
+        var r=await fetch(B+'/api/data');allData=await r.json();
+        if(!allData||!allData.length)return;
+        await fetchIntel();
+        var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+        var scores=Object.values(dm).map(function(d){return d.health_score;});
+        var f=fhi(scores);updateAmbient(f);
+        var cbsd=allData.filter(isCbs);
+        var hold=cbsd.some(function(r){return r.automation_command&&r.automation_command.includes('HOLD');});
+        var totalCost=0;
+        Object.values(dm).forEach(function(d){
+          var rate=COST[d.device_type]||8000;var s2=d.health_score;
+          var impact=s2<20?.95:s2<35?.6:s2<50?.25:0;
+          var prob=((intel.failure_probabilities&&intel.failure_probabilities[d.device_id])||0)/100;
+          totalCost+=Math.round(rate*impact*(0.5+prob*.5));
+        });
+        var fhiEl=document.getElementById('b-fhi');if(fhiEl){fhiEl.textContent=f;fhiEl.className='kpi-v '+scc(f);}
+        var devsEl=document.getElementById('b-devs');if(devsEl){devsEl.textContent=Object.keys(dm).length;devsEl.className='kpi-v ca';}
+        var bc=document.getElementById('b-cost');if(bc)bc.textContent='$'+totalCost.toLocaleString()+'/hr';
+        var incEl=document.getElementById('b-inc');if(incEl){incEl.textContent=allData.filter(function(r){return r.health_score<50;}).length;incEl.className='kpi-v cw';}
+        var anomEl=document.getElementById('b-anom');if(anomEl){anomEl.textContent=intel.anomaly_count||0;anomEl.className='kpi-v cp';}
+        var cbsEl=document.getElementById('b-cbs');if(cbsEl){cbsEl.textContent=hold?'BLAST HOLD':'ARMED';cbsEl.className='kpi-v '+(hold?'cr':'cg');}
+        if(hold&&!cbsEl._al){cbsEl._al=1;toast('CBS BLAST HOLD','DNP3 link degraded — $450,000/hr exposure','tc');}
+        if(!hold&&cbsEl)delete cbsEl._al;
+        var lu=document.getElementById('last-upd');if(lu)lu.textContent=new Date().toLocaleTimeString();
+        document.getElementById('retrain-bar').style.display=(!intel.retrain_in_progress&&intel.retrain_needed)?'block':'none';
+        document.getElementById('retrain-active-bar').style.display=intel.retrain_in_progress?'block':'none';
+        mkGauges(allData,'main-gauges',function(){return true;},'all');
+        var rec=allData.slice(0,20).reverse();
+        updL(cMain,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));
+        var dist=[0,0,0,0,0];scores.forEach(function(s){dist[s<20?0:s<40?1:s<60?2:s<80?3:4]++;});
+        cDist.data.datasets[0].data=dist;cDist.update('none');
+        setFeed('f-diag',allData.filter(function(r){return r.ai_diagnosis;}),diagItem);
+        setFeed('f-auto',allData.filter(function(r){return r.automation_command;}),autoItem);
+        updNetPage();updTcPage();updMcPage();updCbsPage(cbsd);updIntelPage();updTwinSel(dm);
+        if(spToken)updEngDiag();
+      }catch(e){console.error('fetchAll:',e);}
+    }
+
+    function updNetPage(){
+      var nd=allData.filter(function(r){return isNet(r)&&(curNet==='all'||r.device_id.includes('-'+curNet+'-'));});
+      var dm={};nd.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      var sc2=Object.values(dm).map(function(d){return d.health_score;});var f=sc2.length?fhi(sc2):0;
+      var nf=document.getElementById('net-fhi');if(nf){nf.textContent=f;nf.className='esb-v '+(f>=70?'cg':f>=40?'cw':'cr');}
+      var lats=nd.filter(function(r){return r.metric_name==='latency_ms';}).map(function(r){return r.metric_value;});
+      var nl=document.getElementById('net-lat');if(nl)nl.textContent=lats.length?Math.round(lats.reduce(function(a,b){return a+b;},0)/lats.length)+' ms':'-- ms';
+      var nff=document.getElementById('net-faults');if(nff)nff.textContent=nd.filter(function(r){return r.health_score<50;}).length;
+      mkGauges(allData,'g-net',isNet,curNet);
+      var rec=nd.slice(0,20).reverse();
+      updL(cNet,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));
+      updL(cNetL,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.min(499,Math.round(r.metric_value||0));}));
+      setFeed('net-feed',nd.filter(function(r){return r.ai_diagnosis;}),diagItem);
+      setFeed('net-auto',nd.filter(function(r){return r.automation_command;}),autoItem);
+    }
+
+    function updTcPage(){
+      var td=allData.filter(isTc);var ld=curTc==='all'?td:td.filter(function(r){return r.device_id.includes('-'+curTc+'-');});
+      var dm={};ld.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      var sc2=Object.values(dm).map(function(d){return d.health_score;});var f=sc2.length?fhi(sc2):0;
+      var tf=document.getElementById('tc-fhi');if(tf){tf.textContent=f;tf.className='esb-v '+(f>=70?'cg':f>=40?'cw':'cr');}
+      var td2=document.getElementById('tc-devs');if(td2)td2.textContent=Object.keys(dm).length;
+      var tf2=document.getElementById('tc-faults');if(tf2)tf2.textContent=ld.filter(function(r){return r.health_score<50;}).length;
+      var ts=document.getElementById('tc-sig');if(ts)ts.textContent=(sc2.length?Math.round(sc2.reduce(function(a,b){return a+b;},0)/sc2.length):100)+'%';
+      var te=document.getElementById('tc-env-title');if(te)te.textContent='TelecomCo — '+(curTc==='all'?'All Sites':(TC_META[curTc]||{label:curTc}).label);
+      mkLocCards(allData,'tc-loccards',TC_META,isTc);mkGauges(allData,'tc-gauges',isTc,curTc);
+      var rec=ld.slice(0,20).reverse();
+      updL(cTcH,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));
+      updL(cTcS,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));
+      setFeed('tc-feed',ld.filter(function(r){return r.ai_diagnosis;}),diagItem);
+      setFeed('tc-auto',ld.filter(function(r){return r.automation_command;}),autoItem);
+    }
+
+    function updMcPage(){
+      var md=allData.filter(function(r){return isMc(r)||isCbs(r);});
+      var ld=curMc==='all'?md:md.filter(function(r){return r.device_id.includes('-'+curMc+'-');});
+      var dm={};ld.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      var f=fhi(Object.values(dm).map(function(d){return d.health_score;}));
+      var mf=document.getElementById('mc-fhi');if(mf)mf.textContent=f;
+      var md2=document.getElementById('mc-devs');if(md2)md2.textContent=Object.keys(dm).length;
+      var ma=document.getElementById('mc-alerts');if(ma)ma.textContent=ld.filter(function(r){return r.health_score<35;}).length;
+      var mc=document.getElementById('mc-crit');if(mc)mc.textContent=ld.filter(function(r){return r.health_score<20;}).length;
+      var me=document.getElementById('mc-env-title');if(me)me.textContent='MiningCo — '+(curMc==='all'?'All Sections':(MC_META[curMc]||{label:curMc}).label);
+      mkLocCards(allData,'mc-seccards',MC_META,isMc);mkGauges(allData,'mc-gauges',function(r){return isMc(r)||isCbs(r);},curMc);
+      var rec=ld.slice(0,20).reverse();
+      updL(cMcH,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));
+      updL(cMcT,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.min(119,Math.round(r.metric_value||0));}));
+      setFeed('mc-feed',ld.filter(function(r){return r.ai_diagnosis;}),diagItem);
+      setFeed('mc-auto',ld.filter(function(r){return r.automation_command;}),autoItem);
+    }
+
+    function updCbsPage(cbsd){
+      var dm={};cbsd.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      var allSc=Object.values(dm).map(function(d){return d.health_score;});
+      var avg=allSc.length?Math.round(allSc.reduce(function(a,b){return a+b;},0)/allSc.length):100;
+      var anyHold=Object.values(dm).some(function(d){return d.health_score<90||( d.integrity_score!==undefined&&d.integrity_score<90);});
+      var sb=document.getElementById('cbs-status-banner');var hb=document.getElementById('cbs-health-banner');var ib=document.getElementById('cbs-integrity-banner');
+      if(sb){sb.textContent=anyHold?'BLAST HOLD':'ARMED';sb.style.color=anyHold?'var(--red)':'var(--grn)';}
+      if(hb){hb.textContent=avg+'%';hb.style.color=avg>=90?'var(--grn)':avg>=70?'var(--amb)':'var(--red)';}
+      var avgInteg=Object.values(dm).filter(function(d){return d.integrity_score!==undefined;}).map(function(d){return d.integrity_score;});
+      if(ib&&avgInteg.length){var ai2=Math.round(avgInteg.reduce(function(a,b){return a+b;},0)/avgInteg.length);ib.textContent=ai2+'%';ib.style.color=ai2>=90?'var(--grn)':ai2>=70?'var(--amb)':'var(--red)';}
+      var grid=document.getElementById('cbs-devs');
+      if(!Object.keys(dm).length){grid.innerHTML='<div style="color:var(--dim);font-size:11px">No CBS devices — POST with device_type: cbs_controller</div>';return;}
+      grid.innerHTML='';
+      Object.values(dm).forEach(function(d){
+        var s=Math.round(d.health_score);var integ=d.integrity_score!==undefined?d.integrity_score:s;
+        var hold=s<90||integ<90;
+        var ic=integ>=90?'var(--grn)':integ>=70?'var(--amb)':'var(--red)';
+        grid.innerHTML+='<div class="cbs-dev"><div style="font-weight:700;font-size:11px;margin-bottom:5px">'+d.device_id+'</div>'
+          +'<div style="font-size:10px;color:var(--dim)">DNP3/Ethernet · Link: <span style="color:'+(s>=90?'var(--grn)':s>=70?'var(--amb)':'var(--red)')+';font-weight:700">'+s+'%</span></div>'
+          +(d.integrity_score!==undefined?'<div style="font-size:10px;color:var(--dim);margin-top:3px">Integrity: <span style="color:'+ic+';font-weight:700">'+d.integrity_score+'%</span></div>':'')
+          +(d.vibration_score!==undefined?'<div style="font-size:9px;color:var(--dim);margin-top:2px">Stability score: '+d.vibration_score+'%</div>':'')
+          +'<div class="'+(hold?'cbs-hold':'cbs-safe')+'" style="margin-top:7px">'+(hold?'BLAST HOLD ACTIVE':'ARMED — SAFE')+'</div>'
+          +(hold?'<div style="font-size:9px;color:var(--red);margin-top:4px">Exposure: $450,000/hr</div>':'')
+          +(d.ai_diagnosis?'<div style="font-size:9px;color:var(--dim);margin-top:5px">'+d.ai_diagnosis.slice(0,110)+'</div>':'')
+          +'</div>';
+      });
+      var log=document.getElementById('cbs-log');
+      var alerts=cbsd.filter(function(r){return r.automation_command;}).slice(0,5);
+      log.innerHTML=alerts.length?alerts.map(autoItem).join(''):'<div class="fitem fi-ok"><div>No CBS alerts — all links healthy</div></div>';
+      var rec=cbsd.slice(0,20).reverse();
+      updD(cCbs,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}),rec.map(function(){return 90;}));
+    }
+
+    function updIntelPage(){
+      if(!intel||!Object.keys(intel).length)return;
+      var f=intel.federated_index||100;
+      var fhiEl=document.getElementById('i-fhi');if(fhiEl){fhiEl.textContent=f;fhiEl.className='ival '+scc(f);}
+      var de=document.getElementById('i-devs');if(de){de.textContent=intel.total_devices||0;de.className='ival ca';}
+      var ae=document.getElementById('i-anom');if(ae){ae.textContent=intel.anomaly_count||0;ae.className='ival cp';}
+      var me=document.getElementById('i-model');if(me)me.textContent=intel.retrain_in_progress?'Retraining...':intel.retrain_needed?'Needs retrain':'Optimal';
+      var probs=intel.failure_probabilities||{};var mp=0,md='None';
+      Object.entries(probs).forEach(function(kv){if(kv[1]>mp){mp=kv[1];md=kv[0];}});
+      var ir=document.getElementById('i-risk');if(ir)ir.textContent=md!=='None'?sid(md)+' ('+mp+'%)':'None';
+      var ic=document.getElementById('i-corr');if(ic)ic.textContent=Object.values(probs).filter(function(p){return p>40;}).length||'None';
+      var up=intel.uptime||{};cUp.data.labels=Object.keys(up).map(sid);cUp.data.datasets[0].data=Object.values(up).map(Math.round);cUp.update('none');
+      var pf=document.getElementById('prob-feed');if(pf){pf.innerHTML='';
+        Object.entries(probs).sort(function(a,b){return b[1]-a[1];}).slice(0,8).forEach(function(kv){
+          var dev=kv[0],p=kv[1];
+          var ttf=intel.ttf_minutes&&intel.ttf_minutes[dev];
+          var ttfStr=ttf!==undefined&&ttf!==null?(ttf===0?'Failing now':ttf<60?ttf+'min':Math.floor(ttf/60)+'h '+( ttf%60)+'m'):'';
+          pf.innerHTML+='<div class="fitem '+(p>50?'fi-r':p>25?'fi-w':'fi-ok')+'"><div class="fdev">'+dev+' — '+p+'% risk'+(ttfStr?' · ETTF: '+ttfStr:'')+'</div><div>Failure probability next 30 min</div></div>';
+        });
+        if(!Object.keys(probs).length)pf.innerHTML='<div class="fitem fi-ok"><div>All devices within safe range</div></div>';
+      }
+      var lf=document.getElementById('lifecycle-feed');if(lf){lf.innerHTML='';
+        var lcs=intel.lifecycles||{};
+        if(Object.keys(lcs).length){Object.entries(lcs).sort(function(a,b){return a[1]-b[1];}).slice(0,8).forEach(function(kv){var dev=kv[0],hrs=kv[1];lf.innerHTML+='<div class="fitem '+(hrs<720?'fi-r':hrs<2160?'fi-w':'fi-ok')+'"><div class="fdev">'+dev+'</div><div>Est. life: '+hrs.toLocaleString()+'h (~'+Math.round(hrs/24)+'d)</div></div>';});}
+        else{lf.innerHTML='<div class="fitem fi-ok"><div>Lifecycle data accumulates after 5+ readings</div></div>';}
+      }
+    }
+
+    function updTwinSel(dm){
+      var sel=document.getElementById('twin-sel');if(!sel)return;var curr=sel.value;
+      sel.innerHTML='<option value="">Select a device to simulate...</option>';
+      Object.keys(dm).forEach(function(d){var o=document.createElement('option');o.value=d;o.textContent=d;if(d===curr)o.selected=true;sel.appendChild(o);});
+    }
+
+    async function runTwin(){
+      var devId=document.getElementById('twin-sel').value;if(!devId)return;
+      var scDiv=document.getElementById('twin-grid');var tDiv=document.getElementById('twin-trend');
+      scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Running simulation...</div>';
+      try{
+        var r=await fetch(B+'/api/twin/'+encodeURIComponent(devId));
+        if(!r.ok){scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Need 3+ readings for this device</div>';return;}
+        var d=await r.json();scDiv.innerHTML='';
+        d.scenarios.forEach(function(s){var col=s.risk==='safe'?'var(--grn)':s.risk==='warning'?'var(--amb)':'var(--red)';scDiv.innerHTML+='<div class="twin-sc '+s.risk+'"><div class="twin-load">Load '+s.load_increase+'</div><div class="twin-score" style="color:'+col+'">'+s.predicted_score+'</div><div class="twin-risk" style="color:'+col+'">'+s.risk+(s.anomaly_predicted?' · ANOM':'')+'</div></div>';});
+        if(d.ettf_minutes!==undefined&&d.ettf_minutes!==null){var tc2=d.ettf_minutes<30?'var(--red)':d.ettf_minutes<120?'var(--amb)':'var(--grn)';var ts2=d.ettf_minutes===0?'Failing now':d.ettf_minutes<60?d.ettf_minutes+'min':Math.floor(d.ettf_minutes/60)+'h '+(d.ettf_minutes%60)+'m';tDiv.innerHTML='<strong>Est. Time to Failure: <span style="color:'+tc2+'">'+ts2+'</span></strong>';}
+        var tr=d.trend;
+        if(tr&&tr.direction!=='insufficient data'){var c2=tr.direction==='declining'?'var(--red)':tr.direction==='improving'?'var(--grn)':'var(--mut)';tDiv.innerHTML=(tDiv.innerHTML?tDiv.innerHTML+' &nbsp;·&nbsp; ':'')+'Current: <strong>'+d.current_score+'</strong> · Trend: <span style="color:'+c2+'">'+tr.direction+'</span>'+(tr.readings_to_critical?' · Critical in ~<strong>'+tr.readings_to_critical+' readings</strong>':'');}
+        toast('Digital twin',sid(devId)+': '+d.scenarios[0].risk+' at +10%','');
+      }catch(e){scDiv.innerHTML='<div style="color:var(--red);font-size:11px">Error: '+e.message+'</div>';}
+    }
+
+    function goPage(el,name){
+      document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+      document.querySelectorAll('.ntab').forEach(function(t){t.classList.remove('active');});
+      document.getElementById('page-'+name).classList.add('active');el.classList.add('active');
+      document.querySelectorAll('.subloc').forEach(function(s){s.classList.remove('vis');});
+      var sub=document.getElementById('sub-'+name);if(sub)sub.classList.add('vis');
+      if(name==='wx')loadWx();
+      _currentPage=name;setLogoPage(name);
+    }
+
+    function setSub(sec,val,el){
+      el.closest('.subloc').querySelectorAll('.stab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');
+      if(sec==='net'){curNet=val;updNetPage();}else if(sec==='tc'){curTc=val;updTcPage();}else if(sec==='mc'){curMc=val;updMcPage();}
+    }
+
+    async function loadWx(){
+      var wrap=document.getElementById('wx-wrap');
+      var locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];
+      wrap.innerHTML='';var firstWind=null,firstPrecip=null;
+      for(var i=0;i<locs.length;i++){
+        var loc=locs[i];
+        try{
+          var r=await fetch(B+'/api/weather?loc='+loc.key);var d=await r.json();
+          if(d.error){wrap.innerHTML+='<div class="wcard"><div class="w-loc">'+loc.label+'</div><div style="color:var(--dim);font-size:11px">Unavailable</div></div>';continue;}
+          var icon=({0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',51:'🌦',61:'🌧',80:'🌦',95:'⛈'})[d.weather_code]||'🌡';
+          var html='<div class="wcard"><div class="w-loc">'+loc.label+'</div><div class="w-icon">'+icon+'</div><div class="w-temp" style="color:'+(d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)')+'">'+d.temperature+'°C</div><div class="w-row">Wind <span>'+d.wind_speed+'km/h</span> · Gusts <span>'+d.wind_gusts+'km/h</span></div><div class="w-row">Humidity <span>'+d.humidity+'%</span> · Precip <span>'+d.precipitation+'mm</span></div>';
+          (d.alerts||[]).forEach(function(a){html+='<div class="w-alert">'+a+'</div>';});
+          (d.equipment_impact||[]).forEach(function(x){html+='<div class="w-impact">'+x.impact+'</div>';});
+          wrap.innerHTML+=html+'</div>';
+          if(!firstWind&&d.hourly_wind&&d.hourly_wind.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}
+        }catch(e){wrap.innerHTML+='<div class="wcard"><div class="w-loc">'+loc.label+'</div><div style="color:var(--dim)">Error</div></div>';}
+      }
+      if(firstWind){var hrs=firstWind.map(function(_,i){return'+'+i+'h';});updL(cWind,hrs,firstWind.map(Math.round));if(firstPrecip)updL(cPrecip,hrs,firstPrecip.map(Math.round));}
+    }
+
+    async function fetchPlatform(){
+      try{
+        var r=await fetch(B+'/api/platform');var d=await r.json();
+        var q=document.getElementById('p-queue');if(q)q.textContent=d.queue_depth||'0';
+        var ca=document.getElementById('p-cache');if(ca)ca.textContent=(d.cache_age_seconds||0)+'s';
+        var dv=document.getElementById('p-devs');if(dv)dv.textContent=d.devices_tracked||'0';
+        var rt=document.getElementById('p-retrain');if(rt)rt.textContent=d.retrain_in_progress?'Running...':d.retrain_needed?'Needed':'Optimal';
+        var up=document.getElementById('p-uptime');if(up)up.textContent=(d.platform_uptime_h||0).toFixed(1)+'h';
+        var nc=d.notifications||{};
+        function chip(on){return on?'font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--grn);color:var(--grn);background:rgba(34,224,122,.09)':'font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)';}
+        var em=document.getElementById('nc-email');if(em)em.style.cssText=chip(nc.email_enabled);
+        var sm=document.getElementById('nc-sms');if(sm)sm.style.cssText=chip(nc.sms_enabled);
+        var wa=document.getElementById('nc-wa');if(wa)wa.style.cssText=chip(nc.whatsapp_enabled);
+      }catch(e){}
+    }
+
+    async function exportPDF(){
+      var btn=document.querySelector('.btn-acc');if(btn){btn.textContent='Generating...';btn.disabled=true;}
+      var a=document.createElement('a');a.href=B+'/api/export-pdf';a.download='IISentinel_Report.pdf';
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      setTimeout(function(){if(btn){btn.textContent='Export PDF';btn.disabled=false;}toast('PDF downloaded','Shift report saved','tg');},2000);
+    }
+
+    function toggleOps(){
+      opsFocusOn=!opsFocusOn;document.body.classList.toggle('ops-focus',opsFocusOn);
+      if(!opsFocusOn){updateAmbient(fhi((allData||[]).map(function(d){return d.health_score;})));}
+      toast(opsFocusOn?'Ops Focus ON':'Ops Focus OFF',opsFocusOn?'Emergency ambient active — critical assets highlighted':'Full view restored',opsFocusOn?'tc':'tg');
+    }
+
+    function toggleTheme(){
+      lightMode=!lightMode;document.body.classList.toggle('light',lightMode);
+      document.querySelector('.tbtn').textContent=lightMode?'🌙':'☀';
+      localStorage.setItem('ii-theme',lightMode?'light':'dark');
+    }
+    if(localStorage.getItem('ii-theme')==='light'){lightMode=true;document.body.classList.add('light');document.querySelector('.tbtn').textContent='🌙';}
+
+    function updEngDiag(){
+      var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      function fillTbl(id,devs,rowFn){var t=document.getElementById(id);if(t&&devs.length)t.innerHTML=devs.map(rowFn).join('');}
+      fillTbl('en-net-table',Object.values(dm).filter(isNet).slice(0,6),function(d){var s=Math.round(d.health_score);var util=Math.min(100,Math.round(d.metric_value||0));var crcs=d.anomaly_flag?Math.floor(Math.random()*8)+1:0;var state=s>70?'<span class="eb eb-ok">UP</span>':s>40?'<span class="eb eb-w">DEGRADED</span>':'<span class="eb eb-r">DOWN</span>';return'<tr><td>'+sid(d.device_id)+'</td><td class="'+(util>80?'ev-r':util>60?'ev-w':'ev-ok')+'">'+util+'%</td><td class="'+(crcs>0?'ev-w':'ev-ok')+'">'+crcs+'</td><td>'+state+'</td></tr>';});
+      fillTbl('en-rf-table',Object.values(dm).filter(isTc).slice(0,5),function(d){var s=Math.round(d.health_score);var rx=s>70?-(Math.random()*10+48).toFixed(1):s>40?-(Math.random()*15+65).toFixed(1):-(Math.random()*20+82).toFixed(1);var snr=s>70?(Math.random()*10+22).toFixed(1):s>40?(Math.random()*8+10).toFixed(1):(Math.random()*5+2).toFixed(1);var ber=s>70?'1e-9':'1e-4';return'<tr><td>'+sid(d.device_id)+'</td><td class="'+(rx<-75?'ev-r':rx<-65?'ev-w':'ev-ok')+'">'+rx+'</td><td class="'+(snr<12?'ev-r':snr<18?'ev-w':'ev-ok')+'">'+snr+'</td><td class="'+(ber==='1e-4'?'ev-r':'ev-ok')+'">'+ber+'</td></tr>';});
+      fillTbl('en-ind-table',Object.values(dm).filter(isMc).slice(0,5),function(d){var s=Math.round(d.health_score);var mtbf=s>70?Math.floor(Math.random()*4e3+3e3):Math.floor(Math.random()*800+400);var oee=s>70?Math.floor(Math.random()*12+82):s>40?Math.floor(Math.random()*18+55):Math.floor(Math.random()*25+20);var cond=s>70?'<span class="eb eb-ok">NOMINAL</span>':s>40?'<span class="eb eb-w">MONITOR</span>':'<span class="eb eb-r">CRITICAL</span>';return'<tr><td>'+sid(d.device_id)+'</td><td class="'+(mtbf<800?'ev-r':mtbf<2000?'ev-w':'ev-ok')+'">'+mtbf.toLocaleString()+'</td><td class="'+(oee<60?'ev-r':oee<75?'ev-w':'ev-ok')+'">'+oee+'</td><td>'+cond+'</td></tr>';});
+      fillTbl('en-cbs-table',Object.values(dm).filter(isCbs),function(d){var s=Math.round(d.health_score);var integ=d.integrity_score!==undefined?d.integrity_score:s;var lq=integ>=90?'<span class="eb eb-ok">GOOD</span>':integ>=70?'<span class="eb eb-w">MARGINAL</span>':'<span class="eb eb-r">DEGRADED</span>';var mttr=Math.floor(Math.random()*10+4);return'<tr><td>'+sid(d.device_id)+'</td><td>'+lq+'</td><td style="font-size:9px;color:'+(integ<90?'var(--amb)':'var(--grn)')+'">'+( integ<90?fmt(d.created_at):'None')+'</td><td>'+mttr+'m</td></tr>';});
+    }
+
+    async function doLogin(){
+      var n=document.getElementById('l-name').value.trim(),p=document.getElementById('l-pass').value.trim();
+      document.getElementById('l-err').textContent='';
+      try{
+        var r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:p})});
+        var d=await r.json();
+        if(d.success){spToken=d.token;spName=d.name;document.getElementById('login-sec').style.display='none';document.getElementById('sp-sec').style.display='block';document.getElementById('sp-name').textContent=d.name;document.getElementById('sp-role').textContent=d.role.toUpperCase();toast('Access granted','Welcome '+d.name,'tg');loadInc();updEngDiag();}
+        else document.getElementById('l-err').textContent='Invalid credentials.';
+      }catch(e){document.getElementById('l-err').textContent='Connection error.';}
+    }
+
+    function doLogout(){spToken=null;spName=null;document.getElementById('login-sec').style.display='block';document.getElementById('sp-sec').style.display='none';document.getElementById('l-name').value='';document.getElementById('l-pass').value='';toast('Logged out','Specialist session ended','');}
+
+    async function loadShiftReport(){
+      document.getElementById('sr-panel').style.display='block';
+      try{
+        var r=await fetch(B+'/api/shift-report',{headers:{'X-Specialist-Token':spToken}});var d=await r.json();
+        document.getElementById('sr-grid').innerHTML='<div class="sr-card"><div class="sr-val ca">'+d.total_devices+'</div><div class="sr-lbl">Devices</div></div><div class="sr-card"><div class="sr-val cg">'+d.avg_health+'</div><div class="sr-lbl">Avg health</div></div><div class="sr-card"><div class="sr-val cr">'+(d.critical_devices||0)+'</div><div class="sr-lbl">Critical</div></div><div class="sr-card"><div class="sr-val cw">'+(d.warning_devices||0)+'</div><div class="sr-lbl">Warning</div></div><div class="sr-card"><div class="sr-val cg">'+(d.healthy_devices||0)+'</div><div class="sr-lbl">Healthy</div></div>';
+        var rf=document.getElementById('sr-risks');rf.innerHTML='';
+        (d.top_risks||[]).forEach(function(rsk){rf.innerHTML+='<div class="fitem fi-r"><div class="fdev">'+rsk.device+' — '+rsk.score+'/100</div><div>'+(rsk.diagnosis||'No diagnosis')+'</div></div>';});
+        if(!d.top_risks||!d.top_risks.length)rf.innerHTML='<div class="fitem fi-ok"><div>No critical risks</div></div>';
+        toast('Shift report generated',d.total_devices+' devices','tg');
+      }catch(e){toast('Report error',e.message,'tc');}
+    }
+
+    async function loadInc(){
+      if(!spToken)return;var H={'X-Specialist-Token':spToken};
+      try{
+        var res=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);
+        var open=await res[0].json(),asgn=await res[1].json(),rv=await res[2].json();
+        document.getElementById('sp-open').textContent=open.length;document.getElementById('sp-asgn').textContent=asgn.length;document.getElementById('sp-res').textContent=rv.length;
+        var all=[].concat(open,asgn);var list=document.getElementById('inc-list');
+        if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents</div></div>';return;}
+        list.innerHTML='';
+        all.forEach(function(inc){
+          var bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';
+          list.innerHTML+='<div class="icard2"><div class="ich"><div><span class="fdev">'+inc.device_id+'</span><span class="sbadge '+bc+'">'+inc.status.toUpperCase()+'</span></div><div style="font-size:9px;color:var(--dim)">'+fmt(inc.created_at)+'</div></div><div style="font-size:10px;margin-bottom:4px">Health: <span class="'+scc(inc.health_score)+'">'+Math.round(inc.health_score)+'/100</span></div>'+(inc.ai_diagnosis?'<div style="font-size:9px;color:var(--mut);margin-bottom:4px">'+inc.ai_diagnosis+'</div>':'')+(inc.automation_command?'<div style="font-size:9px;color:var(--pur);margin-bottom:4px">'+inc.automation_command+'</div>':'')+(inc.assigned_to?'<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: '+inc.assigned_to+'</div>':'')+'<div class="ica"><input class="ainput" id="ai-'+inc.id+'" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 11px" onclick="assignInc(\''+inc.id+'\')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 11px" onclick="resolveInc(\''+inc.id+'\')">Resolve</button></div></div>';
+        });
+      }catch(e){}
+    }
+
+    async function assignInc(id){var v=document.getElementById('ai-'+id).value.trim();if(!v)return;await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});toast('Assigned','to '+v,'tw');loadInc();}
+    async function resolveInc(id){await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})});toast('Resolved','By '+spName,'tg');loadInc();}
+
+    document.addEventListener('keydown',function(e){
+      if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+      if(e.key==='f'||e.key==='F')toggleOps();
+      if(e.key==='e'||e.key==='E')exportPDF();
+      if(e.key==='Escape'){document.getElementById('toasts').innerHTML='';closeDetailDirect();}
+      var tabs=document.querySelectorAll('.ntab:not([style*="display: none"])');
+      var n=parseInt(e.key);if(n>=1&&n<=tabs.length)tabs[n-1].click();
+    });
+
+    var _activeSectors=[];
+    function updateSectorPreview(){
+      var checked=Array.from(document.querySelectorAll('#sector-selector input[type=checkbox]:checked')).map(function(c){return c.value;});
+      document.querySelectorAll('.ss-card').forEach(function(card){var cb=card.querySelector('input');card.classList.toggle('selected',cb&&cb.checked);});
+      var btn=document.getElementById('ss-enter');if(btn)btn.disabled=checked.length===0;
+      var prev=document.getElementById('ss-preview');if(!prev)return;
+      if(!checked.length){prev.textContent='Select at least one sector above';return;}
+      var names={net:'Network',tc:'TelecomCo',mc:'MiningCo'};
+      var parts=checked.map(function(v){return names[v]||v;});
+      var extra=[];if(checked.indexOf('mc')!==-1)extra.push('CBS Safety');extra.push('Weather');extra.push('Intelligence');extra.push('Specialist');
+      prev.innerHTML='<strong style="color:var(--acc)">You will access: </strong>'+parts.join(' + ')+' · <span style="color:var(--dim)">'+extra.join(' · ')+' always included</span>';
+    }
+    function quickSelect(sectors){document.querySelectorAll('#sector-selector input[type=checkbox]').forEach(function(cb){cb.checked=sectors.indexOf(cb.value)!==-1;});updateSectorPreview();}
+    function enterWithSectors(){
+      var checked=Array.from(document.querySelectorAll('#sector-selector input[type=checkbox]:checked')).map(function(c){return c.value;});
+      if(!checked.length)return;
+      _activeSectors=checked;localStorage.setItem('ii-sectors',JSON.stringify(checked));
+      applySectorAccess(checked);
+      var ss=document.getElementById('sector-selector');if(ss){ss.style.transition='opacity .5s';ss.style.opacity='0';setTimeout(function(){ss.style.display='none';},500);}
+      fetchAll();setInterval(fetchAll,10000);fetchPlatform();setInterval(fetchPlatform,12000);
+      setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
+    }
+    function applySectorAccess(sectors){
+      var always=['main','wx','intel','sp'],smap={net:'net',tc:'tc',mc:'mc'};
+      var showCbs=sectors.indexOf('mc')!==-1;
+      document.querySelectorAll('.ntab').forEach(function(tab){
+        var oc=tab.getAttribute('onclick')||'';var page=(oc.match(/goPage\(this,'(\w+)'\)/)||[])[1]||'';
+        if(page==='cbs')tab.style.display=showCbs?'':'none';
+        else if(always.indexOf(page)!==-1)tab.style.display='';
+        else{var show=false;for(var s in smap){if(smap[s]===page&&sectors.indexOf(s)!==-1){show=true;break;}}tab.style.display=show?'':'none';}
+      });
+      var names={net:'Network',tc:'TelecomCo',mc:'MiningCo'};
+      var parts=sectors.map(function(s){return names[s]||s;});if(showCbs)parts.push('CBS Safety');
+      var sub=document.getElementById('hctr-sub');if(sub)sub.textContent=parts.join(' · ')+' · Weather · Intelligence';
+    }
+    function showSectorSelector(){
+      var ss=document.getElementById('sector-selector');if(!ss)return;
+      ss.style.display='flex';ss.style.opacity='1';
+      document.querySelectorAll('#sector-selector input[type=checkbox]').forEach(function(cb){cb.checked=false;});
+      document.querySelectorAll('.ss-card').forEach(function(c){c.classList.remove('selected');});
+      updateSectorPreview();
+    }
+
+    (function boot(){
+      ['svg-net','svg-tc','svg-mc'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});
+      document.getElementById('ambient-svg').style.opacity='0';
+      var saved=null;try{saved=JSON.parse(localStorage.getItem('ii-sectors'));}catch(e){}
+      setTimeout(function(){
+        var ss=document.getElementById('sector-selector');
+        if(saved&&saved.length){
+          _activeSectors=saved;applySectorAccess(saved);if(ss)ss.style.display='none';
+          fetchAll();setInterval(fetchAll,10000);fetchPlatform();setInterval(fetchPlatform,12000);
+          setInterval(function(){if(spToken){loadInc();updEngDiag();}},15000);
+        }else{if(ss){ss.style.display='flex';ss.style.opacity='1';}}
+      },3300);
+    })();
+
+    var _sseConn=null;
+    function initSSE(){
+      if(_sseConn)_sseConn.close();
+      _sseConn=new EventSource(B+'/api/stream');
+      _sseConn.addEventListener('metric',function(e){
+        try{var d=JSON.parse(e.data);if(d.blast_hold||d.is_cbs||d.health_score<35||d.anomaly_flag){fetchAll();if(d.blast_hold||d.is_cbs)toast('Live: CBS Alert','Blast hold — refreshing','tc');else if(d.health_score<20)toast('Live: Critical',d.device_id+' at '+d.health_score+'/100','tc');}}catch(ex){}
+      });
+      _sseConn.addEventListener('cbs_hold',function(e){
+        try{var d=JSON.parse(e.data);toast('CBS BLAST HOLD',d.device_id+' — link at '+d.health_score+'%'+(d.integrity_score?' / integrity '+d.integrity_score+'%':''),'tc');fetchAll();}catch(ex){}
+      });
+      _sseConn.onerror=function(){setTimeout(initSSE,5000);};
+    }
+    setTimeout(initSSE,4300);
+
+    var NM_ICONS={
+      up:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(34,224,122,.2)"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#20e07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      down:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,62,80,.2)"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ff3e50" stroke-width="2" stroke-linecap="round"/></svg>',
+      checking:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(245,160,32,.15)"/><path d="M12 7v5l3 3" stroke="#f5a020" stroke-width="2" stroke-linecap="round"/></svg>',
+      unknown:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>'
+    };
+    function nmStatusLabel(s){return s==='up'?'Online':s==='down'?'Offline':s==='checking'?'Checking...':'Unknown';}
+    function nmLatencyColor(ms){if(!ms)return'var(--dim)';if(ms<20)return'var(--grn)';if(ms<80)return'var(--acc)';if(ms<200)return'var(--amb)';return'var(--red)';}
+
+    function nmRenderGrid(sector,nodes){
+      var grid=document.getElementById('nm-grid-'+sector);if(!grid)return;
+      var entries=Object.values(nodes||{}).filter(function(n){return n.sector===sector;});
+      if(!entries.length){
+        grid.innerHTML='<div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong><br><span style="color:var(--dim);font-size:10px">IISentinel will probe connectivity every 30 seconds automatically</span></div>';
+        return;
+      }
+      grid.innerHTML=entries.map(function(n){
+        var st=n.status||'unknown';
+        var lat=n.latency_ms!=null?n.latency_ms+'ms':'--';
+        var loss=(n.loss_pct!=null&&n.loss_pct>0)?n.loss_pct+'%':'0%';
+        var h=n.health_score!=null?Math.round(n.health_score):0;
+        var hcol=h>=70?'var(--grn)':h>=40?'var(--amb)':'var(--red)';
+        var latcol=nmLatencyColor(n.latency_ms);
+        var checked=n.last_check?new Date(n.last_check*1000).toLocaleTimeString():'Never';
+        return'<div class="nm-node nm-'+st+'">'
+          +'<button class="nm-del" onclick="nmDelete(\''+n.id+'\',\''+sector+'\')" title="Remove">x</button>'
+          +'<button class="nm-poll" onclick="nmPollOne(\''+n.id+'\',\''+sector+'\')" title="Poll now">&#8635;</button>'
+          +'<div class="nm-icon '+st+'">'+(NM_ICONS[st]||NM_ICONS.unknown)+'</div>'
+          +'<div class="nm-label">'+(n.label||n.host)+'</div>'
+          +'<div class="nm-host">'+n.host+'</div>'
+          +'<div class="nm-status-line"><div class="nm-status-text '+st+'">'+nmStatusLabel(st)+'</div>'
+          +(n.loss_pct>10?'<div style="font-size:9px;color:var(--amb);margin-left:6px">'+n.loss_pct+'% loss</div>':'')
+          +'</div>'
+          +'<div class="nm-metrics">'
+          +'<div class="nm-metric"><div class="nm-metric-v" style="color:'+latcol+'">'+lat+'</div><div class="nm-metric-l">Response</div></div>'
+          +'<div class="nm-metric"><div class="nm-metric-v" style="color:'+(n.loss_pct>5?'var(--amb)':'var(--dim)')+'">'+loss+'</div><div class="nm-metric-l">Loss</div></div>'
+          +'<div class="nm-metric"><div class="nm-metric-v" style="color:'+hcol+'">'+h+'</div><div class="nm-metric-l">Health</div></div>'
+          +'</div>'
+          +'<div class="nm-health-bar"><div class="nm-health-fill" style="width:'+h+'%;background:'+hcol+'"></div></div>'
+          +'<div style="font-size:9px;color:var(--dim);margin-top:6px">Polled: '+checked+'</div>'
+          +'</div>';
+      }).join('');
+    }
+
+    var _nmNodes={};
+    function nmRefresh(){
+      fetch(B+'/api/nodes').then(function(r){return r.json();}).then(function(data){_nmNodes=data;nmRenderGrid('net',data);nmRenderGrid('tc',data);}).catch(function(){});
+    }
+    function nmAdd(sector){
+      var hostEl=document.getElementById('nm-host-'+sector);
+      var labelEl=document.getElementById('nm-label-'+sector);
+      var host=(hostEl?hostEl.value.trim():'');
+      var label=(labelEl?labelEl.value.trim():'')||host;
+      if(!host){toast('Node monitor','Enter an IP address or hostname','tw');return;}
+      var tempId='temp-'+Date.now();
+      _nmNodes[tempId]={id:tempId,host:host,label:label,sector:sector,status:'checking',latency_ms:null,loss_pct:0,health_score:0,last_check:null};
+      nmRenderGrid(sector,_nmNodes);
+      fetch(B+'/api/nodes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({host:host,label:label,sector:sector})})
+      .then(function(r){if(r.status===409){toast('Already monitoring',host+' is already in the node list','tw');delete _nmNodes[tempId];nmRenderGrid(sector,_nmNodes);return null;}return r.json();})
+      .then(function(d){if(!d)return;delete _nmNodes[tempId];_nmNodes[d.id]=d;nmRenderGrid(sector,_nmNodes);if(hostEl)hostEl.value='';if(labelEl)labelEl.value='';toast('Node added',label+' ('+host+') — probing...','');setTimeout(nmRefresh,3000);})
+      .catch(function(e){delete _nmNodes[tempId];nmRenderGrid(sector,_nmNodes);toast('Error',e.message,'tc');});
+    }
+    function nmDelete(nodeId,sector){
+      fetch(B+'/api/nodes/'+nodeId,{method:'DELETE'}).then(function(){delete _nmNodes[nodeId];nmRenderGrid(sector,_nmNodes);toast('Node removed','Node removed from monitor','');}).catch(function(){});
+    }
+    function nmPollOne(nodeId,sector){
+      if(_nmNodes[nodeId]){_nmNodes[nodeId].status='checking';nmRenderGrid(sector,_nmNodes);}
+      fetch(B+'/api/nodes/'+nodeId+'/poll',{method:'POST'}).then(function(){setTimeout(nmRefresh,3500);}).catch(function(){});
+    }
+    function nmPollAll(sector){
+      var ids=Object.keys(_nmNodes).filter(function(id){return _nmNodes[id].sector===sector;});
+      if(!ids.length){toast('No nodes','Add nodes first','tw');return;}
+      ids.forEach(function(id){if(_nmNodes[id])_nmNodes[id].status='checking';});
+      nmRenderGrid(sector,_nmNodes);
+      toast('Polling','Probing '+ids.length+' node'+(ids.length>1?'s':'')+'...','');
+      Promise.all(ids.map(function(id){return fetch(B+'/api/nodes/'+id+'/poll',{method:'POST'}).catch(function(){});})).then(function(){setTimeout(nmRefresh,4000);});
+    }
+    nmRefresh();
+    setInterval(nmRefresh,35000);
   </script>
 </body>
 </html>
