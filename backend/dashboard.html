@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    /* ===== FULL CSS (as previously provided) ===== */
+    /* ===== ORIGINAL CSS (complete) ===== */
     :root {
       --bg: #0d1928; --s0: #111e30; --s1: #152338; --s2: #1a2a42; --s3: #1f3150;
       --b1: rgba(255,255,255,.06); --b2: rgba(255,255,255,.11); --b3: rgba(255,255,255,.19);
@@ -414,484 +414,735 @@
       header, nav, #toasts, #sector-selector, .ops-banner, #amb, #grain, #ambient-svg, #detail-overlay { display: none !important; }
       body { background: #fff !important; color: #000 !important; } .page { display: block !important; }
     }
+
+    /* ===== CASCADE INTELLIGENCE ENGINE CSS PATCH ===== */
+    .cascade-wrap {
+      background: var(--s1); border: 1px solid var(--b1);
+      border-radius: var(--r-lg); margin-bottom: 14px;
+      overflow: hidden; box-shadow: var(--sh-md); position: relative;
+    }
+    .cascade-wrap::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(240,46,80,.04) 0%, transparent 70%);
+    }
+    .cascade-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 18px; border-bottom: 1px solid var(--b1);
+      background: rgba(255,255,255,.02); position: relative; z-index: 1;
+      flex-wrap: wrap; gap: 8px;
+    }
+    .cascade-hdr-left { display: flex; align-items: center; gap: 10px; }
+    .cascade-title {
+      font-size: 11px; font-weight: 700; color: var(--txt);
+      letter-spacing: -.01em; display: flex; align-items: center; gap: 7px;
+    }
+    .cascade-title::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--red); box-shadow: 0 0 8px var(--red);
+      animation: ldp 1.8s ease infinite; flex-shrink: 0;
+    }
+    .cascade-meta {
+      font-size: 9px; color: var(--dim); font-family: var(--mono);
+      background: rgba(255,255,255,.04); border: 1px solid var(--b1);
+      border-radius: 30px; padding: 3px 10px;
+    }
+    .cascade-hdr-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .cascade-cost {
+      display: flex; align-items: center; gap: 5px; padding: 4px 12px;
+      background: rgba(240,46,80,.07); border: 1px solid rgba(240,46,80,.18);
+      border-radius: 30px;
+    }
+    .cascade-cost-v {
+      font-size: 12px; font-weight: 800; font-family: var(--mono);
+      color: var(--red); letter-spacing: -.03em;
+      animation: ctick 1.4s ease-in-out infinite;
+    }
+    .cascade-cost-l { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
+    .cascade-canvas-wrap {
+      position: relative; padding: 0; background: rgba(4,8,15,.72);
+      min-height: 360px;
+    }
+    #cascade-main-canvas { width: 100%; display: block; cursor: crosshair; }
+    .cascade-canvas-wrap .c-overlay {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(to bottom, transparent 60%, rgba(21,35,56,.8) 100%);
+      z-index: 1;
+    }
+    .cascade-statrow {
+      display: flex; align-items: center; gap: 0;
+      border-top: 1px solid var(--b1); position: relative; z-index: 1;
+      flex-wrap: wrap;
+    }
+    .cstat {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 10px 20px; border-right: 1px solid var(--b1); flex: 1; min-width: 80px;
+    }
+    .cstat:last-child { border-right: none; }
+    .cstat-v {
+      font-size: 18px; font-weight: 800; font-family: var(--mono);
+      letter-spacing: -.04em; line-height: 1; color: var(--acc);
+    }
+    .cstat-l { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .09em; white-space: nowrap; }
+    .cascade-log-wrap {
+      border-top: 1px solid var(--b1); padding: 12px 16px;
+      max-height: 160px; overflow-y: auto;
+      background: rgba(4,8,15,.5); position: relative; z-index: 1;
+    }
+    .cascade-log-wrap::-webkit-scrollbar { width: 2px; }
+    .cascade-log-wrap::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 1px; }
+    .clog-row {
+      display: flex; align-items: baseline; gap: 9px; padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,.03); font-size: 10px;
+      animation: fadeUp .28s var(--ease);
+    }
+    .clog-row:last-child { border-bottom: none; }
+    .clog-ts { font-size: 8px; color: var(--dim); font-family: var(--mono); flex-shrink: 0; min-width: 52px; }
+    .clog-dev { font-weight: 700; color: var(--blu); flex-shrink: 0; }
+    .clog-msg { color: var(--mut); line-height: 1.45; flex: 1; }
+    .clog-row.cl-ok .clog-dev { color: var(--grn); }
+    .clog-row.cl-warn .clog-dev { color: var(--amb); }
+    .clog-row.cl-crit .clog-dev { color: var(--red); }
+    .clog-row.cl-cbs  .clog-dev { color: var(--red); animation: ldp .8s infinite; }
+    .cascade-editor {
+      border-top: 1px solid rgba(162,124,248,.18);
+      background: rgba(8,5,22,.82); padding: 14px 18px;
+      position: relative; z-index: 1;
+    }
+    .cascade-editor-hdr {
+      font-size: 10px; font-weight: 700; color: var(--pur);
+      text-transform: uppercase; letter-spacing: .12em;
+      margin-bottom: 11px; display: flex; align-items: center; gap: 7px;
+    }
+    .cascade-editor-hdr::before {
+      content: ''; width: 3px; height: 3px; border-radius: 50%;
+      background: var(--pur); box-shadow: 0 0 6px var(--pur);
+    }
+    .ce-row { display: flex; gap: 7px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 8px; }
+    .ce-field { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 130px; }
+    .ce-lbl { font-size: 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+    .ce-sel {
+      background: rgba(255,255,255,.04); border: 1px solid var(--b1); border-radius: var(--r-sm);
+      color: var(--txt); padding: 7px 10px; font-size: 11px; outline: none;
+      transition: border-color .18s; font-family: var(--font); cursor: pointer; width: 100%;
+    }
+    .ce-sel:focus, .ce-sel:hover { border-color: rgba(162,124,248,.5); }
+    .ce-sel option { background: var(--s2); color: var(--txt); }
+    .ce-btn {
+      padding: 7px 14px; border-radius: var(--r-sm); border: none;
+      font-size: 10px; font-weight: 700; cursor: pointer;
+      font-family: var(--font); transition: all .18s var(--ease);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .ce-btn-pur { background: var(--pura); color: var(--pur); border: 1px solid rgba(162,124,248,.28); }
+    .ce-btn-pur:hover { background: rgba(162,124,248,.22); border-color: var(--pur); }
+    .ce-btn-red { background: var(--reda); color: var(--red); border: 1px solid rgba(240,46,80,.22); }
+    .ce-btn-red:hover { background: rgba(240,46,80,.2); border-color: var(--red); }
+    .ce-btn-grn { background: var(--grna); color: var(--grn); border: 1px solid rgba(34,224,122,.22); }
+    .ce-btn-grn:hover { background: rgba(34,224,122,.18); border-color: var(--grn); }
+    .ce-nodes-list {
+      display: flex; gap: 5px; flex-wrap: wrap;
+      max-height: 80px; overflow-y: auto;
+    }
+    .ce-node-tag {
+      font-size: 9px; padding: 3px 10px; border-radius: 30px; cursor: pointer;
+      background: rgba(255,255,255,.04); border: 1px solid var(--b1);
+      color: var(--mut); transition: all .15s; font-family: var(--mono);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .ce-node-tag:hover { border-color: var(--pur); color: var(--pur); }
+    .ce-node-tag .ce-dot {
+      width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+    }
+    .ce-edge-mode {
+      font-size: 9px; color: var(--amb); background: var(--amba);
+      border: 1px solid rgba(242,149,16,.22); border-radius: 5px;
+      padding: 4px 10px; display: none; font-weight: 700; letter-spacing: .04em;
+    }
+    .ce-edge-mode.active { display: block; animation: ldp 1.2s infinite; }
+    .cascade-sp-gate {
+      padding: 14px 18px; border-top: 1px solid var(--b1);
+      background: rgba(8,5,22,.5);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 10px; color: var(--dim);
+    }
+    .cascade-sp-gate span { flex: 1; }
+    .cascade-lock-icon { font-size: 14px; opacity: .5; }
+    .cascade-insight {
+      padding: 12px 18px; border-top: 1px solid var(--b1);
+      background: rgba(162,124,248,.04); position: relative; z-index: 1;
+      display: none;
+    }
+    .cascade-insight.visible { display: block; animation: fadeUp .3s var(--ease); }
+    .ci-title {
+      font-size: 9px; font-weight: 700; color: var(--pur);
+      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 6px;
+    }
+    .ci-body { font-size: 10.5px; color: var(--mut); line-height: 1.7; }
+    .ci-body strong { color: var(--pur); }
+    .cascade-legend {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      padding: 7px 18px; border-bottom: 1px solid var(--b1);
+      background: rgba(4,8,15,.4); position: relative; z-index: 1;
+    }
+    .cl-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 9px; color: var(--mut);
+    }
+    .cl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   </style>
 </head>
 <body>
- <div id="amb" aria-hidden="true"></div>
-<div id="grain" aria-hidden="true"></div>
-<svg id="ambient-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <g id="svg-net" fill="none" stroke="none">
-    <circle class="net-node" cx="200" cy="180" r="5" fill="#28c4f8" opacity=".8"/>
-    <circle class="net-node" cx="520" cy="280" r="5" fill="#28c4f8" opacity=".8" style="animation-delay:.6s"/>
-    <circle class="net-node" cx="840" cy="160" r="5" fill="#28c4f8" opacity=".8" style="animation-delay:1.2s"/>
-    <circle class="net-node" cx="1160" cy="320" r="5" fill="#28c4f8" opacity=".8" style="animation-delay:1.8s"/>
-    <line class="net-line" x1="200" y1="180" x2="520" y2="280" stroke="#28c4f8" stroke-width="1.2"/>
-    <line class="net-line" x1="520" y1="280" x2="840" y2="160" stroke="#28c4f8" stroke-width="1.2" style="animation-delay:.5s"/>
-    <line class="net-line" x1="840" y1="160" x2="1160" y2="320" stroke="#28c4f8" stroke-width="1.2" style="animation-delay:1s"/>
-    <circle r="3" fill="#22e07a" opacity=".9" style="offset-path:path('M200,180 L520,280');animation:pingTravel 2.4s linear infinite"/>
-    <circle r="3" fill="#22e07a" opacity=".9" style="offset-path:path('M520,280 L840,160');animation:pingTravel 2.8s linear infinite;animation-delay:.8s"/>
-  </g>
-  <g id="svg-tc" fill="none">
-    <g transform="translate(240,120)">
-      <line x1="0" y1="-30" x2="0" y2="30" stroke="#28c4f8" stroke-width="2.5" stroke-linecap="round"/>
-      <circle class="tc-ring" cx="0" cy="0" r="8" stroke="#28c4f8" stroke-width="2"/>
-      <circle class="tc-ring" cx="0" cy="0" r="8" stroke="#28c4f8" stroke-width="2" style="animation-delay:.8s"/>
-      <circle class="tc-beacon" cx="0" cy="-38" r="4" fill="#28c4f8"/>
+  <div id="amb" aria-hidden="true"></div>
+  <div id="grain" aria-hidden="true"></div>
+  <svg id="ambient-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g id="svg-net" fill="none" stroke="none">
+      <circle class="net-node" cx="200" cy="180" r="5" fill="#28c4f8" opacity=".8"/>
+      <circle class="net-node" cx="520" cy="280" r="5" fill="#28c4f8" opacity=".8" style="animation-delay:.6s"/>
+      <circle class="net-node" cx="840" cy="160" r="5" fill="#28c4f8" opacity=".8" style="animation-delay:1.2s"/>
+      <circle class="net-node" cx="1160" cy="320" r="5" fill="#28c4f8" opacity=".8" style="animation-delay:1.8s"/>
+      <line class="net-line" x1="200" y1="180" x2="520" y2="280" stroke="#28c4f8" stroke-width="1.2"/>
+      <line class="net-line" x1="520" y1="280" x2="840" y2="160" stroke="#28c4f8" stroke-width="1.2" style="animation-delay:.5s"/>
+      <line class="net-line" x1="840" y1="160" x2="1160" y2="320" stroke="#28c4f8" stroke-width="1.2" style="animation-delay:1s"/>
+      <circle r="3" fill="#22e07a" opacity=".9" style="offset-path:path('M200,180 L520,280');animation:pingTravel 2.4s linear infinite"/>
+      <circle r="3" fill="#22e07a" opacity=".9" style="offset-path:path('M520,280 L840,160');animation:pingTravel 2.8s linear infinite;animation-delay:.8s"/>
     </g>
-  </g>
-  <g id="svg-mc" fill="none">
-    <rect x="60" y="400" width="700" height="18" rx="9" fill="none" stroke="#f5c420" stroke-width="1.5" opacity=".5"/>
-    <circle class="mc-spark" cx="150" cy="320" r="2.5" fill="#f5c420" opacity=".8"/>
-    <circle class="mc-spark" cx="380" cy="260" r="3" fill="#f5c420" opacity=".7" style="animation-delay:.6s"/>
-    <circle class="mc-spark" cx="580" cy="340" r="2" fill="#22e07a" opacity=".9" style="animation-delay:1.2s"/>
-  </g>
-</svg>
-<div id="detail-overlay" onclick="closeDetail(event)">
-  <div class="detail-modal-inner">
-    <div class="dm-header">
-      <div><div class="dm-title" id="dm-title">Device Details</div><div style="font-size:10px;color:var(--dim);margin-top:3px;font-family:var(--mono)" id="dm-subtitle"></div></div>
-      <button class="dm-close" onclick="closeDetailDirect()">&#10005; Close</button>
+    <g id="svg-tc" fill="none">
+      <g transform="translate(240,120)">
+        <line x1="0" y1="-30" x2="0" y2="30" stroke="#28c4f8" stroke-width="2.5" stroke-linecap="round"/>
+        <circle class="tc-ring" cx="0" cy="0" r="8" stroke="#28c4f8" stroke-width="2"/>
+        <circle class="tc-ring" cx="0" cy="0" r="8" stroke="#28c4f8" stroke-width="2" style="animation-delay:.8s"/>
+        <circle class="tc-beacon" cx="0" cy="-38" r="4" fill="#28c4f8"/>
+      </g>
+    </g>
+    <g id="svg-mc" fill="none">
+      <rect x="60" y="400" width="700" height="18" rx="9" fill="none" stroke="#f5c420" stroke-width="1.5" opacity=".5"/>
+      <circle class="mc-spark" cx="150" cy="320" r="2.5" fill="#f5c420" opacity=".8"/>
+      <circle class="mc-spark" cx="380" cy="260" r="3" fill="#f5c420" opacity=".7" style="animation-delay:.6s"/>
+      <circle class="mc-spark" cx="580" cy="340" r="2" fill="#22e07a" opacity=".9" style="animation-delay:1.2s"/>
+    </g>
+  </svg>
+
+  <div id="detail-overlay" onclick="closeDetail(event)">
+    <div class="detail-modal-inner">
+      <div class="dm-header">
+        <div><div class="dm-title" id="dm-title">Device Details</div><div style="font-size:10px;color:var(--dim);margin-top:3px;font-family:var(--mono)" id="dm-subtitle"></div></div>
+        <button class="dm-close" onclick="closeDetailDirect()">&#10005; Close</button>
+      </div>
+      <div class="dm-grid" id="dm-metrics"></div>
+      <div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px"><span style="color:var(--dim)">Health score</span><span id="dm-score-val" style="font-family:var(--mono);font-weight:700"></span></div>
+        <div class="dm-health-bar"><div class="dm-health-fill" id="dm-health-fill"></div></div>
+      </div>
+      <div class="dm-section">Hardware Specifications</div>
+      <table class="dm-spec-table" id="dm-specs"></table>
+      <div class="dm-section">AI Diagnosis</div>
+      <div class="dm-diag" id="dm-diag">No diagnosis available</div>
+      <div class="dm-cmd" id="dm-cmd" style="display:none"></div>
     </div>
-    <div class="dm-grid" id="dm-metrics"></div>
-    <div style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:5px"><span style="color:var(--dim)">Health score</span><span id="dm-score-val" style="font-family:var(--mono);font-weight:700"></span></div>
-      <div class="dm-health-bar"><div class="dm-health-fill" id="dm-health-fill"></div></div>
-    </div>
-    <div class="dm-section">Hardware Specifications</div>
-    <table class="dm-spec-table" id="dm-specs"></table>
-    <div class="dm-section">AI Diagnosis</div>
-    <div class="dm-diag" id="dm-diag">No diagnosis available</div>
-    <div class="dm-cmd" id="dm-cmd" style="display:none"></div>
   </div>
-</div>
-<div id="sector-selector" style="display:none">
-  <div class="ss-box">
-    <div class="ss-logo">
+
+  <div id="sector-selector" style="display:none">
+    <div class="ss-box">
+      <div class="ss-logo">
+        <span style="font-size:20px;font-weight:900;letter-spacing:-.06em;color:var(--blu)">II</span>
+        <span style="font-size:18px;font-weight:700;letter-spacing:.015em;background:linear-gradient(110deg,var(--blu),var(--grn));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent">Sentinel</span>
+        <span style="font-size:8px;color:var(--dim);-webkit-text-fill-color:var(--dim);vertical-align:super;margin-left:1px">&#8482;</span>
+      </div>
+      <div class="ss-title">Select your access</div>
+      <div class="ss-sub">Choose the sectors you need. Only selected tabs will be visible.</div>
+      <div class="ss-cards">
+        <label class="ss-card" id="sc-net"><input type="checkbox" value="net" onchange="updateSectorPreview()"><div class="ss-card-icon" style="color:var(--tel)">&#11041;</div><div class="ss-card-name" style="color:var(--tel)">Network</div><div class="ss-card-desc">Routers · Switches · Firewalls · WAN</div><div class="ss-card-proto">SNMP · BGP · OSPF · NetFlow</div><div class="ss-check">&#10003;</div></label>
+        <label class="ss-card" id="sc-tc"><input type="checkbox" value="tc" onchange="updateSectorPreview()"><div class="ss-card-icon" style="color:var(--blu)">&#128225;</div><div class="ss-card-name" style="color:var(--blu)">TelecomCo</div><div class="ss-card-desc">Base stations · MW backhaul · Towers</div><div class="ss-card-proto">SNMP · LTE · MW backhaul</div><div class="ss-check">&#10003;</div></label>
+        <label class="ss-card" id="sc-mc"><input type="checkbox" value="mc" onchange="updateSectorPreview()"><div class="ss-card-icon" style="color:var(--gld)">&#9881;</div><div class="ss-card-name" style="color:var(--gld)">MiningCo</div><div class="ss-card-desc">PLCs · Pumps · Conveyors · CBS</div><div class="ss-card-proto">Profinet · Modbus TCP · DNP3</div><div class="ss-check">&#10003;</div></label>
+      </div>
+      <div class="ss-quick">
+        <span class="ss-qlbl">Quick:</span>
+        <button class="ss-qbtn" onclick="quickSelect(['net','tc','mc'])">All three</button>
+        <button class="ss-qbtn" onclick="quickSelect(['net','tc'])">Net + Telecom</button>
+        <button class="ss-qbtn" onclick="quickSelect(['tc','mc'])">Telecom + Mining</button>
+        <button class="ss-qbtn" onclick="quickSelect(['net'])">Network only</button>
+        <button class="ss-qbtn" onclick="quickSelect(['tc'])">Telecom only</button>
+        <button class="ss-qbtn" onclick="quickSelect(['mc'])">Mining only</button>
+      </div>
+      <div class="ss-preview" id="ss-preview">Select at least one sector above</div>
+      <button class="ss-enter" id="ss-enter" onclick="enterWithSectors()" disabled>Enter IISentinel&#8482; &#8594;</button>
+      <div class="ss-note">&#9679; CBS Safety follows Mining · Weather & Intelligence always included</div>
+    </div>
+  </div>
+
+  <div id="loader">
+    <div class="lring"></div>
+    <div style="display:flex;align-items:baseline">
       <span style="font-size:20px;font-weight:900;letter-spacing:-.06em;color:var(--blu)">II</span>
       <span style="font-size:18px;font-weight:700;letter-spacing:.015em;background:linear-gradient(110deg,var(--blu),var(--grn));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent">Sentinel</span>
       <span style="font-size:8px;color:var(--dim);-webkit-text-fill-color:var(--dim);vertical-align:super;margin-left:1px">&#8482;</span>
     </div>
-    <div class="ss-title">Select your access</div>
-    <div class="ss-sub">Choose the sectors you need. Only selected tabs will be visible.</div>
-    <div class="ss-cards">
-      <label class="ss-card" id="sc-net"><input type="checkbox" value="net" onchange="updateSectorPreview()"><div class="ss-card-icon" style="color:var(--tel)">&#11041;</div><div class="ss-card-name" style="color:var(--tel)">Network</div><div class="ss-card-desc">Routers &middot; Switches &middot; Firewalls &middot; WAN</div><div class="ss-card-proto">SNMP &middot; BGP &middot; OSPF &middot; NetFlow</div><div class="ss-check">&#10003;</div></label>
-      <label class="ss-card" id="sc-tc"><input type="checkbox" value="tc" onchange="updateSectorPreview()"><div class="ss-card-icon" style="color:var(--blu)">&#128225;</div><div class="ss-card-name" style="color:var(--blu)">TelecomCo</div><div class="ss-card-desc">Base stations &middot; MW backhaul &middot; Towers</div><div class="ss-card-proto">SNMP &middot; LTE &middot; MW backhaul</div><div class="ss-check">&#10003;</div></label>
-      <label class="ss-card" id="sc-mc"><input type="checkbox" value="mc" onchange="updateSectorPreview()"><div class="ss-card-icon" style="color:var(--gld)">&#9881;</div><div class="ss-card-name" style="color:var(--gld)">MiningCo</div><div class="ss-card-desc">PLCs &middot; Pumps &middot; Conveyors &middot; CBS</div><div class="ss-card-proto">Profinet &middot; Modbus TCP &middot; DNP3</div><div class="ss-check">&#10003;</div></label>
+    <div class="lsub2">Intelligent Infrastructure Platform v3</div>
+  </div>
+
+  <div class="ops-banner">&#9888; OPS FOCUS MODE — CRITICAL ASSETS HIGHLIGHTED</div>
+  <div id="toasts"></div>
+
+  <header>
+    <div class="logo" onclick="toast('IISentinel&#8482; v3','Intelligent Infrastructure Sentinel','')">
+      <span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">&#8482;</span>
+      <div class="logo-section-tag" id="logo-stag">Platform</div>
     </div>
-    <div class="ss-quick">
-      <span class="ss-qlbl">Quick:</span>
-      <button class="ss-qbtn" onclick="quickSelect(['net','tc','mc'])">All three</button>
-      <button class="ss-qbtn" onclick="quickSelect(['net','tc'])">Net + Telecom</button>
-      <button class="ss-qbtn" onclick="quickSelect(['tc','mc'])">Telecom + Mining</button>
-      <button class="ss-qbtn" onclick="quickSelect(['net'])">Network only</button>
-      <button class="ss-qbtn" onclick="quickSelect(['tc'])">Telecom only</button>
-      <button class="ss-qbtn" onclick="quickSelect(['mc'])">Mining only</button>
+    <div>
+      <div class="hctr-a">Intelligent Infrastructure Sentinel&#8482;</div>
+      <div class="hctr-b" id="hctr-sub">Network · Telecom · Mining · CBS Safety · Weather</div>
     </div>
-    <div class="ss-preview" id="ss-preview">Select at least one sector above</div>
-    <button class="ss-enter" id="ss-enter" onclick="enterWithSectors()" disabled>Enter IISentinel&#8482; &#8594;</button>
-    <div class="ss-note">&#9679; CBS Safety follows Mining &middot; Weather &amp; Intelligence always included</div>
+    <div class="hrgt">
+      <button class="ss-qbtn" style="border-color:var(--b2)" onclick="showSectorSelector()">&#9776; Sectors</button>
+      <div class="live-pill"><span class="ldot"></span><span class="ltxt">LIVE</span></div>
+      <button class="ops-btn" onclick="toggleOps()">&#8853; Focus</button>
+      <button class="tbtn" onclick="toggleTheme()">&#9728;</button>
+      <button class="btn btn-acc" onclick="exportPDF()">Export PDF</button>
+    </div>
+  </header>
+
+  <nav class="mnav">
+    <div class="ntab active" onclick="goPage(this,'main')">Dashboard</div>
+    <div class="ntab" onclick="goPage(this,'net')">Network</div>
+    <div class="ntab" onclick="goPage(this,'tc')">TelecomCo</div>
+    <div class="ntab" onclick="goPage(this,'mc')">MiningCo</div>
+    <div class="ntab" onclick="goPage(this,'wx')">Weather</div>
+    <div class="ntab" onclick="goPage(this,'intel')">Intelligence</div>
+    <div class="ntab t-cbs" onclick="goPage(this,'cbs')">CBS Safety</div>
+    <div class="ntab t-sp" onclick="goPage(this,'sp')">Specialist</div>
+  </nav>
+
+  <div class="subloc" id="sub-net">
+    <span class="sl-lbl">Network site</span>
+    <button class="stab active" onclick="setSub('net','all',this)">All</button>
+    <button class="stab" onclick="setSub('net','byo',this)">Bulawayo HQ</button>
+    <button class="stab" onclick="setSub('net','hre',this)">Harare</button>
+    <button class="stab" onclick="setSub('net','mut',this)">Mutare</button>
   </div>
-</div>
-<div id="loader">
-  <div class="lring"></div>
-  <div style="display:flex;align-items:baseline">
-    <span style="font-size:20px;font-weight:900;letter-spacing:-.06em;color:var(--blu)">II</span>
-    <span style="font-size:18px;font-weight:700;letter-spacing:.015em;background:linear-gradient(110deg,var(--blu),var(--grn));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent">Sentinel</span>
-    <span style="font-size:8px;color:var(--dim);-webkit-text-fill-color:var(--dim);vertical-align:super;margin-left:1px">&#8482;</span>
+  <div class="subloc" id="sub-tc">
+    <span class="sl-lbl">TelecomCo site</span>
+    <button class="stab active" onclick="setSub('tc','all',this)">All sites</button>
+    <button class="stab" onclick="setSub('tc','byo',this)">Bulawayo HQ</button>
+    <button class="stab" onclick="setSub('tc','hre',this)">Harare</button>
+    <button class="stab" onclick="setSub('tc','mut',this)">Mutare</button>
   </div>
-  <div class="lsub2">Intelligent Infrastructure Platform v3</div>
-</div>
-<div class="ops-banner">&#9888; OPS FOCUS MODE &mdash; CRITICAL ASSETS HIGHLIGHTED</div>
-<div id="toasts"></div>
-<header>
-  <div class="logo" onclick="toast('IISentinel&#8482; v3','Intelligent Infrastructure Sentinel','')">
-    <span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">&#8482;</span>
-    <div class="logo-section-tag" id="logo-stag">Platform</div>
+  <div class="subloc" id="sub-mc">
+    <span class="sl-lbl">MiningCo section</span>
+    <button class="stab active" onclick="setSub('mc','all',this)">All sections</button>
+    <button class="stab" onclick="setSub('mc','shaft1',this)">Shaft 1</button>
+    <button class="stab" onclick="setSub('mc','shaft2',this)">Shaft 2</button>
+    <button class="stab" onclick="setSub('mc','plant',this)">Processing Plant</button>
+    <button class="stab" onclick="setSub('mc','surface',this)">Surface</button>
   </div>
-  <div>
-    <div class="hctr-a">Intelligent Infrastructure Sentinel&#8482;</div>
-    <div class="hctr-b" id="hctr-sub">Network &middot; Telecom &middot; Mining &middot; CBS Safety &middot; Weather</div>
-  </div>
-  <div class="hrgt">
-    <button class="ss-qbtn" style="border-color:var(--b2)" onclick="showSectorSelector()">&#9776; Sectors</button>
-    <div class="live-pill"><span class="ldot"></span><span class="ltxt">LIVE</span></div>
-    <button class="ops-btn" onclick="toggleOps()">&#8853; Focus</button>
-    <button class="tbtn" onclick="toggleTheme()">&#9728;</button>
-    <button class="btn btn-acc" onclick="exportPDF()">Export PDF</button>
-  </div>
-</header>
-<nav class="mnav">
-  <div class="ntab active" onclick="goPage(this,'main')">Dashboard</div>
-  <div class="ntab" onclick="goPage(this,'net')">Network</div>
-  <div class="ntab" onclick="goPage(this,'tc')">TelecomCo</div>
-  <div class="ntab" onclick="goPage(this,'mc')">MiningCo</div>
-  <div class="ntab" onclick="goPage(this,'wx')">Weather</div>
-  <div class="ntab" onclick="goPage(this,'intel')">Intelligence</div>
-  <div class="ntab t-cbs" onclick="goPage(this,'cbs')">CBS Safety</div>
-  <div class="ntab t-sp" onclick="goPage(this,'sp')">Specialist</div>
-</nav>
-<div class="subloc" id="sub-net">
-  <span class="sl-lbl">Network site</span>
-  <button class="stab active" onclick="setSub('net','all',this)">All</button>
-  <button class="stab" onclick="setSub('net','byo',this)">Bulawayo HQ</button>
-  <button class="stab" onclick="setSub('net','hre',this)">Harare</button>
-  <button class="stab" onclick="setSub('net','mut',this)">Mutare</button>
-</div>
-<div class="subloc" id="sub-tc">
-  <span class="sl-lbl">TelecomCo site</span>
-  <button class="stab active" onclick="setSub('tc','all',this)">All sites</button>
-  <button class="stab" onclick="setSub('tc','byo',this)">Bulawayo HQ</button>
-  <button class="stab" onclick="setSub('tc','hre',this)">Harare</button>
-  <button class="stab" onclick="setSub('tc','mut',this)">Mutare</button>
-</div>
-<div class="subloc" id="sub-mc">
-  <span class="sl-lbl">MiningCo section</span>
-  <button class="stab active" onclick="setSub('mc','all',this)">All sections</button>
-  <button class="stab" onclick="setSub('mc','shaft1',this)">Shaft 1</button>
-  <button class="stab" onclick="setSub('mc','shaft2',this)">Shaft 2</button>
-  <button class="stab" onclick="setSub('mc','plant',this)">Processing Plant</button>
-  <button class="stab" onclick="setSub('mc','surface',this)">Surface</button>
-</div>
-<div class="wrap">
-<div class="retrain" id="retrain-bar">&#9888; AI model optimisation recommended &mdash; anomaly rate exceeding threshold.</div>
-<div class="retrain-active" id="retrain-active-bar">&#10004; AI model update in progress &mdash; live monitoring continues uninterrupted.</div>
-<!-- DASHBOARD -->
-<div class="page active" id="page-main">
-  <div class="kpi-bar" id="kpi-bar-main">
-    <div class="kpi-item"><div class="kpi-v cg" id="b-fhi">--</div><div class="kpi-l">Fleet FHI</div></div>
-    <div class="kpi-sep"></div>
-    <div class="kpi-item"><div class="kpi-v ca" id="b-devs">--</div><div class="kpi-l">Active devices</div></div>
-    <div class="kpi-sep"></div>
-    <div class="kpi-item"><div class="cost-tick" id="b-cost">$0/hr</div><div class="kpi-l">Risk exposure</div></div>
-    <div class="kpi-sep"></div>
-    <div class="kpi-item"><div class="kpi-v cw" id="b-inc">--</div><div class="kpi-l">Open incidents</div></div>
-    <div class="kpi-sep"></div>
-    <div class="kpi-item"><div class="kpi-v cp" id="b-anom">--</div><div class="kpi-l">Anomalies</div></div>
-    <div class="kpi-sep"></div>
-    <div class="kpi-item"><div class="kpi-v cg" id="b-cbs">ARMED</div><div class="kpi-l">CBS status</div></div>
-    <div class="kpi-fill"></div>
-    <div style="font-size:9px;color:var(--dim);text-align:right;line-height:1.65;position:relative;z-index:1">IISentinel&#8482; v3.0<br><span style="font-family:var(--mono)" id="last-upd">--</span></div>
-  </div>
-  <div class="sl">All devices &mdash; click any gauge for hardware specifications</div>
-  <div class="ggrid" id="main-gauges"></div>
-  <div class="cgrid">
-    <div class="card"><div class="ctitle">Fleet health trend &mdash; all sectors</div><canvas id="cMain"></canvas></div>
-    <div class="card"><div class="ctitle">Health distribution by band</div><canvas id="cDist"></canvas></div>
-  </div>
-  <div class="fgrid">
-    <div class="fcard"><div class="sl">AI diagnosis feed</div><div id="f-diag"></div></div>
-    <div class="fcard"><div class="sl">Automation command log</div><div id="f-auto"></div></div>
-  </div>
-</div>
-<!-- NETWORK -->
-<div class="page" id="page-net">
-  <div class="dual-banner">
-    <div class="env-hero">
-      <div class="hero-img">
-        <img src="/static/server-room.png" alt="" loading="lazy" onerror="this.style.display='none'">
-        <div class="fb" style="background:linear-gradient(135deg,#001824 0%,#003848 35%,#001020 65%,#002030 100%);position:absolute;inset:0">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.35"><defs><pattern id="fb-net" width="48" height="48" patternUnits="userSpaceOnUse"><circle cx="24" cy="24" r="1.5" fill="#00d4c8" opacity=".6"/><line x1="0" y1="24" x2="48" y2="24" stroke="#28c4f8" stroke-width=".4" opacity=".3"/><line x1="24" y1="0" x2="24" y2="48" stroke="#28c4f8" stroke-width=".4" opacity=".3"/></pattern></defs><rect width="100%" height="100%" fill="url(#fb-net)"/></svg>
+
+  <div class="wrap">
+    <div class="retrain" id="retrain-bar">&#9888; AI model optimisation recommended — anomaly rate exceeding threshold.</div>
+    <div class="retrain-active" id="retrain-active-bar">&#10004; AI model update in progress — live monitoring continues uninterrupted.</div>
+
+    <!-- MAIN DASHBOARD PAGE -->
+    <div class="page active" id="page-main">
+      <div class="kpi-bar" id="kpi-bar-main">
+        <div class="kpi-item"><div class="kpi-v cg" id="b-fhi">--</div><div class="kpi-l">Fleet FHI</div></div>
+        <div class="kpi-sep"></div>
+        <div class="kpi-item"><div class="kpi-v ca" id="b-devs">--</div><div class="kpi-l">Active devices</div></div>
+        <div class="kpi-sep"></div>
+        <div class="kpi-item"><div class="cost-tick" id="b-cost">$0/hr</div><div class="kpi-l">Risk exposure</div></div>
+        <div class="kpi-sep"></div>
+        <div class="kpi-item"><div class="kpi-v cw" id="b-inc">--</div><div class="kpi-l">Open incidents</div></div>
+        <div class="kpi-sep"></div>
+        <div class="kpi-item"><div class="kpi-v cp" id="b-anom">--</div><div class="kpi-l">Anomalies</div></div>
+        <div class="kpi-sep"></div>
+        <div class="kpi-item"><div class="kpi-v cg" id="b-cbs">ARMED</div><div class="kpi-l">CBS status</div></div>
+        <div class="kpi-fill"></div>
+        <div style="font-size:9px;color:var(--dim);text-align:right;line-height:1.65;position:relative;z-index:1">IISentinel&#8482; v3.0<br><span style="font-family:var(--mono)" id="last-upd">--</span></div>
+      </div>
+      <div class="sl">All devices — click any gauge for hardware specifications</div>
+      <div class="ggrid" id="main-gauges"></div>
+      <div class="cgrid">
+        <div class="card"><div class="ctitle">Fleet health trend — all sectors</div><canvas id="cMain"></canvas></div>
+        <div class="card"><div class="ctitle">Health distribution by band</div><canvas id="cDist"></canvas></div>
+      </div>
+      <div class="fgrid">
+        <div class="fcard"><div class="sl">AI diagnosis feed</div><div id="f-diag"></div></div>
+        <div class="fcard"><div class="sl">Automation command log</div><div id="f-auto"></div></div>
+      </div>
+    </div>
+
+    <!-- NETWORK PAGE -->
+    <div class="page" id="page-net">
+      <div class="dual-banner">
+        <div class="env-hero">
+          <div class="hero-img">
+            <img src="/static/server-room.png" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="fb" style="background:linear-gradient(135deg,#001824 0%,#003848 35%,#001020 65%,#002030 100%);position:absolute;inset:0">
+              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.35"><defs><pattern id="fb-net" width="48" height="48" patternUnits="userSpaceOnUse"><circle cx="24" cy="24" r="1.5" fill="#00d4c8" opacity=".6"/><line x1="0" y1="24" x2="48" y2="24" stroke="#28c4f8" stroke-width=".4" opacity=".3"/><line x1="24" y1="0" x2="24" y2="48" stroke="#28c4f8" stroke-width=".4" opacity=".3"/></pattern></defs><rect width="100%" height="100%" fill="url(#fb-net)"/></svg>
+            </div>
+          </div>
+          <div class="hero-text">
+            <div class="hero-ey" style="color:var(--tel)">Network Monitoring · SNMP · BGP · Real-time</div>
+            <div class="hero-h1">Network Infrastructure</div>
+            <div class="hero-desc">Core routers · Distribution switches · Firewalls · WAN links</div>
+          </div>
+          <div class="hero-protos"><div class="hp">SNMP v2/v3</div><div class="hp">BGP · OSPF</div><div class="hp">ICMP · NetFlow</div><div class="hp">IEEE 802.3</div></div>
+        </div>
+        <div class="statbar sb-net">
+          <div class="esb"><div class="esb-v" id="net-fhi">--</div><div class="esb-l">Network FHI</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cw" id="net-lat">-- ms</div><div class="esb-l">Avg Latency</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cr" id="net-faults">0</div><div class="esb-l">Active Faults</div></div>
+          <div class="esb-fill"></div>
+          <div class="live-chip"><div class="ldot" style="background:var(--tel)"></div><span class="lc-l" style="color:var(--tel)">Live polling</span></div>
         </div>
       </div>
-      <div class="hero-text">
-        <div class="hero-ey" style="color:var(--tel)">Network Monitoring &middot; SNMP &middot; BGP &middot; Real-time</div>
-        <div class="hero-h1">Network Infrastructure</div>
-        <div class="hero-desc">Core routers &middot; Distribution switches &middot; Firewalls &middot; WAN links</div>
+      <div class="nm-wrap">
+        <div class="sl" style="margin-bottom:11px">Node monitor — add any device by IP or hostname</div>
+        <div class="nm-toolbar">
+          <div class="nm-field"><span class="nm-input-label">Label</span><input class="nm-input" id="nm-label-net" placeholder="e.g. Core Router 1" maxlength="48"></div>
+          <div class="nm-field" style="flex:1.5"><span class="nm-input-label">IP address or hostname</span><input class="nm-input" id="nm-host-net" placeholder="192.168.1.1" maxlength="253" onkeydown="if(event.key==='Enter')nmAdd('net')"></div>
+          <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:1px">
+            <button class="btn btn-acc" onclick="nmAdd('net')" style="font-size:11px;padding:8px 14px">&#43; Add node</button>
+            <button class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="nmPollAll('net')">&#8635;</button>
+          </div>
+        </div>
+        <div class="nm-grid" id="nm-grid-net"><div class="nm-empty">No nodes yet — enter an IP address above and click <strong>Add node</strong></div></div>
       </div>
-      <div class="hero-protos"><div class="hp">SNMP v2/v3</div><div class="hp">BGP &middot; OSPF</div><div class="hp">ICMP &middot; NetFlow</div><div class="hp">IEEE 802.3</div></div>
-    </div>
-    <div class="statbar sb-net">
-      <div class="esb"><div class="esb-v" id="net-fhi">--</div><div class="esb-l">Network FHI</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cw" id="net-lat">-- ms</div><div class="esb-l">Avg Latency</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cr" id="net-faults">0</div><div class="esb-l">Active Faults</div></div>
-      <div class="esb-fill"></div>
-      <div class="live-chip"><div class="ldot" style="background:var(--tel)"></div><span class="lc-l" style="color:var(--tel)">Live polling</span></div>
-    </div>
-  </div>
-  <div class="nm-wrap">
-    <div class="sl" style="margin-bottom:11px">Node monitor &mdash; add any device by IP or hostname</div>
-    <div class="nm-toolbar">
-      <div class="nm-field"><span class="nm-input-label">Label</span><input class="nm-input" id="nm-label-net" placeholder="e.g. Core Router 1" maxlength="48"></div>
-      <div class="nm-field" style="flex:1.5"><span class="nm-input-label">IP address or hostname</span><input class="nm-input" id="nm-host-net" placeholder="192.168.1.1" maxlength="253" onkeydown="if(event.key==='Enter')nmAdd('net')"></div>
-      <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:1px">
-        <button class="btn btn-acc" onclick="nmAdd('net')" style="font-size:11px;padding:8px 14px">&#43; Add node</button>
-        <button class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="nmPollAll('net')">&#8635;</button>
+      <div class="sl">All network devices — click any gauge for engineering detail</div>
+      <div class="ggrid" id="g-net"></div>
+      <div class="cgrid">
+        <div class="card"><div class="ctitle">Network health trend</div><canvas id="cNet"></canvas></div>
+        <div class="card"><div class="ctitle">Latency over time (ms)</div><canvas id="cNetL"></canvas></div>
+      </div>
+      <div class="fgrid">
+        <div class="fcard"><div class="sl">Network fault log</div><div id="net-feed"></div></div>
+        <div class="fcard"><div class="sl">Automation commands</div><div id="net-auto"></div></div>
       </div>
     </div>
-    <div class="nm-grid" id="nm-grid-net"><div class="nm-empty">No nodes yet &mdash; enter an IP address above and click <strong>Add node</strong></div></div>
-  </div>
-  <div class="sl">All network devices &mdash; click any gauge for engineering detail</div>
-  <div class="ggrid" id="g-net"></div>
-  <div class="cgrid">
-    <div class="card"><div class="ctitle">Network health trend</div><canvas id="cNet"></canvas></div>
-    <div class="card"><div class="ctitle">Latency over time (ms)</div><canvas id="cNetL"></canvas></div>
-  </div>
-  <div class="fgrid">
-    <div class="fcard"><div class="sl">Network fault log</div><div id="net-feed"></div></div>
-    <div class="fcard"><div class="sl">Automation commands</div><div id="net-auto"></div></div>
-  </div>
-</div>
-<!-- TELECOMCO -->
-<div class="page" id="page-tc">
-  <div class="dual-banner">
-    <div class="env-hero">
-      <div class="hero-img">
-        <img src="/static/tc-tower.png" alt="" loading="lazy" onerror="this.style.display='none'">
-        <div class="fb" style="background:linear-gradient(135deg,#000c20 0%,#001840 35%,#000a18 65%,#001428 100%);position:absolute;inset:0"></div>
-      </div>
-      <div class="hero-text">
-        <div class="hero-ey" style="color:var(--blu)">Telecommunications &middot; Live RF Monitoring &middot; MW Backhaul</div>
-        <div class="hero-h1" id="tc-env-title">TelecomCo &mdash; All Sites</div>
-        <div class="hero-desc">Base stations &middot; Network towers &middot; Microwave backhaul</div>
-      </div>
-      <div class="hero-protos"><div class="hp">SNMP &middot; LTE</div><div class="hp">MW backhaul</div><div class="hp">IEEE 802.3</div><div class="hp">dBm / SNR</div></div>
-    </div>
-    <div class="statbar sb-tc">
-      <div class="esb"><div class="esb-v" id="tc-fhi">--</div><div class="esb-l">Site FHI</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v ca" id="tc-devs">--</div><div class="esb-l">Active Nodes</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cr" id="tc-faults">0</div><div class="esb-l">Open Faults</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cg" id="tc-sig">--%</div><div class="esb-l">Avg Signal</div></div>
-      <div class="esb-fill"></div>
-      <div class="live-chip"><div class="ldot"></div><span class="lc-l" style="color:var(--grn)">RF Monitor</span></div>
-    </div>
-  </div>
-  <div class="lcgrid" id="tc-loccards"></div>
-  <div class="nm-wrap">
-    <div class="sl" style="margin-bottom:11px">Tower &amp; base station nodes</div>
-    <div class="nm-toolbar">
-      <div class="nm-field"><span class="nm-input-label">Site label</span><input class="nm-input" id="nm-label-tc" placeholder="e.g. Bulawayo Tower 1" maxlength="48"></div>
-      <div class="nm-field" style="flex:1.5"><span class="nm-input-label">IP address or hostname</span><input class="nm-input" id="nm-host-tc" placeholder="10.10.1.1" maxlength="253" onkeydown="if(event.key==='Enter')nmAdd('tc')"></div>
-      <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:1px">
-        <button class="btn btn-acc" onclick="nmAdd('tc')" style="font-size:11px;padding:8px 14px">&#43; Add node</button>
-        <button class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="nmPollAll('tc')">&#8635;</button>
-      </div>
-    </div>
-    <div class="nm-grid" id="nm-grid-tc"><div class="nm-empty">No tower nodes yet &mdash; enter a management IP above</div></div>
-  </div>
-  <div class="dc-panel">
-    <div class="sl" style="margin-bottom:10px">How TelecomCo data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
-    <div class="dc-method"><div class="dc-icon" style="background:rgba(52,198,244,.15)">&#128225;</div><div><div class="dc-title">Node Monitor <span class="dc-badge live">Live</span></div><div class="dc-desc">Add your base station management IPs. IISentinel&#8482; probes TCP connectivity every 30s, measures latency, detects outages, and feeds health scores into the AI pipeline automatically.</div></div></div>
-    <div class="dc-method"><div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div><div><div class="dc-title">Demo mode <span class="dc-badge auto">Auto</span></div><div class="dc-desc">Start with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">DEMO_MODE=true python app.py</code> to inject 15 realistic devices across all sectors including 3 TelecomCo nodes.</div></div></div>
-  </div>
-  <div class="sl">TelecomCo devices &mdash; click any gauge for engineering detail</div>
-  <div class="ggrid" id="tc-gauges"></div>
-  <div class="cgrid">
-    <div class="card"><div class="ctitle">TelecomCo health trend</div><canvas id="cTcH"></canvas></div>
-    <div class="card"><div class="ctitle">Signal strength over time (%)</div><canvas id="cTcS"></canvas></div>
-  </div>
-  <div class="fgrid">
-    <div class="fcard"><div class="sl">Fault log</div><div id="tc-feed"></div></div>
-    <div class="fcard"><div class="sl">Automation commands</div><div id="tc-auto"></div></div>
-  </div>
-</div>
-<!-- MININGCO -->
-<div class="page" id="page-mc">
-  <div class="dual-banner">
-    <div class="env-hero">
-      <div class="hero-img">
-        <img src="/static/mine-plant.png" alt="" loading="lazy" style="object-position:center 35%" onerror="this.style.display='none'">
-        <div class="fb" style="background:linear-gradient(135deg,#100800 0%,#2a1400 35%,#0c0400 65%,#1a0a00 100%);position:absolute;inset:0">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.28"><defs><radialGradient id="fb-mc1" cx="30%" cy="60%" r="45%"><stop offset="0%" stop-color="#f5c420" stop-opacity=".5"/><stop offset="100%" stop-color="#f5c420" stop-opacity="0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#fb-mc1)"/></svg>
+
+    <!-- TELECOMCO PAGE -->
+    <div class="page" id="page-tc">
+      <div class="dual-banner">
+        <div class="env-hero">
+          <div class="hero-img">
+            <img src="/static/tc-tower.png" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="fb" style="background:linear-gradient(135deg,#000c20 0%,#001840 35%,#000a18 65%,#001428 100%);position:absolute;inset:0"></div>
+          </div>
+          <div class="hero-text">
+            <div class="hero-ey" style="color:var(--blu)">Telecommunications · Live RF Monitoring · MW Backhaul</div>
+            <div class="hero-h1" id="tc-env-title">TelecomCo — All Sites</div>
+            <div class="hero-desc">Base stations · Network towers · Microwave backhaul</div>
+          </div>
+          <div class="hero-protos"><div class="hp">SNMP · LTE</div><div class="hp">MW backhaul</div><div class="hp">IEEE 802.3</div><div class="hp">dBm / SNR</div></div>
+        </div>
+        <div class="statbar sb-tc">
+          <div class="esb"><div class="esb-v" id="tc-fhi">--</div><div class="esb-l">Site FHI</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v ca" id="tc-devs">--</div><div class="esb-l">Active Nodes</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cr" id="tc-faults">0</div><div class="esb-l">Open Faults</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cg" id="tc-sig">--%</div><div class="esb-l">Avg Signal</div></div>
+          <div class="esb-fill"></div>
+          <div class="live-chip"><div class="ldot"></div><span class="lc-l" style="color:var(--grn)">RF Monitor</span></div>
         </div>
       </div>
-      <div class="hero-text">
-        <div class="hero-ey" style="color:var(--gld)">Industrial Operations &middot; Safety Critical &middot; DNP3 Monitored</div>
-        <div class="hero-h1" id="mc-env-title">MiningCo &mdash; All Sections</div>
-        <div class="hero-desc">PLCs &middot; Pumps &middot; Conveyors &middot; Ventilation &middot; CBS controller</div>
+      <div class="lcgrid" id="tc-loccards"></div>
+      <div class="nm-wrap">
+        <div class="sl" style="margin-bottom:11px">Tower & base station nodes</div>
+        <div class="nm-toolbar">
+          <div class="nm-field"><span class="nm-input-label">Site label</span><input class="nm-input" id="nm-label-tc" placeholder="e.g. Bulawayo Tower 1" maxlength="48"></div>
+          <div class="nm-field" style="flex:1.5"><span class="nm-input-label">IP address or hostname</span><input class="nm-input" id="nm-host-tc" placeholder="10.10.1.1" maxlength="253" onkeydown="if(event.key==='Enter')nmAdd('tc')"></div>
+          <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:1px">
+            <button class="btn btn-acc" onclick="nmAdd('tc')" style="font-size:11px;padding:8px 14px">&#43; Add node</button>
+            <button class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:11px;padding:8px 12px" onclick="nmPollAll('tc')">&#8635;</button>
+          </div>
+        </div>
+        <div class="nm-grid" id="nm-grid-tc"><div class="nm-empty">No tower nodes yet — enter a management IP above</div></div>
       </div>
-      <div class="hero-protos"><div class="hp">Profinet</div><div class="hp">Modbus TCP</div><div class="hp">OPC-UA</div><div class="hp">DNP3 &middot; EtherNet/IP</div></div>
-    </div>
-    <div class="statbar sb-mc">
-      <div class="esb"><div class="esb-v cw" id="mc-fhi">--</div><div class="esb-l">Section FHI</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v ca" id="mc-devs">--</div><div class="esb-l">Active Assets</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cr" id="mc-alerts">0</div><div class="esb-l">Safety Alerts</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cr" id="mc-crit">0</div><div class="esb-l">Critical Assets</div></div>
-      <div class="esb-fill"></div>
-      <div class="live-chip" style="background:rgba(242,149,16,.07);border-color:rgba(242,149,16,.18)"><div class="ldot" style="background:var(--amb)"></div><span class="lc-l" style="color:var(--amb)">Safety Monitor</span></div>
-    </div>
-  </div>
-  <div class="lcgrid" id="mc-seccards"></div>
-  <div class="dc-panel">
-    <div class="sl" style="margin-bottom:10px">How MiningCo equipment data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
-    <div class="dc-method"><div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div><div><div class="dc-title">Demo mode <span class="dc-badge live">Live</span></div><div class="dc-desc">Run <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">DEMO_MODE=true python app.py</code>. Realistic data from 9 mining devices injects automatically, simulating degradation, CBS holds, and auto-retrain triggers.</div></div></div>
-    <div class="dc-method"><div class="dc-icon" style="background:rgba(176,136,250,.15)">&#9889;</div><div><div class="dc-title">CBS DNP3 monitor <span class="dc-badge auto">Auto-interlock</span></div><div class="dc-desc">POST readings with <code style="background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px;font-size:9px">device_type: cbs_controller</code>. When composite integrity drops below 90%, IISentinel&#8482; automatically issues a blast hold and fires SMS.</div></div></div>
-  </div>
-  <div class="sl">Mining &amp; CBS devices &mdash; click any gauge for engineering detail</div>
-  <div class="ggrid" id="mc-gauges"></div>
-  <div class="cgrid">
-    <div class="card"><div class="ctitle">Equipment health trend</div><canvas id="cMcH"></canvas></div>
-    <div class="card"><div class="ctitle">Temperature monitoring (&#176;C)</div><canvas id="cMcT"></canvas></div>
-  </div>
-  <div class="fgrid">
-    <div class="fcard"><div class="sl">Safety alerts</div><div id="mc-feed"></div></div>
-    <div class="fcard"><div class="sl">Automation commands</div><div id="mc-auto"></div></div>
-  </div>
-</div>
-<!-- WEATHER -->
-<div class="page" id="page-wx">
-  <div class="sl">Weather forecast &mdash; live equipment impact analysis</div>
-  <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);padding:22px">Loading weather data...</div></div>
-  <div class="cgrid">
-    <div class="card"><div class="ctitle">Wind speed forecast &mdash; next 24h (km/h)</div><canvas id="cWind"></canvas></div>
-    <div class="card"><div class="ctitle">Precipitation probability &mdash; next 24h (%)</div><canvas id="cPrecip"></canvas></div>
-  </div>
-</div>
-<!-- INTELLIGENCE -->
-<div class="page" id="page-intel">
-  <div class="sl">Platform intelligence &mdash; real-time AI insights</div>
-  <div class="igrid">
-    <div class="icard"><div class="ititle">Federated health index</div><div class="ival cg" id="i-fhi">--</div><div class="isub">Weighted all assets</div></div>
-    <div class="icard"><div class="ititle">Event to decision</div><div class="ival cg" id="i-e2d">&lt;60s</div><div class="isub">Anomaly to command</div></div>
-    <div class="icard"><div class="ititle">Highest failure risk</div><div class="ival cr" id="i-risk">--</div><div class="isub">Next 30 minutes</div></div>
-    <div class="icard"><div class="ititle">Model status</div><div class="ival cg" id="i-model">Optimal</div><div class="isub">Continuous learning</div></div>
-    <div class="icard"><div class="ititle">Total devices</div><div class="ival ca" id="i-devs">--</div><div class="isub">All sectors</div></div>
-    <div class="icard"><div class="ititle">Flagged events</div><div class="ival cp" id="i-anom">--</div><div class="isub">AI-detected deviations</div></div>
-    <div class="icard"><div class="ititle">Cross-sector faults</div><div class="ival cw" id="i-corr">--</div><div class="isub">Cascading degradation</div></div>
-  </div>
-  <div class="sl">Digital twin &mdash; real load scenario simulator</div>
-  <div class="twin-wrap">
-    <select class="twin-sel" id="twin-sel" onchange="runTwin()"><option value="">Select a device to simulate load scenarios...</option></select>
-    <div class="twin-grid" id="twin-grid"><div style="color:var(--dim);font-size:11px;grid-column:1/-1">Select a device above to model performance under increased load</div></div>
-    <div class="twin-trend" id="twin-trend"></div>
-  </div>
-  <div class="fgrid">
-    <div class="fcard"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
-    <div class="fcard"><div class="sl">Equipment lifecycle &amp; ETTF</div><div id="lifecycle-feed"></div></div>
-  </div>
-  <div class="card" style="margin-bottom:14px"><div class="ctitle">Device uptime % &mdash; all assets</div><canvas id="cUp"></canvas></div>
-  <div class="protos">
-    <div class="ptag"><b>IEEE 802.3</b> Ethernet</div><div class="ptag"><b>SNMP v2/v3</b> polling</div><div class="ptag"><b>Profinet</b> PLC</div>
-    <div class="ptag"><b>Modbus TCP</b> sensors</div><div class="ptag"><b>EtherNet/IP</b> conveyor</div><div class="ptag"><b>DNP3</b> CBS safety</div><div class="ptag"><b>OPC-UA</b> SCADA</div>
-  </div>
-  <div class="card" style="margin-bottom:14px">
-    <div class="ctitle">Platform observability</div>
-    <div class="igrid" style="margin-top:11px">
-      <div class="icard"><div class="ititle">Data throughput</div><div class="ival ca" id="p-queue">--</div><div class="isub">Active readings/cycle</div></div>
-      <div class="icard"><div class="ititle">Data freshness</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Last sync</div></div>
-      <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
-      <div class="icard"><div class="ititle">Model health</div><div class="ival cg" id="p-retrain">Optimal</div><div class="isub">AI model status</div></div>
-      <div class="icard"><div class="ival cg" id="p-uptime">--h</div><div class="ititle">Platform uptime</div><div class="isub">Since last restart</div></div>
-    </div>
-    <div style="margin-top:13px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-sm)">
-      <div class="sl" style="margin-bottom:9px">Notification channels</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <div id="nc-email" style="font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)">&#10003; Email</div>
-        <div id="nc-sms" style="font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS Alerts</div>
-        <div id="nc-wa" style="font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp</div>
-        <span style="font-size:9px;color:var(--dim)">Configure in .env &mdash; CBS hold always triggers SMS</span>
+      <div class="dc-panel">
+        <div class="sl" style="margin-bottom:10px">How TelecomCo data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
+        <div class="dc-method"><div class="dc-icon" style="background:rgba(52,198,244,.15)">&#128225;</div><div><div class="dc-title">Node Monitor <span class="dc-badge live">Live</span></div><div class="dc-desc">Add your base station management IPs. IISentinel&#8482; probes TCP connectivity every 30s.</div></div></div>
+        <div class="dc-method"><div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div><div><div class="dc-title">Demo mode <span class="dc-badge auto">Auto</span></div><div class="dc-desc">Start with <code>DEMO_MODE=true python app.py</code> to inject 15 devices.</div></div></div>
+      </div>
+      <div class="sl">TelecomCo devices — click any gauge for engineering detail</div>
+      <div class="ggrid" id="tc-gauges"></div>
+      <div class="cgrid">
+        <div class="card"><div class="ctitle">TelecomCo health trend</div><canvas id="cTcH"></canvas></div>
+        <div class="card"><div class="ctitle">Signal strength over time (%)</div><canvas id="cTcS"></canvas></div>
+      </div>
+      <div class="fgrid">
+        <div class="fcard"><div class="sl">Fault log</div><div id="tc-feed"></div></div>
+        <div class="fcard"><div class="sl">Automation commands</div><div id="tc-auto"></div></div>
       </div>
     </div>
-  </div>
-</div>
-<!-- CBS SAFETY -->
-<div class="page" id="page-cbs">
-  <div class="dual-banner">
-    <div class="env-hero">
-      <div class="hero-img">
-        <img src="/static/mine-plant.png" alt="" loading="lazy" style="object-position:center 60%;filter:brightness(.5) saturate(.65) hue-rotate(-12deg)" onerror="this.style.display='none'">
-        <div class="fb" style="background:linear-gradient(135deg,#140006 0%,#2e0010 35%,#0e0004 65%,#1a0008 100%);position:absolute;inset:0"></div>
+
+    <!-- MININGCO PAGE -->
+    <div class="page" id="page-mc">
+      <div class="dual-banner">
+        <div class="env-hero">
+          <div class="hero-img">
+            <img src="/static/mine-plant.png" alt="" loading="lazy" style="object-position:center 35%" onerror="this.style.display='none'">
+            <div class="fb" style="background:linear-gradient(135deg,#100800 0%,#2a1400 35%,#0c0400 65%,#1a0a00 100%);position:absolute;inset:0">
+              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.28"><defs><radialGradient id="fb-mc1" cx="30%" cy="60%" r="45%"><stop offset="0%" stop-color="#f5c420" stop-opacity=".5"/><stop offset="100%" stop-color="#f5c420" stop-opacity="0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#fb-mc1)"/></svg>
+            </div>
+          </div>
+          <div class="hero-text">
+            <div class="hero-ey" style="color:var(--gld)">Industrial Operations · Safety Critical · DNP3 Monitored</div>
+            <div class="hero-h1" id="mc-env-title">MiningCo — All Sections</div>
+            <div class="hero-desc">PLCs · Pumps · Conveyors · Ventilation · CBS controller</div>
+          </div>
+          <div class="hero-protos"><div class="hp">Profinet</div><div class="hp">Modbus TCP</div><div class="hp">OPC-UA</div><div class="hp">DNP3 · EtherNet/IP</div></div>
+        </div>
+        <div class="statbar sb-mc">
+          <div class="esb"><div class="esb-v cw" id="mc-fhi">--</div><div class="esb-l">Section FHI</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v ca" id="mc-devs">--</div><div class="esb-l">Active Assets</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cr" id="mc-alerts">0</div><div class="esb-l">Safety Alerts</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cr" id="mc-crit">0</div><div class="esb-l">Critical Assets</div></div>
+          <div class="esb-fill"></div>
+          <div class="live-chip" style="background:rgba(242,149,16,.07);border-color:rgba(242,149,16,.18)"><div class="ldot" style="background:var(--amb)"></div><span class="lc-l" style="color:var(--amb)">Safety Monitor</span></div>
+        </div>
       </div>
-      <div class="hero-text">
-        <div class="hero-ey" style="color:var(--red)">Safety Critical &middot; DNP3 Protocol &middot; $500,000/blast</div>
-        <div class="hero-h1">Centralised Blasting System</div>
-        <div class="hero-desc">DNP3 Safety Monitor &middot; Multi-factor integrity below 90% triggers auto-interlock</div>
+      <div class="lcgrid" id="mc-seccards"></div>
+      <div class="dc-panel">
+        <div class="sl" style="margin-bottom:10px">How MiningCo equipment data reaches IISentinel&#8482; <span class="dc-badge auto">auto-explained</span></div>
+        <div class="dc-method"><div class="dc-icon" style="background:rgba(245,160,32,.15)">&#9881;</div><div><div class="dc-title">Demo mode <span class="dc-badge live">Live</span></div><div class="dc-desc">Run <code>DEMO_MODE=true python app.py</code>. Realistic data injects automatically.</div></div></div>
+        <div class="dc-method"><div class="dc-icon" style="background:rgba(176,136,250,.15)">&#9889;</div><div><div class="dc-title">CBS DNP3 monitor <span class="dc-badge auto">Auto-interlock</span></div><div class="dc-desc">POST readings with <code>device_type: cbs_controller</code>.</div></div></div>
       </div>
-      <div class="hero-protos">
-        <div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">DNP3</div>
-        <div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">EtherNet/IP</div>
-        <div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">Safety PLC</div>
+      <div class="sl">Mining & CBS devices — click any gauge for engineering detail</div>
+      <div class="ggrid" id="mc-gauges"></div>
+      <div class="cgrid">
+        <div class="card"><div class="ctitle">Equipment health trend</div><canvas id="cMcH"></canvas></div>
+        <div class="card"><div class="ctitle">Temperature monitoring (&#176;C)</div><canvas id="cMcT"></canvas></div>
       </div>
-    </div>
-    <div class="statbar sb-cbs">
-      <div class="esb"><div class="esb-v" style="color:var(--red);font-size:14px;font-family:var(--mono);font-weight:800" id="cbs-status-banner">ARMED</div><div class="esb-l">Blast Status</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cg" id="cbs-health-banner">--</div><div class="esb-l">Link Health %</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v cg" id="cbs-integrity-banner">--</div><div class="esb-l">Integrity Score</div></div>
-      <div class="esb-sep"></div>
-      <div class="esb"><div class="esb-v" style="color:var(--amb)">90%</div><div class="esb-l">Interlock Threshold</div></div>
-      <div class="esb-fill"></div>
-      <div class="live-chip" style="background:rgba(240,46,80,.07);border-color:rgba(240,46,80,.2)"><div class="ldot" style="background:var(--red)"></div><span class="lc-l" style="color:var(--red)">Safety Monitor</span></div>
-    </div>
-  </div>
-  <div class="cbsouter">
-    <div class="cbs-title"><div class="cbsdot"></div>CBS Units &mdash; DNP3 Link + Multi-Factor Integrity</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.65">Protocol: DNP3 over Ethernet &middot; Integrity = Link(55%) + Stability(30%) + Thermal(15%) &middot; Threshold: 90%</div>
-    <div class="cbs-grid" id="cbs-devs"></div>
-    <div style="background:rgba(8,2,2,.7);border:1px solid rgba(255,62,80,.14);border-radius:var(--r-sm);padding:12px">
-      <div class="sl" style="color:var(--red)">CBS safety interlock log</div>
-      <div id="cbs-log"></div>
-    </div>
-  </div>
-  <div class="card"><div class="ctitle">CBS link health &mdash; blast hold triggers below 90% integrity</div><canvas id="cCbs"></canvas></div>
-</div>
-<!-- SPECIALIST -->
-<div class="page" id="page-sp">
-  <div id="login-sec">
-    <div class="lbox">
-      <div class="ltitle">Specialist access &mdash; IISentinel&#8482;</div>
-      <div class="lsub">Restricted to authorised engineers and administrators.<br>All access is timestamped and audited.</div>
-      <div class="lg"><label class="ll">Username</label><input class="li" id="l-name" type="text" placeholder="Enter username"></div>
-      <div class="lg"><label class="ll">Password</label><input class="li" id="l-pass" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <button class="btn btn-pur" onclick="doLogin()">Access specialist panel</button>
-      <div class="lerr" id="l-err"></div>
-    </div>
-  </div>
-  <div id="sp-sec" style="display:none">
-    <div class="sphead">
-      <div><div class="spname" id="sp-name">Specialist</div><div class="sprole" id="sp-role">Role</div></div>
-      <div style="display:flex;gap:7px">
-        <button class="btn btn-amb" onclick="loadShiftReport()" style="font-size:10px">Shift report</button>
-        <button class="btn btn-red" onclick="doLogout()" style="font-size:10px">Log out</button>
+      <div class="fgrid">
+        <div class="fcard"><div class="sl">Safety alerts</div><div id="mc-feed"></div></div>
+        <div class="fcard"><div class="sl">Automation commands</div><div id="mc-auto"></div></div>
       </div>
     </div>
-    <div class="banner" style="grid-template-columns:repeat(3,1fr)">
-      <div class="bc"><div class="bl">Open incidents</div><div class="bv cr" id="sp-open">0</div></div>
-      <div class="bc"><div class="bl">Assigned</div><div class="bv cw" id="sp-asgn">0</div></div>
-      <div class="bc"><div class="bl">Resolved</div><div class="bv cg" id="sp-res">0</div></div>
+
+    <!-- WEATHER PAGE -->
+    <div class="page" id="page-wx">
+      <div class="sl">Weather forecast — live equipment impact analysis</div>
+      <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);padding:22px">Loading weather data...</div></div>
+      <div class="cgrid">
+        <div class="card"><div class="ctitle">Wind speed forecast — next 24h (km/h)</div><canvas id="cWind"></canvas></div>
+        <div class="card"><div class="ctitle">Precipitation probability — next 24h (%)</div><canvas id="cPrecip"></canvas></div>
+      </div>
     </div>
-    <div id="sr-panel" style="display:none;margin-bottom:14px">
-      <div class="sl">Shift handover report</div>
-      <div class="sr-grid" id="sr-grid"></div>
-      <div class="fcard" style="max-height:200px;margin-bottom:14px"><div class="sl">Top risks</div><div id="sr-risks"></div></div>
+
+    <!-- INTELLIGENCE PAGE (with cascade inserted) -->
+    <div class="page" id="page-intel">
+      <div class="sl">Platform intelligence — real-time AI insights</div>
+      <div class="igrid">
+        <div class="icard"><div class="ititle">Federated health index</div><div class="ival cg" id="i-fhi">--</div><div class="isub">Weighted all assets</div></div>
+        <div class="icard"><div class="ititle">Event to decision</div><div class="ival cg" id="i-e2d">&lt;60s</div><div class="isub">Anomaly to command</div></div>
+        <div class="icard"><div class="ititle">Highest failure risk</div><div class="ival cr" id="i-risk">--</div><div class="isub">Next 30 minutes</div></div>
+        <div class="icard"><div class="ititle">Model status</div><div class="ival cg" id="i-model">Optimal</div><div class="isub">Continuous learning</div></div>
+        <div class="icard"><div class="ititle">Total devices</div><div class="ival ca" id="i-devs">--</div><div class="isub">All sectors</div></div>
+        <div class="icard"><div class="ititle">Flagged events</div><div class="ival cp" id="i-anom">--</div><div class="isub">AI-detected deviations</div></div>
+        <div class="icard"><div class="ititle">Cross-sector faults</div><div class="ival cw" id="i-corr">--</div><div class="isub">Cascading degradation</div></div>
+      </div>
+      <div class="sl">Digital twin — real load scenario simulator</div>
+      <div class="twin-wrap">
+        <select class="twin-sel" id="twin-sel" onchange="runTwin()"><option value="">Select a device to simulate load scenarios...</option></select>
+        <div class="twin-grid" id="twin-grid"><div style="color:var(--dim);font-size:11px;grid-column:1/-1">Select a device above to model performance under increased load</div></div>
+        <div class="twin-trend" id="twin-trend"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- CASCADE INTELLIGENCE MAP -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="sl" style="margin-top:4px">Cascade intelligence map — real‑time dependency propagation</div>
+      <div class="cascade-wrap">
+        <div class="cascade-hdr">
+          <div class="cascade-hdr-left">
+            <span class="cascade-title">CASCADE ENGINE</span>
+            <span class="cascade-meta" id="cascade-nodecount">0 nodes</span>
+          </div>
+          <div class="cascade-hdr-right">
+            <div class="cascade-cost">
+              <span class="cascade-cost-v" id="cascade-exposure">$0</span>
+              <span class="cascade-cost-l">exposure/hr</span>
+            </div>
+            <button class="btn btn-acc" style="font-size:10px;padding:5px 12px" onclick="ciSimulateWorst()">Simulate worst</button>
+            <button class="btn" style="background:var(--s2);border:1px solid var(--b1);font-size:10px;padding:5px 12px" onclick="ciResetCascade()">Reset</button>
+          </div>
+        </div>
+        <div class="cascade-legend">
+          <div class="cl-item"><span class="cl-dot" style="background:var(--tel)"></span> Network</div>
+          <div class="cl-item"><span class="cl-dot" style="background:var(--blu)"></span> Telecom</div>
+          <div class="cl-item"><span class="cl-dot" style="background:var(--gld)"></span> Mining OT</div>
+          <div class="cl-item"><span class="cl-dot" style="background:var(--red)"></span> CBS Safety</div>
+          <div class="cl-item"><span class="cl-dot" style="background:var(--pur)"></span> Production</div>
+        </div>
+        <div class="cascade-canvas-wrap">
+          <canvas id="cascade-main-canvas" width="800" height="400"></canvas>
+          <div class="c-overlay"></div>
+        </div>
+        <div class="cascade-statrow">
+          <div class="cstat"><span class="cstat-v" id="cstat-domains">0</span><span class="cstat-l">domains</span></div>
+          <div class="cstat"><span class="cstat-v" id="cstat-predfail">0</span><span class="cstat-l">predicted failures</span></div>
+          <div class="cstat"><span class="cstat-v" id="cstat-ttf">--</span><span class="cstat-l">cascade TTF</span></div>
+        </div>
+        <div class="cascade-log-wrap" id="cascade-log-container"></div>
+        <div class="cascade-insight" id="cascade-insight-panel">
+          <div class="ci-title">AI causal insight</div>
+          <div class="ci-body" id="cascade-insight-text"></div>
+        </div>
+        <div class="cascade-sp-gate" id="cascade-sp-gate">
+          <span class="cascade-lock-icon">🔒</span>
+          <span>Topology editing is restricted to Specialist access</span>
+        </div>
+        <div class="cascade-editor" id="cascade-editor-panel" style="display:none">
+          <div class="cascade-editor-hdr">Topology Editor</div>
+          <div class="ce-row">
+            <div class="ce-field">
+              <span class="ce-lbl">Add device</span>
+              <select class="ce-sel" id="ce-device-select"></select>
+            </div>
+            <div class="ce-field">
+              <span class="ce-lbl">Domain</span>
+              <select class="ce-sel" id="ce-domain-select">
+                <option value="net">Network</option><option value="tc">Telecom</option>
+                <option value="mc">Mining OT</option><option value="cbs">CBS Safety</option>
+                <option value="plant">Production</option>
+              </select>
+            </div>
+            <button class="ce-btn ce-btn-pur" onclick="ciAddNode()">Add Node</button>
+          </div>
+          <div class="ce-row">
+            <button class="ce-btn ce-btn-grn" id="ce-edge-btn" onclick="ciToggleEdgeMode()">Add Edge</button>
+            <span class="ce-edge-mode" id="ce-edge-mode-indicator">⚡ Edge mode: select FROM node</span>
+            <button class="ce-btn ce-btn-red" onclick="ciResetToDefault()">Reset Default</button>
+            <button class="ce-btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1)" onclick="ciSaveTopology()">Save Topology</button>
+          </div>
+          <div class="ce-row">
+            <div class="ce-nodes-list" id="ce-nodes-list"></div>
+          </div>
+        </div>
+      </div>
+      <!-- END CASCADE BLOCK -->
+
+      <div class="fgrid">
+        <div class="fcard"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
+        <div class="fcard"><div class="sl">Equipment lifecycle &amp; ETTF</div><div id="lifecycle-feed"></div></div>
+      </div>
+      <div class="card" style="margin-bottom:14px"><div class="ctitle">Device uptime % — all assets</div><canvas id="cUp"></canvas></div>
+      <div class="protos">
+        <div class="ptag"><b>IEEE 802.3</b> Ethernet</div><div class="ptag"><b>SNMP v2/v3</b> polling</div><div class="ptag"><b>Profinet</b> PLC</div>
+        <div class="ptag"><b>Modbus TCP</b> sensors</div><div class="ptag"><b>EtherNet/IP</b> conveyor</div><div class="ptag"><b>DNP3</b> CBS safety</div><div class="ptag"><b>OPC-UA</b> SCADA</div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="ctitle">Platform observability</div>
+        <div class="igrid" style="margin-top:11px">
+          <div class="icard"><div class="ititle">Data throughput</div><div class="ival ca" id="p-queue">--</div><div class="isub">Active readings/cycle</div></div>
+          <div class="icard"><div class="ititle">Data freshness</div><div class="ival cg" id="p-cache">--s</div><div class="isub">Last sync</div></div>
+          <div class="icard"><div class="ititle">Devices tracked</div><div class="ival ca" id="p-devs">--</div><div class="isub">In-memory history</div></div>
+          <div class="icard"><div class="ititle">Model health</div><div class="ival cg" id="p-retrain">Optimal</div><div class="isub">AI model status</div></div>
+          <div class="icard"><div class="ival cg" id="p-uptime">--h</div><div class="ititle">Platform uptime</div><div class="isub">Since last restart</div></div>
+        </div>
+        <div style="margin-top:13px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-sm)">
+          <div class="sl" style="margin-bottom:9px">Notification channels</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <div id="nc-email" style="font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)">&#10003; Email</div>
+            <div id="nc-sms" style="font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)">&#128241; SMS Alerts</div>
+            <div id="nc-wa" style="font-size:10px;padding:5px 13px;border-radius:30px;border:1px solid var(--b1);color:var(--dim)">&#128172; WhatsApp</div>
+            <span style="font-size:9px;color:var(--dim)">Configure in .env — CBS hold always triggers SMS</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="engrid">
-      <div class="en-panel"><div class="en-title">L2/L3 interface statistics (SNMP)</div><table class="en-table"><tr><th>Interface</th><th>Util.</th><th>Errors</th><th>State</th></tr><tbody id="en-net-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
-      <div class="en-panel"><div class="en-title">RF &amp; microwave link metrics</div><table class="en-table"><tr><th>Link</th><th>Rx (dBm)</th><th>SNR</th><th>BER</th></tr><tbody id="en-rf-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
-      <div class="en-panel"><div class="en-title">Industrial asset metrics (Profinet/Modbus)</div><table class="en-table"><tr><th>Asset</th><th>MTBF (h)</th><th>OEE %</th><th>Condition</th></tr><tbody id="en-ind-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
-      <div class="en-panel"><div class="en-title">CBS / DNP3 safety diagnostics</div><table class="en-table"><tr><th>CBS unit</th><th>Integrity</th><th>Last hold</th><th>MTTR</th></tr><tbody id="en-cbs-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
+
+    <!-- CBS SAFETY PAGE -->
+    <div class="page" id="page-cbs">
+      <div class="dual-banner">
+        <div class="env-hero">
+          <div class="hero-img">
+            <img src="/static/mine-plant.png" alt="" loading="lazy" style="object-position:center 60%;filter:brightness(.5) saturate(.65) hue-rotate(-12deg)" onerror="this.style.display='none'">
+            <div class="fb" style="background:linear-gradient(135deg,#140006 0%,#2e0010 35%,#0e0004 65%,#1a0008 100%);position:absolute;inset:0"></div>
+          </div>
+          <div class="hero-text">
+            <div class="hero-ey" style="color:var(--red)">Safety Critical · DNP3 Protocol · $500,000/blast</div>
+            <div class="hero-h1">Centralised Blasting System</div>
+            <div class="hero-desc">DNP3 Safety Monitor · Multi-factor integrity below 90% triggers auto-interlock</div>
+          </div>
+          <div class="hero-protos">
+            <div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">DNP3</div>
+            <div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">EtherNet/IP</div>
+            <div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">Safety PLC</div>
+          </div>
+        </div>
+        <div class="statbar sb-cbs">
+          <div class="esb"><div class="esb-v" style="color:var(--red);font-size:14px;font-family:var(--mono);font-weight:800" id="cbs-status-banner">ARMED</div><div class="esb-l">Blast Status</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cg" id="cbs-health-banner">--</div><div class="esb-l">Link Health %</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v cg" id="cbs-integrity-banner">--</div><div class="esb-l">Integrity Score</div></div>
+          <div class="esb-sep"></div>
+          <div class="esb"><div class="esb-v" style="color:var(--amb)">90%</div><div class="esb-l">Interlock Threshold</div></div>
+          <div class="esb-fill"></div>
+          <div class="live-chip" style="background:rgba(240,46,80,.07);border-color:rgba(240,46,80,.2)"><div class="ldot" style="background:var(--red)"></div><span class="lc-l" style="color:var(--red)">Safety Monitor</span></div>
+        </div>
+      </div>
+      <div class="cbsouter">
+        <div class="cbs-title"><div class="cbsdot"></div>CBS Units — DNP3 Link + Multi-Factor Integrity</div>
+        <div style="font-size:10px;color:var(--dim);margin-bottom:12px;line-height:1.65">Protocol: DNP3 over Ethernet · Integrity = Link(55%) + Stability(30%) + Thermal(15%) · Threshold: 90%</div>
+        <div class="cbs-grid" id="cbs-devs"></div>
+        <div style="background:rgba(8,2,2,.7);border:1px solid rgba(255,62,80,.14);border-radius:var(--r-sm);padding:12px">
+          <div class="sl" style="color:var(--red)">CBS safety interlock log</div>
+          <div id="cbs-log"></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle">CBS link health — blast hold triggers below 90% integrity</div><canvas id="cCbs"></canvas></div>
     </div>
-    <div class="sl">Active incidents &mdash; assign and resolve</div>
-    <div id="inc-list"></div>
+
+    <!-- SPECIALIST PAGE -->
+    <div class="page" id="page-sp">
+      <div id="login-sec">
+        <div class="lbox">
+          <div class="ltitle">Specialist access — IISentinel&#8482;</div>
+          <div class="lsub">Restricted to authorised engineers and administrators.<br>All access is timestamped and audited.</div>
+          <div class="lg"><label class="ll">Username</label><input class="li" id="l-name" type="text" placeholder="Enter username"></div>
+          <div class="lg"><label class="ll">Password</label><input class="li" id="l-pass" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <button class="btn btn-pur" onclick="doLogin()">Access specialist panel</button>
+          <div class="lerr" id="l-err"></div>
+        </div>
+      </div>
+      <div id="sp-sec" style="display:none">
+        <div class="sphead">
+          <div><div class="spname" id="sp-name">Specialist</div><div class="sprole" id="sp-role">Role</div></div>
+          <div style="display:flex;gap:7px">
+            <button class="btn btn-amb" onclick="loadShiftReport()" style="font-size:10px">Shift report</button>
+            <button class="btn btn-red" onclick="doLogout()" style="font-size:10px">Log out</button>
+          </div>
+        </div>
+        <div class="banner" style="grid-template-columns:repeat(3,1fr)">
+          <div class="bc"><div class="bl">Open incidents</div><div class="bv cr" id="sp-open">0</div></div>
+          <div class="bc"><div class="bl">Assigned</div><div class="bv cw" id="sp-asgn">0</div></div>
+          <div class="bc"><div class="bl">Resolved</div><div class="bv cg" id="sp-res">0</div></div>
+        </div>
+        <div id="sr-panel" style="display:none;margin-bottom:14px">
+          <div class="sl">Shift handover report</div>
+          <div class="sr-grid" id="sr-grid"></div>
+          <div class="fcard" style="max-height:200px;margin-bottom:14px"><div class="sl">Top risks</div><div id="sr-risks"></div></div>
+        </div>
+        <div class="engrid">
+          <div class="en-panel"><div class="en-title">L2/L3 interface statistics (SNMP)</div><table class="en-table"><tr><th>Interface</th><th>Util.</th><th>Errors</th><th>State</th></tr><tbody id="en-net-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
+          <div class="en-panel"><div class="en-title">RF & microwave link metrics</div><table class="en-table"><tr><th>Link</th><th>Rx (dBm)</th><th>SNR</th><th>BER</th></tr><tbody id="en-rf-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
+          <div class="en-panel"><div class="en-title">Industrial asset metrics (Profinet/Modbus)</div><table class="en-table"><tr><th>Asset</th><th>MTBF (h)</th><th>OEE %</th><th>Condition</th></tr><tbody id="en-ind-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
+          <div class="en-panel"><div class="en-title">CBS / DNP3 safety diagnostics</div><table class="en-table"><tr><th>CBS unit</th><th>Integrity</th><th>Last hold</th><th>MTTR</th></tr><tbody id="en-cbs-table"><tr><td colspan="4" style="color:var(--dim);font-size:9px;padding:9px">Awaiting live data</td></tr></tbody></table></div>
+        </div>
+        <div class="sl">Active incidents — assign and resolve</div>
+        <div id="inc-list"></div>
+      </div>
+    </div>
   </div>
-</div>
-</div>
- 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- <script>
-    // ===== ENHANCED JAVASCRIPT (FULL) =====
+  <script>
+    // ===== ORIGINAL JAVASCRIPT (COMPLETE) =====
     var B=window.location.origin;
     var spToken=null,spName=null,intel={},allData=[];
     var curNet='all',curTc='all',curMc='all';
@@ -1414,6 +1665,294 @@
     }
     nmRefresh();
     setInterval(nmRefresh,35000);
+
+    // ═══════════════════════════════════════════════════════════════
+    // CASCADE ENGINE JAVASCRIPT (integrated)
+    // ═══════════════════════════════════════════════════════════════
+    let _ciTopology = { nodes: [], edges: [] };
+    let _ciCanvas = null, _ciCtx = null;
+    let _ciAnimFrame = null;
+    let _ciSelectedNode = null;
+    let _ciEdgeMode = false, _ciEdgeFrom = null;
+    let _ciCascadeActive = false;
+    const _ciEventLog = [];
+    const _ciDomainColors = { net: 'var(--tel)', tc: 'var(--blu)', mc: 'var(--gld)', cbs: 'var(--red)', plant: 'var(--pur)' };
+
+    function ciInit() {
+      _ciCanvas = document.getElementById('cascade-main-canvas');
+      if (!_ciCanvas) return;
+      _ciCtx = _ciCanvas.getContext('2d');
+      _ciCanvas.addEventListener('click', ciHandleCanvasClick);
+      _ciCanvas.addEventListener('mousemove', ciHandleCanvasHover);
+      ciLoadTopology();
+      setInterval(() => { if (!_ciCascadeActive) ciSyncFromLiveData(); }, 10000);
+      ciStartAnimation();
+    }
+
+    async function ciLoadTopology() {
+      try {
+        const r = await fetch(B+'/api/cascade/topology');
+        const data = await r.json();
+        _ciTopology = data;
+        ciRenderNodeList();
+        ciUpdateNodeCount();
+        ciDraw();
+      } catch(e) { console.warn('Cascade load failed', e); }
+    }
+
+    function ciSyncFromLiveData() {
+      if (!allData.length) return;
+      const scoreMap = {};
+      allData.forEach(d => { scoreMap[d.device_id] = d.health_score; });
+      _ciTopology.nodes.forEach(n => {
+        if (scoreMap[n.id] !== undefined) n.health = scoreMap[n.id];
+        else n.health = n.health || 70;
+      });
+      ciUpdateNodeCount();
+      ciDraw();
+    }
+
+    function ciUpdateNodeCount() {
+      const cnt = document.getElementById('cascade-nodecount');
+      if (cnt) cnt.textContent = `${_ciTopology.nodes.length} nodes`;
+    }
+
+    function ciStartAnimation() {
+      function drawLoop() {
+        if (document.getElementById('page-intel')?.classList.contains('active'))
+          ciDraw();
+        _ciAnimFrame = requestAnimationFrame(drawLoop);
+      }
+      _ciAnimFrame = requestAnimationFrame(drawLoop);
+    }
+
+    function ciDraw() {
+      if (!_ciCtx) return;
+      const w = _ciCanvas.width = _ciCanvas.clientWidth || 800;
+      const h = _ciCanvas.height = 400;
+      _ciCtx.clearRect(0, 0, w, h);
+      // Draw edges
+      _ciTopology.edges.forEach(e => {
+        const from = _ciTopology.nodes.find(n => n.id === e.from);
+        const to = _ciTopology.nodes.find(n => n.id === e.to);
+        if (!from || !to) return;
+        const fx = from.x * w, fy = from.y * h;
+        const tx = to.x * w, ty = to.y * h;
+        _ciCtx.beginPath();
+        _ciCtx.moveTo(fx, fy);
+        _ciCtx.lineTo(tx, ty);
+        _ciCtx.strokeStyle = 'rgba(120,140,180,0.25)';
+        _ciCtx.lineWidth = 1.5;
+        _ciCtx.stroke();
+      });
+      // Draw nodes
+      _ciTopology.nodes.forEach(n => {
+        const x = n.x * w, y = n.y * h;
+        const health = n.health ?? 70;
+        const color = health >= 70 ? '#22e07a' : health >= 40 ? '#f29510' : '#f02e50';
+        _ciCtx.beginPath();
+        _ciCtx.arc(x, y, 14, 0, 2*Math.PI);
+        _ciCtx.fillStyle = color + '20';
+        _ciCtx.fill();
+        _ciCtx.strokeStyle = color;
+        _ciCtx.lineWidth = 2.5;
+        _ciCtx.stroke();
+        _ciCtx.font = '9px "JetBrains Mono", monospace';
+        _ciCtx.fillStyle = 'var(--txt)';
+        _ciCtx.textAlign = 'center';
+        _ciCtx.fillText(n.label || n.id.slice(-8), x, y-18);
+        _ciCtx.fillText(Math.round(health)+'%', x, y+22);
+      });
+    }
+
+    function ciHandleCanvasClick(e) {
+      const rect = _ciCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      const clicked = _ciTopology.nodes.find(n => Math.hypot(n.x - x, n.y - y) < 0.06);
+      if (!clicked) return;
+      if (_ciEdgeMode) {
+        if (!_ciEdgeFrom) { _ciEdgeFrom = clicked.id; document.getElementById('ce-edge-mode-indicator').textContent = `⚡ Edge mode: select TO node`; }
+        else {
+          if (_ciEdgeFrom !== clicked.id) {
+            _ciTopology.edges.push({ from: _ciEdgeFrom, to: clicked.id });
+            ciDraw();
+          }
+          _ciEdgeFrom = null; _ciEdgeMode = false;
+          document.getElementById('ce-edge-mode-indicator').classList.remove('active');
+        }
+      } else {
+        ciDegradeNode(clicked.id, true);
+      }
+    }
+
+    function ciHandleCanvasHover(e) { /* optional tooltip */ }
+
+    function ciDegradeNode(nodeId, propagate = true) {
+      const node = _ciTopology.nodes.find(n => n.id === nodeId);
+      if (!node) return;
+      node.health = Math.max(5, (node.health || 70) - 28);
+      ciAddLog(node.id, `Manual degradation → ${Math.round(node.health)}%`, 'crit');
+      if (propagate) ciPropagateCascade(nodeId);
+      ciDraw();
+    }
+
+    function ciPropagateCascade(startId) {
+      _ciCascadeActive = true;
+      const visited = new Set();
+      const queue = [startId];
+      let affected = 0;
+      while (queue.length) {
+        const cur = queue.shift();
+        if (visited.has(cur)) continue;
+        visited.add(cur);
+        const node = _ciTopology.nodes.find(n => n.id === cur);
+        if (node && node.id !== startId) {
+          node.health = Math.max(5, (node.health || 70) * 0.72);
+          ciAddLog(node.id, `Cascade degraded → ${Math.round(node.health)}%`, 'warn');
+          affected++;
+        }
+        _ciTopology.edges.filter(e => e.from === cur).forEach(e => queue.push(e.to));
+      }
+      ciFinishCascade(affected);
+    }
+
+    function ciFinishCascade(affected) {
+      _ciCascadeActive = false;
+      document.getElementById('cstat-domains').textContent = new Set(_ciTopology.nodes.map(n => n.domain)).size;
+      document.getElementById('cstat-predfail').textContent = affected;
+      const worst = Math.min(..._ciTopology.nodes.map(n => n.health||70));
+      const ttf = worst < 20 ? '<5min' : worst < 40 ? '15-30min' : '>1h';
+      document.getElementById('cstat-ttf').textContent = ttf;
+      let totalExp = 0;
+      _ciTopology.nodes.forEach(n => { if (n.health<50) totalExp += COST[n.id.split('-').slice(0,2).join('-')] || 50000; });
+      document.getElementById('cascade-exposure').textContent = '$'+totalExp.toLocaleString();
+      const panel = document.getElementById('cascade-insight-panel');
+      const text = document.getElementById('cascade-insight-text');
+      if (affected > 0) {
+        panel.classList.add('visible');
+        text.innerHTML = `<strong>${affected} downstream devices impacted.</strong> Root cause propagated through dependency chain. Recommend immediate isolation of source node.`;
+      } else { panel.classList.remove('visible'); }
+      ciDraw();
+    }
+
+    function ciAddLog(devId, msg, level='info') {
+      const cont = document.getElementById('cascade-log-container');
+      if (!cont) return;
+      const row = document.createElement('div');
+      row.className = `clog-row cl-${level}`;
+      const ts = new Date().toLocaleTimeString();
+      row.innerHTML = `<span class="clog-ts">${ts}</span><span class="clog-dev">${sid(devId)}</span><span class="clog-msg">${msg}</span>`;
+      cont.prepend(row);
+      if (cont.children.length > 15) cont.lastChild.remove();
+    }
+
+    function ciSimulateWorst() {
+      if (!_ciTopology.nodes.length) return;
+      const worst = _ciTopology.nodes.reduce((a,b) => (a.health||70) < (b.health||70) ? a : b);
+      ciDegradeNode(worst.id, true);
+    }
+
+    function ciResetCascade() {
+      _ciTopology.nodes.forEach(n => n.health = 85);
+      ciSyncFromLiveData();
+      ciDraw();
+      document.getElementById('cascade-insight-panel').classList.remove('visible');
+    }
+
+    function ciRenderNodeList() {
+      const list = document.getElementById('ce-nodes-list');
+      if (!list) return;
+      list.innerHTML = '';
+      _ciTopology.nodes.forEach(n => {
+        const tag = document.createElement('div');
+        tag.className = 'ce-node-tag';
+        tag.innerHTML = `<span class="ce-dot" style="background:${_ciDomainColors[n.domain]||'gray'}"></span>${n.label||n.id.slice(-8)}`;
+        tag.onclick = () => { _ciTopology.nodes = _ciTopology.nodes.filter(x => x.id !== n.id); _ciTopology.edges = _ciTopology.edges.filter(e => e.from !== n.id && e.to !== n.id); ciRenderNodeList(); ciDraw(); };
+        list.appendChild(tag);
+      });
+    }
+
+    function ciAddNode() {
+      const sel = document.getElementById('ce-device-select');
+      const dom = document.getElementById('ce-domain-select');
+      if (!sel.value) return;
+      const id = sel.value;
+      if (_ciTopology.nodes.find(n => n.id === id)) { toast('Node exists','Already on map','tw'); return; }
+      _ciTopology.nodes.push({ id, label: sid(id), domain: dom.value, x: 0.3+Math.random()*0.4, y: 0.3+Math.random()*0.4, health: 75 });
+      ciRenderNodeList(); ciDraw();
+    }
+
+    function ciToggleEdgeMode() {
+      _ciEdgeMode = !_ciEdgeMode;
+      _ciEdgeFrom = null;
+      document.getElementById('ce-edge-mode-indicator').classList.toggle('active', _ciEdgeMode);
+      document.getElementById('ce-edge-mode-indicator').textContent = '⚡ Edge mode: select FROM node';
+    }
+
+    async function ciSaveTopology() {
+      try {
+        const r = await fetch(B+'/api/cascade/topology', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json', 'X-Specialist-Token': spToken },
+          body: JSON.stringify(_ciTopology)
+        });
+        if (r.ok) toast('Topology saved','','tg');
+        else toast('Save failed','Specialist access required','tc');
+      } catch(e) { toast('Error', e.message, 'tc'); }
+    }
+
+    async function ciResetToDefault() {
+      try {
+        await fetch(B+'/api/cascade/topology', { method: 'DELETE', headers: {'X-Specialist-Token': spToken} });
+        ciLoadTopology();
+        toast('Reset','Default topology restored','tg');
+      } catch(e) { toast('Error', e.message, 'tc'); }
+    }
+
+    // Patch doLogin / doLogout to show/hide editor
+    const _origDoLogin = doLogin;
+    doLogin = async function() {
+      await _origDoLogin();
+      if (spToken) {
+        document.getElementById('cascade-sp-gate').style.display = 'none';
+        document.getElementById('cascade-editor-panel').style.display = 'block';
+        ciPopulateDeviceSelect();
+      }
+    };
+    const _origDoLogout = doLogout;
+    doLogout = function() {
+      _origDoLogout();
+      document.getElementById('cascade-sp-gate').style.display = 'flex';
+      document.getElementById('cascade-editor-panel').style.display = 'none';
+    };
+
+    function ciPopulateDeviceSelect() {
+      const sel = document.getElementById('ce-device-select');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">-- Select live device --</option>';
+      const dm = {};
+      allData.forEach(r => { if (!dm[r.device_id]) dm[r.device_id] = r; });
+      Object.keys(dm).forEach(id => { sel.innerHTML += `<option value="${id}">${sid(id)} (${Math.round(dm[id].health_score)}%)</option>`; });
+    }
+
+    // Hook into fetchAll to refresh device select
+    const _origFetchAll = fetchAll;
+    fetchAll = async function() {
+      await _origFetchAll();
+      if (spToken) ciPopulateDeviceSelect();
+      if (!_ciCascadeActive) ciSyncFromLiveData();
+    };
+
+    // Hook into goPage to init cascade when Intelligence tab opened
+    const _origGoPage = goPage;
+    goPage = function(el, name) {
+      _origGoPage(el, name);
+      if (name === 'intel') setTimeout(() => { if (!_ciCanvas) ciInit(); else ciDraw(); }, 50);
+    };
+
+    // Start cascade engine after page load
+    window.addEventListener('load', () => { setTimeout(ciInit, 1000); });
   </script>
 </body>
 </html>

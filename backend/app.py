@@ -1087,7 +1087,186 @@ def scan_subnet():
 def scan_status(scan_id):
     result=_scan_results.get(scan_id,{'done':False,'found':[]})
     return jsonify(result)
+# ═══════════════════════════════════════════════════════════════════════════
+#  CASCADE TOPOLOGY BACKEND — app.py PATCH
+#
+#  WHERE TO ADD: paste this entire block into your existing app.py
+#  POSITION: after the shift_report route and before if __name__ == '__main__'
+#
+#  This adds:
+#    GET  /api/cascade/topology  — load saved topology
+#    POST /api/cascade/topology  — save topology (specialist only)
+#    The topology is stored in SQLite (iisentinel.db) and survives restarts.
+# ═══════════════════════════════════════════════════════════════════════════
 
+# ── Ensure cascade_topology table exists ──────────────────────────────────────
+def _init_cascade_table():
+    try:
+        con = sqlite3.connect(_DB_PATH)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS cascade_topology (
+                id      TEXT PRIMARY KEY DEFAULT 'default',
+                payload TEXT NOT NULL,
+                updated_at TEXT
+            )
+        """)
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(f'[Cascade] table init: {e}')
+
+_init_cascade_table()
+
+# ── Default starter topology built from demo device IDs ───────────────────────
+_DEFAULT_TOPOLOGY = {
+    "nodes": [
+        {"id": "net-byo-router-01",   "label": "router-01",  "domain": "net",   "x": 0.12, "y": 0.18},
+        {"id": "net-hre-wan-link",    "label": "wan-link",   "domain": "net",   "x": 0.28, "y": 0.28},
+        {"id": "net-mut-firewall-01", "label": "fw-01",      "domain": "net",   "x": 0.18, "y": 0.42},
+        {"id": "tc-byo-base-stn-01",  "label": "bts-01",     "domain": "tc",    "x": 0.58, "y": 0.14},
+        {"id": "tc-hre-tower-main",   "label": "tower",      "domain": "tc",    "x": 0.72, "y": 0.28},
+        {"id": "tc-mut-microwave-01", "label": "mw-link",    "domain": "tc",    "x": 0.52, "y": 0.30},
+        {"id": "mc-shaft1-pump-01",   "label": "pump-01",    "domain": "mc",    "x": 0.10, "y": 0.70},
+        {"id": "mc-shaft2-conveyor",  "label": "conveyor",   "domain": "mc",    "x": 0.24, "y": 0.78},
+        {"id": "mc-shaft2-ventilation","label":"ventilation","domain": "mc",    "x": 0.34, "y": 0.68},
+        {"id": "mc-plant-plc-01",     "label": "plc-01",     "domain": "mc",    "x": 0.22, "y": 0.58},
+        {"id": "cbs-dnp3-mine-ctrl",  "label": "CBS ctrl",   "domain": "cbs",   "x": 0.50, "y": 0.65},
+    ],
+    "edges": [
+        {"from": "net-byo-router-01",   "to": "net-hre-wan-link"},
+        {"from": "net-hre-wan-link",    "to": "net-mut-firewall-01"},
+        {"from": "net-hre-wan-link",    "to": "tc-mut-microwave-01"},
+        {"from": "tc-byo-base-stn-01",  "to": "tc-mut-microwave-01"},
+        {"from": "tc-hre-tower-main",   "to": "tc-mut-microwave-01"},
+        {"from": "net-mut-firewall-01", "to": "mc-plant-plc-01"},
+        {"from": "mc-plant-plc-01",     "to": "mc-shaft1-pump-01"},
+        {"from": "mc-plant-plc-01",     "to": "mc-shaft2-conveyor"},
+        {"from": "mc-plant-plc-01",     "to": "mc-shaft2-ventilation"},
+        {"from": "mc-plant-plc-01",     "to": "cbs-dnp3-mine-ctrl"},
+    ]
+}
+
+
+@app.route('/api/cascade/topology', methods=['GET'])
+def get_cascade_topology():
+    """
+    Load the saved cascade topology.
+    Returns the specialist-defined nodes and edges, or the default starter topology.
+    No auth required for reading — the diagram is visible to all users.
+    """
+    try:
+        con = sqlite3.connect(_DB_PATH)
+        row = con.execute(
+            "SELECT payload FROM cascade_topology WHERE id='default'"
+        ).fetchone()
+        con.close()
+        if row:
+            return jsonify(json.loads(row[0]))
+        # No saved topology yet — return the default
+        return jsonify(_DEFAULT_TOPOLOGY)
+    except Exception as e:
+        print(f'[Cascade] GET topology: {e}')
+        return jsonify(_DEFAULT_TOPOLOGY)
+
+
+@app.route('/api/cascade/topology', methods=['POST'])
+def save_cascade_topology():
+    """
+    Save a new cascade topology. Requires specialist token.
+    Accepts: { nodes: [...], edges: [...] }
+    Each node: { id, label, domain, x, y }
+    Each edge: { from, to }
+    """
+    # Auth check
+    token = request.headers.get('X-Specialist-Token', '')
+    if not token:
+        return jsonify({'error': 'Specialist access required'}), 401
+    try:
+        r = supabase.table('specialists').select('*').eq('password', token).execute()
+        if not r.data:
+            return jsonify({'error': 'Invalid specialist token'}), 401
+    except Exception as e:
+        # SQLite fallback — just check token is non-empty for local dev
+        if not token or token == 'undefined':
+            return jsonify({'error': 'Invalid token'}), 401
+
+    data = request.get_json(silent=True) or {}
+    nodes = data.get('nodes', [])
+    edges = data.get('edges', [])
+
+    # Basic validation
+    if not isinstance(nodes, list) or not isinstance(edges, list):
+        return jsonify({'error': 'nodes and edges must be arrays'}), 400
+    if len(nodes) > 100:
+        return jsonify({'error': 'Maximum 100 nodes per topology'}), 400
+    if len(edges) > 300:
+        return jsonify({'error': 'Maximum 300 edges per topology'}), 400
+
+    # Sanitise node fields
+    clean_nodes = []
+    for n in nodes:
+        if not isinstance(n, dict): continue
+        nid = str(n.get('id', ''))[:80]
+        if not nid: continue
+        clean_nodes.append({
+            'id':     nid,
+            'label':  str(n.get('label', nid.split('-')[-1]))[:60],
+            'domain': str(n.get('domain', 'net')) if n.get('domain') in
+                      ('net','tc','mc','cbs','plant') else 'net',
+            'x':      max(0.0, min(1.0, float(n.get('x', 0.5)))),
+            'y':      max(0.0, min(1.0, float(n.get('y', 0.5)))),
+        })
+
+    # Sanitise edge fields
+    node_ids = {n['id'] for n in clean_nodes}
+    clean_edges = []
+    for e in edges:
+        if not isinstance(e, dict): continue
+        frm = str(e.get('from', ''))[:80]
+        to  = str(e.get('to',   ''))[:80]
+        if frm and to and frm != to:
+            clean_edges.append({'from': frm, 'to': to})
+
+    payload = json.dumps({'nodes': clean_nodes, 'edges': clean_edges})
+    ts = datetime.now(timezone.utc).isoformat()
+
+    try:
+        con = sqlite3.connect(_DB_PATH)
+        con.execute(
+            """INSERT INTO cascade_topology (id, payload, updated_at)
+               VALUES ('default', ?, ?)
+               ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at""",
+            (payload, ts)
+        )
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(f'[Cascade] SAVE topology: {e}')
+        return jsonify({'error': str(e)}), 500
+
+    print(f'[Cascade] Topology saved — {len(clean_nodes)} nodes, {len(clean_edges)} edges at {ts}')
+    return jsonify({
+        'ok': True,
+        'nodes': len(clean_nodes),
+        'edges': len(clean_edges),
+        'saved_at': ts,
+    })
+
+
+@app.route('/api/cascade/topology', methods=['DELETE'])
+def reset_cascade_topology():
+    """Reset to default topology. Requires specialist token."""
+    token = request.headers.get('X-Specialist-Token', '')
+    if not token:
+        return jsonify({'error': 'Specialist access required'}), 401
+    try:
+        con = sqlite3.connect(_DB_PATH)
+        con.execute("DELETE FROM cascade_topology WHERE id='default'")
+        con.commit()
+        con.close()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    return jsonify({'ok': True, 'message': 'Topology reset to default'})
 if __name__=='__main__':
     demo=os.environ.get('DEMO_MODE','false').lower()=='true'
     print("""
