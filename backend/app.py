@@ -1,31 +1,43 @@
-import os, re, json, time, random, threading, smtplib, sqlite3, uuid, asyncio
+"""
+IISentinel™ v3.0 — Intelligent Infrastructure Sentinel (Flask)
+===============================================================
+Run:        python app.py
+Demo:       DEMO_MODE=true python app.py
+Open:       http://localhost:5000
+Install:    pip install flask flask-cors reportlab scikit-learn joblib numpy requests supabase
+Production: gunicorn app:app --bind 0.0.0.0:5000 --workers 2 --timeout 120
+"""
+import os, re, json, time, random, threading, smtplib, sqlite3, uuid
 from collections import deque
 from datetime import datetime, timezone
 from io import BytesIO
 from functools import wraps
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import queue as _queue
 import numpy as np
 import joblib
 import requests as req
-from quart import Quart, request, jsonify, send_file, Response, make_response
+from flask import Flask, request, jsonify, send_file, Response, stream_with_context
 
+# -------------------------------------------------------------------
+# CORS Setup (flask-cors optional)
+# -------------------------------------------------------------------
 try:
-    from quart_cors import cors as _quart_cors
-    def _apply_cors(app):
-        return _quart_cors(app, allow_origin="*",
-                           allow_headers=["Content-Type","X-Specialist-Token"],
-                           allow_methods=["GET","POST","DELETE","OPTIONS"])
+    from flask_cors import CORS as _CORS
+    def _apply_cors(app): _CORS(app)
 except ImportError:
     def _apply_cors(app):
         @app.after_request
-        async def _cors(r):
+        def _cors(r):
             r.headers['Access-Control-Allow-Origin']  = '*'
             r.headers['Access-Control-Allow-Headers'] = 'Content-Type,X-Specialist-Token'
             r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
             return r
-        return app
 
+# -------------------------------------------------------------------
+# Supabase (optional) – falls back to SQLite
+# -------------------------------------------------------------------
 try:
     from supabase import create_client as _supa_create
     _SUPABASE_AVAILABLE = True
@@ -59,8 +71,7 @@ _db_init()
 
 class _SQLiteDB:
     def __init__(self): self._tb=None; self._filters=[]; self._lim=200; self._ins=None; self._upd=None
-    def table(self,n):
-        o=_SQLiteDB(); o._tb=n; return o
+    def table(self,n): o=_SQLiteDB(); o._tb=n; return o
     def select(self,*a): return self
     def eq(self,c,v): self._filters.append((c,v)); return self
     def order(self,*a,**kw): return self
@@ -75,16 +86,14 @@ class _SQLiteDB:
                 row=self._ins; rid=str(uuid.uuid4()); ts=datetime.now(timezone.utc).isoformat()
                 if tb=='metrics':
                     cur.execute("INSERT OR IGNORE INTO metrics VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                        (rid,row.get('device_id',''),row.get('device_type',''),
-                         row.get('metric_name',''),float(row.get('metric_value',0)),
-                         float(row.get('health_score',50)),int(row.get('anomaly_flag',0)),
-                         float(row.get('predicted_score',50)),
+                        (rid,row.get('device_id',''),row.get('device_type',''),row.get('metric_name',''),
+                         float(row.get('metric_value',0)),float(row.get('health_score',50)),
+                         int(row.get('anomaly_flag',0)),float(row.get('predicted_score',50)),
                          row.get('ai_diagnosis'),row.get('automation_command'),ts))
                 elif tb=='incidents':
                     cur.execute("INSERT OR IGNORE INTO incidents VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                        (rid,row.get('device_id',''),row.get('device_type',''),
-                         float(row.get('health_score',50)),row.get('ai_diagnosis'),
-                         row.get('automation_command'),row.get('status','open'),
+                        (rid,row.get('device_id',''),row.get('device_type',''),float(row.get('health_score',50)),
+                         row.get('ai_diagnosis'),row.get('automation_command'),row.get('status','open'),
                          None,None,None,ts))
                 con.commit(); con.close(); return R([{**row,'id':rid,'created_at':ts}])
             if self._upd:
@@ -100,8 +109,7 @@ class _SQLiteDB:
             cols=[d[0] for d in cur.description]
             rows=[dict(zip(cols,r)) for r in cur.fetchall()]
             con.close(); return R(rows)
-        except Exception as e:
-            print(f'[DB] {e}'); return R([])
+        except Exception as e: print(f'[DB] {e}'); return R([])
 
 SUPABASE_URL=os.environ.get('SUPABASE_URL','')
 SUPABASE_KEY=os.environ.get('SUPABASE_KEY','')
@@ -116,6 +124,9 @@ else:
     supabase=_SQLiteDB()
     print('[IISentinel] Using local SQLite (iisentinel.db)')
 
+# -------------------------------------------------------------------
+# ML Models
+# -------------------------------------------------------------------
 def _build_models():
     from sklearn.ensemble import RandomForestRegressor, IsolationForest
     print('[IISentinel] Building ML models...')
@@ -134,10 +145,13 @@ try:
 except:
     rf_model,iso_model=_build_models()
 
-app=Quart(__name__,template_folder='.',static_folder='static',static_url_path='/static')
+app=Flask(__name__,template_folder='.',static_folder='static',static_url_path='/static')
 app.secret_key=os.environ.get('SECRET_KEY','iisentinel-dev-2026')
-app=_apply_cors(app)
+_apply_cors(app)
 
+# -------------------------------------------------------------------
+# Constants
+# -------------------------------------------------------------------
 NETWORK_TYPES=['router','switch','firewall','wan_link','workstation']
 TELECOM_TYPES=['base_station','network_tower','microwave_link']
 MINING_TYPES =['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
@@ -173,13 +187,16 @@ READING_INTERVALS_MIN={
     'plc':4,'scada_node':5,'sensor':3,'power_meter':6
 }
 
+# -------------------------------------------------------------------
+# Global State
+# -------------------------------------------------------------------
 metric_queue=deque(maxlen=500); queue_lock=threading.Lock()
 _data_cache={'data':[],'ts':0}
 scoring_queue=deque(maxlen=200); scoring_results={}; scoring_lock=threading.Lock()
 device_history={}; device_uptime={}
 reading_window=[]; anomaly_count=0
 _retrain_lock=threading.Lock(); _retrain_in_progress=False
-_sse_queues=[]; _sse_lock=threading.Lock()
+_sse_subs=[]; _sse_lock=threading.Lock()
 notification_log=deque(maxlen=100)
 _cbs_integrity_cache={}
 platform_stats={
@@ -279,17 +296,20 @@ def notify_all(subject,message,level='critical',device_id=None,
         health_score=health_score,diagnosis=diagnosis,automation_command=automation_command,
         severity=level),daemon=True).start()
 
-def sse_broadcast(event_type, payload):
+def sse_broadcast(event_type,payload):
     msg=f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
-    dead=[]
     with _sse_lock:
-        for q in _sse_queues:
+        dead=[]
+        for q in _sse_subs:
             try: q.put_nowait(msg)
-            except Exception: dead.append(q)
+            except: dead.append(q)
         for q in dead:
-            try: _sse_queues.remove(q)
+            try: _sse_subs.remove(q)
             except ValueError: pass
 
+# -------------------------------------------------------------------
+# Background Workers
+# -------------------------------------------------------------------
 def flush_worker():
     while True:
         time.sleep(3)
@@ -352,6 +372,9 @@ def retrain_worker():
 for _fn in (flush_worker,scorer_worker,retrain_worker):
     threading.Thread(target=_fn,daemon=True).start()
 
+# -------------------------------------------------------------------
+# Helper Functions
+# -------------------------------------------------------------------
 def get_failure_probability(device_id,score):
     h=device_history.get(device_id,[])
     if len(h)<3: return 0.0
@@ -468,16 +491,19 @@ def get_cached_data():
 
 def require_specialist(f):
     @wraps(f)
-    async def decorated(*args,**kwargs):
+    def decorated(*args,**kwargs):
         token=request.headers.get('X-Specialist-Token','')
         if not token: return jsonify({'error':'Unauthorised'}),401
         try:
             r=supabase.table('specialists').select('*').eq('password',token).execute()
             if not r.data: return jsonify({'error':'Invalid token'}),401
         except Exception as e: return jsonify({'error':f'Auth error: {e}'}),401
-        return await f(*args,**kwargs)
+        return f(*args,**kwargs)
     return decorated
 
+# -------------------------------------------------------------------
+# Demo Mode
+# -------------------------------------------------------------------
 DEMO_DEVICES=[
     {'id':'net-byo-router-01',     'type':'router',         'bsig':90,'blat':35,'bbw':120,'btemp':42},
     {'id':'net-byo-switch-core',   'type':'switch',         'bsig':88,'blat':8, 'bbw':480,'btemp':38},
@@ -562,8 +588,11 @@ def demo_worker():
 if os.environ.get('DEMO_MODE','false').lower()=='true':
     threading.Thread(target=demo_worker,daemon=True).start()
 
+# -------------------------------------------------------------------
+# Routes
+# -------------------------------------------------------------------
 @app.route('/')
-async def index():
+def index():
     try:
         path=os.path.join(os.path.dirname(os.path.abspath(__file__)),'dashboard.html')
         with open(path,encoding='utf-8') as f:
@@ -572,7 +601,7 @@ async def index():
         return '<h1>dashboard.html not found</h1>',404
 
 @app.route('/health')
-async def health_check():
+def health_check():
     q=len(metric_queue); age=round(time.time()-_data_cache['ts'],1)
     start=platform_stats['uptime_start']
     if start.endswith('Z'): start=start.replace('Z','+00:00')
@@ -583,17 +612,16 @@ async def health_check():
         'version':'3.0','platform':'IISentinel'}),503 if deg else 200
 
 @app.route('/api/data')
-async def get_data():
+def get_data():
     platform_stats['requests_total']+=1
     return jsonify(get_cached_data())
 
 @app.route('/api/metrics',methods=['POST','OPTIONS'])
-async def receive_metrics():
+def receive_metrics():
     if request.method=='OPTIONS': return '',204
     global anomaly_count
     platform_stats['requests_total']+=1
-    try: raw=await request.get_json(force=True,silent=True) or {}
-    except Exception: raw={}
+    raw=request.get_json(silent=True)
     if not raw: platform_stats['requests_failed']+=1; return jsonify({'error':'Empty payload'}),400
     data,err=sanitize_metric(raw)
     if err: platform_stats['requests_failed']+=1; return jsonify({'error':err}),400
@@ -652,7 +680,7 @@ async def receive_metrics():
         'protocol':proto,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD})
 
 @app.route('/api/platform')
-async def platform_api():
+def platform_api():
     start=platform_stats['uptime_start']
     if start.endswith('Z'): start=start.replace('Z','+00:00')
     up=(datetime.now(timezone.utc)-datetime.fromisoformat(start)).total_seconds()
@@ -668,7 +696,7 @@ async def platform_api():
             'recent':list(notification_log)[:5]}})
 
 @app.route('/api/intelligence')
-async def get_intelligence():
+def get_intelligence():
     recent={d:h[-1] for d,h in device_history.items() if h}
     all_d=get_cached_data(); dtype_map={r['device_id']:r.get('device_type','') for r in all_d}
     ttf_data={}
@@ -683,7 +711,7 @@ async def get_intelligence():
         'total_devices':len(device_history)})
 
 @app.route('/api/twin/<device_id>')
-async def digital_twin(device_id):
+def digital_twin(device_id):
     h=device_history.get(device_id,[])
     if not h: return jsonify({'error':'No history'}),404
     cur=h[-1]; scenarios=[]
@@ -706,7 +734,7 @@ async def digital_twin(device_id):
         'ettf_minutes':get_ettf_minutes(device_id,cur,dtype)})
 
 @app.route('/api/weather')
-async def get_weather():
+def get_weather():
     loc_key=request.args.get('loc','byo'); loc=LOCATIONS.get(loc_key,LOCATIONS['byo'])
     try:
         url=(f"https://api.open-meteo.com/v1/forecast?latitude={loc['lat']}&longitude={loc['lon']}"
@@ -734,10 +762,9 @@ async def get_weather():
             'hourly_wind':[],'hourly_precip_prob':[]}),200
 
 @app.route('/api/login',methods=['POST','OPTIONS'])
-async def login():
+def login():
     if request.method=='OPTIONS': return '',204
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+    data=request.get_json(silent=True) or {}
     try:
         r=supabase.table('specialists').select('*').eq('name',data.get('name','')).eq('password',data.get('password','')).execute()
         if r.data:
@@ -748,31 +775,29 @@ async def login():
 
 @app.route('/api/incidents')
 @require_specialist
-async def get_incidents():
+def get_incidents():
     status=request.args.get('status','open')
     return jsonify(supabase.table('incidents').select('*').eq('status',status).limit(50).execute().data)
 
 @app.route('/api/incidents/<inc_id>/assign',methods=['POST'])
 @require_specialist
-async def assign_incident(inc_id):
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+def assign_incident(inc_id):
+    data=request.get_json(silent=True) or {}
     supabase.table('incidents').update({'assigned_to':data.get('assigned_to',''),
         'notes':data.get('notes',''),'status':'assigned'}).eq('id',inc_id).execute()
     return jsonify({'success':True})
 
 @app.route('/api/incidents/<inc_id>/resolve',methods=['POST'])
 @require_specialist
-async def resolve_incident(inc_id):
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+def resolve_incident(inc_id):
+    data=request.get_json(silent=True) or {}
     supabase.table('incidents').update({'resolved_by':data.get('resolved_by',''),
         'notes':data.get('notes',''),'status':'resolved'}).eq('id',inc_id).execute()
     return jsonify({'success':True})
 
 @app.route('/api/shift-report')
 @require_specialist
-async def shift_report():
+def shift_report():
     try:
         resp=supabase.table('metrics').select('*').limit(500).execute()
         inc=supabase.table('incidents').select('*').limit(100).execute()
@@ -796,9 +821,8 @@ async def shift_report():
 
 @app.route('/api/notify/test',methods=['POST'])
 @require_specialist
-async def test_notify():
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+def test_notify():
+    data=request.get_json(silent=True) or {}
     ch=data.get('channel','all'); msg='IISentinel test notification — channels operational'
     if ch in ('sms','all'):      threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
     if ch in ('whatsapp','all'): threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
@@ -806,27 +830,22 @@ async def test_notify():
     return jsonify({'ok':True,'channel':ch})
 
 @app.route('/api/stream')
-async def sse_stream():
-    q=asyncio.Queue(maxsize=60)
-    with _sse_lock: _sse_queues.append(q)
-    async def generate():
-        try:
-            yield 'event: connected\ndata: {"ok":true}\n\n'
-            while True:
-                try:
-                    msg=await asyncio.wait_for(q.get(),timeout=25)
-                    yield msg
-                except asyncio.TimeoutError:
-                    yield ':heartbeat\n\n'
-        finally:
-            with _sse_lock:
-                try: _sse_queues.remove(q)
-                except ValueError: pass
-    return Response(generate(),mimetype='text/event-stream',
+def sse_stream():
+    sub_q=_queue.Queue(maxsize=50)
+    with _sse_lock: _sse_subs.append(sub_q)
+    def generate():
+        yield 'event: connected\ndata: {"ok":true}\n\n'
+        while True:
+            try:
+                msg=sub_q.get(timeout=25)
+                yield msg
+            except _queue.Empty:
+                yield ':heartbeat\n\n'
+    return Response(stream_with_context(generate()),mimetype='text/event-stream',
         headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no','Connection':'keep-alive'})
 
 @app.route('/api/export-pdf')
-async def export_pdf():
+def export_pdf():
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -891,11 +910,13 @@ async def export_pdf():
     story.append(Spacer(1,14)); story.append(HRFlowable(width='100%',thickness=0.7,color=MUTED,spaceAfter=5))
     story.append(Paragraph(f'IISentinel Confidential — {now_s}',sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
     doc.build(story); buf.seek(0)
-    response=await make_response(buf.getvalue())
-    response.headers['Content-Type']='application/pdf'
-    response.headers['Content-Disposition']=f'attachment; filename="IISentinel_Report_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")}.pdf"'
-    return response
+    return send_file(buf,as_attachment=True,
+        download_name=f'IISentinel_Report_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")}.pdf',
+        mimetype='application/pdf')
 
+# -------------------------------------------------------------------
+# Node Monitor
+# -------------------------------------------------------------------
 import socket as _socket
 import ipaddress as _ipaddress
 from collections import deque as _deque
@@ -977,7 +998,7 @@ def _restore_nodes_from_db():
 threading.Thread(target=_restore_nodes_from_db,daemon=True).start()
 
 @app.route('/api/nodes',methods=['GET'])
-async def get_nodes():
+def get_nodes():
     sector=request.args.get('sector',None)
     with _nodes_lock:
         result={}
@@ -991,9 +1012,8 @@ async def get_nodes():
     return jsonify(result)
 
 @app.route('/api/nodes',methods=['POST'])
-async def add_node():
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+def add_node():
+    data=request.get_json(silent=True) or {}
     host=str(data.get('host','')).strip(); label=str(data.get('label',host)).strip()[:60]
     sector=str(data.get('sector','net')).strip()
     if not host or len(host)>253: return jsonify({'error':'Invalid host'}),400
@@ -1014,7 +1034,7 @@ async def add_node():
     return jsonify({'id':node_id,'host':host,'label':label,'sector':sector,'status':'checking'})
 
 @app.route('/api/nodes/<node_id>',methods=['DELETE'])
-async def delete_node(node_id):
+def delete_node(node_id):
     with _nodes_lock:
         if node_id not in _nodes: return jsonify({'error':'Not found'}),404
         del _nodes[node_id]
@@ -1025,7 +1045,7 @@ async def delete_node(node_id):
     return jsonify({'ok':True})
 
 @app.route('/api/nodes/<node_id>/poll',methods=['POST'])
-async def poll_node_now(node_id):
+def poll_node_now(node_id):
     with _nodes_lock:
         if node_id not in _nodes: return jsonify({'error':'Not found'}),404
         _nodes[node_id]['status']='checking'
@@ -1033,9 +1053,8 @@ async def poll_node_now(node_id):
     return jsonify({'ok':True,'status':'checking'})
 
 @app.route('/api/check-node',methods=['POST'])
-async def check_node_legacy():
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+def check_node_legacy():
+    data=request.get_json(silent=True) or {}
     host=str(data.get('host','')).strip()
     if not host: return jsonify({'error':'Invalid host'}),400
     reachable,latency=_tcp_probe(host)
@@ -1044,9 +1063,8 @@ async def check_node_legacy():
 _scan_results={}
 
 @app.route('/api/nodes/scan',methods=['POST'])
-async def scan_subnet():
-    try: data=await request.get_json(force=True,silent=True) or {}
-    except Exception: data={}
+def scan_subnet():
+    data=request.get_json(silent=True) or {}
     cidr=str(data.get('cidr','')).strip()
     sector=str(data.get('sector','net')).strip()
     try: net=_ipaddress.ip_network(cidr,strict=False)
@@ -1066,7 +1084,7 @@ async def scan_subnet():
     return jsonify({'scan_id':scan_id,'hosts_to_scan':len(hosts)})
 
 @app.route('/api/nodes/scan-status/<scan_id>',methods=['GET'])
-async def scan_status(scan_id):
+def scan_status(scan_id):
     result=_scan_results.get(scan_id,{'done':False,'found':[]})
     return jsonify(result)
 
@@ -1080,13 +1098,4 @@ if __name__=='__main__':
   Specialist : Admin / admin123
     """)
     if demo: print('  [DEMO MODE] 15 devices, 4 sites — auto-injecting data\n')
-    try:
-        import hypercorn.asyncio, hypercorn.config
-        config=hypercorn.config.Config()
-        config.bind=[f"0.0.0.0:{os.environ.get('PORT','5000')}"]
-        config.workers=int(os.environ.get('WORKERS','2'))
-        asyncio.run(hypercorn.asyncio.serve(app,config))
-    except ImportError:
-        print('  [INFO] hypercorn not found — using Quart dev server')
-        print('  [PROD] pip install hypercorn && hypercorn app:app --bind 0.0.0.0:5000\n')
-        app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False)
+    app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)),debug=False,threaded=True)
