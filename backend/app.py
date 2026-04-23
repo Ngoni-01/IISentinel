@@ -1087,19 +1087,11 @@ def scan_subnet():
 def scan_status(scan_id):
     result=_scan_results.get(scan_id,{'done':False,'found':[]})
     return jsonify(result)
+
 # ═══════════════════════════════════════════════════════════════════════════
-#  CASCADE TOPOLOGY BACKEND — app.py PATCH
-#
-#  WHERE TO ADD: paste this entire block into your existing app.py
-#  POSITION: after the shift_report route and before if __name__ == '__main__'
-#
-#  This adds:
-#    GET  /api/cascade/topology  — load saved topology
-#    POST /api/cascade/topology  — save topology (specialist only)
-#    The topology is stored in SQLite (iisentinel.db) and survives restarts.
+#  CASCADE TOPOLOGY BACKEND — app.py PATCH (Flask version)
 # ═══════════════════════════════════════════════════════════════════════════
 
-# ── Ensure cascade_topology table exists ──────────────────────────────────────
 def _init_cascade_table():
     try:
         con = sqlite3.connect(_DB_PATH)
@@ -1117,7 +1109,6 @@ def _init_cascade_table():
 
 _init_cascade_table()
 
-# ── Default starter topology built from demo device IDs ───────────────────────
 _DEFAULT_TOPOLOGY = {
     "nodes": [
         {"id": "net-byo-router-01",   "label": "router-01",  "domain": "net",   "x": 0.12, "y": 0.18},
@@ -1149,20 +1140,12 @@ _DEFAULT_TOPOLOGY = {
 
 @app.route('/api/cascade/topology', methods=['GET'])
 def get_cascade_topology():
-    """
-    Load the saved cascade topology.
-    Returns the specialist-defined nodes and edges, or the default starter topology.
-    No auth required for reading — the diagram is visible to all users.
-    """
     try:
         con = sqlite3.connect(_DB_PATH)
-        row = con.execute(
-            "SELECT payload FROM cascade_topology WHERE id='default'"
-        ).fetchone()
+        row = con.execute("SELECT payload FROM cascade_topology WHERE id='default'").fetchone()
         con.close()
         if row:
             return jsonify(json.loads(row[0]))
-        # No saved topology yet — return the default
         return jsonify(_DEFAULT_TOPOLOGY)
     except Exception as e:
         print(f'[Cascade] GET topology: {e}')
@@ -1171,13 +1154,6 @@ def get_cascade_topology():
 
 @app.route('/api/cascade/topology', methods=['POST'])
 def save_cascade_topology():
-    """
-    Save a new cascade topology. Requires specialist token.
-    Accepts: { nodes: [...], edges: [...] }
-    Each node: { id, label, domain, x, y }
-    Each edge: { from, to }
-    """
-    # Auth check
     token = request.headers.get('X-Specialist-Token', '')
     if not token:
         return jsonify({'error': 'Specialist access required'}), 401
@@ -1186,7 +1162,6 @@ def save_cascade_topology():
         if not r.data:
             return jsonify({'error': 'Invalid specialist token'}), 401
     except Exception as e:
-        # SQLite fallback — just check token is non-empty for local dev
         if not token or token == 'undefined':
             return jsonify({'error': 'Invalid token'}), 401
 
@@ -1194,7 +1169,6 @@ def save_cascade_topology():
     nodes = data.get('nodes', [])
     edges = data.get('edges', [])
 
-    # Basic validation
     if not isinstance(nodes, list) or not isinstance(edges, list):
         return jsonify({'error': 'nodes and edges must be arrays'}), 400
     if len(nodes) > 100:
@@ -1202,7 +1176,6 @@ def save_cascade_topology():
     if len(edges) > 300:
         return jsonify({'error': 'Maximum 300 edges per topology'}), 400
 
-    # Sanitise node fields
     clean_nodes = []
     for n in nodes:
         if not isinstance(n, dict): continue
@@ -1217,7 +1190,6 @@ def save_cascade_topology():
             'y':      max(0.0, min(1.0, float(n.get('y', 0.5)))),
         })
 
-    # Sanitise edge fields
     node_ids = {n['id'] for n in clean_nodes}
     clean_edges = []
     for e in edges:
@@ -1255,7 +1227,6 @@ def save_cascade_topology():
 
 @app.route('/api/cascade/topology', methods=['DELETE'])
 def reset_cascade_topology():
-    """Reset to default topology. Requires specialist token."""
     token = request.headers.get('X-Specialist-Token', '')
     if not token:
         return jsonify({'error': 'Specialist access required'}), 401
@@ -1267,10 +1238,12 @@ def reset_cascade_topology():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     return jsonify({'ok': True, 'message': 'Topology reset to default'})
+
+
 if __name__=='__main__':
     demo=os.environ.get('DEMO_MODE','false').lower()=='true'
     print("""
-  IISentinel v3.0 — Intelligent Infrastructure Sentinel
+  IISentinel v3.0 — Intelligent Infrastructure Sentinel (Flask)
   Dashboard  : http://localhost:5000
   Health     : http://localhost:5000/health
   PDF Report : http://localhost:5000/api/export-pdf
