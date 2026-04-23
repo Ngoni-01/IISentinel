@@ -7,25 +7,68 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    /* === COMPLETE CSS (abbreviated for space — use full version provided earlier) === */
-    :root { --bg: #0d1928; --s0: #111e30; --s1: #152338; --s2: #1a2a42; --s3: #1f3150; --b1: rgba(255,255,255,.06); --b2: rgba(255,255,255,.11); --b3: rgba(255,255,255,.19); --txt: #e0eaf8; --mut: #7a8dae; --dim: #3a506a; --grn: #22e07a; --grna: rgba(34,224,122,.1); --amb: #f29510; --amba: rgba(242,149,16,.1); --red: #f02e50; --reda: rgba(240,46,80,.1); --blu: #28c4f8; --blua: rgba(40,196,248,.1); --pur: #a27cf8; --pura: rgba(162,124,248,.1); --tel: #00d4c8; --tela: rgba(0,212,200,.1); --gld: #f5c420; --glda: rgba(245,196,32,.1); --logo-ii: #28c4f8; --logo-a: #28c4f8; --logo-b: #22e07a; --acc: var(--blu); --acca: var(--blua); --font: 'Sora',system-ui,sans-serif; --mono: 'JetBrains Mono',monospace; --r-sm: 8px; --r-md: 13px; --r-lg: 17px; --r-xl: 22px; --r-2xl: 28px; --sh-xs: 0 1px 4px rgba(0,0,0,.5); --sh-sm: 0 3px 14px rgba(0,0,0,.6); --sh-md: 0 8px 32px rgba(0,0,0,.7); --sh-lg: 0 20px 64px rgba(0,0,0,.82); --sh-xl: 0 32px 96px rgba(0,0,0,.9); --ease: cubic-bezier(.16,1,.3,1); --spring: cubic-bezier(.34,1.56,.64,1); --blur: blur(24px) saturate(1.6); }
-    body.light { --bg: #e4e8f2; --s0: #eaeef6; --s1: #f0f3fa; --s2: #f5f7fd; --s3: #fff; --b1: rgba(0,0,0,.07); --b2: rgba(0,0,0,.12); --txt: #0d1825; --mut: #334055; --dim: #8898b4; --grn: #0a9e4c; --amb: #a85e00; --red: #bb1830; --blu: #0060a0; --pur: #5a18b8; --tel: #006060; --gld: #a88000; }
+    /* ===== COMPLETE CSS (original + cascade enhancements) ===== */
+    :root {
+      --bg: #0d1928; --s0: #111e30; --s1: #152338; --s2: #1a2a42; --s3: #1f3150;
+      --b1: rgba(255,255,255,.06); --b2: rgba(255,255,255,.11); --b3: rgba(255,255,255,.19);
+      --txt: #e0eaf8; --mut: #7a8dae; --dim: #3a506a;
+      --grn: #22e07a; --grna: rgba(34,224,122,.1);
+      --amb: #f29510; --amba: rgba(242,149,16,.1);
+      --red: #f02e50; --reda: rgba(240,46,80,.1);
+      --blu: #28c4f8; --blua: rgba(40,196,248,.1);
+      --pur: #a27cf8; --pura: rgba(162,124,248,.1);
+      --tel: #00d4c8; --tela: rgba(0,212,200,.1);
+      --gld: #f5c420; --glda: rgba(245,196,32,.1);
+      --logo-ii: #28c4f8; --logo-a: #28c4f8; --logo-b: #22e07a;
+      --acc: var(--blu); --acca: var(--blua);
+      --font: 'Sora', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace;
+      --r-sm: 8px; --r-md: 13px; --r-lg: 17px; --r-xl: 22px; --r-2xl: 28px;
+      --sh-xs: 0 1px 4px rgba(0,0,0,.5); --sh-sm: 0 3px 14px rgba(0,0,0,.6);
+      --sh-md: 0 8px 32px rgba(0,0,0,.7); --sh-lg: 0 20px 64px rgba(0,0,0,.82);
+      --sh-xl: 0 32px 96px rgba(0,0,0,.9);
+      --ease: cubic-bezier(.16,1,.3,1); --spring: cubic-bezier(.34,1.56,.64,1);
+      --blur: blur(24px) saturate(1.6);
+    }
+    body.light {
+      --bg: #e4e8f2; --s0: #eaeef6; --s1: #f0f3fa; --s2: #f5f7fd; --s3: #fff;
+      --b1: rgba(0,0,0,.07); --b2: rgba(0,0,0,.12); --txt: #0d1825; --mut: #334055;
+      --dim: #8898b4; --grn: #0a9e4c; --amb: #a85e00; --red: #bb1830;
+      --blu: #0060a0; --pur: #5a18b8; --tel: #006060; --gld: #a88000;
+    }
     body.light header, body.light nav.mnav { background: rgba(228,232,242,.93) !important; }
     body.light .subloc { background: rgba(220,225,240,.9) !important; }
-    body.light .card, .light .bc, .light .gc, .light .fcard, .light .lcard, .light .icard, .light .wcard, .light .twin-wrap, .light .cbsouter, .light .en-panel, .light .sphead, .light .icard2, .light .kpi-bar, .light .statbar, .light .detail-modal-inner { background: rgba(255,255,255,.85) !important; border-color: var(--b1) !important; }
+    body.light .card, .light .bc, .light .gc, .light .fcard, .light .lcard, .light .icard,
+    .light .wcard, .light .twin-wrap, .light .cbsouter, .light .en-panel, .light .sphead,
+    .light .icard2, .light .kpi-bar, .light .statbar, .light .detail-modal-inner {
+      background: rgba(255,255,255,.85) !important; border-color: var(--b1) !important;
+    }
     body.light .lbox, .light .ss-box { background: rgba(246,249,255,.98) !important; }
     body.light .fitem { background: rgba(0,0,0,.028); }
     body.light .hero-img img { filter: brightness(.72) saturate(.85) !important; }
     body.light .toast { background: rgba(236,240,250,.97); }
     body.light .cascade-wrap { background: rgba(255,255,255,.85) !important; border-color: var(--b1) !important; }
     body.light .cascade-side-panel { background: rgba(248,250,255,.9) !important; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
     html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--txt); font-family: var(--font); font-size: 13px; letter-spacing: -.012em; line-height: 1.56; overflow-x: hidden; transition: background .8s var(--ease), color .5s var(--ease); }
-    #amb { position: fixed; inset: 0; pointer-events: none; z-index: 0; transition: background 3.2s var(--ease); will-change: background; }
+    body {
+      background: var(--bg); color: var(--txt); font-family: var(--font); font-size: 13px;
+      letter-spacing: -.012em; line-height: 1.56; overflow-x: hidden;
+      transition: background .8s var(--ease), color .5s var(--ease);
+    }
+    #amb {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      transition: background 3.2s var(--ease); will-change: background;
+    }
     body.ops-focus #amb { animation: opsAmb 2.2s ease-in-out infinite; }
-    @keyframes opsAmb { 0%,100% { background: radial-gradient(ellipse 150% 75% at 50% 118%, rgba(240,46,80,.14) 0%, transparent 65%); } 50% { background: radial-gradient(ellipse 150% 75% at 50% 118%, rgba(240,46,80,.28) 0%, transparent 65%); } }
-    #ambient-svg { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .07; transition: opacity 1.4s var(--ease); }
+    @keyframes opsAmb {
+      0%,100% { background: radial-gradient(ellipse 150% 75% at 50% 118%, rgba(240,46,80,.14) 0%, transparent 65%); }
+      50% { background: radial-gradient(ellipse 150% 75% at 50% 118%, rgba(240,46,80,.28) 0%, transparent 65%); }
+    }
+    #ambient-svg {
+      position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .07;
+      transition: opacity 1.4s var(--ease);
+    }
     .net-node { animation: nodePulse 3s ease-in-out infinite; }
     @keyframes nodePulse { 0%,100% { r: 5; opacity: .9; } 50% { r: 7; opacity: 1; } }
     .net-line { animation: lineFlash 4s ease-in-out infinite; }
@@ -38,26 +81,62 @@
     .mc-spark { animation: sparkFloat 2.8s ease-in-out infinite; }
     @keyframes sparkFloat { 0%,100% { transform: translateY(0) scale(1); opacity: .7; } 50% { transform: translateY(-18px) scale(1.3); opacity: 1; } }
     .mc-spark:nth-child(odd) { animation-delay: .6s; }
-    #grain { position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: .024; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 180px; animation: grainShift 8s steps(1) infinite; }
-    @keyframes grainShift { 0%,100% { background-position: 0 0; } 25% { background-position: 18px -12px; } 50% { background-position: 24px 6px; } 75% { background-position: 12px 22px; } }
-    .ops-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9995; background: rgba(240,46,80,.1); border-bottom: 1px solid rgba(240,46,80,.24); text-align: center; padding: 6px; font-size: 9.5px; font-weight: 800; color: var(--red); letter-spacing: .22em; text-transform: uppercase; backdrop-filter: var(--blur); animation: opsBannerPulse 1.9s ease-in-out infinite; }
-    @keyframes opsBannerPulse { 0%,100% { background: rgba(240,46,80,.1); } 50% { background: rgba(240,46,80,.19); } }
+    #grain {
+      position: fixed; inset: 0; pointer-events: none; z-index: 2; opacity: .024;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px; animation: grainShift 8s steps(1) infinite;
+    }
+    @keyframes grainShift {
+      0%,100% { background-position: 0 0; }
+      25% { background-position: 18px -12px; }
+      50% { background-position: 24px 6px; }
+      75% { background-position: 12px 22px; }
+    }
+    .ops-banner {
+      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9995;
+      background: rgba(240,46,80,.1); border-bottom: 1px solid rgba(240,46,80,.24);
+      text-align: center; padding: 6px; font-size: 9.5px; font-weight: 800; color: var(--red);
+      letter-spacing: .22em; text-transform: uppercase; backdrop-filter: var(--blur);
+      animation: opsBannerPulse 1.9s ease-in-out infinite;
+    }
+    @keyframes opsBannerPulse {
+      0%,100% { background: rgba(240,46,80,.1); }
+      50% { background: rgba(240,46,80,.19); }
+    }
     body.ops-focus .ops-banner { display: block; }
     body.ops-focus header { margin-top: 29px; }
-    #loader { position: fixed; inset: 0; z-index: 99999; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; animation: loaderOut .9s 3.1s var(--ease) forwards; }
+    #loader {
+      position: fixed; inset: 0; z-index: 99999; background: var(--bg);
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      animation: loaderOut .9s 3.1s var(--ease) forwards;
+    }
     @keyframes loaderOut { 0% { opacity: 1; } 100% { opacity: 0; pointer-events: none; visibility: hidden; } }
     .lring { width: 42px; height: 42px; border-radius: 50%; border: 1.5px solid rgba(40,196,248,.12); border-top-color: var(--blu); animation: spin .85s linear infinite; margin-bottom: 24px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .lsub2 { font-size: 9.5px; color: var(--dim); letter-spacing: .16em; text-transform: uppercase; margin-top: 8px; }
     #toasts { position: fixed; top: 70px; right: 18px; z-index: 99990; width: 304px; }
-    .toast { background: rgba(8,12,26,.97); border: 1px solid var(--b2); border-top: 2px solid var(--acc); border-radius: var(--r-md); padding: 12px 15px; margin-bottom: 8px; font-size: 11px; box-shadow: var(--sh-lg); backdrop-filter: var(--blur); animation: toastIn .32s var(--spring); }
+    .toast {
+      background: rgba(8,12,26,.97); border: 1px solid var(--b2); border-top: 2px solid var(--acc);
+      border-radius: var(--r-md); padding: 12px 15px; margin-bottom: 8px; font-size: 11px;
+      box-shadow: var(--sh-lg); backdrop-filter: var(--blur); animation: toastIn .32s var(--spring);
+    }
     @keyframes toastIn { from { opacity: 0; transform: translateX(18px) scale(.95); } to { opacity: 1; transform: none; } }
     .toast.tc { border-top-color: var(--red); } .toast.tw { border-top-color: var(--amb); } .toast.tg { border-top-color: var(--grn); }
     .ttitle { font-weight: 700; font-size: 12px; margin-bottom: 3px; } .tmsg { color: var(--mut); font-size: 10.5px; }
-    header { background: rgba(12,23,36,.88); border-bottom: 1px solid var(--b1); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 500; backdrop-filter: var(--blur); transition: margin-top .3s var(--ease); }
+    header {
+      background: rgba(12,23,36,.88); border-bottom: 1px solid var(--b1);
+      padding: 10px 24px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 500; backdrop-filter: var(--blur);
+      transition: margin-top .3s var(--ease);
+    }
     .logo { display: flex; align-items: baseline; cursor: pointer; user-select: none; position: relative; padding-bottom: 14px; }
     .logo-ii { font-size: 19px; font-weight: 900; letter-spacing: -.06em; color: var(--logo-ii); text-shadow: 0 0 22px color-mix(in srgb, var(--logo-ii) 58%, transparent); transition: color 1.2s; }
-    .logo-sent { font-size: 17px; font-weight: 700; letter-spacing: .015em; background: linear-gradient(110deg, var(--logo-a), var(--logo-b) 55%, var(--logo-a)); background-size: 270% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: shimmer 5.5s linear infinite; }
+    .logo-sent {
+      font-size: 17px; font-weight: 700; letter-spacing: .015em;
+      background: linear-gradient(110deg, var(--logo-a), var(--logo-b) 55%, var(--logo-a));
+      background-size: 270% auto; background-clip: text; -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; animation: shimmer 5.5s linear infinite;
+    }
     @keyframes shimmer { 0% { background-position: 200%; } 100% { background-position: -200%; } }
     .logo-tm { font-size: 8px; color: var(--dim); -webkit-text-fill-color: var(--dim); vertical-align: super; margin-left: 1px; }
     .logo-section-tag { position: absolute; bottom: 0; left: 0; font-size: 8px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--logo-a); opacity: .78; white-space: nowrap; }
@@ -113,16 +192,22 @@
     .hero-protos { position: absolute; top: 16px; right: 20px; z-index: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
     .hp { font-size: 9px; padding: 4px 11px; border-radius: 30px; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.14); color: rgba(210,228,255,.9); font-weight: 700; font-family: var(--mono); }
     .statbar { position: relative; height: 88px; display: flex; align-items: center; padding: 0 28px; border-top: 1px solid var(--b1); background: var(--s1); overflow: hidden; transition: box-shadow .8s ease; }
-    .statbar.sb-net { background: linear-gradient(90deg, #00141a, #001e28, #001018); }
-    .statbar.sb-tc { background: linear-gradient(90deg, #000d1e, #001428, #000816); }
-    .statbar.sb-mc { background: linear-gradient(90deg, #120900, #1e0e00, #0e0500); }
-    .statbar.sb-cbs { background: linear-gradient(90deg, #140003, #1e0007, #0e0002); }
+    .statbar.sb-net { background: linear-gradient(90deg, #00141a, #001e28, #001018); box-shadow: inset 0 0 60px rgba(0,212,200,.04); }
+    .statbar.sb-tc { background: linear-gradient(90deg, #000d1e, #001428, #000816); box-shadow: inset 0 0 60px rgba(40,196,248,.04); }
+    .statbar.sb-mc { background: linear-gradient(90deg, #120900, #1e0e00, #0e0500); box-shadow: inset 0 0 60px rgba(245,196,32,.04); }
+    .statbar.sb-cbs { background: linear-gradient(90deg, #140003, #1e0007, #0e0002); box-shadow: inset 0 0 60px rgba(240,46,80,.06); }
+    .statbar::after { display: none; }
     @keyframes esbBreathGrn { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(34,224,122,.55); } 50% { opacity: .72; text-shadow: 0 0 26px rgba(34,224,122,.9); } }
     @keyframes esbBreathAmb { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(242,149,16,.55); } 50% { opacity: .68; text-shadow: 0 0 26px rgba(242,149,16,.9); } }
     @keyframes esbBreathRed { 0%,100% { opacity: 1; text-shadow: 0 0 14px rgba(240,46,80,.6); } 50% { opacity: .55; text-shadow: 0 0 32px rgba(240,46,80,1); } }
     .esb-v.cg { animation: esbBreathGrn 3.4s ease-in-out infinite; }
     .esb-v.cw { animation: esbBreathAmb 2.6s ease-in-out infinite; }
     .esb-v.cr { animation: esbBreathRed 1.8s ease-in-out infinite; }
+    body.ops-focus .esb-v.cr { animation: esbBreathRed .9s ease-in-out infinite; padding: 4px 8px; border-radius: 6px; outline: 1.5px solid rgba(240,46,80,.7); outline-offset: 4px; box-shadow: 0 0 0 3px rgba(240,46,80,.18), 0 0 0 6px rgba(240,46,80,.07), 0 0 28px rgba(240,46,80,.45); }
+    body.ops-focus .statbar { animation: statBarOps 2s ease-in-out infinite; }
+    @keyframes statBarOps { 0%,100% { box-shadow: inset 0 0 30px rgba(240,46,80,.08); } 50% { box-shadow: inset 0 0 60px rgba(240,46,80,.2); } }
+    body.ops-focus .statbar.sb-cbs { animation: statBarCbs 1.4s ease-in-out infinite; }
+    @keyframes statBarCbs { 0%,100% { box-shadow: inset 0 0 40px rgba(240,46,80,.14); } 50% { box-shadow: inset 0 0 80px rgba(240,46,80,.35); } }
     .esb { display: flex; flex-direction: column; gap: 3px; padding: 0 24px 0 0; position: relative; z-index: 1; }
     .esb:first-child { padding-left: 0; }
     .esb-v { font-family: var(--mono); font-size: 21px; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--acc); transition: color .6s; }
@@ -131,8 +216,14 @@
     .live-chip { display: flex; align-items: center; gap: 5px; background: rgba(34,224,122,.06); border: 1px solid rgba(34,224,122,.16); border-radius: 30px; padding: 5px 13px; z-index: 1; }
     .lc-l { font-size: 9px; font-weight: 700; letter-spacing: .05em; }
     .kpi-bar { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-md); padding: 12px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; box-shadow: var(--sh-xs); }
+    body.ops-focus .kpi-bar { animation: kpiBarOps 2s ease-in-out infinite; border-color: rgba(240,46,80,.14) !important; }
+    @keyframes kpiBarOps { 0%,100% { box-shadow: var(--sh-xs); } 50% { box-shadow: 0 0 28px rgba(240,46,80,.09); } }
     .kpi-item { display: flex; flex-direction: column; gap: 2px; }
     .kpi-v { font-family: var(--mono); font-size: 18px; font-weight: 700; letter-spacing: -.03em; color: var(--acc); transition: color .6s; }
+    body.ops-focus .kpi-v.cr { animation: critKpiPulse 1.1s ease-in-out infinite; }
+    body.ops-focus .kpi-v.cw { animation: ambKpiPulse 1.8s ease-in-out infinite; }
+    @keyframes critKpiPulse { 0%,100% { text-shadow: 0 0 10px rgba(240,46,80,.7); opacity: 1; } 50% { text-shadow: 0 0 28px rgba(240,46,80,1); opacity: .6; } }
+    @keyframes ambKpiPulse { 0%,100% { text-shadow: 0 0 8px rgba(242,149,16,.6); opacity: 1; } 50% { text-shadow: 0 0 20px rgba(242,149,16,.9); opacity: .75; } }
     .kpi-l { font-size: 9px; color: var(--dim); font-weight: 700; text-transform: uppercase; letter-spacing: .09em; }
     .kpi-sep { width: 1px; height: 32px; background: var(--b1); flex-shrink: 0; } .kpi-fill { flex: 1; }
     .cost-tick { font-family: var(--mono); font-size: 22px; font-weight: 800; color: var(--red); letter-spacing: -.04em; animation: ctick 2s ease-in-out infinite; }
@@ -311,6 +402,7 @@
     .dc-badge { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
     .dc-badge.live { background: var(--grna); color: var(--grn); } .dc-badge.manual { background: var(--amba); color: var(--amb); } .dc-badge.auto { background: var(--blua); color: var(--blu); }
     .cg { color: var(--grn); } .cw { color: var(--amb); } .cr { color: var(--red); } .ca { color: var(--acc); } .cp { color: var(--pur); } .cgld { color: var(--gld); }
+    .env-hero::after { display: none; }
 
     /* ===== CASCADE ENGINE — ENHANCED CSS ===== */
     .cascade-wrap { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-lg); margin-bottom: 14px; overflow: hidden; box-shadow: var(--sh-md); position: relative; }
@@ -412,6 +504,7 @@
   </style>
 </head>
 <body>
+  <!-- AMBIENT BACKGROUND & GRAIN -->
   <div id="amb" aria-hidden="true"></div>
   <div id="grain" aria-hidden="true"></div>
   <svg id="ambient-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -440,6 +533,7 @@
     </g>
   </svg>
 
+  <!-- DETAIL OVERLAY -->
   <div id="detail-overlay" onclick="closeDetail(event)">
     <div class="detail-modal-inner">
       <div class="dm-header"><div><div class="dm-title" id="dm-title">Device Details</div><div style="font-size:10px;color:var(--dim);margin-top:3px;font-family:var(--mono)" id="dm-subtitle"></div></div><button class="dm-close" onclick="closeDetailDirect()">✕ Close</button></div>
@@ -451,6 +545,7 @@
     </div>
   </div>
 
+  <!-- SECTOR SELECTOR -->
   <div id="sector-selector" style="display:none">
     <div class="ss-box">
       <div class="ss-logo"><span style="font-size:20px;font-weight:900;letter-spacing:-.06em;color:var(--blu)">II</span><span style="font-size:18px;font-weight:700;letter-spacing:.015em;background:linear-gradient(110deg,var(--blu),var(--grn));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent">Sentinel</span><span style="font-size:8px;color:var(--dim);-webkit-text-fill-color:var(--dim);vertical-align:super;margin-left:1px">™</span></div>
@@ -475,15 +570,18 @@
     </div>
   </div>
 
+  <!-- LOADER -->
   <div id="loader">
     <div class="lring"></div>
     <div style="display:flex;align-items:baseline"><span style="font-size:20px;font-weight:900;letter-spacing:-.06em;color:var(--blu)">II</span><span style="font-size:18px;font-weight:700;letter-spacing:.015em;background:linear-gradient(110deg,var(--blu),var(--grn));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent">Sentinel</span><span style="font-size:8px;color:var(--dim);-webkit-text-fill-color:var(--dim);vertical-align:super;margin-left:1px">™</span></div>
     <div class="lsub2">Intelligent Infrastructure Platform v3</div>
   </div>
 
+  <!-- OPS BANNER & TOASTS -->
   <div class="ops-banner">⚠ OPS FOCUS MODE — CRITICAL ASSETS HIGHLIGHTED</div>
   <div id="toasts"></div>
 
+  <!-- HEADER -->
   <header>
     <div class="logo" onclick="toast('IISentinel™ v3','Intelligent Infrastructure Sentinel','')"><span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">™</span><div class="logo-section-tag" id="logo-stag">Platform</div></div>
     <div><div class="hctr-a">Intelligent Infrastructure Sentinel™</div><div class="hctr-b" id="hctr-sub">Network · Telecom · Mining · CBS Safety · Weather</div></div>
@@ -496,6 +594,7 @@
     </div>
   </header>
 
+  <!-- NAVIGATION -->
   <nav class="mnav">
     <div class="ntab active" onclick="goPage(this,'main')">Dashboard</div>
     <div class="ntab" onclick="goPage(this,'net')">Network</div>
@@ -507,6 +606,7 @@
     <div class="ntab t-sp" onclick="goPage(this,'sp')">Specialist</div>
   </nav>
 
+  <!-- SUB-LOCATION BARS -->
   <div class="subloc" id="sub-net">
     <span class="sl-lbl">Network site</span>
     <button class="stab active" onclick="setSub('net','all',this)">All</button>
@@ -530,11 +630,12 @@
     <button class="stab" onclick="setSub('mc','surface',this)">Surface</button>
   </div>
 
+  <!-- MAIN CONTENT WRAPPER -->
   <div class="wrap">
     <div class="retrain" id="retrain-bar">⚠ AI model optimisation recommended — anomaly rate exceeding threshold.</div>
     <div class="retrain-active" id="retrain-active-bar">✔ AI model update in progress — live monitoring continues uninterrupted.</div>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- DASHBOARD PAGE -->
     <div class="page active" id="page-main">
       <div class="kpi-bar" id="kpi-bar-main">
         <div class="kpi-item"><div class="kpi-v cg" id="b-fhi">--</div><div class="kpi-l">Fleet FHI</div></div><div class="kpi-sep"></div>
@@ -558,7 +659,7 @@
       </div>
     </div>
 
-    <!-- NETWORK -->
+    <!-- NETWORK PAGE -->
     <div class="page" id="page-net">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#001824 0%,#003848 35%,#001020 65%,#002030 100%);position:absolute;inset:0"><svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.35"><defs><pattern id="fb-net" width="48" height="48" patternUnits="userSpaceOnUse"><circle cx="24" cy="24" r="1.5" fill="#00d4c8" opacity=".6"/><line x1="0" y1="24" x2="48" y2="24" stroke="#28c4f8" stroke-width=".4" opacity=".3"/><line x1="24" y1="0" x2="24" y2="48" stroke="#28c4f8" stroke-width=".4" opacity=".3"/></pattern></defs><rect width="100%" height="100%" fill="url(#fb-net)"/></svg></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--tel)">Network Monitoring · SNMP · BGP · Real-time</div><div class="hero-h1">Network Infrastructure</div><div class="hero-desc">Core routers · Distribution switches · Firewalls · WAN links</div></div><div class="hero-protos"><div class="hp">SNMP v2/v3</div><div class="hp">BGP · OSPF</div><div class="hp">ICMP · NetFlow</div><div class="hp">IEEE 802.3</div></div></div>
       <div class="statbar sb-net"><div class="esb"><div class="esb-v" id="net-fhi">--</div><div class="esb-l">Network FHI</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cw" id="net-lat">-- ms</div><div class="esb-l">Avg Latency</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="net-faults">0</div><div class="esb-l">Active Faults</div></div><div class="esb-fill"></div><div class="live-chip"><div class="ldot" style="background:var(--tel)"></div><span class="lc-l" style="color:var(--tel)">Live polling</span></div></div></div>
@@ -573,7 +674,7 @@
       <div class="fgrid"><div class="fcard"><div class="sl">Network fault log</div><div id="net-feed"></div></div><div class="fcard"><div class="sl">Automation commands</div><div id="net-auto"></div></div></div>
     </div>
 
-    <!-- TELECOMCO -->
+    <!-- TELECOMCO PAGE -->
     <div class="page" id="page-tc">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#000c20 0%,#001840 35%,#000a18 65%,#001428 100%);position:absolute;inset:0"></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--blu)">Telecommunications · Live RF Monitoring · MW Backhaul</div><div class="hero-h1" id="tc-env-title">TelecomCo — All Sites</div><div class="hero-desc">Base stations · Network towers · Microwave backhaul</div></div><div class="hero-protos"><div class="hp">SNMP · LTE</div><div class="hp">MW backhaul</div><div class="hp">IEEE 802.3</div><div class="hp">dBm / SNR</div></div></div>
       <div class="statbar sb-tc"><div class="esb"><div class="esb-v" id="tc-fhi">--</div><div class="esb-l">Site FHI</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v ca" id="tc-devs">--</div><div class="esb-l">Active Nodes</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="tc-faults">0</div><div class="esb-l">Open Faults</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cg" id="tc-sig">--%</div><div class="esb-l">Avg Signal</div></div><div class="esb-fill"></div><div class="live-chip"><div class="ldot"></div><span class="lc-l" style="color:var(--grn)">RF Monitor</span></div></div></div>
@@ -589,7 +690,7 @@
       <div class="fgrid"><div class="fcard"><div class="sl">Fault log</div><div id="tc-feed"></div></div><div class="fcard"><div class="sl">Automation commands</div><div id="tc-auto"></div></div></div>
     </div>
 
-    <!-- MININGCO -->
+    <!-- MININGCO PAGE -->
     <div class="page" id="page-mc">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#100800 0%,#2a1400 35%,#0c0400 65%,#1a0a00 100%);position:absolute;inset:0"><svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.28"><defs><radialGradient id="fb-mc1" cx="30%" cy="60%" r="45%"><stop offset="0%" stop-color="#f5c420" stop-opacity=".5"/><stop offset="100%" stop-color="#f5c420" stop-opacity="0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#fb-mc1)"/></svg></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--gld)">Industrial Operations · Safety Critical · DNP3 Monitored</div><div class="hero-h1" id="mc-env-title">MiningCo — All Sections</div><div class="hero-desc">PLCs · Pumps · Conveyors · Ventilation · CBS controller</div></div><div class="hero-protos"><div class="hp">Profinet</div><div class="hp">Modbus TCP</div><div class="hp">OPC-UA</div><div class="hp">DNP3 · EtherNet/IP</div></div></div>
       <div class="statbar sb-mc"><div class="esb"><div class="esb-v cw" id="mc-fhi">--</div><div class="esb-l">Section FHI</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v ca" id="mc-devs">--</div><div class="esb-l">Active Assets</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="mc-alerts">0</div><div class="esb-l">Safety Alerts</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="mc-crit">0</div><div class="esb-l">Critical Assets</div></div><div class="esb-fill"></div><div class="live-chip" style="background:rgba(242,149,16,.07);border-color:rgba(242,149,16,.18)"><div class="ldot" style="background:var(--amb)"></div><span class="lc-l" style="color:var(--amb)">Safety Monitor</span></div></div></div>
@@ -600,14 +701,14 @@
       <div class="fgrid"><div class="fcard"><div class="sl">Safety alerts</div><div id="mc-feed"></div></div><div class="fcard"><div class="sl">Automation commands</div><div id="mc-auto"></div></div></div>
     </div>
 
-    <!-- WEATHER -->
+    <!-- WEATHER PAGE -->
     <div class="page" id="page-wx">
       <div class="sl">Weather forecast — live equipment impact analysis</div>
       <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);padding:22px">Loading weather data...</div></div>
       <div class="cgrid"><div class="card"><div class="ctitle">Wind speed forecast — next 24h (km/h)</div><canvas id="cWind"></canvas></div><div class="card"><div class="ctitle">Precipitation probability — next 24h (%)</div><canvas id="cPrecip"></canvas></div></div>
     </div>
 
-    <!-- INTELLIGENCE -->
+    <!-- INTELLIGENCE PAGE (with CASCADE ENGINE integrated) -->
     <div class="page" id="page-intel">
       <div class="sl">Platform intelligence — real-time AI insights</div>
       <div class="igrid">
@@ -626,9 +727,7 @@
         <div class="twin-trend" id="twin-trend"></div>
       </div>
 
-      <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- CASCADE INTELLIGENCE MAP — ENHANCED -->
-      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- CASCADE INTELLIGENCE MAP -->
       <div class="sl" style="margin-top:4px">Cascade intelligence map — real‑time dependency propagation</div>
       <div class="cascade-wrap">
         <div class="cascade-hdr">
@@ -698,7 +797,6 @@
           <div class="ce-row"><div class="ce-nodes-list" id="ce-nodes-list"></div></div>
         </div>
       </div>
-      <!-- END CASCADE BLOCK -->
 
       <div class="fgrid">
         <div class="fcard"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
@@ -730,7 +828,7 @@
       </div>
     </div>
 
-    <!-- CBS SAFETY -->
+    <!-- CBS SAFETY PAGE -->
     <div class="page" id="page-cbs">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#140006 0%,#2e0010 35%,#0e0004 65%,#1a0008 100%);position:absolute;inset:0"></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--red)">Safety Critical · DNP3 Protocol · $500,000/blast</div><div class="hero-h1">Centralised Blasting System</div><div class="hero-desc">DNP3 Safety Monitor · Multi-factor integrity below 90% triggers auto-interlock</div></div><div class="hero-protos"><div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">DNP3</div><div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">EtherNet/IP</div><div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">Safety PLC</div></div></div>
       <div class="statbar sb-cbs"><div class="esb"><div class="esb-v" style="color:var(--red);font-size:14px;font-family:var(--mono);font-weight:800" id="cbs-status-banner">ARMED</div><div class="esb-l">Blast Status</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cg" id="cbs-health-banner">--</div><div class="esb-l">Link Health %</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cg" id="cbs-integrity-banner">--</div><div class="esb-l">Integrity Score</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v" style="color:var(--amb)">90%</div><div class="esb-l">Interlock Threshold</div></div><div class="esb-fill"></div><div class="live-chip" style="background:rgba(240,46,80,.07);border-color:rgba(240,46,80,.2)"><div class="ldot" style="background:var(--red)"></div><span class="lc-l" style="color:var(--red)">Safety Monitor</span></div></div></div>
@@ -743,7 +841,7 @@
       <div class="card"><div class="ctitle">CBS link health — blast hold triggers below 90% integrity</div><canvas id="cCbs"></canvas></div>
     </div>
 
-    <!-- SPECIALIST -->
+    <!-- SPECIALIST PAGE -->
     <div class="page" id="page-sp">
       <div id="login-sec">
         <div class="lbox">
@@ -771,10 +869,9 @@
     </div>
   </div>
 
+  <!-- ========== COMPLETE JAVASCRIPT ========== -->
   <script>
-    // ═══════════════════════════════════════════════════════════════════════════
-    // COMPLETE JAVASCRIPT — CORE DASHBOARD + CASCADE ENGINE
-    // ═══════════════════════════════════════════════════════════════════════════
+    // CORE GLOBALS & HELPERS
     var B=window.location.origin;
     var spToken=null,spName=null,intel={},allData=[];
     var curNet='all',curTc='all',curMc='all';
@@ -1294,7 +1391,6 @@
       const panel = document.getElementById('cascade-insight-panel'), text = document.getElementById('cascade-insight-text');
       if (affected > 0) { panel.classList.add('visible'); text.innerHTML = `<strong>${affected} downstream devices impacted.</strong> Root cause propagated through dependency chain.`; }
       else panel.classList.remove('visible');
-      // Economic consequence simulation
       document.getElementById('ce-direct').textContent = '$'+(totalExp*0.4).toLocaleString();
       document.getElementById('ce-cascade-econ').textContent = '$'+(totalExp*0.6).toLocaleString();
       document.getElementById('ce-prevented').textContent = '$'+(totalExp*1.2).toLocaleString();
