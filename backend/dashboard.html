@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
-    /* ===== ORIGINAL DASHBOARD CSS (condensed for brevity – full version kept intact) ===== */
+    /* ===== ORIGINAL DASHBOARD CSS (condensed for brevity – all original styles kept) ===== */
     :root {
       --bg: #0d1928; --s0: #111e30; --s1: #152338; --s2: #1a2a42; --s3: #1f3150;
       --b1: rgba(255,255,255,.06); --b2: rgba(255,255,255,.11); --txt: #e0eaf8; --mut: #7a8dae; --dim: #3a506a;
@@ -622,7 +622,7 @@
     .dc-badge.live { background: var(--grna); color: var(--grn); } .dc-badge.manual { background: var(--amba); color: var(--amb); } .dc-badge.auto { background: var(--blua); color: var(--blu); }
     .cg { color: var(--grn); } .cw { color: var(--amb); } .cr { color: var(--red); } .ca { color: var(--acc); } .cp { color: var(--pur); } .cgld { color: var(--gld); }
 
-    /* ===== CASCADE DEMO SPECIFIC STYLES (merged) ===== */
+    /* ===== CASCADE DEMO SPECIFIC STYLES (prefixed with cascade- where needed) ===== */
     .cascade-hero { padding: 8px 0 18px; }
     .cascade-hero-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; color: var(--blu); }
     .cascade-hero-h { font-size: 24px; font-weight: 700; letter-spacing: -.05em; line-height: 1.2; color: #fff; }
@@ -641,7 +641,7 @@
     .cascade-cost-stat-l { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; }
     .cascade-main-layout { display: grid; grid-template-columns: 1fr 340px; gap: 0; margin-bottom: 20px; }
     @media (max-width: 760px) { .cascade-main-layout { grid-template-columns: 1fr; } }
-    .cascade-map-wrap { padding: 0 0 0 0; position: relative; }
+    .cascade-map-wrap { padding: 0; position: relative; }
     .cascade-map-title { font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--mut); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .cascade-map-title::before { content: ''; width: 3px; height: 3px; border-radius: 50%; background: var(--blu); box-shadow: 0 0 6px var(--blu); }
     #cascade-canvas {
@@ -714,6 +714,7 @@
   </style>
 </head>
 <body>
+  <!-- AMBIENT, GRAIN, SVG, OVERLAYS, HEADER, NAV, SUBLOC (all original) -->
   <div id="amb" aria-hidden="true"></div>
   <div id="grain" aria-hidden="true"></div>
   <svg id="ambient-svg" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -836,7 +837,7 @@
     <div class="retrain" id="retrain-bar">⚠ AI model optimisation recommended — anomaly rate exceeding threshold.</div>
     <div class="retrain-active" id="retrain-active-bar">✔ AI model update in progress — live monitoring continues uninterrupted.</div>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- MAIN DASHBOARD PAGE -->
     <div class="page active" id="page-main">
       <div class="kpi-bar" id="kpi-bar-main">
         <div class="kpi-item"><div class="kpi-v cg" id="b-fhi">--</div><div class="kpi-l">Fleet FHI</div></div><div class="kpi-sep"></div>
@@ -860,7 +861,7 @@
       </div>
     </div>
 
-    <!-- NETWORK -->
+    <!-- NETWORK PAGE -->
     <div class="page" id="page-net">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#001824 0%,#003848 35%,#001020 65%,#002030 100%);position:absolute;inset:0"><svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.35"><defs><pattern id="fb-net" width="48" height="48" patternUnits="userSpaceOnUse"><circle cx="24" cy="24" r="1.5" fill="#00d4c8" opacity=".6"/><line x1="0" y1="24" x2="48" y2="24" stroke="#28c4f8" stroke-width=".4" opacity=".3"/><line x1="24" y1="0" x2="24" y2="48" stroke="#28c4f8" stroke-width=".4" opacity=".3"/></pattern></defs><rect width="100%" height="100%" fill="url(#fb-net)"/></svg></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--tel)">Network Monitoring · SNMP · BGP · Real-time</div><div class="hero-h1">Network Infrastructure</div><div class="hero-desc">Core routers · Distribution switches · Firewalls · WAN links</div></div><div class="hero-protos"><div class="hp">SNMP v2/v3</div><div class="hp">BGP · OSPF</div><div class="hp">ICMP · NetFlow</div><div class="hp">IEEE 802.3</div></div></div>
       <div class="statbar sb-net"><div class="esb"><div class="esb-v" id="net-fhi">--</div><div class="esb-l">Network FHI</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cw" id="net-lat">-- ms</div><div class="esb-l">Avg Latency</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="net-faults">0</div><div class="esb-l">Active Faults</div></div><div class="esb-fill"></div><div class="live-chip"><div class="ldot" style="background:var(--tel)"></div><span class="lc-l" style="color:var(--tel)">Live polling</span></div></div></div>
@@ -875,7 +876,7 @@
       <div class="fgrid"><div class="fcard"><div class="sl">Network fault log</div><div id="net-feed"></div></div><div class="fcard"><div class="sl">Automation commands</div><div id="net-auto"></div></div></div>
     </div>
 
-    <!-- TELECOMCO -->
+    <!-- TELECOMCO PAGE -->
     <div class="page" id="page-tc">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#000c20 0%,#001840 35%,#000a18 65%,#001428 100%);position:absolute;inset:0"></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--blu)">Telecommunications · Live RF Monitoring · MW Backhaul</div><div class="hero-h1" id="tc-env-title">TelecomCo — All Sites</div><div class="hero-desc">Base stations · Network towers · Microwave backhaul</div></div><div class="hero-protos"><div class="hp">SNMP · LTE</div><div class="hp">MW backhaul</div><div class="hp">IEEE 802.3</div><div class="hp">dBm / SNR</div></div></div>
       <div class="statbar sb-tc"><div class="esb"><div class="esb-v" id="tc-fhi">--</div><div class="esb-l">Site FHI</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v ca" id="tc-devs">--</div><div class="esb-l">Active Nodes</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="tc-faults">0</div><div class="esb-l">Open Faults</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cg" id="tc-sig">--%</div><div class="esb-l">Avg Signal</div></div><div class="esb-fill"></div><div class="live-chip"><div class="ldot"></div><span class="lc-l" style="color:var(--grn)">RF Monitor</span></div></div></div>
@@ -891,7 +892,7 @@
       <div class="fgrid"><div class="fcard"><div class="sl">Fault log</div><div id="tc-feed"></div></div><div class="fcard"><div class="sl">Automation commands</div><div id="tc-auto"></div></div></div>
     </div>
 
-    <!-- MININGCO -->
+    <!-- MININGCO PAGE -->
     <div class="page" id="page-mc">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#100800 0%,#2a1400 35%,#0c0400 65%,#1a0a00 100%);position:absolute;inset:0"><svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;opacity:.28"><defs><radialGradient id="fb-mc1" cx="30%" cy="60%" r="45%"><stop offset="0%" stop-color="#f5c420" stop-opacity=".5"/><stop offset="100%" stop-color="#f5c420" stop-opacity="0"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#fb-mc1)"/></svg></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--gld)">Industrial Operations · Safety Critical · DNP3 Monitored</div><div class="hero-h1" id="mc-env-title">MiningCo — All Sections</div><div class="hero-desc">PLCs · Pumps · Conveyors · Ventilation · CBS controller</div></div><div class="hero-protos"><div class="hp">Profinet</div><div class="hp">Modbus TCP</div><div class="hp">OPC-UA</div><div class="hp">DNP3 · EtherNet/IP</div></div></div>
       <div class="statbar sb-mc"><div class="esb"><div class="esb-v cw" id="mc-fhi">--</div><div class="esb-l">Section FHI</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v ca" id="mc-devs">--</div><div class="esb-l">Active Assets</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="mc-alerts">0</div><div class="esb-l">Safety Alerts</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cr" id="mc-crit">0</div><div class="esb-l">Critical Assets</div></div><div class="esb-fill"></div><div class="live-chip" style="background:rgba(242,149,16,.07);border-color:rgba(242,149,16,.18)"><div class="ldot" style="background:var(--amb)"></div><span class="lc-l" style="color:var(--amb)">Safety Monitor</span></div></div></div>
@@ -902,14 +903,14 @@
       <div class="fgrid"><div class="fcard"><div class="sl">Safety alerts</div><div id="mc-feed"></div></div><div class="fcard"><div class="sl">Automation commands</div><div id="mc-auto"></div></div></div>
     </div>
 
-    <!-- WEATHER -->
+    <!-- WEATHER PAGE -->
     <div class="page" id="page-wx">
       <div class="sl">Weather forecast — live equipment impact analysis</div>
       <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);padding:22px">Loading weather data...</div></div>
       <div class="cgrid"><div class="card"><div class="ctitle">Wind speed forecast — next 24h (km/h)</div><canvas id="cWind"></canvas></div><div class="card"><div class="ctitle">Precipitation probability — next 24h (%)</div><canvas id="cPrecip"></canvas></div></div>
     </div>
 
-    <!-- INTELLIGENCE (with cascade) -->
+    <!-- INTELLIGENCE PAGE (with integrated cascade demo) -->
     <div class="page" id="page-intel">
       <div class="sl">Platform intelligence — real-time AI insights</div>
       <div class="igrid">
@@ -954,7 +955,7 @@
         <div class="cascade-cost-sep"></div>
         <div class="cascade-cost-stat"><div class="cascade-cost-stat-v" style="color:var(--gld)" id="cascade-stat-ttc">--</div><div class="cascade-cost-stat-l">Time to cascade (min)</div></div>
         <div style="flex:1"></div>
-        <button onclick="cascadeResetAll()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--b1);background:rgba(255,255,255,.04);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:11px;font-weight:600;transition:all .2s" onmouseover="this.style.borderColor='var(--blu)'" onmouseout="this.style.borderColor='var(--b1)'">↺ Reset</button>
+        <button onclick="cascade_resetAll()" style="padding:7px 16px;border-radius:8px;border:1px solid var(--b1);background:rgba(255,255,255,.04);color:var(--mut);cursor:pointer;font-family:var(--font);font-size:11px;font-weight:600;transition:all .2s" onmouseover="this.style.borderColor='var(--blu)'" onmouseout="this.style.borderColor='var(--b1)'">↺ Reset</button>
       </div>
       <div class="cascade-main-layout">
         <div class="cascade-map-wrap">
@@ -966,11 +967,11 @@
           <div class="cascade-pcard">
             <div class="cascade-pcard-title" style="--acc:var(--amb)">Scenario Simulator</div>
             <div class="cascade-sim-btns">
-              <button class="cascade-sim-btn" onclick="cascadeRunScenario('wan')" id="cascade-sb-wan"><span class="cascade-sim-dot" style="background:var(--amb)"></span>WAN link degrades → CBS hold cascade</button>
-              <button class="cascade-sim-btn" onclick="cascadeRunScenario('cbs')" id="cascade-sb-cbs"><span class="cascade-sim-dot" style="background:var(--red)"></span>CBS integrity drop → blast hold → shaft shutdown</button>
-              <button class="cascade-sim-btn" onclick="cascadeRunScenario('power')" id="cascade-sb-power"><span class="cascade-sim-dot" style="background:var(--pur)"></span>Power meter fault → conveyor stops → plant idle</button>
-              <button class="cascade-sim-btn" onclick="cascadeRunScenario('storm')" id="cascade-sb-storm"><span class="cascade-sim-dot" style="background:var(--blu)"></span>Storm: tower down → MW link fails → NOC blind</button>
-              <button class="cascade-sim-btn" onclick="cascadeRunScenario('compound')" id="cascade-sb-compound"><span class="cascade-sim-dot" style="background:var(--red)"></span><strong>Compound cascade</strong> — all domains</button>
+              <button class="cascade-sim-btn" onclick="cascade_runScenario('wan')" id="cascade-sb-wan"><span class="cascade-sim-dot" style="background:var(--amb)"></span>WAN link degrades → CBS hold cascade</button>
+              <button class="cascade-sim-btn" onclick="cascade_runScenario('cbs')" id="cascade-sb-cbs"><span class="cascade-sim-dot" style="background:var(--red)"></span>CBS integrity drop → blast hold → shaft shutdown</button>
+              <button class="cascade-sim-btn" onclick="cascade_runScenario('power')" id="cascade-sb-power"><span class="cascade-sim-dot" style="background:var(--pur)"></span>Power meter fault → conveyor stops → plant idle</button>
+              <button class="cascade-sim-btn" onclick="cascade_runScenario('storm')" id="cascade-sb-storm"><span class="cascade-sim-dot" style="background:var(--blu)"></span>Storm: tower down → MW link fails → NOC blind</button>
+              <button class="cascade-sim-btn" onclick="cascade_runScenario('compound')" id="cascade-sb-compound"><span class="cascade-sim-dot" style="background:var(--red)"></span><strong>Compound cascade</strong> — all domains</button>
             </div>
           </div>
           <div class="cascade-pcard">
@@ -1017,7 +1018,7 @@
       </div>
     </div>
 
-    <!-- CBS SAFETY -->
+    <!-- CBS SAFETY PAGE -->
     <div class="page" id="page-cbs">
       <div class="dual-banner"><div class="env-hero"><div class="hero-img"><div class="fb" style="background:linear-gradient(135deg,#140006 0%,#2e0010 35%,#0e0004 65%,#1a0008 100%);position:absolute;inset:0"></div></div><div class="hero-text"><div class="hero-ey" style="color:var(--red)">Safety Critical · DNP3 Protocol · $500,000/blast</div><div class="hero-h1">Centralised Blasting System</div><div class="hero-desc">DNP3 Safety Monitor · Multi-factor integrity below 90% triggers auto-interlock</div></div><div class="hero-protos"><div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">DNP3</div><div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">EtherNet/IP</div><div class="hp" style="border-color:rgba(240,46,80,.3);color:rgba(255,160,170,.9)">Safety PLC</div></div></div>
       <div class="statbar sb-cbs"><div class="esb"><div class="esb-v" style="color:var(--red);font-size:14px;font-family:var(--mono);font-weight:800" id="cbs-status-banner">ARMED</div><div class="esb-l">Blast Status</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cg" id="cbs-health-banner">--</div><div class="esb-l">Link Health %</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v cg" id="cbs-integrity-banner">--</div><div class="esb-l">Integrity Score</div></div><div class="esb-sep"></div><div class="esb"><div class="esb-v" style="color:var(--amb)">90%</div><div class="esb-l">Interlock Threshold</div></div><div class="esb-fill"></div><div class="live-chip" style="background:rgba(240,46,80,.07);border-color:rgba(240,46,80,.2)"><div class="ldot" style="background:var(--red)"></div><span class="lc-l" style="color:var(--red)">Safety Monitor</span></div></div></div>
@@ -1030,7 +1031,7 @@
       <div class="card"><div class="ctitle">CBS link health — blast hold triggers below 90% integrity</div><canvas id="cCbs"></canvas></div>
     </div>
 
-    <!-- SPECIALIST -->
+    <!-- SPECIALIST PAGE -->
     <div class="page" id="page-sp">
       <div id="login-sec">
         <div class="lbox">
@@ -1145,8 +1146,8 @@
     function nmPollAll(sector){/* ... */}
     nmRefresh();setInterval(nmRefresh,35000);
 
-    // ===== CASCADE ENGINE (standalone demo) =====
-    var CASCADE_NODES = [
+    // ===== CASCADE ENGINE (standalone demo, fully prefixed) =====
+    var cascade_NODES = [
       {id:'wan',    label:'WAN Link',      type:'net',   x:.12, y:.18, health:100, domain:'Network',   cost:12000,  deps:['core-sw']},
       {id:'core-sw',label:'Core Switch',   type:'net',   x:.28, y:.28, health:100, domain:'Network',   cost:10000,  deps:['fw','noc']},
       {id:'fw',     label:'Firewall',      type:'net',   x:.18, y:.42, health:100, domain:'Network',   cost:20000,  deps:['scada']},
@@ -1163,178 +1164,178 @@
       {id:'cbs',    label:'CBS Controller',type:'cbs',   x:.50, y:.62, health:100, domain:'CBS Safety',cost:450000, deps:[]},
       {id:'plant',  label:'Process Plant', type:'plant', x:.65, y:.72, health:100, domain:'Production',cost:320000, deps:[]},
     ];
-    var CASCADE_EDGES = [
+    var cascade_EDGES = [
       ['wan','core-sw',true],['core-sw','fw',true],['core-sw','noc',true],
       ['noc','mw-link',true],['tower','mw-link',true],['mw-link','bs',true],
       ['fw','scada',true],['scada','plc',true],['scada','cbs',true],
       ['plc','pump',true],['plc','conv',true],['pm','plc',true],['pm','vent',true],
       ['conv','plant',false],['vent','plant',false],
     ];
-    var TYPE_COL = {net:'#1ec8f5', tc:'#b06cfb', mc:'#f5a623', cbs:'#ff3356', plant:'#19e87c'};
+    var cascade_TYPE_COL = {net:'#1ec8f5', tc:'#b06cfb', mc:'#f5a623', cbs:'#ff3356', plant:'#19e87c'};
 
-    var cascadeCanvas = document.getElementById('cascade-canvas');
-    var cascadeCtx = cascadeCanvas.getContext('2d');
-    var cascadeW, cascadeH;
+    var cascade_canvas = document.getElementById('cascade-canvas');
+    var cascade_ctx = cascade_canvas.getContext('2d');
+    var cascade_W, cascade_H;
 
-    function cascadeResize(){
-      var rect = cascadeCanvas.parentElement.getBoundingClientRect();
-      cascadeW = cascadeCanvas.width = rect.width - 56;
-      cascadeH = cascadeCanvas.height = 420;
+    function cascade_resize(){
+      var rect = cascade_canvas.parentElement.getBoundingClientRect();
+      cascade_W = cascade_canvas.width = rect.width - 56;
+      cascade_H = cascade_canvas.height = 420;
     }
-    cascadeResize();
-    window.addEventListener('resize', function(){ cascadeResize(); cascadeDraw(); });
+    cascade_resize();
+    window.addEventListener('resize', function(){ cascade_resize(); cascade_draw(); });
 
-    function cascadeNx(n){ return n.x * cascadeW; }
-    function cascadeNy(n){ return n.y * cascadeH; }
+    function cascade_nx(n){ return n.x * cascade_W; }
+    function cascade_ny(n){ return n.y * cascade_H; }
 
-    function healthCol(h){ if(h>=70) return '#19e87c'; if(h>=40) return '#f5a623'; return '#ff3356'; }
+    function cascade_healthCol(h){ if(h>=70) return '#19e87c'; if(h>=40) return '#f5a623'; return '#ff3356'; }
 
-    var cascadeAnimPulse = 0;
-    var cascadePackets = [];
-    var cascadeLastPacket = 0;
+    var cascade_animPulse = 0;
+    var cascade_packets = [];
+    var cascade_lastPacket = 0;
 
-    function cascadeDraw(){
-      cascadeCtx.clearRect(0,0,cascadeW,cascadeH);
-      cascadeCtx.strokeStyle='rgba(255,255,255,.028)'; cascadeCtx.lineWidth=.8;
-      for(var x=0;x<cascadeW;x+=40){cascadeCtx.beginPath();cascadeCtx.moveTo(x,0);cascadeCtx.lineTo(x,cascadeH);cascadeCtx.stroke();}
-      for(var y=0;y<cascadeH;y+=40){cascadeCtx.beginPath();cascadeCtx.moveTo(0,y);cascadeCtx.lineTo(cascadeW,y);cascadeCtx.stroke();}
+    function cascade_draw(){
+      cascade_ctx.clearRect(0,0,cascade_W,cascade_H);
+      cascade_ctx.strokeStyle='rgba(255,255,255,.028)'; cascade_ctx.lineWidth=.8;
+      for(var x=0;x<cascade_W;x+=40){cascade_ctx.beginPath();cascade_ctx.moveTo(x,0);cascade_ctx.lineTo(x,cascade_H);cascade_ctx.stroke();}
+      for(var y=0;y<cascade_H;y+=40){cascade_ctx.beginPath();cascade_ctx.moveTo(0,y);cascade_ctx.lineTo(cascade_W,y);cascade_ctx.stroke();}
       var zones = [
         {label:'Network',  x:.05, y:.05,  col:'#1ec8f5'}, {label:'Telecom',  x:.58, y:.05,  col:'#b06cfb'},
         {label:'Mining OT',x:.02, y:.55,  col:'#f5a623'}, {label:'CBS Safety',x:.45,y:.55,  col:'#ff3356'},
         {label:'Production',x:.6, y:.65,  col:'#19e87c'},
       ];
-      zones.forEach(function(z){ cascadeCtx.font='700 9px Space Mono, monospace'; cascadeCtx.fillStyle=z.col+'55'; cascadeCtx.fillText(z.label.toUpperCase(), z.x*cascadeW, z.y*cascadeH); });
+      zones.forEach(function(z){ cascade_ctx.font='700 9px Space Mono, monospace'; cascade_ctx.fillStyle=z.col+'55'; cascade_ctx.fillText(z.label.toUpperCase(), z.x*cascade_W, z.y*cascade_H); });
 
-      CASCADE_EDGES.forEach(function(e){
-        var a=CASCADE_NODES.find(n=>n.id===e[0]), b=CASCADE_NODES.find(n=>n.id===e[1]);
+      cascade_EDGES.forEach(function(e){
+        var a=cascade_NODES.find(n=>n.id===e[0]), b=cascade_NODES.find(n=>n.id===e[1]);
         if(!a||!b)return;
         var degraded = a.health<70||b.health<70, critical = a.health<35||b.health<35;
-        cascadeCtx.beginPath(); cascadeCtx.moveTo(cascadeNx(a),cascadeNy(a)); cascadeCtx.lineTo(cascadeNx(b),cascadeNy(b));
-        cascadeCtx.strokeStyle = critical?'rgba(255,51,86,.6)':degraded?'rgba(245,166,35,.45)':'rgba(30,200,245,.18)';
-        cascadeCtx.lineWidth = critical?2:degraded?1.5:1;
-        if(critical){ cascadeCtx.setLineDash([6,4]); } else { cascadeCtx.setLineDash([]); }
-        cascadeCtx.stroke(); cascadeCtx.setLineDash([]);
-        var dx=cascadeNx(b)-cascadeNx(a), dy=cascadeNy(b)-cascadeNy(a), len=Math.sqrt(dx*dx+dy*dy);
-        var ux=dx/len, uy=dy/len, mx=cascadeNx(a)+dx*.55, my=cascadeNy(a)+dy*.55;
-        cascadeCtx.beginPath(); cascadeCtx.moveTo(mx+ux*6-uy*4, my+uy*6+ux*4); cascadeCtx.lineTo(mx+ux*12, my+uy*12); cascadeCtx.lineTo(mx+ux*6+uy*4, my+uy*6-ux*4);
-        cascadeCtx.strokeStyle = critical?'rgba(255,51,86,.8)':degraded?'rgba(245,166,35,.7)':'rgba(30,200,245,.4)'; cascadeCtx.lineWidth=1.2; cascadeCtx.stroke();
+        cascade_ctx.beginPath(); cascade_ctx.moveTo(cascade_nx(a),cascade_ny(a)); cascade_ctx.lineTo(cascade_nx(b),cascade_ny(b));
+        cascade_ctx.strokeStyle = critical?'rgba(255,51,86,.6)':degraded?'rgba(245,166,35,.45)':'rgba(30,200,245,.18)';
+        cascade_ctx.lineWidth = critical?2:degraded?1.5:1;
+        if(critical){ cascade_ctx.setLineDash([6,4]); } else { cascade_ctx.setLineDash([]); }
+        cascade_ctx.stroke(); cascade_ctx.setLineDash([]);
+        var dx=cascade_nx(b)-cascade_nx(a), dy=cascade_ny(b)-cascade_ny(a), len=Math.sqrt(dx*dx+dy*dy);
+        var ux=dx/len, uy=dy/len, mx=cascade_nx(a)+dx*.55, my=cascade_ny(a)+dy*.55;
+        cascade_ctx.beginPath(); cascade_ctx.moveTo(mx+ux*6-uy*4, my+uy*6+ux*4); cascade_ctx.lineTo(mx+ux*12, my+uy*12); cascade_ctx.lineTo(mx+ux*6+uy*4, my+uy*6-ux*4);
+        cascade_ctx.strokeStyle = critical?'rgba(255,51,86,.8)':degraded?'rgba(245,166,35,.7)':'rgba(30,200,245,.4)'; cascade_ctx.lineWidth=1.2; cascade_ctx.stroke();
       });
 
-      cascadePackets = cascadePackets.filter(p=> p.t < 1);
-      cascadePackets.forEach(function(p){
+      cascade_packets = cascade_packets.filter(p=> p.t < 1);
+      cascade_packets.forEach(function(p){
         p.t += .016;
-        var a=CASCADE_NODES.find(n=>n.id===p.from), b=CASCADE_NODES.find(n=>n.id===p.to);
+        var a=cascade_NODES.find(n=>n.id===p.from), b=cascade_NODES.find(n=>n.id===p.to);
         if(!a||!b)return;
-        var px=cascadeNx(a)+(cascadeNx(b)-cascadeNx(a))*p.t, py=cascadeNy(a)+(cascadeNy(b)-cascadeNy(a))*p.t;
-        cascadeCtx.beginPath(); cascadeCtx.arc(px,py,3,0,Math.PI*2); cascadeCtx.fillStyle=p.col; cascadeCtx.fill();
-        cascadeCtx.shadowColor=p.col; cascadeCtx.shadowBlur=8; cascadeCtx.fill(); cascadeCtx.shadowBlur=0;
+        var px=cascade_nx(a)+(cascade_nx(b)-cascade_nx(a))*p.t, py=cascade_ny(a)+(cascade_ny(b)-cascade_ny(a))*p.t;
+        cascade_ctx.beginPath(); cascade_ctx.arc(px,py,3,0,Math.PI*2); cascade_ctx.fillStyle=p.col; cascade_ctx.fill();
+        cascade_ctx.shadowColor=p.col; cascade_ctx.shadowBlur=8; cascade_ctx.fill(); cascade_ctx.shadowBlur=0;
       });
 
-      CASCADE_NODES.forEach(function(n){
-        var x=cascadeNx(n), y=cascadeNy(n), r=n.type==='cbs'?14:11;
-        var col=healthCol(n.health), tcol=TYPE_COL[n.type]||col;
-        cascadeCtx.shadowColor=n.health<35?'#ff3356':tcol; cascadeCtx.shadowBlur=n.health<35?22:10;
-        cascadeCtx.beginPath(); cascadeCtx.arc(x,y,r+4,0,Math.PI*2); cascadeCtx.strokeStyle=tcol+(n.health<70?'88':'33'); cascadeCtx.lineWidth=1; cascadeCtx.stroke();
+      cascade_NODES.forEach(function(n){
+        var x=cascade_nx(n), y=cascade_ny(n), r=n.type==='cbs'?14:11;
+        var col=cascade_healthCol(n.health), tcol=cascade_TYPE_COL[n.type]||col;
+        cascade_ctx.shadowColor=n.health<35?'#ff3356':tcol; cascade_ctx.shadowBlur=n.health<35?22:10;
+        cascade_ctx.beginPath(); cascade_ctx.arc(x,y,r+4,0,Math.PI*2); cascade_ctx.strokeStyle=tcol+(n.health<70?'88':'33'); cascade_ctx.lineWidth=1; cascade_ctx.stroke();
         var ang = (n.health/100)*Math.PI*2;
-        cascadeCtx.beginPath(); cascadeCtx.arc(x,y,r+2,-Math.PI/2,-Math.PI/2+ang); cascadeCtx.strokeStyle=col; cascadeCtx.lineWidth=2.5; cascadeCtx.stroke();
-        cascadeCtx.beginPath(); cascadeCtx.arc(x,y,r,0,Math.PI*2);
-        var grad=cascadeCtx.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r); grad.addColorStop(0, tcol+'44'); grad.addColorStop(1, tcol+'11');
-        cascadeCtx.fillStyle=grad; cascadeCtx.fill(); cascadeCtx.strokeStyle=tcol+'88'; cascadeCtx.lineWidth=1.5; cascadeCtx.stroke(); cascadeCtx.shadowBlur=0;
-        cascadeCtx.font='700 9px Space Mono, monospace'; cascadeCtx.fillStyle=col; cascadeCtx.textAlign='center'; cascadeCtx.textBaseline='middle'; cascadeCtx.fillText(Math.round(n.health), x, y);
-        cascadeCtx.font='600 9px Space Grotesk, sans-serif'; cascadeCtx.fillStyle='rgba(220,232,248,.85)'; cascadeCtx.textAlign='center'; cascadeCtx.textBaseline='top'; cascadeCtx.fillText(n.label, x, y+r+6);
+        cascade_ctx.beginPath(); cascade_ctx.arc(x,y,r+2,-Math.PI/2,-Math.PI/2+ang); cascade_ctx.strokeStyle=col; cascade_ctx.lineWidth=2.5; cascade_ctx.stroke();
+        cascade_ctx.beginPath(); cascade_ctx.arc(x,y,r,0,Math.PI*2);
+        var grad=cascade_ctx.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r); grad.addColorStop(0, tcol+'44'); grad.addColorStop(1, tcol+'11');
+        cascade_ctx.fillStyle=grad; cascade_ctx.fill(); cascade_ctx.strokeStyle=tcol+'88'; cascade_ctx.lineWidth=1.5; cascade_ctx.stroke(); cascade_ctx.shadowBlur=0;
+        cascade_ctx.font='700 9px Space Mono, monospace'; cascade_ctx.fillStyle=col; cascade_ctx.textAlign='center'; cascade_ctx.textBaseline='middle'; cascade_ctx.fillText(Math.round(n.health), x, y);
+        cascade_ctx.font='600 9px Space Grotesk, sans-serif'; cascade_ctx.fillStyle='rgba(220,232,248,.85)'; cascade_ctx.textAlign='center'; cascade_ctx.textBaseline='top'; cascade_ctx.fillText(n.label, x, y+r+6);
       });
     }
 
-    function cascadeLoop(t){
-      cascadeAnimPulse=t*.001;
-      if(t-cascadeLastPacket>800){ cascadeLastPacket=t;
-        CASCADE_EDGES.forEach(function(e){ if(Math.random()>.7)return; var a=CASCADE_NODES.find(n=>n.id===e[0]), b=CASCADE_NODES.find(n=>n.id===e[1]); if(a&&b&&a.health>50&&b.health>50){ cascadePackets.push({from:e[0],to:e[1],t:0, col:a.health<70?'rgba(245,166,35,.9)':'rgba(30,200,245,.8)'}); } });
+    function cascade_loop(t){
+      cascade_animPulse=t*.001;
+      if(t-cascade_lastPacket>800){ cascade_lastPacket=t;
+        cascade_EDGES.forEach(function(e){ if(Math.random()>.7)return; var a=cascade_NODES.find(n=>n.id===e[0]), b=cascade_NODES.find(n=>n.id===e[1]); if(a&&b&&a.health>50&&b.health>50){ cascade_packets.push({from:e[0],to:e[1],t:0, col:a.health<70?'rgba(245,166,35,.9)':'rgba(30,200,245,.8)'}); } });
       }
-      cascadeDraw();
-      requestAnimationFrame(cascadeLoop);
+      cascade_draw();
+      requestAnimationFrame(cascade_loop);
     }
-    requestAnimationFrame(cascadeLoop);
+    requestAnimationFrame(cascade_loop);
 
-    cascadeCanvas.addEventListener('click',function(e){
-      var rect=cascadeCanvas.getBoundingClientRect();
-      var mx=(e.clientX-rect.left)*(cascadeW/rect.width), my=(e.clientY-rect.top)*(cascadeH/rect.height);
-      CASCADE_NODES.forEach(function(n){ var dx=cascadeNx(n)-mx, dy=cascadeNy(n)-my; if(Math.sqrt(dx*dx+dy*dy)<20){ cascadeDegradeNode(n.id, 25+Math.random()*30); } });
+    cascade_canvas.addEventListener('click',function(e){
+      var rect=cascade_canvas.getBoundingClientRect();
+      var mx=(e.clientX-rect.left)*(cascade_W/rect.width), my=(e.clientY-rect.top)*(cascade_H/rect.height);
+      cascade_NODES.forEach(function(n){ var dx=cascade_nx(n)-mx, dy=cascade_ny(n)-my; if(Math.sqrt(dx*dx+dy*dy)<20){ cascade_degradeNode(n.id, 25+Math.random()*30); } });
     });
 
-    var cascadeTotalCost=0, cascadeRunning=false, cascadeTimers=[];
+    var cascade_totalCost=0, cascade_running=false, cascade_timers=[];
 
-    function cascadeDegradeNode(id, amount){
-      var n=CASCADE_NODES.find(n=>n.id===id); if(!n)return;
+    function cascade_degradeNode(id, amount){
+      var n=cascade_NODES.find(n=>n.id===id); if(!n)return;
       n.health=Math.max(0,n.health-amount);
-      cascadeLogEvent(n.health<35?'crit':'warn', n.label, 'Health degraded to '+Math.round(n.health)+'% — analysing downstream dependencies...', new Date().toLocaleTimeString());
-      cascadePropagate(id);
+      cascade_logEvent(n.health<35?'crit':'warn', n.label, 'Health degraded to '+Math.round(n.health)+'% — analysing downstream dependencies...', new Date().toLocaleTimeString());
+      cascade_propagate(id);
     }
 
-    function cascadePropagate(originId){
-      if(cascadeRunning)return; cascadeRunning=true;
-      var origin=CASCADE_NODES.find(n=>n.id===originId); if(!origin)return;
+    function cascade_propagate(originId){
+      if(cascade_running)return; cascade_running=true;
+      var origin=cascade_NODES.find(n=>n.id===originId); if(!origin)return;
       var queue=[{id:originId,delay:0,depthCost:origin.cost*0.001}], visited={}; visited[originId]=true;
-      function step(){ if(!queue.length){ cascadeRunning=false; cascadeFinalInsight(originId); return; }
+      function step(){ if(!queue.length){ cascade_running=false; cascade_finalInsight(originId); return; }
         var item=queue.shift(), t=setTimeout(function(){
-          var node=CASCADE_NODES.find(n=>n.id===item.id); if(!node){ step(); return; }
-          CASCADE_EDGES.forEach(function(e){ var depId = e[0]===item.id?e[1]:(e[1]===item.id?e[0]:null); if(!depId||visited[depId])return; var dep=CASCADE_NODES.find(n=>n.id===depId); if(!dep)return;
-            if(node.health<50){ visited[depId]=true; var degradeAmt=node.health<20?40:node.health<35?25:12; dep.health=Math.max(0,dep.health-degradeAmt); cascadeTotalCost+=dep.cost*0.001; cascadeUpdateCostDisplay();
-              cascadeLogEvent(dep.health<35?'crit':dep.health<70?'warn':'ok', dep.label, cascadeGetMsg(dep,node), new Date().toLocaleTimeString());
-              if(dep.id==='cbs'&&dep.health<90){ cascadeLogEvent('cbs','CBS Controller','⚠ BLAST HOLD ISSUED — DNP3 integrity below 90% threshold. Exposure: $450,000/hr.', new Date().toLocaleTimeString()); }
+          var node=cascade_NODES.find(n=>n.id===item.id); if(!node){ step(); return; }
+          cascade_EDGES.forEach(function(e){ var depId = e[0]===item.id?e[1]:(e[1]===item.id?e[0]:null); if(!depId||visited[depId])return; var dep=cascade_NODES.find(n=>n.id===depId); if(!dep)return;
+            if(node.health<50){ visited[depId]=true; var degradeAmt=node.health<20?40:node.health<35?25:12; dep.health=Math.max(0,dep.health-degradeAmt); cascade_totalCost+=dep.cost*0.001; cascade_updateCostDisplay();
+              cascade_logEvent(dep.health<35?'crit':dep.health<70?'warn':'ok', dep.label, cascade_getMsg(dep,node), new Date().toLocaleTimeString());
+              if(dep.id==='cbs'&&dep.health<90){ cascade_logEvent('cbs','CBS Controller','⚠ BLAST HOLD ISSUED — DNP3 integrity below 90% threshold. Exposure: $450,000/hr.', new Date().toLocaleTimeString()); }
               queue.push({id:depId, delay:600+Math.random()*400, depthCost:dep.cost*0.001}); } });
           step();
         }, item.delay);
-        cascadeTimers.push(t);
+        cascade_timers.push(t);
       }
       step();
     }
 
-    function cascadeGetMsg(dep, origin){
+    function cascade_getMsg(dep, origin){
       var msgs = { 'scada':'SCADA lost comms via '+origin.label+' — OT visibility degraded.', 'cbs':'CBS controller unreachable via '+origin.label+' — preparing blast hold.', 'plc':'PLC lost SCADA synchronisation — manual override required.', 'pump':'Dewatering pump control interrupted — flooding risk in shaft.', 'conv':'Conveyor stopped — ore transport halted.', 'vent':'Ventilation reduced — temperature rising in shaft 2.', 'plant':'Processing plant feed interrupted — production halted.', 'mw-link':'Microwave backhaul failed — NOC communication severed.', 'bs':'Base station offline — mobile coverage lost in mine area.', 'noc':'NOC router degraded — remote monitoring impaired.' };
       return msgs[dep.id] || ('Dependent on '+origin.label+' — health cascading to '+Math.round(dep.health)+'%.');
     }
 
-    function cascadeFinalInsight(originId){
-      var origin=CASCADE_NODES.find(n=>n.id===originId);
+    function cascade_finalInsight(originId){
+      var origin=cascade_NODES.find(n=>n.id===originId);
       var insights={ 'wan':'<strong>Causal chain identified:</strong> WAN degradation → SCADA loses remote comms → CBS controller heartbeat fails → Blast hold auto-triggers → $450k/hr exposure. <strong>IISentinel predicted this chain 18 minutes before the CBS hold fired.</strong>', 'cbs':'<strong>Safety interlock cascade:</strong> CBS integrity drop triggers automatic blast hold. Cascades to SCADA alarm flood, NOC alert storm, shift supervisor callout. <strong>Economic impact: $450k direct + $280k lost production.</strong>', 'power':'<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Processing plant starved of ore. <strong>Acoustic signature on the power meter showed pre-failure patterns 6 hours earlier.</strong>', 'storm':'<strong>Weather-correlated cascade:</strong> Storm detected via Open-Meteo API → Tower at structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-emptively routed CBS alerts via SMS 22 minutes before tower failure.</strong>', 'compound':'<strong>Compound cascade — all domains simultaneously degrading.</strong> This is what TelOne, Liquid, and heat-LiDAR systems cannot see: the inter-domain amplification effect where a 30% WAN degradation cascades into a 100% production loss. <strong>Total exposure modelled in real time: $1.2M/hr.</strong>' };
       var scenMap={wan:'wan',cbs:'cbs',power:'pm',storm:'tower',compound:'wan'}, key=Object.keys(scenMap).find(k=>scenMap[k]===originId)||'wan';
       document.getElementById('cascade-ai-insight').innerHTML='<div class="cascade-insight-title">Causal analysis complete</div>'+(insights[key]||insights['wan']);
-      var affected=new Set(); CASCADE_NODES.forEach(n=>{if(n.health<90)affected.add(n.domain);});
+      var affected=new Set(); cascade_NODES.forEach(n=>{if(n.health<90)affected.add(n.domain);});
       document.getElementById('cascade-stat-affected').textContent=affected.size;
-      var lowHealth=CASCADE_NODES.filter(n=>n.health<40&&n.health>0).length;
+      var lowHealth=cascade_NODES.filter(n=>n.health<40&&n.health>0).length;
       document.getElementById('cascade-stat-predicted').textContent=lowHealth;
       document.getElementById('cascade-stat-ttc').textContent=lowHealth>0?Math.floor(lowHealth*4+8)+'min':'--';
-      var direct=CASCADE_NODES.filter(n=>n.health<50).reduce((s,n)=>s+n.cost*(1-n.health/100)*.5,0);
-      var cascade=cascadeTotalCost*3200, prevented=direct*.65;
+      var direct=cascade_NODES.filter(n=>n.health<50).reduce((s,n)=>s+n.cost*(1-n.health/100)*.5,0);
+      var cascade=cascade_totalCost*3200, prevented=direct*.65;
       document.getElementById('cascade-ec-direct').textContent='$'+Math.round(direct/1000)+'k';
       document.getElementById('cascade-ec-cascade').textContent='$'+Math.round(cascade/1000)+'k';
       document.getElementById('cascade-ec-prevented').textContent='$'+Math.round(prevented/1000)+'k';
       document.getElementById('cascade-ec-roi').textContent=prevented>0?Math.round(prevented/(direct*.1))+'x':'∞';
     }
 
-    function cascadeUpdateCostDisplay(){
-      var total=CASCADE_NODES.filter(n=>n.health<50).reduce((s,n)=>s+n.cost*(1-n.health/100)*.5,0);
+    function cascade_updateCostDisplay(){
+      var total=cascade_NODES.filter(n=>n.health<50).reduce((s,n)=>s+n.cost*(1-n.health/100)*.5,0);
       document.getElementById('cascade-cost-main').textContent='$'+Math.round(total).toLocaleString()+'/hr';
     }
 
-    function cascadeLogEvent(cls, dev, msg, time){
+    function cascade_logEvent(cls, dev, msg, time){
       var log=document.getElementById('cascade-clog'), el=document.createElement('div');
       el.className='cascade-clog-item '+cls;
       el.innerHTML='<div class="cascade-clog-t">'+time+'</div><div class="cascade-clog-dev">'+dev+'</div><div class="cascade-clog-msg">'+msg+'</div>';
       log.insertBefore(el,log.firstChild); while(log.children.length>12)log.removeChild(log.lastChild);
     }
 
-    function cascadeRunScenario(name){
-      cascadeResetAll();
+    function cascade_runScenario(name){
+      cascade_resetAll();
       document.querySelectorAll('.cascade-sim-btn').forEach(b=>b.classList.remove('active'));
       document.getElementById('cascade-sb-'+name).classList.add('active');
-      var scenarioMap={ wan: ()=>cascadeDegradeNode('wan',55), cbs: ()=>{cascadeDegradeNode('cbs',25); setTimeout(()=>cascadeDegradeNode('cbs',35),1200); }, power: ()=>cascadeDegradeNode('pm',60), storm: ()=>{cascadeDegradeNode('tower',70); setTimeout(()=>cascadeDegradeNode('mw-link',30),800); }, compound: ()=>{cascadeDegradeNode('wan',40); setTimeout(()=>cascadeDegradeNode('pm',50),600); setTimeout(()=>cascadeDegradeNode('tower',60),1200); } };
+      var scenarioMap={ wan: ()=>cascade_degradeNode('wan',55), cbs: ()=>{cascade_degradeNode('cbs',25); setTimeout(()=>cascade_degradeNode('cbs',35),1200); }, power: ()=>cascade_degradeNode('pm',60), storm: ()=>{cascade_degradeNode('tower',70); setTimeout(()=>cascade_degradeNode('mw-link',30),800); }, compound: ()=>{cascade_degradeNode('wan',40); setTimeout(()=>cascade_degradeNode('pm',50),600); setTimeout(()=>cascade_degradeNode('tower',60),1200); } };
       if(scenarioMap[name]) scenarioMap[name]();
     }
 
-    function cascadeResetAll(){
-      cascadeTimers.forEach(clearTimeout); cascadeTimers=[]; cascadeRunning=false; cascadeTotalCost=0;
-      CASCADE_NODES.forEach(n=>n.health=100); cascadePackets=[];
+    function cascade_resetAll(){
+      cascade_timers.forEach(clearTimeout); cascade_timers=[]; cascade_running=false; cascade_totalCost=0;
+      cascade_NODES.forEach(n=>n.health=100); cascade_packets=[];
       document.getElementById('cascade-cost-main').textContent='$0/hr';
       document.getElementById('cascade-stat-affected').textContent='0';
       document.getElementById('cascade-stat-predicted').textContent='0';
@@ -1352,7 +1353,7 @@
     var originalGoPage = goPage;
     goPage = function(el, name) {
       originalGoPage(el, name);
-      if (name === 'intel') { setTimeout(() => { cascadeResize(); cascadeDraw(); }, 20); }
+      if (name === 'intel') { setTimeout(() => { cascade_resize(); cascade_draw(); }, 20); }
     };
   </script>
 </body>
