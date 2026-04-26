@@ -401,7 +401,7 @@
     .ci-leg{display:flex;gap:12px;flex-wrap:wrap;padding:6px 16px;border-bottom:1px solid var(--b1);background:rgba(4,8,15,.3);position:relative;z-index:1;}
     .ci-li{display:flex;align-items:center;gap:4px;font-size:8.5px;color:var(--mut);}
     .ci-ld{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-    .ci-canvas-wrap{position:relative;background:#04080f;min-height:650px;} /* increased from 390px */
+    .ci-canvas-wrap{position:relative;background:#04080f;min-height:650px;}
     #ci-canvas{width:100%;display:block;cursor:crosshair;}
     .ci-canvas-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;pointer-events:none;z-index:1;background:linear-gradient(to bottom,transparent,rgba(21,35,56,.7));}
     .ci-stats{display:flex;align-items:stretch;border-top:1px solid var(--b1);position:relative;z-index:1;flex-wrap:wrap;}
@@ -1220,89 +1220,100 @@ function goPage(el, name) {
     nmRefresh();
     setInterval(nmRefresh,35000);
 
-    /* ========================================================
-       CASCADE INTELLIGENCE ENGINE v2
-       Full demo-grade: rich canvas, BFS cascade, 5 scenarios,
-       animated packets, health arcs, specialist editor gate
-       ======================================================== */
+    /* ══════════════════════════════════════════════════════════════
+       CASCADE INTELLIGENCE ENGINE v3  — IISentinel™
+       Premium canvas renderer · BFS cascade · 5 scenarios
+       Two-column layout: large canvas left, sidebar right
+       ══════════════════════════════════════════════════════════════ */
+
     var CI_NODES=[
-      {id:'wan',    label:'WAN Link',      domain:'net', x:.12,y:.18,health:100,cost:12000, deps:['core-sw']},
-      {id:'core-sw',label:'Core Switch',   domain:'net', x:.28,y:.28,health:100,cost:10000, deps:['fw','noc']},
-      {id:'fw',     label:'Firewall',      domain:'net', x:.18,y:.42,health:100,cost:20000, deps:['scada']},
-      {id:'noc',    label:'NOC Router',    domain:'net', x:.42,y:.18,health:100,cost:15000, deps:['mw-link']},
-      {id:'tower',  label:'BTS Tower',     domain:'tc',  x:.62,y:.12,health:100,cost:35000, deps:['mw-link']},
-      {id:'mw-link',label:'MW Backhaul',   domain:'tc',  x:.55,y:.28,health:100,cost:40000, deps:['bs']},
-      {id:'bs',     label:'Base Station',  domain:'tc',  x:.72,y:.38,health:100,cost:25000, deps:[]},
-      {id:'scada',  label:'SCADA Node',    domain:'mc',  x:.22,y:.62,health:100,cost:60000, deps:['plc','cbs-ctrl']},
-      {id:'plc',    label:'PLC Shaft 1',   domain:'mc',  x:.12,y:.76,health:100,cost:80000, deps:['pump','conv']},
-      {id:'pump',   label:'Dewater Pump',  domain:'mc',  x:.05,y:.88,health:100,cost:150000,deps:[]},
-      {id:'conv',   label:'Conveyor',      domain:'mc',  x:.22,y:.88,health:100,cost:120000,deps:[]},
-      {id:'pm',     label:'Power Meter',   domain:'mc',  x:.35,y:.72,health:100,cost:100000,deps:['plc','vent']},
-      {id:'vent',   label:'Ventilation',   domain:'mc',  x:.35,y:.88,health:100,cost:180000,deps:[]},
-      {id:'cbs-ctrl',label:'CBS Controller',domain:'cbs',x:.50,y:.62,health:100,cost:450000,deps:[]},
-      {id:'plant',  label:'Process Plant', domain:'plant',x:.65,y:.75,health:100,cost:320000,deps:[]},
+      {id:'wan',     label:'WAN Link',       domain:'net',  x:.13,y:.14,health:100,cost:12000},
+      {id:'core-sw', label:'Core Switch',    domain:'net',  x:.30,y:.24,health:100,cost:10000},
+      {id:'fw',      label:'Firewall',       domain:'net',  x:.16,y:.40,health:100,cost:20000},
+      {id:'noc',     label:'NOC Router',     domain:'net',  x:.44,y:.14,health:100,cost:15000},
+      {id:'tower',   label:'BTS Tower',      domain:'tc',   x:.62,y:.10,health:100,cost:35000},
+      {id:'mw-link', label:'MW Backhaul',    domain:'tc',   x:.56,y:.26,health:100,cost:40000},
+      {id:'bs',      label:'Base Station',   domain:'tc',   x:.74,y:.36,health:100,cost:25000},
+      {id:'scada',   label:'SCADA Node',     domain:'mc',   x:.20,y:.60,health:100,cost:60000},
+      {id:'plc',     label:'PLC Shaft 1',    domain:'mc',   x:.10,y:.74,health:100,cost:80000},
+      {id:'pump',    label:'Dewater Pump',   domain:'mc',   x:.04,y:.88,health:100,cost:150000},
+      {id:'conv',    label:'Conveyor',       domain:'mc',   x:.22,y:.88,health:100,cost:120000},
+      {id:'pm',      label:'Power Meter',    domain:'mc',   x:.36,y:.70,health:100,cost:100000},
+      {id:'vent',    label:'Ventilation',    domain:'mc',   x:.36,y:.88,health:100,cost:180000},
+      {id:'cbs-ctrl',label:'CBS Controller', domain:'cbs',  x:.52,y:.58,health:100,cost:450000},
+      {id:'plant',   label:'Process Plant',  domain:'plant',x:.66,y:.74,health:100,cost:320000},
     ];
+
     var CI_EDGES=[
       ['wan','core-sw'],['core-sw','fw'],['core-sw','noc'],
       ['noc','mw-link'],['tower','mw-link'],['mw-link','bs'],
       ['fw','scada'],['scada','plc'],['scada','cbs-ctrl'],
       ['plc','pump'],['plc','conv'],['pm','plc'],['pm','vent'],
-      ['conv','plant'],['vent','plant'],
+      ['conv','plant'],['vent','plant'],['cbs-ctrl','plant'],
     ];
+
     var CI_DOM_COL={net:'#00d4c8',tc:'#a27cf8',mc:'#f5c420',cbs:'#f02e50',plant:'#22e07a'};
-    var CI_CASC_MSGS={
-      'scada':'SCADA lost comms — OT visibility degraded.',
-      'cbs-ctrl':'CBS controller unreachable — preparing blast hold.',
-      'plc':'PLC lost SCADA sync — manual override required.',
-      'pump':'Dewatering pump interrupted — shaft flooding risk.',
-      'conv':'Conveyor stopped — ore transport halted.',
-      'vent':'Ventilation reduced — temperature rising in shaft.',
-      'plant':'Process plant feed interrupted — production halted.',
-      'mw-link':'Microwave backhaul failed — NOC blinded.',
-      'bs':'Base station offline — mobile coverage lost.',
-      'noc':'NOC router degraded — remote monitoring impaired.',
+
+    var CI_CASC={
+      'core-sw':'Core Switch failover — SCADA loses primary uplink.',
+      'scada':  'SCADA comms lost — OT visibility degraded across all shafts.',
+      'cbs-ctrl':'CBS heartbeat failed — BLAST HOLD auto-interlock triggered.',
+      'plc':    'PLC lost SCADA sync — manual override required.',
+      'pump':   'Dewatering pump stopped — shaft flooding risk elevated.',
+      'conv':   'Conveyor halted — ore transport to plant interrupted.',
+      'vent':   'Ventilation degraded — shaft temperature rising.',
+      'plant':  'Process plant feed cut — production halted.',
+      'mw-link':'Microwave backhaul failed — NOC blinded to remote sites.',
+      'bs':     'Base station offline — mobile comms to mine lost.',
+      'noc':    'NOC router degraded — remote monitoring impaired.',
+      'fw':     'Firewall degraded — OT/IT segmentation at risk.',
+      'pm':     'Power anomaly detected — PLC I/O unstable.',
     };
+
     var CI_INSIGHTS={
-      wan:'<strong>Causal chain confirmed:</strong> WAN degradation → SCADA loses remote comms → CBS controller heartbeat fails → Blast hold auto-triggers. IISentinel identified this cross-domain path automatically. <strong>Economic impact: $450k/hr direct + downstream production loss.</strong>',
-      cbs:'<strong>Safety interlock cascade:</strong> CBS integrity drop triggers automatic blast hold. Cascades to SCADA alarm flood and NOC alert storm. <strong>IISentinel\'s economic model quantified total exposure instantly.</strong>',
-      power:'<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Processing plant starved of ore. <strong>IISentinel predicted this chain before any threshold alarm fired.</strong>',
-      storm:'<strong>Weather-correlated cascade:</strong> Storm drives tower to structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-emptively routed alerts via SMS before tower failure.</strong>',
-      compound:'<strong>Compound cascade — all domains simultaneously degrading.</strong> Cross-domain amplification: a 30% WAN degradation cascades into 100% production loss. <strong>Total exposure modelled in real time: $1.2M/hr.</strong>',
-      worst:'<strong>Worst-case cascade triggered from lowest-health device.</strong> IISentinel traced the full dependency chain and quantified economic consequences across all four infrastructure domains simultaneously.',
+      wan:     '<strong>Causal chain confirmed:</strong> WAN degradation → Core Switch failover → SCADA loses primary link → CBS heartbeat fails → <strong>Blast hold auto-triggers.</strong> IISentinel traced this 5-hop cross-domain path before any threshold alarm fired. Economic exposure: <strong style="color:var(--red)">$450k/hr direct + downstream production loss.</strong>',
+      cbs:     '<strong>Safety interlock cascade:</strong> CBS DNP3 integrity drop triggers automatic blast hold. This cascades to a SCADA alarm flood, NOC alert storm, and production standby cost. <strong>IISentinel quantified the full exposure in real time.</strong>',
+      power:   '<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Process plant starved of ore. <strong>IISentinel predicted this chain 8 minutes before threshold alarms fired.</strong>',
+      storm:   '<strong>Weather-correlated cascade:</strong> Storm drives tower to structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-routed SMS alerts before tower failure confirmed.</strong>',
+      compound:'<strong>Compound cascade confirmed across all four domains simultaneously.</strong> Cross-domain amplification: a 30% WAN degradation cascades into 100% production loss. <strong>Total real-time exposure modelled: $1.2M/hr.</strong>',
     };
 
     var _ci={
-      canvas:null,ctx:null,W:0,H:0,
+      canvas:null,ctx:null,W:800,H:500,
       animId:null,lastPkt:0,packets:[],
       cascadeRunning:false,cascadeTimers:[],
       dragging:null,dragOX:0,dragOY:0,
       degraded:{},activeScenario:null,
-      booted:false,
+      booted:false,raf:null,
     };
 
+    /* ── helpers ── */
     function ciColOf(dom){return CI_DOM_COL[dom]||'#28c4f8';}
     function ciHCol(h){return h>=70?'#22e07a':h>=40?'#f29510':'#f02e50';}
-    function ciSid(id){return(id||'').split('-').slice(-2).join('-');}
     function ciNx(n){return n.x*_ci.W;}
     function ciNy(n){return n.y*_ci.H;}
+    function ciSid(id){return(id||'').split('-').slice(-2).join('-');}
+    function ciFmt(v){if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'k';return'$'+v;}
 
+    /* ── init ── */
     function ciInit(){
-      _ci.canvas=document.getElementById('ci-canvas');
-      if(!_ci.canvas)return;
-      _ci.ctx=_ci.canvas.getContext('2d');
+      var cvs=document.getElementById('ci-canvas');
+      if(!cvs||_ci.booted)return;
+      _ci.canvas=cvs;_ci.ctx=cvs.getContext('2d');
       ciResize();
       window.addEventListener('resize',ciResize);
-      _ci.canvas.addEventListener('mousedown',ciMD);
-      _ci.canvas.addEventListener('mousemove',ciMM);
-      _ci.canvas.addEventListener('mouseup',ciMU);
-      _ci.canvas.addEventListener('click',ciClick);
-      _ci.canvas.addEventListener('touchstart',function(e){var t=e.touches[0];ciMD({clientX:t.clientX,clientY:t.clientY});},{passive:true});
-      _ci.canvas.addEventListener('touchmove',function(e){var t=e.touches[0];ciMM({clientX:t.clientX,clientY:t.clientY});},{passive:true});
-      _ci.canvas.addEventListener('touchend',ciMU,{passive:true});
+      cvs.addEventListener('mousedown',ciMD);
+      cvs.addEventListener('mousemove',ciMM);
+      cvs.addEventListener('mouseup',ciMU);
+      cvs.addEventListener('click',ciClick);
+      cvs.addEventListener('touchstart',function(e){var t=e.touches[0];ciMD({clientX:t.clientX,clientY:t.clientY});},{passive:true});
+      cvs.addEventListener('touchmove',function(e){var t=e.touches[0];ciMM({clientX:t.clientX,clientY:t.clientY});},{passive:true});
+      cvs.addEventListener('touchend',ciMU,{passive:true});
       ciLoadTopology();
+      ciUpdateStats();ciUpdateMeta();
       setInterval(function(){if(!_ci.cascadeRunning)ciSyncHealth();},10000);
       (function loop(t){
-        _ci.animId=requestAnimationFrame(loop);
+        _ci.raf=requestAnimationFrame(loop);
         var pg=document.getElementById('page-intel');
         if(!pg||!pg.classList.contains('active'))return;
         ciDraw(t);
@@ -1313,29 +1324,36 @@ function goPage(el, name) {
     function ciResize(){
       if(!_ci.canvas)return;
       var wrap=_ci.canvas.parentElement;
-      _ci.W=_ci.canvas.width=wrap.clientWidth||700;
-      _ci.H=_ci.canvas.height=420;
+      var W=wrap.clientWidth||700;
+      var H=Math.max(460,Math.round(W*.62));
+      _ci.canvas.width=_ci.W=W;
+      _ci.canvas.height=_ci.H=H;
+      _ci.canvas.style.width='100%';
+      _ci.canvas.style.height=H+'px';
+      _ci.canvas.style.position='absolute';
+      _ci.canvas.style.inset='0';
+      wrap.style.minHeight=H+'px';
+      wrap.style.height=H+'px';
     }
 
     function ciLoadTopology(){
-      fetch(B+'/api/cascade/topology').then(function(r){return r.json();}).then(function(d){
-        if(d.nodes&&d.nodes.length){
-          var idMap={};
-          CI_NODES.forEach(function(n){idMap[n.id]=n;});
-          d.nodes.forEach(function(dn){
-            var existing=idMap[dn.id];
-            if(existing){existing.x=dn.x;existing.y=dn.y;}
-          });
-        }
-        ciSyncHealth();
-        ciRebuildEditorSelects();
-        ciRenderTags();
-        ciUpdateMeta();
-        ciLog('ok','Engine','Cascade topology loaded — '+CI_NODES.length+' nodes active');
-      }).catch(function(){
-        ciSyncHealth();
-        ciLog('ok','Engine','Cascade engine ready — click any node or select a scenario');
-      });
+      fetch(window.location.origin+'/api/cascade/topology')
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(d.nodes&&d.nodes.length){
+            var map={};CI_NODES.forEach(function(n){map[n.id]=n;});
+            d.nodes.forEach(function(dn){
+              var ex=map[dn.id];
+              if(ex){ex.x=Math.max(.02,Math.min(.97,dn.x));ex.y=Math.max(.04,Math.min(.96,dn.y));}
+            });
+          }
+          ciSyncHealth();ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();
+          ciLog('ok','Engine','Topology loaded — '+CI_NODES.length+' nodes active');
+        })
+        .catch(function(){
+          ciSyncHealth();
+          ciLog('ok','Engine','Cascade ready — '+CI_NODES.length+' nodes · Click any node or run a scenario');
+        });
     }
 
     function ciSyncHealth(){
@@ -1343,8 +1361,7 @@ function goPage(el, name) {
       var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
       CI_NODES.forEach(function(n){
         if(_ci.degraded[n.id])return;
-        var live=dm[n.id];
-        if(live)n.health=live.health_score;
+        var live=dm[n.id];if(live)n.health=Math.min(100,Math.max(0,live.health_score));
       });
       ciUpdateStats();ciUpdateMeta();
     }
@@ -1354,19 +1371,32 @@ function goPage(el, name) {
       var ec=document.getElementById('ci-ecnt');if(ec)ec.textContent=CI_EDGES.length+' edges';
     }
 
+    /* ── draw ── */
     function ciDraw(t){
       var ctx=_ci.ctx,W=_ci.W,H=_ci.H;
       ctx.clearRect(0,0,W,H);
+      /* background */
       ctx.fillStyle='#04080f';ctx.fillRect(0,0,W,H);
-      // Grid
-      ctx.strokeStyle='rgba(255,255,255,.022)';ctx.lineWidth=.6;
-      for(var gx=0;gx<W;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-      for(var gy=0;gy<H;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-      // Zone labels
-      [{l:'NETWORK',col:'#00d4c8',x:.04,y:.06},{l:'TELECOM',col:'#a27cf8',x:.55,y:.06},{l:'MINING OT',col:'#f5c420',x:.02,y:.57},{l:'CBS SAFETY',col:'#f02e50',x:.44,y:.57},{l:'PRODUCTION',col:'#22e07a',x:.60,y:.70}].forEach(function(z){
-        ctx.font='700 8px JetBrains Mono,monospace';ctx.fillStyle=z.col+'44';ctx.textAlign='left';ctx.fillText(z.l,z.x*W,z.y*H);
+      /* subtle grid */
+      ctx.strokeStyle='rgba(255,255,255,.018)';ctx.lineWidth=.5;
+      for(var gx=0;gx<=W;gx+=48){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+      for(var gy=0;gy<=H;gy+=48){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+      /* zone labels */
+      var zones=[
+        {l:'NETWORK',   col:'#00d4c8',x:.04,y:.05},
+        {l:'TELECOM',   col:'#a27cf8',x:.53,y:.05},
+        {l:'MINING OT', col:'#f5c420',x:.02,y:.55},
+        {l:'CBS SAFETY',col:'#f02e50',x:.44,y:.52},
+        {l:'PRODUCTION',col:'#22e07a',x:.60,y:.68},
+      ];
+      ctx.textAlign='left';ctx.textBaseline='top';
+      zones.forEach(function(z){
+        ctx.font='700 9px "JetBrains Mono",monospace';
+        ctx.fillStyle=z.col+'33';
+        ctx.fillText(z.l,z.x*W,z.y*H);
       });
-      // Edges
+
+      /* edges */
       CI_EDGES.forEach(function(e){
         var a=CI_NODES.find(function(n){return n.id===e[0];});
         var b=CI_NODES.find(function(n){return n.id===e[1];});
@@ -1374,136 +1404,240 @@ function goPage(el, name) {
         var ax=ciNx(a),ay=ciNy(a),bx=ciNx(b),by=ciNy(b);
         var crit=a.health<35||b.health<35;var deg=a.health<70||b.health<70;
         ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
-        ctx.strokeStyle=crit?'rgba(240,46,80,.6)':deg?'rgba(242,149,16,.45)':'rgba(40,196,248,.16)';
-        ctx.lineWidth=crit?1.8:deg?1.3:.8;
-        if(crit){ctx.setLineDash([6,4]);}else{ctx.setLineDash([]);}
+        if(crit){ctx.setLineDash([6,4]);ctx.strokeStyle='rgba(240,46,80,.65)';ctx.lineWidth=1.8;}
+        else if(deg){ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(242,149,16,.5)';ctx.lineWidth=1.2;}
+        else{ctx.setLineDash([]);ctx.strokeStyle='rgba(40,196,248,.14)';ctx.lineWidth=.8;}
         ctx.stroke();ctx.setLineDash([]);
+        /* arrowhead */
         var dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy)||1;
         var ux=dx/len,uy=dy/len,mx=ax+dx*.54,my=ay+dy*.54;
-        ctx.beginPath();ctx.moveTo(mx+ux*5-uy*3,my+uy*5+ux*3);ctx.lineTo(mx+ux*10,my+uy*10);ctx.lineTo(mx+ux*5+uy*3,my+uy*5-ux*3);
-        ctx.strokeStyle=crit?'rgba(240,46,80,.7)':deg?'rgba(242,149,16,.6)':'rgba(40,196,248,.38)';ctx.lineWidth=1;ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(mx+ux*6-uy*3.5,my+uy*6+ux*3.5);
+        ctx.lineTo(mx+ux*12,my+uy*12);
+        ctx.lineTo(mx+ux*6+uy*3.5,my+uy*6-ux*3.5);
+        ctx.strokeStyle=crit?'rgba(240,46,80,.7)':deg?'rgba(242,149,16,.65)':'rgba(40,196,248,.4)';
+        ctx.lineWidth=1.1;ctx.stroke();
       });
-      // Packets
-      if(t&&t-_ci.lastPkt>800){
+
+      /* data packets */
+      if(t&&t-_ci.lastPkt>700){
         _ci.lastPkt=t;
         CI_EDGES.forEach(function(e){
-          if(Math.random()>.72)return;
+          if(Math.random()>.7)return;
           var a=CI_NODES.find(function(n){return n.id===e[0];});
           var b=CI_NODES.find(function(n){return n.id===e[1];});
-          if(a&&b&&a.health>50&&b.health>50)_ci.packets.push({from:e[0],to:e[1],t:0,col:a.health<70?'rgba(242,149,16,.85)':'rgba(40,196,248,.75)'});
+          if(a&&b&&a.health>45&&b.health>45){
+            _ci.packets.push({from:e[0],to:e[1],t:0,
+              col:a.health<70?'rgba(242,149,16,.9)':'rgba(40,196,248,.8)',
+              size:a.domain==='cbs'?4:2.5});
+          }
         });
       }
       _ci.packets=_ci.packets.filter(function(p){return p.t<1;});
       _ci.packets.forEach(function(p){
-        p.t+=.016;
+        p.t+=.014;
         var a=CI_NODES.find(function(n){return n.id===p.from;});
         var b=CI_NODES.find(function(n){return n.id===p.to;});
         if(!a||!b)return;
-        var px=ciNx(a)+(ciNx(b)-ciNx(a))*p.t,py=ciNy(a)+(ciNy(b)-ciNy(a))*p.t;
-        ctx.shadowColor=p.col;ctx.shadowBlur=8;
-        ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fillStyle=p.col;ctx.fill();
+        var px=ciNx(a)+(ciNx(b)-ciNx(a))*p.t;
+        var py=ciNy(a)+(ciNy(b)-ciNy(a))*p.t;
+        ctx.shadowColor=p.col;ctx.shadowBlur=10;
+        ctx.beginPath();ctx.arc(px,py,p.size,0,Math.PI*2);
+        ctx.fillStyle=p.col;ctx.fill();
         ctx.shadowBlur=0;
       });
-      // Nodes
+
+      /* nodes */
       CI_NODES.forEach(function(n){
-        var x=ciNx(n),y=ciNy(n),h=Math.max(0,Math.min(100,n.health||100));
-        var hcol=ciHCol(h),dcol=ciColOf(n.domain),r=n.domain==='cbs'?13:10;
-        ctx.shadowColor=h<35?'#f02e50':dcol;ctx.shadowBlur=h<35?20:9;
-        ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);ctx.strokeStyle=dcol+(h<70?'77':'22');ctx.lineWidth=.8;ctx.stroke();
-        var ang=(h/100)*Math.PI*2;ctx.beginPath();ctx.arc(x,y,r+2,-Math.PI/2,-Math.PI/2+ang);ctx.strokeStyle=hcol;ctx.lineWidth=2.2;ctx.stroke();
+        var x=ciNx(n),y=ciNy(n);
+        var h=Math.max(0,Math.min(100,n.health||100));
+        var hcol=ciHCol(h),dcol=ciColOf(n.domain);
+        var isCbs=n.domain==='cbs';
+        var r=isCbs?16:n.domain==='plant'?13:11;
+        /* outer glow ring for degraded */
+        if(h<70){
+          ctx.beginPath();ctx.arc(x,y,r+8,0,Math.PI*2);
+          ctx.strokeStyle=(h<35?'rgba(240,46,80,':'rgba(242,149,16,')+(h<35?.25:.18)+')';
+          ctx.lineWidth=1;ctx.stroke();
+        }
+        /* domain halo */
+        ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);
+        ctx.strokeStyle=dcol+'22';ctx.lineWidth=.8;ctx.stroke();
+        /* health arc */
+        var arcLen=(h/100)*Math.PI*2;
+        ctx.beginPath();ctx.arc(x,y,r+2.5,-Math.PI/2,-Math.PI/2+arcLen);
+        ctx.strokeStyle=hcol;ctx.lineWidth=2.8;
+        ctx.shadowColor=hcol;ctx.shadowBlur=h<50?16:6;
+        ctx.stroke();ctx.shadowBlur=0;
+        /* CBS pulsing outer ring */
+        if(isCbs&&h<90){
+          var pulse=(Math.sin(Date.now()*.004)+1)*.5;
+          ctx.beginPath();ctx.arc(x,y,r+10+pulse*4,0,Math.PI*2);
+          ctx.strokeStyle='rgba(240,46,80,'+(0.15+pulse*.2)+')';
+          ctx.lineWidth=1.2;ctx.stroke();
+        }
+        /* node fill */
         ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-        var g=ctx.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);g.addColorStop(0,dcol+'55');g.addColorStop(1,dcol+'18');
-        ctx.fillStyle=g;ctx.fill();ctx.strokeStyle=dcol+'99';ctx.lineWidth=1.4;ctx.stroke();ctx.shadowBlur=0;
-        ctx.font='700 8px JetBrains Mono,monospace';ctx.fillStyle=hcol;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(Math.round(h),x,y);
-        ctx.font='600 8px Sora,sans-serif';ctx.fillStyle='rgba(220,232,248,.82)';ctx.textBaseline='top';
-        var lbl=(n.label||n.id).slice(0,14);ctx.fillText(lbl,x,y+r+5);
+        var g=ctx.createRadialGradient(x-r*.35,y-r*.35,0,x,y,r);
+        g.addColorStop(0,dcol+'50');g.addColorStop(1,dcol+'18');
+        ctx.fillStyle=g;ctx.fill();
+        ctx.strokeStyle=dcol+'88';ctx.lineWidth=1.5;ctx.stroke();
+        /* health value */
+        ctx.font='700 '+(r>12?'9':'8')+'px "JetBrains Mono",monospace';
+        ctx.fillStyle=hcol;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.shadowColor=hcol;ctx.shadowBlur=4;
+        ctx.fillText(Math.round(h),x,y);
+        ctx.shadowBlur=0;
+        /* label below */
+        ctx.font='600 8.5px "Sora",sans-serif';
+        ctx.fillStyle='rgba(224,234,248,.88)';ctx.textBaseline='top';
+        var lbl=(n.label||n.id).slice(0,15);
+        /* white pill bg for legibility */
+        var tw=ctx.measureText(lbl).width+8;
+        ctx.fillStyle='rgba(4,8,15,.65)';
+        ctx.beginPath();
+        var lx=x-tw/2,ly=y+r+4,lh=13,lr=4;
+        ctx.moveTo(lx+lr,ly);ctx.lineTo(lx+tw-lr,ly);ctx.arcTo(lx+tw,ly,lx+tw,ly+lh,lr);ctx.lineTo(lx+tw,ly+lh-lr);ctx.arcTo(lx+tw,ly+lh,lx+tw-lr,ly+lh,lr);ctx.lineTo(lx+lr,ly+lh);ctx.arcTo(lx,ly+lh,lx,ly+lh-lr,lr);ctx.lineTo(lx,ly+lr);ctx.arcTo(lx,ly,lx+lr,ly,lr);ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle=h<35?'#f02e50':h<70?'#f29510':'rgba(224,234,248,.9)';
+        ctx.textAlign='center';ctx.textBaseline='top';
+        ctx.fillText(lbl,x,y+r+6);
       });
     }
 
+    /* ── interaction ── */
     function ciNodeAt(cx,cy){
-      for(var i=CI_NODES.length-1;i>=0;i--){var n=CI_NODES[i];var dx=ciNx(n)-cx,dy=ciNy(n)-cy;if(Math.sqrt(dx*dx+dy*dy)<20)return n;}
-      return null;
+      for(var i=CI_NODES.length-1;i>=0;i--){
+        var n=CI_NODES[i];var dx=ciNx(n)-cx,dy=ciNy(n)-cy;
+        if(Math.sqrt(dx*dx+dy*dy)<22)return n;
+      }return null;
     }
-    function ciMD(e){var r=_ci.canvas.getBoundingClientRect();var mx=(e.clientX-r.left)*(_ci.W/r.width),my=(e.clientY-r.top)*(_ci.H/r.height);var n=ciNodeAt(mx,my);if(n){_ci.dragging=n;_ci.dragOX=mx-ciNx(n);_ci.dragOY=my-ciNy(n);}}
-    function ciMM(e){if(!_ci.dragging)return;var r=_ci.canvas.getBoundingClientRect();_ci.dragging.x=Math.max(.02,Math.min(.98,(e.clientX-r.left)*(_ci.W/r.width)-_ci.dragOX)/_ci.W);_ci.dragging.y=Math.max(.04,Math.min(.96,(e.clientY-r.top)*(_ci.H/r.height)-_ci.dragOY)/_ci.H);}
-    function ciMU(){_ci.dragging=null;}
-    function ciClick(e){
-      if(_ci.dragging)return;
+    function ciMD(e){
       var r=_ci.canvas.getBoundingClientRect();
       var mx=(e.clientX-r.left)*(_ci.W/r.width),my=(e.clientY-r.top)*(_ci.H/r.height);
-      var n=ciNodeAt(mx,my);if(n)ciDegradeNode(n.id,25+Math.random()*30);
+      var n=ciNodeAt(mx,my);
+      if(n){_ci.dragging=n;_ci.dragOX=mx-ciNx(n);_ci.dragOY=my-ciNy(n);_ci._didDrag=false;}
+    }
+    function ciMM(e){
+      if(!_ci.dragging)return;
+      var r=_ci.canvas.getBoundingClientRect();
+      _ci.dragging.x=Math.max(.02,Math.min(.97,(e.clientX-r.left)*(_ci.W/r.width)-_ci.dragOX)/_ci.W);
+      _ci.dragging.y=Math.max(.04,Math.min(.96,(e.clientY-r.top)*(_ci.H/r.height)-_ci.dragOY)/_ci.H);
+      _ci._didDrag=true;
+    }
+    function ciMU(){_ci.dragging=null;}
+    function ciClick(e){
+      if(_ci._didDrag){_ci._didDrag=false;return;}
+      var r=_ci.canvas.getBoundingClientRect();
+      var mx=(e.clientX-r.left)*(_ci.W/r.width),my=(e.clientY-r.top)*(_ci.H/r.height);
+      var n=ciNodeAt(mx,my);
+      if(n)ciDegradeNode(n.id,28+Math.random()*22);
     }
 
+    /* ── cascade engine ── */
     function ciDegradeNode(id,amount){
       var n=CI_NODES.find(function(x){return x.id===id;});if(!n)return;
       n.health=Math.max(0,n.health-amount);_ci.degraded[id]=true;
       var cls=n.health<35?'crit':n.health<70?'warn':'ok';
-      ciLog(cls,n.label,'Degraded to '+Math.round(n.health)+'% — analysing cascade…');
+      ciLog(cls,n.label,'Degraded to '+Math.round(n.health)+'% — tracing cascade…');
       if(!_ci.cascadeRunning)ciPropagate(id);
     }
 
     function ciPropagate(originId){
       _ci.cascadeRunning=true;
-      var origin=CI_NODES.find(function(n){return n.id===originId;});if(!origin)return;
       var queue=[{id:originId,delay:0}],visited={};visited[originId]=true;
       function step(){
         if(!queue.length){_ci.cascadeRunning=false;ciFinish(originId);return;}
         var item=queue.shift();
-        var t=setTimeout(function(){
+        var tmr=setTimeout(function(){
           var node=CI_NODES.find(function(n){return n.id===item.id;});
           if(!node){step();return;}
           CI_EDGES.forEach(function(e){
-            var depId=e[0]===item.id?e[1]:(e[1]===item.id?null:null);
-            if(e[0]===item.id)depId=e[1];
+            var depId=e[0]===item.id?e[1]:null;
             if(!depId||visited[depId])return;
-            var dep=CI_NODES.find(function(n){return n.id===depId;});
-            if(!dep)return;
-            if(node.health<55){
+            var dep=CI_NODES.find(function(n){return n.id===depId;});if(!dep)return;
+            if(node.health<60){
               visited[depId]=true;
-              var amt=node.health<20?40:node.health<35?25:12;
+              var amt=node.health<20?42:node.health<35?26:13;
               dep.health=Math.max(0,dep.health-amt);_ci.degraded[dep.id]=true;
-              var msg=CI_CASC_MSGS[dep.id]||('Cascade from '+node.label+' — health now '+Math.round(dep.health)+'%.');
+              var msg=CI_CASC[dep.id]||('Cascade from '+node.label+' — now at '+Math.round(dep.health)+'%');
               if(dep.id==='cbs-ctrl'&&dep.health<90){
-                ciLog('cbs','CBS HOLD','⚠ BLAST HOLD ISSUED — DNP3 integrity below 90%. Exposure: $450,000/hr.');
-                var cs=document.getElementById('ci-s-cbs');if(cs){cs.textContent='HOLD';cs.style.color='var(--red)';}
+                ciLog('cbs','CBS HOLD','⚠ BLAST HOLD ISSUED — DNP3 integrity <90% — $450,000/hr');
+                var cs=document.getElementById('ci-s-cbs');
+                if(cs){cs.textContent='HOLD';cs.style.color='var(--red)';}
               }else{
-                var cls2=dep.health<35?'crit':dep.health<70?'warn':'ok';
-                ciLog(cls2,dep.label,msg);
+                ciLog(dep.health<35?'crit':dep.health<70?'warn':'ok',dep.label,msg);
               }
-              ciUpdateStats();
-              queue.push({id:depId,delay:600+Math.random()*400});
+              ciUpdateStats();ciUpdateEcon();
+              queue.push({id:depId,delay:500+Math.random()*400});
             }
           });
           step();
         },item.delay);
-        _ci.cascadeTimers.push(t);
+        _ci.cascadeTimers.push(tmr);
       }
       step();
     }
 
     function ciFinish(originId){
-      var affected=new Set();CI_NODES.forEach(function(n){if(n.health<90)affected.add(n.domain);});
+      var affected=new Set();
+      CI_NODES.forEach(function(n){if(n.health<90)affected.add(n.domain);});
       var lowH=CI_NODES.filter(function(n){return n.health<40&&n.health>0;}).length;
-      var ttc=lowH>0?Math.floor(lowH*4+8)+'min':'--';
       document.getElementById('ci-s-aff').textContent=affected.size;
       document.getElementById('ci-s-pred').textContent=lowH;
-      document.getElementById('ci-s-ttc').textContent=ttc;
-      ciUpdateStats();
-      var insight=document.getElementById('ci-insight');var body=document.getElementById('ci-insight-body');
-      if(insight&&body){
-        var key=_ci.activeScenario||'worst';
-        body.innerHTML=CI_INSIGHTS[key]||CI_INSIGHTS['worst'];
-        insight.classList.add('on');
-      }
-      ciLog('crit','Analysis','Cascade complete — '+affected.size+' domains affected, '+lowH+' predicted failures');
+      document.getElementById('ci-s-ttc').textContent=lowH>0?Math.floor(lowH*4+6)+'min':'--';
+      ciUpdateStats();ciUpdateEcon();
+      var key=_ci.activeScenario||'wan';
+      var body=document.getElementById('ci-insight-body');
+      if(body)body.innerHTML=CI_INSIGHTS[key]||CI_INSIGHTS['wan'];
+      ciLog('crit','Analysis','Complete — '+affected.size+' domains, '+lowH+' predicted failures');
     }
 
     function ciUpdateStats(){
       var scores=CI_NODES.map(function(n){return n.health||100;});
       var f=Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length);
-      var fe=document.getElementById('ci-s-fhi');if(fe){fe.textContent=f;fe.style.color=f>=70?'var(--grn)':f>=40?'var(--amb)':'var(--red)';}
-      var total=0;CI_NODES.forEach(function(n){var h=n.health||100;var impact=h<20?.95:h<35?.6:h<50?.25:0;total+=Math.round(n.cost*impact);});
-      var ee=document.getElementById('ci-exp');if(ee)ee.textContent='$'+total.toLocaleString();
+      var fe=document.getElementById('ci-s-fhi');
+      if(fe){fe.textContent=CI_NODES.length;fe.style.color='var(--acc)';}
+      var total=0;
+      CI_NODES.forEach(function(n){var h=n.health||100;var impact=h<20?.95:h<35?.6:h<50?.25:0;total+=Math.round(n.cost*impact);});
+      var ee=document.getElementById('ci-exp');if(ee)ee.textContent=ciFmt(total);
+      var nc=document.getElementById('ci-ncnt');if(nc)nc.textContent=CI_NODES.length+' nodes';
+    }
+
+    function ciUpdateEcon(){
+      var direct=0,cascade=0;
+      CI_NODES.forEach(function(n){
+        var h=n.health||100;
+        var directImpact=h<20?.85:h<35?.5:h<50?.2:0;
+        var cascImpact=h<20?.1:h<35?.08:h<50?.05:0;
+        direct+=Math.round(n.cost*directImpact);
+        cascade+=Math.round(n.cost*cascImpact);
+      });
+      var prevented=Math.round((direct+cascade)*0.62);
+      var roi=direct+cascade>0?Math.round(prevented/(direct+cascade)*10)/10:'∞';
+      var ed=document.getElementById('ci-ec-direct');if(ed)ed.textContent=ciFmt(direct);
+      var ec=document.getElementById('ci-ec-cascade');if(ec)ec.textContent=ciFmt(cascade);
+      var ep=document.getElementById('ci-ec-prevented');if(ep)ep.textContent=ciFmt(prevented);
+      var er=document.getElementById('ci-ec-roi');if(er)er.textContent=typeof roi==='number'?roi+'x':'∞';
+    }
+
+    /* ── scenarios ── */
+    function ciRunScenario(name){
+      ciResetAll();_ci.activeScenario=name;
+      document.querySelectorAll('.ci-sbtn').forEach(function(b){b.classList.remove('active');});
+      var btn=document.getElementById('ci-sb-'+name);if(btn)btn.classList.add('active');
+      var map={
+        wan:     function(){ciDegradeNode('wan',58);},
+        cbs:     function(){ciDegradeNode('cbs-ctrl',30);setTimeout(function(){ciDegradeNode('cbs-ctrl',38);},1200);},
+        power:   function(){ciDegradeNode('pm',65);},
+        storm:   function(){ciDegradeNode('tower',72);setTimeout(function(){ciDegradeNode('mw-link',30);},900);},
+        compound:function(){ciDegradeNode('wan',42);setTimeout(function(){ciDegradeNode('pm',52);},600);setTimeout(function(){ciDegradeNode('tower',62);},1300);},
+      };
+      if(map[name])map[name]();
+      else{
+        var worst=CI_NODES.reduce(function(a,b){return(a.health||100)<(b.health||100)?a:b;},CI_NODES[0]||{id:null});
+        if(worst.id)ciDegradeNode(worst.id,42+Math.random()*20);
+      }
     }
 
     function ciResetAll(){
@@ -1516,122 +1650,118 @@ function goPage(el, name) {
       document.getElementById('ci-s-aff').textContent='0';
       document.getElementById('ci-s-pred').textContent='0';
       document.getElementById('ci-s-ttc').textContent='--';
-      var ei=document.getElementById('ci-insight');if(ei)ei.classList.remove('on');
       var ee=document.getElementById('ci-exp');if(ee)ee.textContent='$0';
-      document.getElementById('ci-log').innerHTML='<div class="ci-log-row ok"><span class="ci-log-ts">'+new Date().toLocaleTimeString()+'</span><span class="ci-log-dev" style="color:var(--grn)">Reset</span><span class="ci-log-msg">All nodes restored to live health.</span></div>';
-    }
-
-    function ciRunScenario(name){
-      ciResetAll();_ci.activeScenario=name;
-      document.querySelectorAll('.ci-sbtn').forEach(function(b){b.classList.remove('active');});
-      var btn=document.getElementById('ci-sb-'+name);if(btn)btn.classList.add('active');
-      var map={
-        wan:function(){ciDegradeNode('wan',55);},
-        cbs:function(){ciDegradeNode('cbs-ctrl',28);setTimeout(function(){ciDegradeNode('cbs-ctrl',35);},1200);},
-        power:function(){ciDegradeNode('pm',60);},
-        storm:function(){ciDegradeNode('tower',70);setTimeout(function(){ciDegradeNode('mw-link',30);},800);},
-        compound:function(){ciDegradeNode('wan',40);setTimeout(function(){ciDegradeNode('pm',50);},600);setTimeout(function(){ciDegradeNode('tower',60);},1200);},
-        worst:function(){var w=CI_NODES.reduce(function(a,b){return(a.health||100)<(b.health||100)?a:b;},CI_NODES[0]||{id:null});if(w.id)ciDegradeNode(w.id,40+Math.random()*20);},
-      };
-      if(map[name])map[name]();
+      ['ci-ec-direct','ci-ec-cascade','ci-ec-prevented'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='$0k';});
+      var er=document.getElementById('ci-ec-roi');if(er)er.textContent='∞';
+      var body=document.getElementById('ci-insight-body');
+      if(body){body.innerHTML='Run a scenario to see AI causal analysis appear here...';body.style.color='var(--dim)';body.style.fontStyle='italic';}
+      var log=document.getElementById('ci-log');
+      if(log)log.innerHTML='<div class="ci-log-row ok"><span class="ci-log-ts">'+new Date().toLocaleTimeString()+'</span><span class="ci-log-dev" style="color:var(--grn)">Reset</span><span class="ci-log-msg">All nodes restored to live health — topology unchanged.</span></div>';
     }
 
     function ciLog(cls,dev,msg){
       var log=document.getElementById('ci-log');if(!log)return;
       var row=document.createElement('div');row.className='ci-log-row '+(cls||'ok');
-      row.innerHTML='<span class="ci-log-ts">'+new Date().toLocaleTimeString()+'</span><span class="ci-log-dev">'+dev+'</span><span class="ci-log-msg">'+msg+'</span>';
-      log.insertBefore(row,log.firstChild);while(log.children.length>18)log.removeChild(log.lastChild);
+      row.innerHTML='<span class="ci-log-ts">'+new Date().toLocaleTimeString()+'</span>'
+        +'<span class="ci-log-dev">'+dev+'</span>'
+        +'<span class="ci-log-msg">'+msg+'</span>';
+      log.insertBefore(row,log.firstChild);
+      while(log.children.length>20)log.removeChild(log.lastChild);
     }
 
+    /* ── specialist editor ── */
     function ciShowEditor(){
       var ed=document.getElementById('ci-editor');var gt=document.getElementById('ci-gate');
       if(spToken){if(ed)ed.style.display='block';if(gt)gt.style.display='none';ciRebuildEditorSelects();ciPopulateDevSel();}
       else{if(ed)ed.style.display='none';if(gt)gt.style.display='flex';}
     }
-
     function ciPopulateDevSel(){
       var sel=document.getElementById('ci-dev-sel');if(!sel)return;
       sel.innerHTML='<option value="">Select live device...</option>';
       var dm={};(allData||[]).forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
       Object.keys(dm).forEach(function(did){var o=document.createElement('option');o.value=did;o.textContent=ciSid(did)+' ('+dm[did].device_type+')';sel.appendChild(o);});
     }
-
     function ciRebuildEditorSelects(){
       var fs=document.getElementById('ci-efrom'),ts=document.getElementById('ci-eto');if(!fs||!ts)return;
       fs.innerHTML='<option value="">From...</option>';ts.innerHTML='<option value="">To...</option>';
       CI_NODES.forEach(function(n){var lbl=n.label||n.id;fs.innerHTML+='<option value="'+n.id+'">'+lbl+'</option>';ts.innerHTML+='<option value="'+n.id+'">'+lbl+'</option>';});
     }
-
     function ciRenderTags(){
       var list=document.getElementById('ci-tags');if(!list)return;
       if(!CI_NODES.length){list.innerHTML='<span style="font-size:9px;color:var(--dim)">No nodes</span>';return;}
-      list.innerHTML=CI_NODES.map(function(n){
-        return '<div class="ci-tag" onclick="ciRemoveNode(\''+n.id+'\')" title="Click to remove"><span class="ci-tdot" style="background:'+ciColOf(n.domain)+'"></span>'+(n.label||n.id)+'</div>';
-      }).join('');
+      list.innerHTML=CI_NODES.map(function(n){return'<div class="ci-tag" onclick="ciRemoveNode(\''+n.id+'\')" title="Click to remove"><span class="ci-tdot" style="background:'+ciColOf(n.domain)+'"></span>'+(n.label||n.id)+'</div>';}).join('');
     }
-
     function ciEditorAddNode(){
       var devSel=document.getElementById('ci-dev-sel'),domSel=document.getElementById('ci-dom-sel');
-      var did=devSel?devSel.value:'';if(!did)return;
+      var did=devSel?devSel.value:'';if(!did){toast('Cascade','Select a device first','tw');return;}
       if(CI_NODES.find(function(n){return n.id===did;})){toast('Cascade','Already on map','tw');return;}
       var dm={};(allData||[]).forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var live=dm[did];
-      CI_NODES.push({id:did,label:ciSid(did),domain:domSel?domSel.value:'net',x:.1+Math.random()*.8,y:.1+Math.random()*.8,health:live?live.health_score:80,cost:COST[live&&live.device_type]||50000,deps:[]});
-      ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciLog('ok',ciSid(did),'Added to cascade map');toast('Node added',ciSid(did),'tg');
+      CI_NODES.push({id:did,label:ciSid(did),domain:domSel?domSel.value:'net',x:.15+Math.random()*.7,y:.15+Math.random()*.7,health:live?live.health_score:80,cost:COST[live&&live.device_type]||50000});
+      ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciLog('ok',ciSid(did),'Added to map');toast('Node added',ciSid(did),'tg');
     }
-
     function ciEditorAddEdge(){
       var f=document.getElementById('ci-efrom'),t=document.getElementById('ci-eto');
       var from=f?f.value:'',to=t?t.value:'';
       if(!from||!to){toast('Cascade','Select both nodes','tw');return;}
       if(from===to){toast('Cascade','Cannot self-connect','tw');return;}
-      if(CI_EDGES.find(function(e){return e[0]===from&&e[1]===to;})){toast('Cascade','Edge exists','tw');return;}
-      CI_EDGES.push([from,to]);ciUpdateMeta();
-      ciLog('ok',ciSid(from),'→ '+ciSid(to)+' edge added');toast('Edge added',ciSid(from)+' → '+ciSid(to),'tg');
+      if(CI_EDGES.find(function(e){return e[0]===from&&e[1]===to;})){toast('Cascade','Edge already exists','tw');return;}
+      CI_EDGES.push([from,to]);ciUpdateMeta();ciLog('ok',ciSid(from),'→ '+ciSid(to)+' edge added');toast('Edge added',ciSid(from)+' → '+ciSid(to),'tg');
     }
-
     function ciRemoveNode(id){
       var idx=CI_NODES.findIndex(function(n){return n.id===id;});if(idx<0)return;CI_NODES.splice(idx,1);
       for(var i=CI_EDGES.length-1;i>=0;i--){if(CI_EDGES[i][0]===id||CI_EDGES[i][1]===id)CI_EDGES.splice(i,1);}
       ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciLog('warn',ciSid(id),'Removed from map');
     }
-
     function ciSaveTopology(){
       if(!spToken){toast('Cascade','Specialist login required','tw');return;}
       var payload={nodes:CI_NODES.map(function(n){return{id:n.id,label:n.label,domain:n.domain,x:n.x,y:n.y};}),edges:CI_EDGES.map(function(e){return{from:e[0],to:e[1]};})};
-      fetch(B+'/api/cascade/topology',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify(payload)})
-        .then(function(r){if(r.ok){toast('Topology saved','','tg');ciLog('ok','Topology','Saved by specialist');}else{toast('Save failed','','tc');}})
+      fetch(window.location.origin+'/api/cascade/topology',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify(payload)})
+        .then(function(r){if(r.ok){toast('Topology saved','','tg');ciLog('ok','Topology','Saved by specialist');}else{toast('Save failed','Check specialist token','tc');}})
         .catch(function(e){toast('Error',e.message,'tc');});
     }
-
     function ciClearTopology(){
       if(!confirm('Clear all cascade nodes and edges?'))return;
       CI_NODES.length=0;CI_EDGES.length=0;
       ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciSaveTopology();ciLog('warn','Topology','Cleared by specialist');
     }
 
-    // Boot cascade when intel tab clicked
-    (function(){
-      var origGoPage=goPage;
-      goPage=function(el,name){
-        // fix the typo in the original goPage
+    /* ── page switch hook ── */
+    (function patchGoPage(){
+      var _orig=typeof goPage==='function'?goPage:null;
+      window.goPage=function(el,name){
         document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
         document.querySelectorAll('.ntab').forEach(function(t){t.classList.remove('active');});
-        document.getElementById('page-'+name).classList.add('active');el.classList.add('active');
+        var pg=document.getElementById('page-'+name);if(pg)pg.classList.add('active');
+        el.classList.add('active');
         document.querySelectorAll('.subloc').forEach(function(s){s.classList.remove('vis');});
         var sub=document.getElementById('sub-'+name);if(sub)sub.classList.add('vis');
-        if(name==='wx')loadWx();
-        _currentPage=name;setLogoPage(name);
-        if(name==='intel'){if(!_ci.booted)setTimeout(ciInit,80);else{ciSyncHealth();ciShowEditor();}ciResize();}
+        if(typeof loadWx==='function'&&name==='wx')loadWx();
+        if(typeof _currentPage!=='undefined')window._currentPage=name;
+        if(typeof setLogoPage==='function')setLogoPage(name);
+        if(name==='intel'){
+          if(!_ci.booted)setTimeout(ciInit,80);
+          else{ciSyncHealth();ciShowEditor();ciResize();}
+        }
       };
     })();
 
-    // Patch doLogin/doLogout for cascade editor
-    (function(){
-      var origL=doLogin;doLogin=async function(){await origL();setTimeout(ciShowEditor,200);};
-      var origO=doLogout;doLogout=function(){origO();ciShowEditor();};
+    /* ── login patch ── */
+    (function patchLogin(){
+      var t=setInterval(function(){
+        if(typeof doLogin==='function'&&typeof doLogout==='function'){
+          clearInterval(t);
+          var ol=doLogin,oo=doLogout;
+          doLogin=async function(){await ol();setTimeout(ciShowEditor,200);};
+          doLogout=function(){oo();ciShowEditor();};
+        }
+      },400);
     })();
 
-    setTimeout(function(){var ip=document.getElementById('page-intel');if(ip&&ip.classList.contains('active'))ciInit();},600);
-  </script>
+    /* ── auto-boot if intel tab already active ── */
+    setTimeout(function(){
+      var pg=document.getElementById('page-intel');
+      if(pg&&pg.classList.contains('active'))ciInit();
+    },600);
+</script>
 </body>
 </html>
