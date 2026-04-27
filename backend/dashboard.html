@@ -37,7 +37,7 @@
     body.light header, body.light nav.mnav { background: rgba(228,232,242,.93) !important; }
     body.light .subloc { background: rgba(220,225,240,.9) !important; }
     body.light .card, .light .bc, .light .gc, .light .fcard, .light .lcard, .light .icard,
-    .light .wcard, .light .twin-wrap, .light .cbsouter, .light .en-panel, .light .sphead,
+    .light .wcard, .light .twin-wrap, .light .en-panel, .light .sphead,
     .light .icard2, .light .kpi-bar, .light .statbar, .light .detail-modal-inner {
       background: rgba(255,255,255,.85) !important; border-color: var(--b1) !important;
     }
@@ -164,7 +164,6 @@
     .statbar.sb-tc { background: linear-gradient(90deg, #000d1e, #001428, #000816); }
     .statbar.sb-mc { background: linear-gradient(90deg, #120900, #1e0e00, #0e0500); }
     .statbar.sb-cbs { background: linear-gradient(90deg, #140003, #1e0007, #0e0002); }
-    .statbar::after { display: none; }
     @keyframes esbBreathGrn { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(34,224,122,.55); } 50% { opacity: .72; text-shadow: 0 0 26px rgba(34,224,122,.9); } }
     @keyframes esbBreathAmb { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(242,149,16,.55); } 50% { opacity: .68; text-shadow: 0 0 26px rgba(242,149,16,.9); } }
     @keyframes esbBreathRed { 0%,100% { opacity: 1; text-shadow: 0 0 14px rgba(240,46,80,.6); } 50% { opacity: .55; text-shadow: 0 0 32px rgba(240,46,80,1); } }
@@ -310,26 +309,13 @@
     .ev-ok { color: var(--grn); font-weight: 700; } .ev-w { color: var(--amb); font-weight: 700; } .ev-r { color: var(--red); font-weight: 700; }
     .eb { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 30px; font-weight: 700; }
     .eb-ok { background: var(--grna); color: var(--grn); } .eb-w { background: var(--amba); color: var(--amb); } .eb-r { background: var(--reda); color: var(--red); }
-    #sector-selector { position: fixed; inset: 0; z-index: 9998; background: radial-gradient(ellipse 110% 70% at 50% 108%, rgba(40,196,248,.07) 0, transparent 65%), var(--bg); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 22px; }
-    .ss-box { width: 100%; max-width: 870px; background: rgba(6,12,26,.99); border: 1px solid var(--b2); border-radius: var(--r-2xl); padding: 44px 40px; box-shadow: var(--sh-xl); backdrop-filter: var(--blur); }
-    .ss-logo { display: flex; align-items: baseline; justify-content: center; margin-bottom: 18px; }
-    .ss-title { font-size: 22px; font-weight: 900; color: var(--txt); text-align: center; margin-bottom: 8px; letter-spacing: -.048em; }
-    .ss-sub { font-size: 12px; color: var(--dim); text-align: center; margin-bottom: 32px; line-height: 1.75; max-width: 460px; margin-left: auto; margin-right: auto; }
-    .ss-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-bottom: 24px; }
-    @media (max-width: 600px) { .ss-cards { grid-template-columns: 1fr; } }
-    .ss-card { position: relative; background: rgba(255,255,255,.03); border: 1.5px solid var(--b1); border-radius: var(--r-lg); padding: 22px 18px; cursor: pointer; transition: all .25s var(--ease); display: flex; flex-direction: column; gap: 4px; user-select: none; }
-    .ss-card input { display: none; } .ss-card:hover { border-color: var(--b2); transform: translateY(-3px); }
-    .ss-card.selected { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 9%, transparent); box-shadow: 0 0 0 1px var(--acc); }
-    .ss-card-icon { font-size: 32px; margin-bottom: 10px; line-height: 1; } .ss-card-name { font-size: 16px; font-weight: 800; color: var(--txt); letter-spacing: -.03em; }
-    .ss-card-desc { font-size: 10px; color: var(--mut); line-height: 1.65; margin-top: 3px; } .ss-card-proto { font-size: 9px; color: var(--dim); font-weight: 600; margin-top: 6px; font-family: var(--mono); }
-    .ss-check { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; background: var(--acc); color: #010d14; font-size: 11px; font-weight: 900; display: none; align-items: center; justify-content: center; }
-    .ss-card.selected .ss-check { display: flex; }
-    .ss-quick { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 22px; align-items: center; }
-    .ss-qlbl { font-size: 9px; color: var(--dim); font-weight: 700; text-transform: uppercase; letter-spacing: .09em; margin-right: 4px; }
-    .ss-preview { text-align: center; font-size: 12px; color: var(--mut); padding: 12px; border-radius: var(--r-sm); background: rgba(255,255,255,.03); border: 1px solid var(--b1); margin-bottom: 22px; min-height: 42px; line-height: 1.65; }
-    .ss-enter { width: 100%; padding: 16px; border-radius: var(--r-md); border: none; background: var(--acc); color: #010d14; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .24s var(--ease); font-family: var(--font); }
-    .ss-enter:hover:not(:disabled) { transform: translateY(-1px); } .ss-enter:disabled { opacity: .2; cursor: not-allowed; }
-    .ss-note { text-align: center; font-size: 10px; color: var(--dim); margin-top: 18px; line-height: 1.65; }
+    .dc-panel { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-lg); padding: 16px; margin-bottom: 14px; box-shadow: var(--sh-xs); }
+    .dc-method { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: rgba(255,255,255,.03); border: 1px solid var(--b1); border-radius: var(--r-sm); margin-bottom: 8px; }
+    .dc-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .dc-title { font-size: 11px; font-weight: 700; color: var(--txt); margin-bottom: 2px; } .dc-desc { font-size: 10px; color: var(--dim); line-height: 1.55; }
+    .dc-badge { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
+    .dc-badge.live { background: var(--grna); color: var(--grn); } .dc-badge.auto { background: var(--blua); color: var(--blu); }
+    .cg { color: var(--grn); } .cw { color: var(--amb); } .cr { color: var(--red); } .ca { color: var(--acc); } .cp { color: var(--pur); } .cgld { color: var(--gld); }
     .nm-wrap { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-lg); padding: 16px; margin-bottom: 14px; box-shadow: var(--sh-xs); }
     .nm-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 13px; }
     .nm-input { flex: 1; min-width: 140px; padding: 8px 12px; background: rgba(255,255,255,.04); border: 1px solid var(--b1); border-radius: var(--r-sm); color: var(--txt); font-size: 12px; outline: none; transition: border-color .2s; font-family: inherit; }
@@ -354,14 +340,97 @@
     .nm-poll:hover { color: var(--acc); background: var(--acca); }
     .nm-health-bar { height: 3px; background: rgba(255,255,255,.05); border-radius: 2px; margin-top: 8px; overflow: hidden; } .nm-health-fill { height: 100%; border-radius: 2px; transition: width .8s var(--ease); }
     .nm-empty { color: var(--dim); font-size: 11px; padding: 18px; text-align: center; grid-column: 1/-1; line-height: 1.65; }
-    .dc-panel { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-lg); padding: 16px; margin-bottom: 14px; box-shadow: var(--sh-xs); }
-    .dc-method { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: rgba(255,255,255,.03); border: 1px solid var(--b1); border-radius: var(--r-sm); margin-bottom: 8px; }
-    .dc-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-    .dc-title { font-size: 11px; font-weight: 700; color: var(--txt); margin-bottom: 2px; } .dc-desc { font-size: 10px; color: var(--dim); line-height: 1.55; }
-    .dc-badge { display: inline-block; font-size: 8px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle; }
-    .dc-badge.live { background: var(--grna); color: var(--grn); } .dc-badge.auto { background: var(--blua); color: var(--blu); }
-    .cg { color: var(--grn); } .cw { color: var(--amb); } .cr { color: var(--red); } .ca { color: var(--acc); } .cp { color: var(--pur); } .cgld { color: var(--gld); }
-    .env-hero::after { display: none; }
+    #sector-selector { position: fixed; inset: 0; z-index: 9998; background: radial-gradient(ellipse 110% 70% at 50% 108%, rgba(40,196,248,.07) 0, transparent 65%), var(--bg); display: flex; align-items: center; justify-content: center; overflow-y: auto; padding: 22px; }
+    .ss-box { width: 100%; max-width: 870px; background: rgba(6,12,26,.99); border: 1px solid var(--b2); border-radius: var(--r-2xl); padding: 44px 40px; box-shadow: var(--sh-xl); backdrop-filter: var(--blur); }
+    .ss-logo { display: flex; align-items: baseline; justify-content: center; margin-bottom: 18px; }
+    .ss-title { font-size: 22px; font-weight: 900; color: var(--txt); text-align: center; margin-bottom: 8px; letter-spacing: -.048em; }
+    .ss-sub { font-size: 12px; color: var(--dim); text-align: center; margin-bottom: 32px; line-height: 1.75; max-width: 460px; margin-left: auto; margin-right: auto; }
+    .ss-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-bottom: 24px; }
+    @media (max-width: 600px) { .ss-cards { grid-template-columns: 1fr; } }
+    .ss-card { position: relative; background: rgba(255,255,255,.03); border: 1.5px solid var(--b1); border-radius: var(--r-lg); padding: 22px 18px; cursor: pointer; transition: all .25s var(--ease); display: flex; flex-direction: column; gap: 4px; user-select: none; }
+    .ss-card input { display: none; } .ss-card:hover { border-color: var(--b2); transform: translateY(-3px); }
+    .ss-card.selected { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 9%, transparent); box-shadow: 0 0 0 1px var(--acc); }
+    .ss-card-icon { font-size: 32px; margin-bottom: 10px; line-height: 1; } .ss-card-name { font-size: 16px; font-weight: 800; color: var(--txt); letter-spacing: -.03em; }
+    .ss-card-desc { font-size: 10px; color: var(--mut); line-height: 1.65; margin-top: 3px; } .ss-card-proto { font-size: 9px; color: var(--dim); font-weight: 600; margin-top: 6px; font-family: var(--mono); }
+    .ss-check { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; background: var(--acc); color: #010d14; font-size: 11px; font-weight: 900; display: none; align-items: center; justify-content: center; }
+    .ss-card.selected .ss-check { display: flex; }
+    .ss-quick { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 22px; align-items: center; }
+    .ss-qlbl { font-size: 9px; color: var(--dim); font-weight: 700; text-transform: uppercase; letter-spacing: .09em; margin-right: 4px; }
+    .ss-preview { text-align: center; font-size: 12px; color: var(--mut); padding: 12px; border-radius: var(--r-sm); background: rgba(255,255,255,.03); border: 1px solid var(--b1); margin-bottom: 22px; min-height: 42px; line-height: 1.65; }
+    .ss-enter { width: 100%; padding: 16px; border-radius: var(--r-md); border: none; background: var(--acc); color: #010d14; font-size: 14px; font-weight: 800; cursor: pointer; transition: all .24s var(--ease); font-family: var(--font); }
+    .ss-enter:hover:not(:disabled) { transform: translateY(-1px); } .ss-enter:disabled { opacity: .2; cursor: not-allowed; }
+    .ss-note { text-align: center; font-size: 10px; color: var(--dim); margin-top: 18px; line-height: 1.65; }
+
+    /* ===== CASCADE INTELLIGENCE ENGINE v2 — improved layout ===== */
+    .ci2-cost-bar{margin-bottom:16px;padding:14px 22px;
+      background:linear-gradient(135deg,rgba(240,46,80,.07),rgba(240,46,80,.03));
+      border:1px solid rgba(240,46,80,.22);border-radius:var(--r-md);
+      display:flex;align-items:center;gap:18px;flex-wrap:wrap;box-shadow:var(--sh-xs);}
+    .ci2-cost-val{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--red);
+      letter-spacing:-.04em;line-height:1;animation:ctick 1.2s ease-in-out infinite;}
+    .ci2-cost-label{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
+    .ci2-cost-sep{width:1px;height:34px;background:rgba(240,46,80,.16);flex-shrink:0;}
+    .ci2-cost-stat{display:flex;flex-direction:column;gap:2px;}
+    .ci2-cost-stat-v{font-size:17px;font-weight:700;font-family:var(--mono);color:var(--amb);}
+    .ci2-cost-stat-l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;}
+    .ci2-hold-pill{font-size:9px;font-weight:800;padding:4px 12px;border-radius:30px;
+      letter-spacing:.06em;background:var(--reda);color:var(--red);
+      border:1px solid rgba(240,46,80,.32);display:none;
+      animation:opsBtnPulse 1.4s ease-in-out infinite;}
+    .ci2-layout{display:grid;grid-template-columns:1fr 310px;gap:0;margin-bottom:14px;
+      border:1px solid var(--b1);border-radius:var(--r-lg);overflow:hidden;
+      background:var(--s1);box-shadow:var(--sh-sm);}
+    .ci2-map-wrap{padding:14px;position:relative;background:#04080f;}
+    .ci2-canvas-title{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+      color:var(--mut);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+    .ci2-canvas-title::before{content:'';width:3px;height:3px;border-radius:50%;
+      background:var(--acc);box-shadow:0 0 6px var(--acc);}
+    #ci2-canvas{width:100%;border-radius:var(--r-sm);display:block;cursor:pointer;}
+    .ci2-canvas-hint{font-size:9px;color:var(--dim);margin-top:8px;text-align:center;letter-spacing:.02em;}
+    .ci2-panel{border-left:1px solid var(--b1);padding:12px;display:flex;
+      flex-direction:column;gap:9px;overflow-y:auto;max-height:620px;background:var(--s0);}
+    .ci2-panel::-webkit-scrollbar{width:2px;}
+    .ci2-panel::-webkit-scrollbar-thumb{background:var(--b2);}
+    .ci2-pcard{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r-md);padding:11px;}
+    .ci2-pcard-title{font-size:9px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.12em;margin-bottom:9px;display:flex;align-items:center;gap:5px;}
+    .ci2-pcard-title::before{content:'';width:3px;height:3px;border-radius:50%;background:currentColor;box-shadow:0 0 5px currentColor;}
+    .ci2-clog{display:flex;flex-direction:column;gap:4px;max-height:170px;overflow-y:auto;}
+    .ci2-clog::-webkit-scrollbar{width:2px;}
+    .ci2-clog::-webkit-scrollbar-thumb{background:var(--b2);}
+    .ci2-clog-item{padding:6px 10px 6px 22px;border-radius:var(--r-sm);font-size:9.5px;
+      background:rgba(255,255,255,.02);position:relative;line-height:1.5;animation:fadeUp .3s var(--ease);}
+    .ci2-clog-item::before{content:'';position:absolute;left:8px;top:50%;transform:translateY(-50%);
+      width:5px;height:5px;border-radius:50%;}
+    .ci2-clog-item.ok::before{background:var(--grn);}
+    .ci2-clog-item.warn::before{background:var(--amb);}
+    .ci2-clog-item.crit::before{background:var(--red);animation:ldp .9s infinite;}
+    .ci2-clog-item.cbs::before{background:var(--red);animation:ldp .6s infinite;}
+    .ci2-clog-t{font-size:8px;color:var(--dim);font-family:var(--mono);margin-bottom:1px;}
+    .ci2-clog-dev{font-weight:700;color:var(--acc);margin-bottom:1px;font-size:9.5px;}
+    .ci2-clog-msg{color:var(--mut);}
+    .ci2-insight{background:var(--pura);border:1px solid rgba(162,124,248,.18);
+      border-radius:var(--r-sm);padding:10px;font-size:10px;color:var(--mut);line-height:1.7;}
+    .ci2-insight strong{color:var(--pur);font-weight:700;}
+    .ci2-insight-title{font-size:9px;font-weight:700;color:var(--pur);
+      text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;}
+    .ci2-econ-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+    .ci2-econ-cell{background:rgba(255,255,255,.03);border:1px solid var(--b1);
+      border-radius:var(--r-sm);padding:8px;text-align:center;}
+    .ci2-econ-v{font-size:16px;font-weight:700;font-family:var(--mono);line-height:1;}
+    .ci2-econ-l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-top:3px;}
+    .ci2-sim-btns{display:flex;flex-direction:column;gap:5px;}
+    .ci2-sim-btn{width:100%;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--b1);
+      background:rgba(255,255,255,.03);color:var(--txt);font-size:10px;font-weight:600;
+      cursor:pointer;font-family:var(--font);text-align:left;transition:all .2s var(--ease);
+      display:flex;align-items:center;gap:7px;}
+    .ci2-sim-btn:hover{background:rgba(255,255,255,.06);border-color:var(--b2);transform:translateX(2px);}
+    .ci2-sim-btn.active{border-color:var(--red);background:var(--reda);color:var(--red);}
+    .ci2-sim-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+    @media(max-width:760px){
+      .ci2-layout{grid-template-columns:1fr;}
+      .ci2-panel{border-left:none;border-top:1px solid var(--b1);max-height:none;}
+    }
     @media (max-width: 660px) {
       .cgrid, .fgrid, .twin-grid { grid-template-columns: 1fr; }
       .banner { grid-template-columns: repeat(2, 1fr); }
@@ -375,82 +444,6 @@
       header, nav, #toasts, #sector-selector, .ops-banner, #amb, #grain, #ambient-svg, #detail-overlay { display: none !important; }
       body { background: #fff !important; color: #000 !important; } .page { display: block !important; }
     }
-
-    /* ===== CASCADE INTELLIGENCE ENGINE v2 CSS (dimensions enlarged) ===== */
-    .ciw{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-lg);margin-bottom:14px;overflow:hidden;box-shadow:var(--sh-md);position:relative;}
-    .ciw::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 90% 55% at 50% 108%,rgba(240,46,80,.05) 0%,transparent 68%);}
-    .ci-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--b1);background:rgba(255,255,255,.025);position:relative;z-index:1;flex-wrap:wrap;gap:7px;}
-    .ci-hdr-l{display:flex;align-items:center;gap:9px;}
-    .ci-eng-label{font-size:10px;font-weight:700;color:var(--txt);letter-spacing:.02em;display:flex;align-items:center;gap:6px;}
-    .ci-eng-label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:ldp 1.6s ease infinite;flex-shrink:0;}
-    .ci-pill{font-size:9px;color:var(--dim);font-family:var(--mono);background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:30px;padding:2px 9px;}
-    .ci-hdr-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-    .ci-cost-box{display:flex;align-items:center;gap:5px;padding:4px 11px;background:rgba(240,46,80,.07);border:1px solid rgba(240,46,80,.2);border-radius:30px;}
-    .ci-cost-val{font-size:12px;font-weight:800;font-family:var(--mono);color:var(--red);letter-spacing:-.03em;animation:ctick 1.3s ease-in-out infinite;}
-    .ci-cost-lbl{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;}
-    .ci-xbtn{padding:5px 12px;border-radius:var(--r-sm);border:none;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .18s;}
-    .ci-xbtn-sim{background:rgba(162,124,248,.12);color:var(--pur);border:1px solid rgba(162,124,248,.28);}
-    .ci-xbtn-sim:hover{background:rgba(162,124,248,.22);}
-    .ci-xbtn-rst{background:rgba(255,255,255,.04);color:var(--mut);border:1px solid var(--b1);}
-    .ci-xbtn-rst:hover{border-color:var(--b2);color:var(--txt);}
-    .ci-scen{display:flex;gap:5px;flex-wrap:wrap;padding:8px 16px;border-bottom:1px solid var(--b1);background:rgba(4,8,15,.35);position:relative;z-index:1;}
-    .ci-scen-lbl{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-weight:700;align-self:center;margin-right:3px;}
-    .ci-sbtn{font-size:9px;padding:4px 11px;border-radius:30px;cursor:pointer;font-family:var(--font);font-weight:700;transition:all .18s;white-space:nowrap;border:1px solid var(--b1);background:rgba(255,255,255,.03);color:var(--mut);}
-    .ci-sbtn:hover{border-color:var(--b2);color:var(--txt);}
-    .ci-sbtn.active{background:var(--reda);color:var(--red);border-color:rgba(240,46,80,.35);}
-    .ci-leg{display:flex;gap:12px;flex-wrap:wrap;padding:6px 16px;border-bottom:1px solid var(--b1);background:rgba(4,8,15,.3);position:relative;z-index:1;}
-    .ci-li{display:flex;align-items:center;gap:4px;font-size:8.5px;color:var(--mut);}
-    .ci-ld{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-    .ci-canvas-wrap{position:relative;background:#04080f;min-height:650px;}
-    #ci-canvas{width:100%;display:block;cursor:crosshair;}
-    .ci-canvas-wrap::after{content:'';position:absolute;bottom:0;left:0;right:0;height:60px;pointer-events:none;z-index:1;background:linear-gradient(to bottom,transparent,rgba(21,35,56,.7));}
-    .ci-stats{display:flex;align-items:stretch;border-top:1px solid var(--b1);position:relative;z-index:1;flex-wrap:wrap;}
-    .ci-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 18px;border-right:1px solid var(--b1);flex:1;min-width:78px;}
-    .ci-stat:last-child{border-right:none;}
-    .ci-stat-v{font-size:17px;font-weight:800;font-family:var(--mono);letter-spacing:-.04em;line-height:1;color:var(--acc);}
-    .ci-stat-l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.09em;white-space:nowrap;}
-    .ci-insight{padding:11px 16px;border-top:1px solid var(--b1);background:rgba(162,124,248,.04);position:relative;z-index:1;display:none;}
-    .ci-insight.on{display:block;animation:fadeUp .3s var(--ease);}
-    .ci-insight-title{font-size:9px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.12em;margin-bottom:5px;}
-    .ci-insight-body{font-size:10.5px;color:var(--mut);line-height:1.7;}
-    .ci-insight-body strong{color:var(--pur);}
-    .ci-log-wrap{border-top:1px solid var(--b1);padding:10px 14px;max-height:150px;overflow-y:auto;background:rgba(4,8,15,.4);position:relative;z-index:1;}
-    .ci-log-wrap::-webkit-scrollbar{width:2px;}
-    .ci-log-wrap::-webkit-scrollbar-thumb{background:var(--b2);}
-    .ci-log-hdr{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:6px;}
-    .ci-log-row{display:flex;align-items:baseline;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.028);font-size:10px;animation:fadeUp .25s var(--ease);}
-    .ci-log-row:last-child{border-bottom:none;}
-    .ci-log-ts{font-size:8px;color:var(--dim);font-family:var(--mono);flex-shrink:0;min-width:50px;}
-    .ci-log-dev{font-weight:700;flex-shrink:0;}
-    .ci-log-msg{color:var(--mut);line-height:1.45;flex:1;}
-    .ci-log-row.ok .ci-log-dev{color:var(--grn);}
-    .ci-log-row.warn .ci-log-dev{color:var(--amb);}
-    .ci-log-row.crit .ci-log-dev{color:var(--red);}
-    .ci-log-row.cbs .ci-log-dev{color:var(--red);animation:ldp .7s infinite;}
-    .ci-editor{border-top:1px solid rgba(162,124,248,.18);background:rgba(8,5,22,.8);padding:13px 16px;position:relative;z-index:1;}
-    .ci-editor-hdr{font-size:9px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
-    .ci-editor-hdr::before{content:'';width:3px;height:3px;border-radius:50%;background:var(--pur);box-shadow:0 0 5px var(--pur);}
-    .ci-er{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;margin-bottom:7px;}
-    .ci-ef{display:flex;flex-direction:column;gap:3px;flex:1;min-width:120px;}
-    .ci-el{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
-    .ci-esel{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:var(--r-sm);color:var(--txt);padding:6px 9px;font-size:10px;outline:none;font-family:var(--font);cursor:pointer;width:100%;transition:border-color .18s;}
-    .ci-esel:focus,.ci-esel:hover{border-color:rgba(162,124,248,.5);}
-    .ci-esel option{background:var(--s2);color:var(--txt);}
-    .ci-ebtn{padding:6px 12px;border-radius:var(--r-sm);border:none;font-size:9px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .18s;white-space:nowrap;flex-shrink:0;}
-    .ci-ebtn-p{background:var(--pura);color:var(--pur);border:1px solid rgba(162,124,248,.28);}
-    .ci-ebtn-p:hover{background:rgba(162,124,248,.2);}
-    .ci-ebtn-a{background:var(--amba);color:var(--amb);border:1px solid rgba(242,149,16,.28);}
-    .ci-ebtn-a:hover{background:rgba(242,149,16,.18);}
-    .ci-ebtn-g{background:var(--grna);color:var(--grn);border:1px solid rgba(34,224,122,.22);}
-    .ci-ebtn-g:hover{background:rgba(34,224,122,.15);}
-    .ci-ebtn-d{background:var(--reda);color:var(--red);border:1px solid rgba(240,46,80,.22);}
-    .ci-ebtn-d:hover{background:rgba(240,46,80,.18);}
-    .ci-tags{display:flex;gap:4px;flex-wrap:wrap;max-height:72px;overflow-y:auto;}
-    .ci-tag{font-size:9px;padding:3px 9px;border-radius:30px;cursor:pointer;font-family:var(--mono);display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--b1);color:var(--mut);transition:all .15s;}
-    .ci-tag:hover{border-color:var(--red);color:var(--red);}
-    .ci-tdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-    .ci-gate{padding:12px 16px;border-top:1px solid var(--b1);background:rgba(8,5,22,.45);display:flex;align-items:center;gap:9px;font-size:10px;color:var(--dim);}
-    .ci-gate span{flex:1;}
   </style>
 </head>
 <body>
@@ -783,7 +776,7 @@
       </div>
     </div>
 
-<!-- WEATHER -->
+    <!-- WEATHER -->
     <div class="page" id="page-wx">
       <div class="sl">Weather forecast &mdash; live equipment impact analysis</div>
       <div class="wgrid" id="wx-wrap"><div style="color:var(--dim);padding:22px">Loading weather data...</div></div>
@@ -813,118 +806,105 @@
         <div class="twin-trend" id="twin-trend"></div>
       </div>
 
-      <!-- CASCADE INTELLIGENCE ENGINE (ENLARGED CANVAS) -->
+      <!-- CASCADE INTELLIGENCE ENGINE v2 — improved renderer -->
       <div class="sl" style="margin-top:4px">Cascade intelligence map &mdash; cross-domain failure propagation</div>
-      <div class="ciw">
-        <!-- Header -->
-        <div class="ci-hdr">
-          <div class="ci-hdr-l">
-            <span class="ci-eng-label">CASCADE INTELLIGENCE ENGINE</span>
-            <span class="ci-pill" id="ci-ncnt">0 nodes</span>
-            <span class="ci-pill" id="ci-ecnt">0 edges</span>
-          </div>
-          <div class="ci-hdr-r">
-            <div class="ci-cost-box">
-              <span class="ci-cost-val" id="ci-exp">$0</span>
-              <span class="ci-cost-lbl">exposure/hr</span>
-            </div>
-            <button class="ci-xbtn ci-xbtn-sim" onclick="ciRunScenario('worst')">&#9654; Simulate worst</button>
-            <button class="ci-xbtn ci-xbtn-rst" onclick="ciResetAll()">&#8635; Reset</button>
-          </div>
+
+      <!-- Cost & stats bar -->
+      <div class="ci2-cost-bar">
+        <div class="ci2-cost-stat">
+          <div class="ci2-cost-label">Cascading exposure</div>
+          <div class="ci2-cost-val" id="ci2-cost-main">$0/hr</div>
         </div>
-        <!-- Scenarios — open to all users -->
-        <div class="ci-scen">
-          <span class="ci-scen-lbl">Scenarios</span>
-          <button class="ci-sbtn" id="ci-sb-wan" onclick="ciRunScenario('wan')">WAN &rarr; CBS cascade</button>
-          <button class="ci-sbtn" id="ci-sb-cbs" onclick="ciRunScenario('cbs')">CBS integrity drop</button>
-          <button class="ci-sbtn" id="ci-sb-power" onclick="ciRunScenario('power')">Power &rarr; conveyor halt</button>
-          <button class="ci-sbtn" id="ci-sb-storm" onclick="ciRunScenario('storm')">Storm &rarr; tower &rarr; NOC blind</button>
-          <button class="ci-sbtn" id="ci-sb-compound" onclick="ciRunScenario('compound')">&#9888; Compound cascade</button>
+        <div class="ci2-cost-sep"></div>
+        <div class="ci2-cost-stat">
+          <div class="ci2-cost-stat-v" id="ci2-stat-affected">0</div>
+          <div class="ci2-cost-stat-l">Domains affected</div>
         </div>
-        <!-- Legend -->
-        <div class="ci-leg">
-          <div class="ci-li"><span class="ci-ld" style="background:#00d4c8"></span>Network</div>
-          <div class="ci-li"><span class="ci-ld" style="background:#a27cf8"></span>Telecom</div>
-          <div class="ci-li"><span class="ci-ld" style="background:#f5c420"></span>Mining OT</div>
-          <div class="ci-li"><span class="ci-ld" style="background:#f02e50"></span>CBS Safety</div>
-          <div class="ci-li"><span class="ci-ld" style="background:#22e07a"></span>Production</div>
-          <div class="ci-li" style="margin-left:auto;font-size:8px;color:var(--dim)">Click node to degrade &middot; Drag to reposition</div>
+        <div class="ci2-cost-sep"></div>
+        <div class="ci2-cost-stat">
+          <div class="ci2-cost-stat-v" id="ci2-stat-predicted" style="color:var(--pur)">0</div>
+          <div class="ci2-cost-stat-l">Predicted failures</div>
         </div>
-        <!-- Canvas (now 700px tall) -->
-        <div class="ci-canvas-wrap">
-          <canvas id="ci-canvas" height="700"></canvas>
+        <div class="ci2-cost-sep"></div>
+        <div class="ci2-cost-stat">
+          <div class="ci2-cost-stat-v" id="ci2-stat-ttc" style="color:var(--gld)">--</div>
+          <div class="ci2-cost-stat-l">Time to cascade (min)</div>
         </div>
-        <!-- Stats -->
-        <div class="ci-stats">
-          <div class="ci-stat"><span class="ci-stat-v" id="ci-s-aff" style="color:var(--red)">0</span><span class="ci-stat-l">Domains hit</span></div>
-          <div class="ci-stat"><span class="ci-stat-v" id="ci-s-pred" style="color:var(--pur)">0</span><span class="ci-stat-l">Predicted fails</span></div>
-          <div class="ci-stat"><span class="ci-stat-v" id="ci-s-ttc" style="color:var(--gld)">--</span><span class="ci-stat-l">Time to cascade</span></div>
-          <div class="ci-stat"><span class="ci-stat-v" id="ci-s-cbs" style="color:var(--grn)">ARMED</span><span class="ci-stat-l">CBS status</span></div>
-          <div class="ci-stat"><span class="ci-stat-v" id="ci-s-fhi" style="color:var(--grn)">100</span><span class="ci-stat-l">Map FHI</span></div>
+        <div class="ci2-cost-sep"></div>
+        <div class="ci2-cost-stat">
+          <div class="ci2-cost-stat-v cg" id="ci2-stat-cbs">ARMED</div>
+          <div class="ci2-cost-stat-l">CBS status</div>
         </div>
-        <!-- AI Insight -->
-        <div class="ci-insight" id="ci-insight">
-          <div class="ci-insight-title">Causal analysis</div>
-          <div class="ci-insight-body" id="ci-insight-body"></div>
-        </div>
-        <!-- Event log -->
-        <div class="ci-log-wrap">
-          <div class="ci-log-hdr">Cascade event log</div>
-          <div id="ci-log">
-            <div class="ci-log-row ok"><span class="ci-log-ts">--:--:--</span><span class="ci-log-dev" style="color:var(--grn)">Engine</span><span class="ci-log-msg">Cascade Intelligence Engine ready &mdash; select a scenario or click any node</span></div>
-          </div>
-        </div>
-        <!-- Specialist editor (hidden until login) -->
-        <div class="ci-editor" id="ci-editor">
-          <div class="ci-editor-hdr">Topology Editor &mdash; Specialist Access</div>
-          <div class="ci-er">
-            <div class="ci-ef" style="flex:2">
-              <span class="ci-el">Add device to cascade map</span>
-              <select class="ci-esel" id="ci-dev-sel"><option value="">Select live device...</option></select>
-            </div>
-            <div class="ci-ef">
-              <span class="ci-el">Domain</span>
-              <select class="ci-esel" id="ci-dom-sel">
-                <option value="net">Network</option>
-                <option value="tc">Telecom</option>
-                <option value="mc">Mining OT</option>
-                <option value="cbs">CBS Safety</option>
-                <option value="plant">Production</option>
-              </select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px;padding-bottom:1px">
-              <span class="ci-el">&nbsp;</span>
-              <button class="ci-ebtn ci-ebtn-p" onclick="ciEditorAddNode()">&#43; Add node</button>
-            </div>
-          </div>
-          <div class="ci-er">
-            <div class="ci-ef">
-              <span class="ci-el">Edge from</span>
-              <select class="ci-esel" id="ci-efrom"><option value="">Select...</option></select>
-            </div>
-            <div class="ci-ef">
-              <span class="ci-el">Edge to</span>
-              <select class="ci-esel" id="ci-eto"><option value="">Select...</option></select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px;padding-bottom:1px">
-              <span class="ci-el">&nbsp;</span>
-              <button class="ci-ebtn ci-ebtn-a" onclick="ciEditorAddEdge()">&#8594; Add edge</button>
-            </div>
-          </div>
-          <div style="font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:5px">Nodes on map (click to remove)</div>
-          <div class="ci-tags" id="ci-tags"><span style="font-size:9px;color:var(--dim)">No nodes yet</span></div>
-          <div style="display:flex;gap:6px;margin-top:9px;align-items:center;flex-wrap:wrap">
-            <button class="ci-ebtn ci-ebtn-g" onclick="ciSaveTopology()" style="font-size:9px">&#10004; Save topology</button>
-            <button class="ci-ebtn ci-ebtn-d" onclick="ciClearTopology()" style="font-size:9px">&#128465; Clear all</button>
-            <span style="font-size:9px;color:var(--dim)">Topology persists in SQLite</span>
-          </div>
-        </div>
-        <!-- Gate for non-specialists -->
-        <div class="ci-gate" id="ci-gate">
-          <span style="font-size:14px;opacity:.5">&#128274;</span>
-          <span>Topology editing (add/remove nodes, draw edges, save) requires <strong style="color:var(--pur)">Specialist</strong> login. All scenarios and simulation are open to everyone.</span>
-        </div>
+        <div style="flex:1"></div>
+        <span class="ci2-hold-pill" id="ci2-hold-pill">&#9888; CBS HOLD ACTIVE</span>
+        <button onclick="ci2ResetAll()" class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:10px;padding:6px 14px">&#8635; Reset</button>
       </div>
+
+      <!-- Main two-column layout: canvas left, panel right -->
+      <div class="ci2-layout">
+        <div class="ci2-map-wrap">
+          <div class="ci2-canvas-title">Live Cascade Map &mdash; click node to degrade &middot; drag to reposition</div>
+          <canvas id="ci2-canvas"></canvas>
+          <div class="ci2-canvas-hint">Nodes colour-coded by health &middot; Edges show dependency direction &middot; Watch cascade propagate in real time</div>
+        </div>
+        <div class="ci2-panel">
+
+          <!-- Scenario simulator -->
+          <div class="ci2-pcard">
+            <div class="ci2-pcard-title" style="color:var(--amb)">Scenario Simulator</div>
+            <div class="ci2-sim-btns">
+              <button class="ci2-sim-btn" onclick="ci2RunScenario('wan')" id="ci2-sb-wan">
+                <span class="ci2-sim-dot" style="background:var(--amb)"></span>WAN link degrades &rarr; CBS hold cascade
+              </button>
+              <button class="ci2-sim-btn" onclick="ci2RunScenario('cbs')" id="ci2-sb-cbs">
+                <span class="ci2-sim-dot" style="background:var(--red)"></span>CBS integrity drop &rarr; blast hold
+              </button>
+              <button class="ci2-sim-btn" onclick="ci2RunScenario('power')" id="ci2-sb-power">
+                <span class="ci2-sim-dot" style="background:var(--pur)"></span>Power fault &rarr; conveyor &rarr; plant idle
+              </button>
+              <button class="ci2-sim-btn" onclick="ci2RunScenario('storm')" id="ci2-sb-storm">
+                <span class="ci2-sim-dot" style="background:var(--blu)"></span>Storm &rarr; tower &rarr; MW link &rarr; NOC blind
+              </button>
+              <button class="ci2-sim-btn" onclick="ci2RunScenario('compound')" id="ci2-sb-compound">
+                <span class="ci2-sim-dot" style="background:var(--red)"></span><strong>&#9888; Compound cascade</strong> &mdash; all domains
+              </button>
+            </div>
+          </div>
+
+          <!-- Cascade log -->
+          <div class="ci2-pcard">
+            <div class="ci2-pcard-title" style="color:var(--red)">Cascade Event Log</div>
+            <div class="ci2-clog" id="ci2-clog">
+              <div class="ci2-clog-item ok">
+                <div class="ci2-clog-t">System ready</div>
+                <div class="ci2-clog-dev">IISentinel&#8482; Engine</div>
+                <div class="ci2-clog-msg">All infrastructure domains nominal. Select a scenario or click any node.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Causal Insight -->
+          <div class="ci2-pcard">
+            <div class="ci2-pcard-title" style="color:var(--pur)">AI Causal Insight</div>
+            <div class="ci2-insight" id="ci2-ai-insight">
+              <div class="ci2-insight-title">Awaiting event...</div>
+              IISentinel's causal graph engine maps <strong>dependency chains across all infrastructure domains simultaneously</strong>. Trigger a scenario to see predictive cascade analysis in real time.
+            </div>
+          </div>
+
+          <!-- Economic consequence model -->
+          <div class="ci2-pcard">
+            <div class="ci2-pcard-title" style="color:var(--gld)">Economic Consequence Model</div>
+            <div class="ci2-econ-grid">
+              <div class="ci2-econ-cell"><div class="ci2-econ-v cr" id="ci2-ec-direct">$0</div><div class="ci2-econ-l">Direct loss/hr</div></div>
+              <div class="ci2-econ-cell"><div class="ci2-econ-v cw" id="ci2-ec-cascade">$0</div><div class="ci2-econ-l">Cascade loss/hr</div></div>
+              <div class="ci2-econ-cell"><div class="ci2-econ-v cg" id="ci2-ec-prevented">$0</div><div class="ci2-econ-l">Prevention value</div></div>
+              <div class="ci2-econ-cell"><div class="ci2-econ-v cp" id="ci2-ec-roi">&#8734;</div><div class="ci2-econ-l">ROI multiplier</div></div>
+            </div>
+          </div>
+
+        </div><!-- /ci2-panel -->
+      </div><!-- /ci2-layout -->
 
       <div class="fgrid">
         <div class="fcard"><div class="sl">Failure probability ranking</div><div id="prob-feed"></div></div>
@@ -954,7 +934,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div><!-- /page-intel -->
 
     <!-- CBS SAFETY -->
     <div class="page" id="page-cbs">
@@ -1039,9 +1019,9 @@
         <div id="inc-list"></div>
       </div>
     </div>
-  </div>
+  </div><!-- /wrap -->
 
-<script>
+  <script>
     var B=window.location.origin;
     var spToken=null,spName=null,intel={},allData=[];
     var curNet='all',curTc='all',curMc='all';
@@ -1137,8 +1117,7 @@
         if(_currentPage==='mc'||_currentPage==='main')updMcPage();
         updCbsPage(cbsd);updIntelPage();updTwinSel(dm);
         if(spToken)updEngDiag();
-        if(!_ci.cascadeRunning)ciSyncHealth();
-        if(spToken)ciPopulateDevSel();
+        if(_cascBooted)cascSyncHealth();
       }catch(e){console.error('fetchAll:',e);}
     }
 
@@ -1146,34 +1125,43 @@
     function updTcPage(){var td=allData.filter(isTc);var ld=curTc==='all'?td:td.filter(function(r){return r.device_id.includes('-'+curTc+'-');});var dm={};ld.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var sc2=Object.values(dm).map(function(d){return d.health_score;});var f=sc2.length?fhi(sc2):0;var tf=document.getElementById('tc-fhi');if(tf){tf.textContent=f;tf.className='esb-v '+(f>=70?'cg':f>=40?'cw':'cr');}var td2=document.getElementById('tc-devs');if(td2)td2.textContent=Object.keys(dm).length;var tf2=document.getElementById('tc-faults');if(tf2)tf2.textContent=ld.filter(function(r){return r.health_score<50;}).length;var ts=document.getElementById('tc-sig');if(ts)ts.textContent=(sc2.length?Math.round(sc2.reduce(function(a,b){return a+b;},0)/sc2.length):100)+'%';var te=document.getElementById('tc-env-title');if(te)te.textContent='TelecomCo — '+(curTc==='all'?'All Sites':(TC_META[curTc]||{label:curTc}).label);mkLocCards(allData,'tc-loccards',TC_META,isTc);mkGauges(allData,'tc-gauges',isTc,curTc);var rec=ld.slice(0,20).reverse();updL(cTcH,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));updL(cTcS,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));setFeed('tc-feed',ld.filter(function(r){return r.ai_diagnosis;}),diagItem);setFeed('tc-auto',ld.filter(function(r){return r.automation_command;}),autoItem);}
     function updMcPage(){var md=allData.filter(function(r){return isMc(r)||isCbs(r);});var ld=curMc==='all'?md:md.filter(function(r){return r.device_id.includes('-'+curMc+'-');});var dm={};ld.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var f=fhi(Object.values(dm).map(function(d){return d.health_score;}));var mf=document.getElementById('mc-fhi');if(mf)mf.textContent=f;var md2=document.getElementById('mc-devs');if(md2)md2.textContent=Object.keys(dm).length;var ma=document.getElementById('mc-alerts');if(ma)ma.textContent=ld.filter(function(r){return r.health_score<35;}).length;var mc=document.getElementById('mc-crit');if(mc)mc.textContent=ld.filter(function(r){return r.health_score<20;}).length;var me=document.getElementById('mc-env-title');if(me)me.textContent='MiningCo — '+(curMc==='all'?'All Sections':(MC_META[curMc]||{label:curMc}).label);mkLocCards(allData,'mc-seccards',MC_META,isMc);mkGauges(allData,'mc-gauges',function(r){return isMc(r)||isCbs(r);},curMc);var rec=ld.slice(0,20).reverse();updL(cMcH,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}));updL(cMcT,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.min(119,Math.round(r.metric_value||0));}));setFeed('mc-feed',ld.filter(function(r){return r.ai_diagnosis;}),diagItem);setFeed('mc-auto',ld.filter(function(r){return r.automation_command;}),autoItem);}
     function updCbsPage(cbsd){var dm={};cbsd.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var allSc=Object.values(dm).map(function(d){return d.health_score;});var avg=allSc.length?Math.round(allSc.reduce(function(a,b){return a+b;},0)/allSc.length):100;var anyHold=Object.values(dm).some(function(d){return d.health_score<90||(d.integrity_score!==undefined&&d.integrity_score<90);});var sb=document.getElementById('cbs-status-banner');var hb=document.getElementById('cbs-health-banner');var ib=document.getElementById('cbs-integrity-banner');if(sb){sb.textContent=anyHold?'BLAST HOLD':'ARMED';sb.style.color=anyHold?'var(--red)':'var(--grn)';}if(hb){hb.textContent=avg+'%';hb.style.color=avg>=90?'var(--grn)':avg>=70?'var(--amb)':'var(--red)';}var avgInteg=Object.values(dm).filter(function(d){return d.integrity_score!==undefined;}).map(function(d){return d.integrity_score;});if(ib&&avgInteg.length){var ai2=Math.round(avgInteg.reduce(function(a,b){return a+b;},0)/avgInteg.length);ib.textContent=ai2+'%';ib.style.color=ai2>=90?'var(--grn)':ai2>=70?'var(--amb)':'var(--red)';}var grid=document.getElementById('cbs-devs');if(!Object.keys(dm).length){grid.innerHTML='<div style="color:var(--dim);font-size:11px">No CBS devices — POST with device_type: cbs_controller</div>';return;}grid.innerHTML='';Object.values(dm).forEach(function(d){var s=Math.round(d.health_score);var integ=d.integrity_score!==undefined?d.integrity_score:s;var hold=s<90||integ<90;var ic=integ>=90?'var(--grn)':integ>=70?'var(--amb)':'var(--red)';grid.innerHTML+='<div class="cbs-dev"><div style="font-weight:700;font-size:11px;margin-bottom:5px">'+d.device_id+'</div><div style="font-size:10px;color:var(--dim)">DNP3/Ethernet · Link: <span style="color:'+(s>=90?'var(--grn)':s>=70?'var(--amb)':'var(--red)')+';font-weight:700">'+s+'%</span></div>'+(d.integrity_score!==undefined?'<div style="font-size:10px;color:var(--dim);margin-top:3px">Integrity: <span style="color:'+ic+';font-weight:700">'+d.integrity_score+'%</span></div>':'')+(d.vibration_score!==undefined?'<div style="font-size:9px;color:var(--dim);margin-top:2px">Stability score: '+d.vibration_score+'%</div>':'')+'<div class="'+(hold?'cbs-hold':'cbs-safe')+'" style="margin-top:7px">'+(hold?'BLAST HOLD ACTIVE':'ARMED — SAFE')+'</div>'+(hold?'<div style="font-size:9px;color:var(--red);margin-top:4px">Exposure: $450,000/hr</div>':'')+(d.ai_diagnosis?'<div style="font-size:9px;color:var(--dim);margin-top:5px">'+d.ai_diagnosis.slice(0,110)+'</div>':'')+'</div>';});var log=document.getElementById('cbs-log');var alerts=cbsd.filter(function(r){return r.automation_command;}).slice(0,5);log.innerHTML=alerts.length?alerts.map(autoItem).join(''):'<div class="fitem fi-ok"><div>No CBS alerts — all links healthy</div></div>';var rec=cbsd.slice(0,20).reverse();updD(cCbs,rec.map(function(r){return fmt(r.created_at);}),rec.map(function(r){return Math.round(r.health_score);}),rec.map(function(){return 90;}));}
-    function updIntelPage(){if(!intel||!Object.keys(intel).length)return;var f=intel.federated_index||100;var fhiEl=document.getElementById('i-fhi');if(fhiEl){fhiEl.textContent=f;fhiEl.className='ival '+scc(f);}var de=document.getElementById('i-devs');if(de){de.textContent=intel.total_devices||0;de.className='ival ca';}var ae=document.getElementById('i-anom');if(ae){ae.textContent=intel.anomaly_count||0;ae.className='ival cp';}var me=document.getElementById('i-model');if(me)me.textContent=intel.retrain_in_progress?'Retraining...':intel.retrain_needed?'Needs retrain':'Optimal';var probs=intel.failure_probabilities||{};var mp=0,md='None';Object.entries(probs).forEach(function(kv){if(kv[1]>mp){mp=kv[1];md=kv[0];}});var ir=document.getElementById('i-risk');if(ir)ir.textContent=md!=='None'?sid(md)+' ('+mp+'%)':'None';var ic=document.getElementById('i-corr');if(ic)ic.textContent=Object.values(probs).filter(function(p){return p>40;}).length||'None';var up=intel.uptime||{};cUp.data.labels=Object.keys(up).map(sid);cUp.data.datasets[0].data=Object.values(up).map(Math.round);cUp.update('none');var pf=document.getElementById('prob-feed');if(pf){pf.innerHTML='';Object.entries(probs).sort(function(a,b){return b[1]-a[1];}).slice(0,8).forEach(function(kv){var dev=kv[0],p=kv[1];var ttf=intel.ttf_minutes&&intel.ttf_minutes[dev];var ttfStr=ttf!==undefined&&ttf!==null?(ttf===0?'Failing now':ttf<60?ttf+'min':Math.floor(ttf/60)+'h '+(ttf%60)+'m'):'';pf.innerHTML+='<div class="fitem '+(p>50?'fi-r':p>25?'fi-w':'fi-ok')+'"><div class="fdev">'+dev+' — '+p+'% risk'+(ttfStr?' · ETTF: '+ttfStr:'')+'</div><div>Failure probability next 30 min</div></div>';});if(!Object.keys(probs).length)pf.innerHTML='<div class="fitem fi-ok"><div>All devices within safe range</div></div>';}var lf=document.getElementById('lifecycle-feed');if(lf){lf.innerHTML='';var lcs=intel.lifecycles||{};if(Object.keys(lcs).length){Object.entries(lcs).sort(function(a,b){return a[1]-b[1];}).slice(0,8).forEach(function(kv){var dev=kv[0],hrs=kv[1];lf.innerHTML+='<div class="fitem '+(hrs<720?'fi-r':hrs<2160?'fi-w':'fi-ok')+'"><div class="fdev">'+dev+'</div><div>Est. life: '+hrs.toLocaleString()+'h (~'+Math.round(hrs/24)+'d)</div></div>';});}else{lf.innerHTML='<div class="fitem fi-ok"><div>Lifecycle data accumulates after 5+ readings</div></div>';}}}
+
+    function updIntelPage(){
+      if(!intel||!Object.keys(intel).length)return;
+      var f=intel.federated_index||100;
+      var fhiEl=document.getElementById('i-fhi');if(fhiEl){fhiEl.textContent=f;fhiEl.className='ival '+scc(f);}
+      var de=document.getElementById('i-devs');if(de){de.textContent=intel.total_devices||0;de.className='ival ca';}
+      var ae=document.getElementById('i-anom');if(ae){ae.textContent=intel.anomaly_count||0;ae.className='ival cp';}
+      var me=document.getElementById('i-model');if(me)me.textContent=intel.retrain_in_progress?'Retraining...':intel.retrain_needed?'Needs retrain':'Optimal';
+      var probs=intel.failure_probabilities||{};var mp=0,md='None';Object.entries(probs).forEach(function(kv){if(kv[1]>mp){mp=kv[1];md=kv[0];}});
+      var ir=document.getElementById('i-risk');if(ir)ir.textContent=md!=='None'?sid(md)+' ('+mp+'%)':'None';
+      var ic=document.getElementById('i-corr');if(ic)ic.textContent=Object.values(probs).filter(function(p){return p>40;}).length||'None';
+      var up=intel.uptime||{};cUp.data.labels=Object.keys(up).map(sid);cUp.data.datasets[0].data=Object.values(up).map(Math.round);cUp.update('none');
+      var pf=document.getElementById('prob-feed');if(pf){pf.innerHTML='';Object.entries(probs).sort(function(a,b){return b[1]-a[1];}).slice(0,8).forEach(function(kv){var dev=kv[0],p=kv[1];var ttf=intel.ttf_minutes&&intel.ttf_minutes[dev];var ttfStr=ttf!==undefined&&ttf!==null?(ttf===0?'Failing now':ttf<60?ttf+'min':Math.floor(ttf/60)+'h '+(ttf%60)+'m'):'';pf.innerHTML+='<div class="fitem '+(p>50?'fi-r':p>25?'fi-w':'fi-ok')+'"><div class="fdev">'+dev+' — '+p+'% risk'+(ttfStr?' · ETTF: '+ttfStr:'')+'</div><div>Failure probability next 30 min</div></div>';});if(!Object.keys(probs).length)pf.innerHTML='<div class="fitem fi-ok"><div>All devices within safe range</div></div>';}
+      var lf=document.getElementById('lifecycle-feed');if(lf){lf.innerHTML='';var lcs=intel.lifecycles||{};if(Object.keys(lcs).length){Object.entries(lcs).sort(function(a,b){return a[1]-b[1];}).slice(0,8).forEach(function(kv){var dev=kv[0],hrs=kv[1];lf.innerHTML+='<div class="fitem '+(hrs<720?'fi-r':hrs<2160?'fi-w':'fi-ok')+'"><div class="fdev">'+dev+'</div><div>Est. life: '+hrs.toLocaleString()+'h (~'+Math.round(hrs/24)+'d)</div></div>';});}else{lf.innerHTML='<div class="fitem fi-ok"><div>Lifecycle data accumulates after 5+ readings</div></div>';}}}
+
     function updTwinSel(dm){var sel=document.getElementById('twin-sel');if(!sel)return;var curr=sel.value;sel.innerHTML='<option value="">Select a device to simulate...</option>';Object.keys(dm).forEach(function(d){var o=document.createElement('option');o.value=d;o.textContent=d;if(d===curr)o.selected=true;sel.appendChild(o);});}
 
     async function runTwin(){var devId=document.getElementById('twin-sel').value;if(!devId)return;var scDiv=document.getElementById('twin-grid');var tDiv=document.getElementById('twin-trend');scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Running simulation...</div>';try{var r=await fetch(B+'/api/twin/'+encodeURIComponent(devId));if(!r.ok){scDiv.innerHTML='<div style="color:var(--dim);font-size:11px;grid-column:1/-1">Need 3+ readings for this device</div>';return;}var d=await r.json();scDiv.innerHTML='';d.scenarios.forEach(function(s){var col=s.risk==='safe'?'var(--grn)':s.risk==='warning'?'var(--amb)':'var(--red)';scDiv.innerHTML+='<div class="twin-sc '+s.risk+'"><div class="twin-load">Load '+s.load_increase+'</div><div class="twin-score" style="color:'+col+'">'+s.predicted_score+'</div><div class="twin-risk" style="color:'+col+'">'+s.risk+(s.anomaly_predicted?' · ANOM':'')+'</div></div>';});if(d.ettf_minutes!==undefined&&d.ettf_minutes!==null){var tc2=d.ettf_minutes<30?'var(--red)':d.ettf_minutes<120?'var(--amb)':'var(--grn)';var ts2=d.ettf_minutes===0?'Failing now':d.ettf_minutes<60?d.ettf_minutes+'min':Math.floor(d.ettf_minutes/60)+'h '+(d.ettf_minutes%60)+'m';tDiv.innerHTML='<strong>Est. Time to Failure: <span style="color:'+tc2+'">'+ts2+'</span></strong>';}var tr=d.trend;if(tr&&tr.direction!=='insufficient data'){var c2=tr.direction==='declining'?'var(--red)':tr.direction==='improving'?'var(--grn)':'var(--mut)';tDiv.innerHTML=(tDiv.innerHTML?tDiv.innerHTML+' &nbsp;·&nbsp; ':'')+'Current: <strong>'+d.current_score+'</strong> · Trend: <span style="color:'+c2+'">'+tr.direction+'</span>'+(tr.readings_to_critical?' · Critical in ~<strong>'+tr.readings_to_critical+' readings</strong>':'');}toast('Digital twin',sid(devId)+': '+d.scenarios[0].risk+' at +10%','');}catch(e){scDiv.innerHTML='<div style="color:var(--red);font-size:11px">Error: '+e.message+'</div>';}}
 
-function goPage(el, name) {
-  document.querySelectorAll('.page').forEach(function(p) {
-    p.classList.remove('active');
-  });
-  document.querySelectorAll('.ntab').forEach(function(t) {
-    t.classList.remove('active');
-  });
-  document.getElementById('page-' + name).classList.add('active');
-  el.classList.add('active');
-  document.querySelectorAll('.subloc').forEach(function(s) {
-    s.classList.remove('vis');
-  });
-  var sub = document.getElementById('sub-' + name);
-  if (sub) sub.classList.add('vis');
-  if (name === 'wx') loadWx();
-  if (name === 'intel') {
-    if (!_ci.booted) setTimeout(ciInit, 80);
-    else { ciSyncHealth(); ciShowEditor(); }
-    ciResize();
-  }
-  _currentPage = name;
-  setLogoPage(name);
-}    function setSub(sec,val,el){el.closest('.subloc').querySelectorAll('.stab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');if(sec==='net'){curNet=val;updNetPage();}else if(sec==='tc'){curTc=val;updTcPage();}else if(sec==='mc'){curMc=val;updMcPage();}}
+    /* ── PAGE NAVIGATION ── */
+    function goPage(el, name) {
+      document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+      document.querySelectorAll('.ntab').forEach(function(t) { t.classList.remove('active'); });
+      document.getElementById('page-' + name).classList.add('active');
+      el.classList.add('active');
+      document.querySelectorAll('.subloc').forEach(function(s) { s.classList.remove('vis'); });
+      var sub = document.getElementById('sub-' + name);
+      if (sub) sub.classList.add('vis');
+      if (name === 'wx') loadWx();
+      if (name === 'intel') {
+        if (!_cascBooted) setTimeout(cascInit, 80);
+        else { cascSyncHealth(); cascResize(); }
+      }
+      _currentPage = name;
+      setLogoPage(name);
+    }
+    function setSub(sec,val,el){el.closest('.subloc').querySelectorAll('.stab').forEach(function(t){t.classList.remove('active');});el.classList.add('active');if(sec==='net'){curNet=val;updNetPage();}else if(sec==='tc'){curTc=val;updTcPage();}else if(sec==='mc'){curMc=val;updMcPage();}}
 
     async function loadWx(){var wrap=document.getElementById('wx-wrap');var locs=[{key:'byo',label:'Bulawayo'},{key:'hre',label:'Harare'},{key:'mut',label:'Mutare'},{key:'mine',label:'Mine Site'}];wrap.innerHTML='';var firstWind=null,firstPrecip=null;for(var i=0;i<locs.length;i++){var loc=locs[i];try{var r=await fetch(B+'/api/weather?loc='+loc.key);var d=await r.json();if(d.error){wrap.innerHTML+='<div class="wcard"><div class="w-loc">'+loc.label+'</div><div style="color:var(--dim);font-size:11px">Unavailable</div></div>';continue;}var icon=({0:'☀',1:'🌤',2:'⛅',3:'☁',45:'🌫',51:'🌦',61:'🌧',80:'🌦',95:'⛈'})[d.weather_code]||'🌡';var html='<div class="wcard"><div class="w-loc">'+loc.label+'</div><div class="w-icon">'+icon+'</div><div class="w-temp" style="color:'+(d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)')+'">'+d.temperature+'°C</div><div class="w-row">Wind <span>'+d.wind_speed+'km/h</span> · Gusts <span>'+d.wind_gusts+'km/h</span></div><div class="w-row">Humidity <span>'+d.humidity+'%</span> · Precip <span>'+d.precipitation+'mm</span></div>';(d.alerts||[]).forEach(function(a){html+='<div class="w-alert">'+a+'</div>';});wrap.innerHTML+=html+'</div>';if(!firstWind&&d.hourly_wind&&d.hourly_wind.length){firstWind=d.hourly_wind;firstPrecip=d.hourly_precip_prob;}}catch(e){wrap.innerHTML+='<div class="wcard"><div class="w-loc">'+loc.label+'</div><div style="color:var(--dim)">Error</div></div>';}}if(firstWind){var hrs=firstWind.map(function(_,i){return'+'+i+'h';});updL(cWind,hrs,firstWind.map(Math.round));if(firstPrecip)updL(cPrecip,hrs,firstPrecip.map(Math.round));}}
 
@@ -1185,8 +1173,8 @@ function goPage(el, name) {
 
     function updEngDiag(){var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});function fillTbl(id,devs,rowFn){var t=document.getElementById(id);if(t&&devs.length)t.innerHTML=devs.map(rowFn).join('');}fillTbl('en-net-table',Object.values(dm).filter(isNet).slice(0,6),function(d){var s=Math.round(d.health_score);var util=Math.min(100,Math.round(d.metric_value||0));var crcs=d.anomaly_flag?Math.floor(Math.random()*8)+1:0;var state=s>70?'<span class="eb eb-ok">UP</span>':s>40?'<span class="eb eb-w">DEGRADED</span>':'<span class="eb eb-r">DOWN</span>';return'<tr><td>'+sid(d.device_id)+'</td><td class="'+(util>80?'ev-r':util>60?'ev-w':'ev-ok')+'">'+util+'%</td><td class="'+(crcs>0?'ev-w':'ev-ok')+'">'+crcs+'</td><td>'+state+'</td></tr>';});fillTbl('en-rf-table',Object.values(dm).filter(isTc).slice(0,5),function(d){var s=Math.round(d.health_score);var rx=s>70?-(Math.random()*10+48).toFixed(1):s>40?-(Math.random()*15+65).toFixed(1):-(Math.random()*20+82).toFixed(1);var snr=s>70?(Math.random()*10+22).toFixed(1):s>40?(Math.random()*8+10).toFixed(1):(Math.random()*5+2).toFixed(1);var ber=s>70?'1e-9':'1e-4';return'<tr><td>'+sid(d.device_id)+'</td><td class="'+(rx<-75?'ev-r':rx<-65?'ev-w':'ev-ok')+'">'+rx+'</td><td class="'+(snr<12?'ev-r':snr<18?'ev-w':'ev-ok')+'">'+snr+'</td><td class="'+(ber==='1e-4'?'ev-r':'ev-ok')+'">'+ber+'</td></tr>';});fillTbl('en-ind-table',Object.values(dm).filter(isMc).slice(0,5),function(d){var s=Math.round(d.health_score);var mtbf=s>70?Math.floor(Math.random()*4e3+3e3):Math.floor(Math.random()*800+400);var oee=s>70?Math.floor(Math.random()*12+82):s>40?Math.floor(Math.random()*18+55):Math.floor(Math.random()*25+20);var cond=s>70?'<span class="eb eb-ok">NOMINAL</span>':s>40?'<span class="eb eb-w">MONITOR</span>':'<span class="eb eb-r">CRITICAL</span>';return'<tr><td>'+sid(d.device_id)+'</td><td class="'+(mtbf<800?'ev-r':mtbf<2000?'ev-w':'ev-ok')+'">'+mtbf.toLocaleString()+'</td><td class="'+(oee<60?'ev-r':oee<75?'ev-w':'ev-ok')+'">'+oee+'</td><td>'+cond+'</td></tr>';});fillTbl('en-cbs-table',Object.values(dm).filter(isCbs),function(d){var s=Math.round(d.health_score);var integ=d.integrity_score!==undefined?d.integrity_score:s;var lq=integ>=90?'<span class="eb eb-ok">GOOD</span>':integ>=70?'<span class="eb eb-w">MARGINAL</span>':'<span class="eb eb-r">DEGRADED</span>';var mttr=Math.floor(Math.random()*10+4);return'<tr><td>'+sid(d.device_id)+'</td><td>'+lq+'</td><td style="font-size:9px;color:'+(integ<90?'var(--amb)':'var(--grn)')+'">'+( integ<90?fmt(d.created_at):'None')+'</td><td>'+mttr+'m</td></tr>';});}
 
-    async function doLogin(){var n=document.getElementById('l-name').value.trim(),p=document.getElementById('l-pass').value.trim();document.getElementById('l-err').textContent='';try{var r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:p})});var d=await r.json();if(d.success){spToken=d.token;spName=d.name;document.getElementById('login-sec').style.display='none';document.getElementById('sp-sec').style.display='block';document.getElementById('sp-name').textContent=d.name;document.getElementById('sp-role').textContent=d.role.toUpperCase();toast('Access granted','Welcome '+d.name,'tg');loadInc();updEngDiag();setTimeout(ciShowEditor,200);}else document.getElementById('l-err').textContent='Invalid credentials.';}catch(e){document.getElementById('l-err').textContent='Connection error.';}}
-    function doLogout(){spToken=null;spName=null;document.getElementById('login-sec').style.display='block';document.getElementById('sp-sec').style.display='none';document.getElementById('l-name').value='';document.getElementById('l-pass').value='';toast('Logged out','Specialist session ended','');ciShowEditor();}
+    async function doLogin(){var n=document.getElementById('l-name').value.trim(),p=document.getElementById('l-pass').value.trim();document.getElementById('l-err').textContent='';try{var r=await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,password:p})});var d=await r.json();if(d.success){spToken=d.token;spName=d.name;document.getElementById('login-sec').style.display='none';document.getElementById('sp-sec').style.display='block';document.getElementById('sp-name').textContent=d.name;document.getElementById('sp-role').textContent=d.role.toUpperCase();toast('Access granted','Welcome '+d.name,'tg');loadInc();updEngDiag();}else document.getElementById('l-err').textContent='Invalid credentials.';}catch(e){document.getElementById('l-err').textContent='Connection error.';}}
+    function doLogout(){spToken=null;spName=null;document.getElementById('login-sec').style.display='block';document.getElementById('sp-sec').style.display='none';document.getElementById('l-name').value='';document.getElementById('l-pass').value='';toast('Logged out','Specialist session ended','');}
     async function loadShiftReport(){document.getElementById('sr-panel').style.display='block';try{var r=await fetch(B+'/api/shift-report',{headers:{'X-Specialist-Token':spToken}});var d=await r.json();document.getElementById('sr-grid').innerHTML='<div class="sr-card"><div class="sr-val ca">'+d.total_devices+'</div><div class="sr-lbl">Devices</div></div><div class="sr-card"><div class="sr-val cg">'+d.avg_health+'</div><div class="sr-lbl">Avg health</div></div><div class="sr-card"><div class="sr-val cr">'+(d.critical_devices||0)+'</div><div class="sr-lbl">Critical</div></div><div class="sr-card"><div class="sr-val cw">'+(d.warning_devices||0)+'</div><div class="sr-lbl">Warning</div></div><div class="sr-card"><div class="sr-val cg">'+(d.healthy_devices||0)+'</div><div class="sr-lbl">Healthy</div></div>';var rf=document.getElementById('sr-risks');rf.innerHTML='';(d.top_risks||[]).forEach(function(rsk){rf.innerHTML+='<div class="fitem fi-r"><div class="fdev">'+rsk.device+' — '+rsk.score+'/100</div><div>'+(rsk.diagnosis||'No diagnosis')+'</div></div>';});if(!d.top_risks||!d.top_risks.length)rf.innerHTML='<div class="fitem fi-ok"><div>No critical risks</div></div>';toast('Shift report generated',d.total_devices+' devices','tg');}catch(e){toast('Report error',e.message,'tc');}}
     async function loadInc(){if(!spToken)return;var H={'X-Specialist-Token':spToken};try{var res=await Promise.all([fetch(B+'/api/incidents?status=open',{headers:H}),fetch(B+'/api/incidents?status=assigned',{headers:H}),fetch(B+'/api/incidents?status=resolved',{headers:H})]);var open=await res[0].json(),asgn=await res[1].json(),rv=await res[2].json();document.getElementById('sp-open').textContent=open.length;document.getElementById('sp-asgn').textContent=asgn.length;document.getElementById('sp-res').textContent=rv.length;var all=[].concat(open,asgn);var list=document.getElementById('inc-list');if(!all.length){list.innerHTML='<div class="fitem fi-ok"><div>No open incidents</div></div>';return;}list.innerHTML='';all.forEach(function(inc){var bc=inc.status==='open'?'sb-o':inc.status==='assigned'?'sb-a':'sb-r';list.innerHTML+='<div class="icard2"><div class="ich"><div><span class="fdev">'+inc.device_id+'</span><span class="sbadge '+bc+'">'+inc.status.toUpperCase()+'</span></div><div style="font-size:9px;color:var(--dim)">'+fmt(inc.created_at)+'</div></div><div style="font-size:10px;margin-bottom:4px">Health: <span class="'+scc(inc.health_score)+'">'+Math.round(inc.health_score)+'/100</span></div>'+(inc.ai_diagnosis?'<div style="font-size:9px;color:var(--mut);margin-bottom:4px">'+inc.ai_diagnosis+'</div>':'')+(inc.automation_command?'<div style="font-size:9px;color:var(--pur);margin-bottom:4px">'+inc.automation_command+'</div>':'')+(inc.assigned_to?'<div style="font-size:9px;color:var(--grn);margin-bottom:4px">Assigned to: '+inc.assigned_to+'</div>':'')+'<div class="ica"><input class="ainput" id="ai-'+inc.id+'" placeholder="Assign to engineer..."><button class="btn btn-acc" style="font-size:10px;padding:5px 11px" onclick="assignInc(\''+inc.id+'\')">Assign</button><button class="btn btn-grn" style="font-size:10px;padding:5px 11px" onclick="resolveInc(\''+inc.id+'\')">Resolve</button></div></div>';});}catch(e){}}
     async function assignInc(id){var v=document.getElementById('ai-'+id).value.trim();if(!v)return;await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})});toast('Assigned','to '+v,'tw');loadInc();}
@@ -1207,6 +1195,7 @@ function goPage(el, name) {
     function initSSE(){if(_sseConn)_sseConn.close();_sseConn=new EventSource(B+'/api/stream');_sseConn.addEventListener('metric',function(e){try{var d=JSON.parse(e.data);if(d.blast_hold||d.is_cbs||d.health_score<35||d.anomaly_flag){fetchAll();if(d.blast_hold||d.is_cbs)toast('Live: CBS Alert','Blast hold — refreshing','tc');else if(d.health_score<20)toast('Live: Critical',d.device_id+' at '+d.health_score+'/100','tc');}}catch(ex){}});_sseConn.addEventListener('cbs_hold',function(e){try{var d=JSON.parse(e.data);toast('CBS BLAST HOLD',d.device_id+' — link at '+d.health_score+'%'+(d.integrity_score?' / integrity '+d.integrity_score+'%':''),'tc');fetchAll();}catch(ex){}});_sseConn.onerror=function(){setTimeout(initSSE,5000);};}
     setTimeout(initSSE,4300);
 
+    /* ── NODE MONITOR ── */
     var NM_ICONS={up:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(34,224,122,.2)"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="#20e07a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',down:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,62,80,.2)"/><path d="M8 8l8 8M16 8l-8 8" stroke="#ff3e50" stroke-width="2" stroke-linecap="round"/></svg>',checking:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(245,160,32,.15)"/><path d="M12 7v5l3 3" stroke="#f5a020" stroke-width="2" stroke-linecap="round"/></svg>',unknown:'<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.06)"/><path d="M9.5 9.5a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17v.5" stroke="#8592a8" stroke-width="1.8" stroke-linecap="round"/></svg>'};
     function nmStatusLabel(s){return s==='up'?'Online':s==='down'?'Offline':s==='checking'?'Checking...':'Unknown';}
     function nmLatencyColor(ms){if(!ms)return'var(--dim)';if(ms<20)return'var(--grn)';if(ms<80)return'var(--acc)';if(ms<200)return'var(--amb)';return'var(--red)';}
@@ -1221,546 +1210,361 @@ function goPage(el, name) {
     setInterval(nmRefresh,35000);
 
     /* ══════════════════════════════════════════════════════════════
-       CASCADE INTELLIGENCE ENGINE v3  — IISentinel™
-       Premium canvas renderer · BFS cascade · 5 scenarios
-       Two-column layout: large canvas left, sidebar right
+       CASCADE INTELLIGENCE ENGINE — IISentinel™ v3
+       Integrated from Cascade Sentinel Demo (Space Grotesk edition)
+       Full BFS propagation · 5 scenarios · Economic model
        ══════════════════════════════════════════════════════════════ */
 
-    var CI_NODES=[
-      {id:'wan',     label:'WAN Link',       domain:'net',  x:.13,y:.14,health:100,cost:12000},
-      {id:'core-sw', label:'Core Switch',    domain:'net',  x:.30,y:.24,health:100,cost:10000},
-      {id:'fw',      label:'Firewall',       domain:'net',  x:.16,y:.40,health:100,cost:20000},
-      {id:'noc',     label:'NOC Router',     domain:'net',  x:.44,y:.14,health:100,cost:15000},
-      {id:'tower',   label:'BTS Tower',      domain:'tc',   x:.62,y:.10,health:100,cost:35000},
-      {id:'mw-link', label:'MW Backhaul',    domain:'tc',   x:.56,y:.26,health:100,cost:40000},
-      {id:'bs',      label:'Base Station',   domain:'tc',   x:.74,y:.36,health:100,cost:25000},
-      {id:'scada',   label:'SCADA Node',     domain:'mc',   x:.20,y:.60,health:100,cost:60000},
-      {id:'plc',     label:'PLC Shaft 1',    domain:'mc',   x:.10,y:.74,health:100,cost:80000},
-      {id:'pump',    label:'Dewater Pump',   domain:'mc',   x:.04,y:.88,health:100,cost:150000},
-      {id:'conv',    label:'Conveyor',       domain:'mc',   x:.22,y:.88,health:100,cost:120000},
-      {id:'pm',      label:'Power Meter',    domain:'mc',   x:.36,y:.70,health:100,cost:100000},
-      {id:'vent',    label:'Ventilation',    domain:'mc',   x:.36,y:.88,health:100,cost:180000},
-      {id:'cbs-ctrl',label:'CBS Controller', domain:'cbs',  x:.52,y:.58,health:100,cost:450000},
-      {id:'plant',   label:'Process Plant',  domain:'plant',x:.66,y:.74,health:100,cost:320000},
+    var CASC_NODES = [
+      {id:'wan',     label:'WAN Link',       type:'net',   x:.12,y:.18,health:100,domain:'Network',   cost:12000},
+      {id:'core-sw', label:'Core Switch',    type:'net',   x:.28,y:.28,health:100,domain:'Network',   cost:10000},
+      {id:'fw',      label:'Firewall',       type:'net',   x:.18,y:.42,health:100,domain:'Network',   cost:20000},
+      {id:'noc',     label:'NOC Router',     type:'net',   x:.42,y:.18,health:100,domain:'Network',   cost:15000},
+      {id:'tower',   label:'BTS Tower',      type:'tc',    x:.62,y:.12,health:100,domain:'Telecom',   cost:35000},
+      {id:'mw-link', label:'MW Backhaul',    type:'tc',    x:.55,y:.28,health:100,domain:'Telecom',   cost:40000},
+      {id:'bs',      label:'Base Station',   type:'tc',    x:.72,y:.38,health:100,domain:'Telecom',   cost:25000},
+      {id:'scada',   label:'SCADA Node',     type:'mc',    x:.22,y:.62,health:100,domain:'Mining OT', cost:60000},
+      {id:'plc',     label:'PLC Shaft 1',    type:'mc',    x:.12,y:.76,health:100,domain:'Mining OT', cost:80000},
+      {id:'pump',    label:'Dewater Pump',   type:'mc',    x:.05,y:.88,health:100,domain:'Mining OT', cost:150000},
+      {id:'conv',    label:'Conveyor',       type:'mc',    x:.22,y:.88,health:100,domain:'Mining OT', cost:120000},
+      {id:'pm',      label:'Power Meter',    type:'mc',    x:.35,y:.72,health:100,domain:'Mining OT', cost:100000},
+      {id:'vent',    label:'Ventilation',    type:'mc',    x:.35,y:.88,health:100,domain:'Mining OT', cost:180000},
+      {id:'cbs',     label:'CBS Controller', type:'cbs',   x:.50,y:.62,health:100,domain:'CBS Safety',cost:450000},
+      {id:'plant',   label:'Process Plant',  type:'plant', x:.65,y:.72,health:100,domain:'Production',cost:320000},
     ];
 
-    var CI_EDGES=[
+    var CASC_EDGES = [
       ['wan','core-sw'],['core-sw','fw'],['core-sw','noc'],
       ['noc','mw-link'],['tower','mw-link'],['mw-link','bs'],
-      ['fw','scada'],['scada','plc'],['scada','cbs-ctrl'],
+      ['fw','scada'],['scada','plc'],['scada','cbs'],
       ['plc','pump'],['plc','conv'],['pm','plc'],['pm','vent'],
-      ['conv','plant'],['vent','plant'],['cbs-ctrl','plant'],
+      ['conv','plant'],['vent','plant'],
     ];
 
-    var CI_DOM_COL={net:'#00d4c8',tc:'#a27cf8',mc:'#f5c420',cbs:'#f02e50',plant:'#22e07a'};
+    var CASC_TYPE_COL = {net:'#1ec8f5',tc:'#b06cfb',mc:'#f5a623',cbs:'#ff3356',plant:'#19e87c'};
 
-    var CI_CASC={
-      'core-sw':'Core Switch failover — SCADA loses primary uplink.',
-      'scada':  'SCADA comms lost — OT visibility degraded across all shafts.',
-      'cbs-ctrl':'CBS heartbeat failed — BLAST HOLD auto-interlock triggered.',
-      'plc':    'PLC lost SCADA sync — manual override required.',
-      'pump':   'Dewatering pump stopped — shaft flooding risk elevated.',
-      'conv':   'Conveyor halted — ore transport to plant interrupted.',
-      'vent':   'Ventilation degraded — shaft temperature rising.',
-      'plant':  'Process plant feed cut — production halted.',
-      'mw-link':'Microwave backhaul failed — NOC blinded to remote sites.',
-      'bs':     'Base station offline — mobile comms to mine lost.',
-      'noc':    'NOC router degraded — remote monitoring impaired.',
-      'fw':     'Firewall degraded — OT/IT segmentation at risk.',
-      'pm':     'Power anomaly detected — PLC I/O unstable.',
-    };
+    var _cascCvs=null,_cascCtx=null,_cascW=700,_cascH=420;
+    var _cascTotalCost=0,_cascRunning=false,_cascTimers=[];
+    var _cascPackets=[],_cascLastPkt=0,_cascBooted=false;
+    var _cascActiveScenario=null;
 
-    var CI_INSIGHTS={
-      wan:     '<strong>Causal chain confirmed:</strong> WAN degradation → Core Switch failover → SCADA loses primary link → CBS heartbeat fails → <strong>Blast hold auto-triggers.</strong> IISentinel traced this 5-hop cross-domain path before any threshold alarm fired. Economic exposure: <strong style="color:var(--red)">$450k/hr direct + downstream production loss.</strong>',
-      cbs:     '<strong>Safety interlock cascade:</strong> CBS DNP3 integrity drop triggers automatic blast hold. This cascades to a SCADA alarm flood, NOC alert storm, and production standby cost. <strong>IISentinel quantified the full exposure in real time.</strong>',
-      power:   '<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Process plant starved of ore. <strong>IISentinel predicted this chain 8 minutes before threshold alarms fired.</strong>',
-      storm:   '<strong>Weather-correlated cascade:</strong> Storm drives tower to structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-routed SMS alerts before tower failure confirmed.</strong>',
-      compound:'<strong>Compound cascade confirmed across all four domains simultaneously.</strong> Cross-domain amplification: a 30% WAN degradation cascades into 100% production loss. <strong>Total real-time exposure modelled: $1.2M/hr.</strong>',
-    };
+    function cascNx(n){return n.x*_cascW;}
+    function cascNy(n){return n.y*_cascH;}
+    function healthCol(h){return h>=70?'#19e87c':h>=40?'#f5a623':'#ff3356';}
 
-    var _ci={
-      canvas:null,ctx:null,W:800,H:500,
-      animId:null,lastPkt:0,packets:[],
-      cascadeRunning:false,cascadeTimers:[],
-      dragging:null,dragOX:0,dragOY:0,
-      degraded:{},activeScenario:null,
-      booted:false,raf:null,
-    };
-
-    /* ── helpers ── */
-    function ciColOf(dom){return CI_DOM_COL[dom]||'#28c4f8';}
-    function ciHCol(h){return h>=70?'#22e07a':h>=40?'#f29510':'#f02e50';}
-    function ciNx(n){return n.x*_ci.W;}
-    function ciNy(n){return n.y*_ci.H;}
-    function ciSid(id){return(id||'').split('-').slice(-2).join('-');}
-    function ciFmt(v){if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1e3)return'$'+(v/1e3).toFixed(0)+'k';return'$'+v;}
-
-    /* ── init ── */
-    function ciInit(){
-      var cvs=document.getElementById('ci-canvas');
-      if(!cvs||_ci.booted)return;
-      _ci.canvas=cvs;_ci.ctx=cvs.getContext('2d');
-      ciResize();
-      window.addEventListener('resize',ciResize);
-      cvs.addEventListener('mousedown',ciMD);
-      cvs.addEventListener('mousemove',ciMM);
-      cvs.addEventListener('mouseup',ciMU);
-      cvs.addEventListener('click',ciClick);
-      cvs.addEventListener('touchstart',function(e){var t=e.touches[0];ciMD({clientX:t.clientX,clientY:t.clientY});},{passive:true});
-      cvs.addEventListener('touchmove',function(e){var t=e.touches[0];ciMM({clientX:t.clientX,clientY:t.clientY});},{passive:true});
-      cvs.addEventListener('touchend',ciMU,{passive:true});
-      ciLoadTopology();
-      ciUpdateStats();ciUpdateMeta();
-      setInterval(function(){if(!_ci.cascadeRunning)ciSyncHealth();},10000);
-      (function loop(t){
-        _ci.raf=requestAnimationFrame(loop);
-        var pg=document.getElementById('page-intel');
-        if(!pg||!pg.classList.contains('active'))return;
-        ciDraw(t);
-      })(0);
-      _ci.booted=true;
+    function cascResize(){
+      if(!_cascCvs)return;
+      var wrap=_cascCvs.parentElement;
+      var W=wrap?Math.max(320,wrap.clientWidth-2):700;
+      var H=Math.max(360,Math.round(W*.54));
+      _cascCvs.width=_cascW=W;
+      _cascCvs.height=_cascH=H;
+      _cascCvs.style.width='100%';
+      _cascCvs.style.height=H+'px';
+      if(wrap)wrap.style.minHeight=H+'px';
     }
 
-    function ciResize(){
-      if(!_ci.canvas)return;
-      var wrap=_ci.canvas.parentElement;
-      var W=wrap.clientWidth||700;
-      var H=Math.max(460,Math.round(W*.62));  // dynamic height, no hardcoded value
-      _ci.canvas.width=_ci.W=W;
-      _ci.canvas.height=_ci.H=H;
-      _ci.canvas.style.width='100%';
-      _ci.canvas.style.height=H+'px';
-      _ci.canvas.style.position='absolute';
-      _ci.canvas.style.inset='0';
-      wrap.style.minHeight=H+'px';
-      wrap.style.height=H+'px';
-    }
-
-    function ciLoadTopology(){
-      fetch(window.location.origin+'/api/cascade/topology')
-        .then(function(r){return r.json();})
-        .then(function(d){
-          if(d.nodes&&d.nodes.length){
-            var map={};CI_NODES.forEach(function(n){map[n.id]=n;});
-            d.nodes.forEach(function(dn){
-              var ex=map[dn.id];
-              if(ex){ex.x=Math.max(.02,Math.min(.97,dn.x));ex.y=Math.max(.04,Math.min(.96,dn.y));}
-            });
-          }
-          ciSyncHealth();ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();
-          ciLog('ok','Engine','Topology loaded — '+CI_NODES.length+' nodes active');
-        })
-        .catch(function(){
-          ciSyncHealth();
-          ciLog('ok','Engine','Cascade ready — '+CI_NODES.length+' nodes · Click any node or run a scenario');
-        });
-    }
-
-    function ciSyncHealth(){
-      if(!allData||!allData.length)return;
-      var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
-      CI_NODES.forEach(function(n){
-        if(_ci.degraded[n.id])return;
-        var live=dm[n.id];if(live)n.health=Math.min(100,Math.max(0,live.health_score));
-      });
-      ciUpdateStats();ciUpdateMeta();
-    }
-
-    function ciUpdateMeta(){
-      var nc=document.getElementById('ci-ncnt');if(nc)nc.textContent=CI_NODES.length+' nodes';
-      var ec=document.getElementById('ci-ecnt');if(ec)ec.textContent=CI_EDGES.length+' edges';
-    }
-
-    /* ── draw ── */
-    function ciDraw(t){
-      var ctx=_ci.ctx,W=_ci.W,H=_ci.H;
+    function cascDraw(){
+      if(!_cascCtx)return;
+      var ctx=_cascCtx,W=_cascW,H=_cascH;
       ctx.clearRect(0,0,W,H);
-      /* background */
+
+      /* Background */
       ctx.fillStyle='#04080f';ctx.fillRect(0,0,W,H);
-      /* subtle grid */
-      ctx.strokeStyle='rgba(255,255,255,.018)';ctx.lineWidth=.5;
-      for(var gx=0;gx<=W;gx+=48){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-      for(var gy=0;gy<=H;gy+=48){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-      /* zone labels */
-      var zones=[
-        {l:'NETWORK',   col:'#00d4c8',x:.04,y:.05},
-        {l:'TELECOM',   col:'#a27cf8',x:.53,y:.05},
-        {l:'MINING OT', col:'#f5c420',x:.02,y:.55},
-        {l:'CBS SAFETY',col:'#f02e50',x:.44,y:.52},
-        {l:'PRODUCTION',col:'#22e07a',x:.60,y:.68},
-      ];
-      ctx.textAlign='left';ctx.textBaseline='top';
-      zones.forEach(function(z){
-        ctx.font='700 9px "JetBrains Mono",monospace';
-        ctx.fillStyle=z.col+'33';
+
+      /* Grid */
+      ctx.strokeStyle='rgba(255,255,255,.025)';ctx.lineWidth=.7;
+      for(var gx=0;gx<W;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+      for(var gy=0;gy<H;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+
+      /* Zone labels */
+      [{l:'NETWORK',c:'#1ec8f5',x:.04,y:.03},{l:'TELECOM',c:'#b06cfb',x:.55,y:.03},
+       {l:'MINING OT',c:'#f5a623',x:.02,y:.55},{l:'CBS SAFETY',c:'#ff3356',x:.44,y:.55},
+       {l:'PRODUCTION',c:'#19e87c',x:.60,y:.67}
+      ].forEach(function(z){
+        ctx.font='700 8px "JetBrains Mono",monospace';
+        ctx.fillStyle=z.c+'44';ctx.textAlign='left';ctx.textBaseline='top';
         ctx.fillText(z.l,z.x*W,z.y*H);
       });
 
-      /* edges */
-      CI_EDGES.forEach(function(e){
-        var a=CI_NODES.find(function(n){return n.id===e[0];});
-        var b=CI_NODES.find(function(n){return n.id===e[1];});
+      /* Edges */
+      CASC_EDGES.forEach(function(e){
+        var a=CASC_NODES.find(function(n){return n.id===e[0];});
+        var b=CASC_NODES.find(function(n){return n.id===e[1];});
         if(!a||!b)return;
-        var ax=ciNx(a),ay=ciNy(a),bx=ciNx(b),by=ciNy(b);
-        var crit=a.health<35||b.health<35;var deg=a.health<70||b.health<70;
-        ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
-        if(crit){ctx.setLineDash([6,4]);ctx.strokeStyle='rgba(240,46,80,.65)';ctx.lineWidth=1.8;}
-        else if(deg){ctx.setLineDash([4,3]);ctx.strokeStyle='rgba(242,149,16,.5)';ctx.lineWidth=1.2;}
-        else{ctx.setLineDash([]);ctx.strokeStyle='rgba(40,196,248,.14)';ctx.lineWidth=.8;}
+        var crit=a.health<35||b.health<35,deg=a.health<70||b.health<70;
+        ctx.beginPath();ctx.moveTo(cascNx(a),cascNy(a));ctx.lineTo(cascNx(b),cascNy(b));
+        ctx.strokeStyle=crit?'rgba(255,51,86,.6)':deg?'rgba(245,166,35,.45)':'rgba(30,200,245,.18)';
+        ctx.lineWidth=crit?2:deg?1.5:1;
+        if(crit)ctx.setLineDash([6,4]);else ctx.setLineDash([]);
         ctx.stroke();ctx.setLineDash([]);
-        /* arrowhead */
-        var dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy)||1;
-        var ux=dx/len,uy=dy/len,mx=ax+dx*.54,my=ay+dy*.54;
+        /* Arrow */
+        var dx=cascNx(b)-cascNx(a),dy=cascNy(b)-cascNy(a),len=Math.sqrt(dx*dx+dy*dy)||1;
+        var ux=dx/len,uy=dy/len,mx2=cascNx(a)+dx*.55,my2=cascNy(a)+dy*.55;
         ctx.beginPath();
-        ctx.moveTo(mx+ux*6-uy*3.5,my+uy*6+ux*3.5);
-        ctx.lineTo(mx+ux*12,my+uy*12);
-        ctx.lineTo(mx+ux*6+uy*3.5,my+uy*6-ux*3.5);
-        ctx.strokeStyle=crit?'rgba(240,46,80,.7)':deg?'rgba(242,149,16,.65)':'rgba(40,196,248,.4)';
-        ctx.lineWidth=1.1;ctx.stroke();
+        ctx.moveTo(mx2+ux*6-uy*4,my2+uy*6+ux*4);
+        ctx.lineTo(mx2+ux*12,my2+uy*12);
+        ctx.lineTo(mx2+ux*6+uy*4,my2+uy*6-ux*4);
+        ctx.strokeStyle=crit?'rgba(255,51,86,.8)':deg?'rgba(245,166,35,.7)':'rgba(30,200,245,.4)';
+        ctx.lineWidth=1.2;ctx.stroke();
       });
 
-      /* data packets */
-      if(t&&t-_ci.lastPkt>700){
-        _ci.lastPkt=t;
-        CI_EDGES.forEach(function(e){
-          if(Math.random()>.7)return;
-          var a=CI_NODES.find(function(n){return n.id===e[0];});
-          var b=CI_NODES.find(function(n){return n.id===e[1];});
-          if(a&&b&&a.health>45&&b.health>45){
-            _ci.packets.push({from:e[0],to:e[1],t:0,
-              col:a.health<70?'rgba(242,149,16,.9)':'rgba(40,196,248,.8)',
-              size:a.domain==='cbs'?4:2.5});
-          }
-        });
-      }
-      _ci.packets=_ci.packets.filter(function(p){return p.t<1;});
-      _ci.packets.forEach(function(p){
-        p.t+=.014;
-        var a=CI_NODES.find(function(n){return n.id===p.from;});
-        var b=CI_NODES.find(function(n){return n.id===p.to;});
+      /* Animated data packets */
+      _cascPackets=_cascPackets.filter(function(p){return p.t<1;});
+      _cascPackets.forEach(function(p){
+        p.t+=.016;
+        var a=CASC_NODES.find(function(n){return n.id===p.from;});
+        var b=CASC_NODES.find(function(n){return n.id===p.to;});
         if(!a||!b)return;
-        var px=ciNx(a)+(ciNx(b)-ciNx(a))*p.t;
-        var py=ciNy(a)+(ciNy(b)-ciNy(a))*p.t;
-        ctx.shadowColor=p.col;ctx.shadowBlur=10;
-        ctx.beginPath();ctx.arc(px,py,p.size,0,Math.PI*2);
-        ctx.fillStyle=p.col;ctx.fill();
-        ctx.shadowBlur=0;
+        var px=cascNx(a)+(cascNx(b)-cascNx(a))*p.t;
+        var py=cascNy(a)+(cascNy(b)-cascNy(a))*p.t;
+        ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);
+        ctx.shadowColor=p.col;ctx.shadowBlur=8;
+        ctx.fillStyle=p.col;ctx.fill();ctx.shadowBlur=0;
       });
 
-      /* nodes */
-      CI_NODES.forEach(function(n){
-        var x=ciNx(n),y=ciNy(n);
-        var h=Math.max(0,Math.min(100,n.health||100));
-        var hcol=ciHCol(h),dcol=ciColOf(n.domain);
-        var isCbs=n.domain==='cbs';
-        var r=isCbs?16:n.domain==='plant'?13:11;
-        /* outer glow ring for degraded */
-        if(h<70){
-          ctx.beginPath();ctx.arc(x,y,r+8,0,Math.PI*2);
-          ctx.strokeStyle=(h<35?'rgba(240,46,80,':'rgba(242,149,16,')+(h<35?.25:.18)+')';
-          ctx.lineWidth=1;ctx.stroke();
-        }
-        /* domain halo */
+      /* Nodes */
+      CASC_NODES.forEach(function(n){
+        var x=cascNx(n),y=cascNy(n);
+        var r=n.type==='cbs'?14:n.type==='plant'?12:11;
+        var col=healthCol(n.health);
+        var tcol=CASC_TYPE_COL[n.type]||col;
+        ctx.shadowColor=n.health<35?'#ff3356':tcol;ctx.shadowBlur=n.health<35?22:10;
+        /* Outer domain ring */
         ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);
-        ctx.strokeStyle=dcol+'22';ctx.lineWidth=.8;ctx.stroke();
-        /* health arc */
-        var arcLen=(h/100)*Math.PI*2;
-        ctx.beginPath();ctx.arc(x,y,r+2.5,-Math.PI/2,-Math.PI/2+arcLen);
-        ctx.strokeStyle=hcol;ctx.lineWidth=2.8;
-        ctx.shadowColor=hcol;ctx.shadowBlur=h<50?16:6;
-        ctx.stroke();ctx.shadowBlur=0;
-        /* CBS pulsing outer ring */
-        if(isCbs&&h<90){
+        ctx.strokeStyle=tcol+(n.health<70?'88':'33');ctx.lineWidth=1;ctx.stroke();
+        /* Health arc */
+        var ang=(n.health/100)*Math.PI*2;
+        ctx.beginPath();ctx.arc(x,y,r+2,-Math.PI/2,-Math.PI/2+ang);
+        ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();
+        /* CBS pulse */
+        if(n.type==='cbs'&&n.health<90){
           var pulse=(Math.sin(Date.now()*.004)+1)*.5;
           ctx.beginPath();ctx.arc(x,y,r+10+pulse*4,0,Math.PI*2);
-          ctx.strokeStyle='rgba(240,46,80,'+(0.15+pulse*.2)+')';
-          ctx.lineWidth=1.2;ctx.stroke();
+          ctx.strokeStyle='rgba(255,51,86,'+(0.12+pulse*.18)+')';ctx.lineWidth=1.2;ctx.stroke();
         }
-        /* node fill */
+        /* Fill */
         ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-        var g=ctx.createRadialGradient(x-r*.35,y-r*.35,0,x,y,r);
-        g.addColorStop(0,dcol+'50');g.addColorStop(1,dcol+'18');
-        ctx.fillStyle=g;ctx.fill();
-        ctx.strokeStyle=dcol+'88';ctx.lineWidth=1.5;ctx.stroke();
-        /* health value */
-        ctx.font='700 '+(r>12?'9':'8')+'px "JetBrains Mono",monospace';
-        ctx.fillStyle=hcol;ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.shadowColor=hcol;ctx.shadowBlur=4;
-        ctx.fillText(Math.round(h),x,y);
-        ctx.shadowBlur=0;
-        /* label below */
+        var grad=ctx.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);
+        grad.addColorStop(0,tcol+'44');grad.addColorStop(1,tcol+'11');
+        ctx.fillStyle=grad;ctx.fill();
+        ctx.strokeStyle=tcol+'88';ctx.lineWidth=1.5;ctx.stroke();ctx.shadowBlur=0;
+        /* Score */
+        ctx.font='700 9px "JetBrains Mono",monospace';
+        ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(Math.round(n.health),x,y);
+        /* Label pill */
         ctx.font='600 8.5px "Sora",sans-serif';
-        ctx.fillStyle='rgba(224,234,248,.88)';ctx.textBaseline='top';
         var lbl=(n.label||n.id).slice(0,15);
-        /* white pill bg for legibility */
         var tw=ctx.measureText(lbl).width+8;
-        ctx.fillStyle='rgba(4,8,15,.65)';
-        ctx.beginPath();
+        ctx.fillStyle='rgba(4,8,15,.72)';
         var lx=x-tw/2,ly=y+r+4,lh=13,lr=4;
-        ctx.moveTo(lx+lr,ly);ctx.lineTo(lx+tw-lr,ly);ctx.arcTo(lx+tw,ly,lx+tw,ly+lh,lr);ctx.lineTo(lx+tw,ly+lh-lr);ctx.arcTo(lx+tw,ly+lh,lx+tw-lr,ly+lh,lr);ctx.lineTo(lx+lr,ly+lh);ctx.arcTo(lx,ly+lh,lx,ly+lh-lr,lr);ctx.lineTo(lx,ly+lr);ctx.arcTo(lx,ly,lx+lr,ly,lr);ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle=h<35?'#f02e50':h<70?'#f29510':'rgba(224,234,248,.9)';
+        ctx.beginPath();ctx.moveTo(lx+lr,ly);ctx.lineTo(lx+tw-lr,ly);ctx.arcTo(lx+tw,ly,lx+tw,ly+lh,lr);ctx.lineTo(lx+tw,ly+lh-lr);ctx.arcTo(lx+tw,ly+lh,lx+tw-lr,ly+lh,lr);ctx.lineTo(lx+lr,ly+lh);ctx.arcTo(lx,ly+lh,lx,ly+lh-lr,lr);ctx.lineTo(lx,ly+lr);ctx.arcTo(lx,ly,lx+lr,ly,lr);ctx.closePath();ctx.fill();
+        ctx.fillStyle=n.health<35?'#ff3356':n.health<70?'#f5a623':'rgba(224,234,248,.92)';
         ctx.textAlign='center';ctx.textBaseline='top';
-        ctx.fillText(lbl,x,y+r+6);
+        ctx.fillText(lbl,x,y+r+5);
       });
     }
 
-    /* ── interaction ── */
-    function ciNodeAt(cx,cy){
-      for(var i=CI_NODES.length-1;i>=0;i--){
-        var n=CI_NODES[i];var dx=ciNx(n)-cx,dy=ciNy(n)-cy;
-        if(Math.sqrt(dx*dx+dy*dy)<22)return n;
-      }return null;
-    }
-    function ciMD(e){
-      var r=_ci.canvas.getBoundingClientRect();
-      var mx=(e.clientX-r.left)*(_ci.W/r.width),my=(e.clientY-r.top)*(_ci.H/r.height);
-      var n=ciNodeAt(mx,my);
-      if(n){_ci.dragging=n;_ci.dragOX=mx-ciNx(n);_ci.dragOY=my-ciNy(n);_ci._didDrag=false;}
-    }
-    function ciMM(e){
-      if(!_ci.dragging)return;
-      var r=_ci.canvas.getBoundingClientRect();
-      _ci.dragging.x=Math.max(.02,Math.min(.97,(e.clientX-r.left)*(_ci.W/r.width)-_ci.dragOX)/_ci.W);
-      _ci.dragging.y=Math.max(.04,Math.min(.96,(e.clientY-r.top)*(_ci.H/r.height)-_ci.dragOY)/_ci.H);
-      _ci._didDrag=true;
-    }
-    function ciMU(){_ci.dragging=null;}
-    function ciClick(e){
-      if(_ci._didDrag){_ci._didDrag=false;return;}
-      var r=_ci.canvas.getBoundingClientRect();
-      var mx=(e.clientX-r.left)*(_ci.W/r.width),my=(e.clientY-r.top)*(_ci.H/r.height);
-      var n=ciNodeAt(mx,my);
-      if(n)ciDegradeNode(n.id,28+Math.random()*22);
+    function cascSyncHealth(){
+      if(!allData||!allData.length)return;
+      var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      var typeMap={wan:'wan_link','core-sw':'switch',fw:'firewall',noc:'router',
+        tower:'network_tower','mw-link':'microwave_link',bs:'base_station',
+        scada:'scada_node',plc:'plc',pump:'pump',conv:'conveyor',
+        pm:'power_meter',vent:'ventilation',cbs:'cbs_controller'};
+      CASC_NODES.forEach(function(n){
+        if(_cascTimers.length&&n.health<100)return; /* don't overwrite active cascade */
+        var ttype=typeMap[n.id];if(!ttype)return;
+        var live=Object.values(dm).find(function(d){return d.device_type===ttype;});
+        if(live)n.health=Math.max(0,Math.min(100,live.health_score));
+      });
     }
 
-    /* ── cascade engine ── */
-    function ciDegradeNode(id,amount){
-      var n=CI_NODES.find(function(x){return x.id===id;});if(!n)return;
-      n.health=Math.max(0,n.health-amount);_ci.degraded[id]=true;
-      var cls=n.health<35?'crit':n.health<70?'warn':'ok';
-      ciLog(cls,n.label,'Degraded to '+Math.round(n.health)+'% — tracing cascade…');
-      if(!_ci.cascadeRunning)ciPropagate(id);
+    function cascInit(){
+      var cvs=document.getElementById('cascade-canvas');
+      if(!cvs||_cascBooted)return;
+      _cascCvs=cvs;_cascCtx=cvs.getContext('2d');
+      cascResize();
+      window.addEventListener('resize',cascResize);
+      cvs.addEventListener('click',function(e){
+        var rect=cvs.getBoundingClientRect();
+        var mx=(e.clientX-rect.left)*(_cascW/rect.width);
+        var my=(e.clientY-rect.top)*(_cascH/rect.height);
+        CASC_NODES.forEach(function(n){
+          var dx=cascNx(n)-mx,dy=cascNy(n)-my;
+          if(Math.sqrt(dx*dx+dy*dy)<20)degradeNode(n.id,25+Math.random()*30);
+        });
+      });
+      cascSyncHealth();
+      (function loop(t){
+        requestAnimationFrame(loop);
+        var pg=document.getElementById('page-intel');
+        if(!pg||!pg.classList.contains('active'))return;
+        if(t-_cascLastPkt>800){
+          _cascLastPkt=t;
+          CASC_EDGES.forEach(function(e){
+            if(Math.random()>.72)return;
+            var a=CASC_NODES.find(function(n){return n.id===e[0];});
+            var b=CASC_NODES.find(function(n){return n.id===e[1];});
+            if(a&&b&&a.health>50&&b.health>50)
+              _cascPackets.push({from:e[0],to:e[1],t:0,
+                col:a.health<70?'rgba(245,166,35,.9)':'rgba(30,200,245,.8)'});
+          });
+        }
+        cascDraw();
+      })(0);
+      _cascBooted=true;
     }
 
-    function ciPropagate(originId){
-      _ci.cascadeRunning=true;
-      var queue=[{id:originId,delay:0}],visited={};visited[originId]=true;
+    function degradeNode(id,amount){
+      var n=CASC_NODES.find(function(n){return n.id===id;});if(!n)return;
+      n.health=Math.max(0,n.health-amount);
+      cascLogEvent(n.health<35?'crit':'warn',n.label,
+        'Health degraded to '+Math.round(n.health)+'% — analysing downstream dependencies...',
+        new Date().toLocaleTimeString());
+      propagateCascade(id);
+    }
+
+    function propagateCascade(originId){
+      if(_cascRunning)return;
+      _cascRunning=true;
+      var queue=[{id:originId,delay:0}];
+      var visited={};visited[originId]=true;
       function step(){
-        if(!queue.length){_ci.cascadeRunning=false;ciFinish(originId);return;}
+        if(!queue.length){_cascRunning=false;finalInsight(originId);return;}
         var item=queue.shift();
-        var tmr=setTimeout(function(){
-          var node=CI_NODES.find(function(n){return n.id===item.id;});
+        var t=setTimeout(function(){
+          var node=CASC_NODES.find(function(n){return n.id===item.id;});
           if(!node){step();return;}
-          CI_EDGES.forEach(function(e){
-            var depId=e[0]===item.id?e[1]:null;
+          CASC_EDGES.forEach(function(e){
+            var depId=e[0]===item.id?e[1]:(e[1]===item.id?e[0]:null);
             if(!depId||visited[depId])return;
-            var dep=CI_NODES.find(function(n){return n.id===depId;});if(!dep)return;
-            if(node.health<60){
+            var dep=CASC_NODES.find(function(n){return n.id===depId;});if(!dep)return;
+            if(node.health<50){
               visited[depId]=true;
-              var amt=node.health<20?42:node.health<35?26:13;
-              dep.health=Math.max(0,dep.health-amt);_ci.degraded[dep.id]=true;
-              var msg=CI_CASC[dep.id]||('Cascade from '+node.label+' — now at '+Math.round(dep.health)+'%');
-              if(dep.id==='cbs-ctrl'&&dep.health<90){
-                ciLog('cbs','CBS HOLD','⚠ BLAST HOLD ISSUED — DNP3 integrity <90% — $450,000/hr');
-                var cs=document.getElementById('ci-s-cbs');
-                if(cs){cs.textContent='HOLD';cs.style.color='var(--red)';}
-              }else{
-                ciLog(dep.health<35?'crit':dep.health<70?'warn':'ok',dep.label,msg);
+              var amt=node.health<20?40:node.health<35?25:12;
+              dep.health=Math.max(0,dep.health-amt);
+              _cascTotalCost+=dep.cost*0.001;
+              updateCostDisplay();
+              cascLogEvent(dep.health<35?'crit':dep.health<70?'warn':'ok',
+                dep.label,getCascadeMsg(dep,node),new Date().toLocaleTimeString());
+              if(dep.id==='cbs'&&dep.health<90){
+                cascLogEvent('cbs','CBS Controller',
+                  '⚠ BLAST HOLD ISSUED — DNP3 integrity below 90% — $450,000/hr exposure.',
+                  new Date().toLocaleTimeString());
+                var hp=document.getElementById('hold-pill');if(hp)hp.style.display='';
               }
-              ciUpdateStats();ciUpdateEcon();
-              queue.push({id:depId,delay:500+Math.random()*400});
+              queue.push({id:depId,delay:600+Math.random()*400});
             }
           });
           step();
         },item.delay);
-        _ci.cascadeTimers.push(tmr);
+        _cascTimers.push(t);
       }
       step();
     }
 
-    function ciFinish(originId){
+    function getCascadeMsg(dep,origin){
+      var msgs={
+        scada:   'SCADA lost comms via '+origin.label+' — OT visibility degraded.',
+        cbs:     'CBS controller unreachable via '+origin.label+' — preparing blast hold.',
+        plc:     'PLC lost SCADA sync — manual override required.',
+        pump:    'Dewatering pump control interrupted — shaft flooding risk.',
+        conv:    'Conveyor halted — ore transport stopped.',
+        vent:    'Ventilation reduced — temperature rising in shaft.',
+        plant:   'Process plant feed interrupted — production halted.',
+        'mw-link':'MW backhaul failed — NOC communication severed.',
+        bs:      'Base station offline — mobile coverage lost in mine area.',
+        noc:     'NOC router degraded — remote monitoring impaired.',
+        fw:      'Firewall degraded — OT/IT segmentation at risk.',
+        pm:      'Power anomaly — PLC I/O becoming unstable.',
+      };
+      return msgs[dep.id]||('Cascade from '+origin.label+' — '+dep.label+' now at '+Math.round(dep.health)+'%.');
+    }
+
+    function finalInsight(originId){
+      var insights={
+        wan:     '<strong>Causal chain identified:</strong> WAN degradation → Core Switch failover → SCADA loses primary link → CBS heartbeat fails → <strong>Blast hold auto-triggers.</strong> IISentinel traced this 5-hop cross-domain path before any threshold alarm fired. Exposure: <strong style="color:#ff3356">$450k/hr direct + downstream production loss.</strong>',
+        cbs:     '<strong>Safety interlock cascade:</strong> CBS DNP3 integrity drop triggers automatic blast hold. Cascades to SCADA alarm flood, NOC alert storm, and production standby cost. <strong>IISentinel quantified the full exposure in real time.</strong>',
+        pm:      '<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Process plant starved of ore. <strong>IISentinel predicted this chain 8 minutes before threshold alarms fired.</strong>',
+        tower:   '<strong>Weather-correlated cascade:</strong> Storm drives tower to structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-routed SMS alerts before tower failure confirmed.</strong>',
+        compound:'<strong>Compound cascade confirmed across all four domains simultaneously.</strong> Cross-domain amplification: a 30% WAN degradation cascades into 100% production loss. <strong>Total real-time exposure modelled: $1.2M/hr.</strong>',
+      };
+      var key=_cascActiveScenario||originId;
+      var insightEl=document.getElementById('ai-insight');
+      if(insightEl)insightEl.innerHTML='<div class="insight-title">Causal analysis complete</div>'+(insights[key]||insights['wan']);
       var affected=new Set();
-      CI_NODES.forEach(function(n){if(n.health<90)affected.add(n.domain);});
-      var lowH=CI_NODES.filter(function(n){return n.health<40&&n.health>0;}).length;
-      document.getElementById('ci-s-aff').textContent=affected.size;
-      document.getElementById('ci-s-pred').textContent=lowH;
-      document.getElementById('ci-s-ttc').textContent=lowH>0?Math.floor(lowH*4+6)+'min':'--';
-      ciUpdateStats();ciUpdateEcon();
-      var key=_ci.activeScenario||'wan';
-      var body=document.getElementById('ci-insight-body');
-      if(body)body.innerHTML=CI_INSIGHTS[key]||CI_INSIGHTS['wan'];
-      ciLog('crit','Analysis','Complete — '+affected.size+' domains, '+lowH+' predicted failures');
+      CASC_NODES.forEach(function(n){if(n.health<90)affected.add(n.domain);});
+      var low=CASC_NODES.filter(function(n){return n.health<40&&n.health>0;}).length;
+      var sa=document.getElementById('stat-affected');if(sa)sa.textContent=affected.size;
+      var sp2=document.getElementById('stat-predicted');if(sp2)sp2.textContent=low;
+      var st=document.getElementById('stat-ttc');if(st)st.textContent=low>0?Math.floor(low*4+8)+'min':'--';
+      var direct=CASC_NODES.filter(function(n){return n.health<50;})
+        .reduce(function(s,n){return s+n.cost*(1-n.health/100)*.5;},0);
+      var cascade2=_cascTotalCost*3200;
+      var prevented=direct*.65;
+      var ed=document.getElementById('ec-direct');if(ed)ed.textContent='$'+Math.round(direct/1000)+'k';
+      var ec=document.getElementById('ec-cascade');if(ec)ec.textContent='$'+Math.round(cascade2/1000)+'k';
+      var ep=document.getElementById('ec-prevented');if(ep)ep.textContent='$'+Math.round(prevented/1000)+'k';
+      var er=document.getElementById('ec-roi');if(er)er.textContent=prevented>0?Math.round(prevented/(Math.max(direct,.1)*.1))+'x':'∞';
     }
 
-    function ciUpdateStats(){
-      var scores=CI_NODES.map(function(n){return n.health||100;});
-      var f=Math.round(scores.reduce(function(a,b){return a+b;},0)/scores.length);
-      var fe=document.getElementById('ci-s-fhi');
-      if(fe){fe.textContent=CI_NODES.length;fe.style.color='var(--acc)';}
-      var total=0;
-      CI_NODES.forEach(function(n){var h=n.health||100;var impact=h<20?.95:h<35?.6:h<50?.25:0;total+=Math.round(n.cost*impact);});
-      var ee=document.getElementById('ci-exp');if(ee)ee.textContent=ciFmt(total);
-      var nc=document.getElementById('ci-ncnt');if(nc)nc.textContent=CI_NODES.length+' nodes';
+    function updateCostDisplay(){
+      var total=CASC_NODES.filter(function(n){return n.health<50;})
+        .reduce(function(s,n){return s+n.cost*(1-n.health/100)*.5;},0);
+      var el=document.getElementById('cost-anim');
+      if(el)el.textContent='$'+Math.round(total).toLocaleString()+'/hr';
     }
 
-    function ciUpdateEcon(){
-      var direct=0,cascade=0;
-      CI_NODES.forEach(function(n){
-        var h=n.health||100;
-        var directImpact=h<20?.85:h<35?.5:h<50?.2:0;
-        var cascImpact=h<20?.1:h<35?.08:h<50?.05:0;
-        direct+=Math.round(n.cost*directImpact);
-        cascade+=Math.round(n.cost*cascImpact);
-      });
-      var prevented=Math.round((direct+cascade)*0.62);
-      var roi=direct+cascade>0?Math.round(prevented/(direct+cascade)*10)/10:'∞';
-      var ed=document.getElementById('ci-ec-direct');if(ed)ed.textContent=ciFmt(direct);
-      var ec=document.getElementById('ci-ec-cascade');if(ec)ec.textContent=ciFmt(cascade);
-      var ep=document.getElementById('ci-ec-prevented');if(ep)ep.textContent=ciFmt(prevented);
-      var er=document.getElementById('ci-ec-roi');if(er)er.textContent=typeof roi==='number'?roi+'x':'∞';
+    function cascLogEvent(cls,dev,msg,time){
+      var log=document.getElementById('clog');if(!log)return;
+      var el=document.createElement('div');
+      el.className='clog-item '+(cls||'ok');
+      el.innerHTML='<div class="clog-t">'+(time||new Date().toLocaleTimeString())+'</div>'
+        +'<div class="clog-dev">'+dev+'</div>'
+        +'<div class="clog-msg">'+msg+'</div>';
+      log.insertBefore(el,log.firstChild);
+      while(log.children.length>14)log.removeChild(log.lastChild);
     }
 
-    /* ── scenarios ── */
-    function ciRunScenario(name){
-      ciResetAll();_ci.activeScenario=name;
-      document.querySelectorAll('.ci-sbtn').forEach(function(b){b.classList.remove('active');});
-      var btn=document.getElementById('ci-sb-'+name);if(btn)btn.classList.add('active');
+    function runScenario(name){
+      resetAll();_cascActiveScenario=name;
+      document.querySelectorAll('.sim-btn').forEach(function(b){b.classList.remove('active');});
+      var btn=document.getElementById('sb-'+name);if(btn)btn.classList.add('active');
       var map={
-        wan:     function(){ciDegradeNode('wan',58);},
-        cbs:     function(){ciDegradeNode('cbs-ctrl',30);setTimeout(function(){ciDegradeNode('cbs-ctrl',38);},1200);},
-        power:   function(){ciDegradeNode('pm',65);},
-        storm:   function(){ciDegradeNode('tower',72);setTimeout(function(){ciDegradeNode('mw-link',30);},900);},
-        compound:function(){ciDegradeNode('wan',42);setTimeout(function(){ciDegradeNode('pm',52);},600);setTimeout(function(){ciDegradeNode('tower',62);},1300);},
+        wan:      function(){degradeNode('wan',55);},
+        cbs:      function(){degradeNode('cbs',25);setTimeout(function(){degradeNode('cbs',35);},1200);},
+        power:    function(){degradeNode('pm',60);},
+        storm:    function(){degradeNode('tower',70);setTimeout(function(){degradeNode('mw-link',30);},800);},
+        compound: function(){degradeNode('wan',40);setTimeout(function(){degradeNode('pm',50);},600);setTimeout(function(){degradeNode('tower',60);},1200);},
       };
       if(map[name])map[name]();
-      else{
-        var worst=CI_NODES.reduce(function(a,b){return(a.health||100)<(b.health||100)?a:b;},CI_NODES[0]||{id:null});
-        if(worst.id)ciDegradeNode(worst.id,42+Math.random()*20);
-      }
     }
 
-    function ciResetAll(){
-      _ci.cascadeTimers.forEach(clearTimeout);_ci.cascadeTimers=[];
-      _ci.cascadeRunning=false;_ci.degraded={};_ci.packets=[];_ci.activeScenario=null;
-      document.querySelectorAll('.ci-sbtn').forEach(function(b){b.classList.remove('active');});
-      CI_NODES.forEach(function(n){n.health=100;});
-      ciSyncHealth();
-      var cs=document.getElementById('ci-s-cbs');if(cs){cs.textContent='ARMED';cs.style.color='var(--grn)';}
-      document.getElementById('ci-s-aff').textContent='0';
-      document.getElementById('ci-s-pred').textContent='0';
-      document.getElementById('ci-s-ttc').textContent='--';
-      var ee=document.getElementById('ci-exp');if(ee)ee.textContent='$0';
-      ['ci-ec-direct','ci-ec-cascade','ci-ec-prevented'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='$0k';});
-      var er=document.getElementById('ci-ec-roi');if(er)er.textContent='∞';
-      var body=document.getElementById('ci-insight-body');
-      if(body){body.innerHTML='Run a scenario to see AI causal analysis appear here...';body.style.color='var(--dim)';body.style.fontStyle='italic';}
-      var log=document.getElementById('ci-log');
-      if(log)log.innerHTML='<div class="ci-log-row ok"><span class="ci-log-ts">'+new Date().toLocaleTimeString()+'</span><span class="ci-log-dev" style="color:var(--grn)">Reset</span><span class="ci-log-msg">All nodes restored to live health — topology unchanged.</span></div>';
+    function resetAll(){
+      _cascTimers.forEach(clearTimeout);_cascTimers=[];
+      _cascRunning=false;_cascTotalCost=0;_cascActiveScenario=null;
+      CASC_NODES.forEach(function(n){n.health=100;});
+      _cascPackets=[];
+      document.querySelectorAll('.sim-btn').forEach(function(b){b.classList.remove('active');});
+      var ce=document.getElementById('cost-anim');if(ce)ce.textContent='$0/hr';
+      ['stat-affected','stat-predicted'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='0';});
+      var st=document.getElementById('stat-ttc');if(st)st.textContent='--';
+      ['ec-direct','ec-cascade','ec-prevented'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='$0';});
+      var er=document.getElementById('ec-roi');if(er)er.textContent='∞';
+      var hp=document.getElementById('hold-pill');if(hp)hp.style.display='none';
+      var ai2=document.getElementById('ai-insight');
+      if(ai2)ai2.innerHTML='<div class="insight-title">Awaiting event...</div>IISentinel\'s causal graph engine maps <strong>dependency chains across all infrastructure domains simultaneously</strong>. Trigger a scenario or click any node to see predictive cascade analysis in real time.';
+      var log=document.getElementById('clog');
+      if(log)log.innerHTML='<div class="clog-item ok"><div class="clog-t">Reset</div><div class="clog-dev">IISentinel™ Engine</div><div class="clog-msg">All nodes restored. Ready for next simulation.</div></div>';
+      cascSyncHealth();
     }
 
-    function ciLog(cls,dev,msg){
-      var log=document.getElementById('ci-log');if(!log)return;
-      var row=document.createElement('div');row.className='ci-log-row '+(cls||'ok');
-      row.innerHTML='<span class="ci-log-ts">'+new Date().toLocaleTimeString()+'</span>'
-        +'<span class="ci-log-dev">'+dev+'</span>'
-        +'<span class="ci-log-msg">'+msg+'</span>';
-      log.insertBefore(row,log.firstChild);
-      while(log.children.length>20)log.removeChild(log.lastChild);
-    }
-
-    /* ── specialist editor ── */
-    function ciShowEditor(){
-      var ed=document.getElementById('ci-editor');var gt=document.getElementById('ci-gate');
-      if(spToken){if(ed)ed.style.display='block';if(gt)gt.style.display='none';ciRebuildEditorSelects();ciPopulateDevSel();}
-      else{if(ed)ed.style.display='none';if(gt)gt.style.display='flex';}
-    }
-    function ciPopulateDevSel(){
-      var sel=document.getElementById('ci-dev-sel');if(!sel)return;
-      sel.innerHTML='<option value="">Select live device...</option>';
-      var dm={};(allData||[]).forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
-      Object.keys(dm).forEach(function(did){var o=document.createElement('option');o.value=did;o.textContent=ciSid(did)+' ('+dm[did].device_type+')';sel.appendChild(o);});
-    }
-    function ciRebuildEditorSelects(){
-      var fs=document.getElementById('ci-efrom'),ts=document.getElementById('ci-eto');if(!fs||!ts)return;
-      fs.innerHTML='<option value="">From...</option>';ts.innerHTML='<option value="">To...</option>';
-      CI_NODES.forEach(function(n){var lbl=n.label||n.id;fs.innerHTML+='<option value="'+n.id+'">'+lbl+'</option>';ts.innerHTML+='<option value="'+n.id+'">'+lbl+'</option>';});
-    }
-    function ciRenderTags(){
-      var list=document.getElementById('ci-tags');if(!list)return;
-      if(!CI_NODES.length){list.innerHTML='<span style="font-size:9px;color:var(--dim)">No nodes</span>';return;}
-      list.innerHTML=CI_NODES.map(function(n){return'<div class="ci-tag" onclick="ciRemoveNode(\''+n.id+'\')" title="Click to remove"><span class="ci-tdot" style="background:'+ciColOf(n.domain)+'"></span>'+(n.label||n.id)+'</div>';}).join('');
-    }
-    function ciEditorAddNode(){
-      var devSel=document.getElementById('ci-dev-sel'),domSel=document.getElementById('ci-dom-sel');
-      var did=devSel?devSel.value:'';if(!did){toast('Cascade','Select a device first','tw');return;}
-      if(CI_NODES.find(function(n){return n.id===did;})){toast('Cascade','Already on map','tw');return;}
-      var dm={};(allData||[]).forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});var live=dm[did];
-      CI_NODES.push({id:did,label:ciSid(did),domain:domSel?domSel.value:'net',x:.15+Math.random()*.7,y:.15+Math.random()*.7,health:live?live.health_score:80,cost:COST[live&&live.device_type]||50000});
-      ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciLog('ok',ciSid(did),'Added to map');toast('Node added',ciSid(did),'tg');
-    }
-    function ciEditorAddEdge(){
-      var f=document.getElementById('ci-efrom'),t=document.getElementById('ci-eto');
-      var from=f?f.value:'',to=t?t.value:'';
-      if(!from||!to){toast('Cascade','Select both nodes','tw');return;}
-      if(from===to){toast('Cascade','Cannot self-connect','tw');return;}
-      if(CI_EDGES.find(function(e){return e[0]===from&&e[1]===to;})){toast('Cascade','Edge already exists','tw');return;}
-      CI_EDGES.push([from,to]);ciUpdateMeta();ciLog('ok',ciSid(from),'→ '+ciSid(to)+' edge added');toast('Edge added',ciSid(from)+' → '+ciSid(to),'tg');
-    }
-    function ciRemoveNode(id){
-      var idx=CI_NODES.findIndex(function(n){return n.id===id;});if(idx<0)return;CI_NODES.splice(idx,1);
-      for(var i=CI_EDGES.length-1;i>=0;i--){if(CI_EDGES[i][0]===id||CI_EDGES[i][1]===id)CI_EDGES.splice(i,1);}
-      ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciLog('warn',ciSid(id),'Removed from map');
-    }
-    function ciSaveTopology(){
-      if(!spToken){toast('Cascade','Specialist login required','tw');return;}
-      var payload={nodes:CI_NODES.map(function(n){return{id:n.id,label:n.label,domain:n.domain,x:n.x,y:n.y};}),edges:CI_EDGES.map(function(e){return{from:e[0],to:e[1]};})};
-      fetch(window.location.origin+'/api/cascade/topology',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify(payload)})
-        .then(function(r){if(r.ok){toast('Topology saved','','tg');ciLog('ok','Topology','Saved by specialist');}else{toast('Save failed','Check specialist token','tc');}})
-        .catch(function(e){toast('Error',e.message,'tc');});
-    }
-    function ciClearTopology(){
-      if(!confirm('Clear all cascade nodes and edges?'))return;
-      CI_NODES.length=0;CI_EDGES.length=0;
-      ciRebuildEditorSelects();ciRenderTags();ciUpdateMeta();ciSaveTopology();ciLog('warn','Topology','Cleared by specialist');
-    }
-
-    /* ── page switch hook ── */
-    (function patchGoPage(){
-      var _orig=typeof goPage==='function'?goPage:null;
-      window.goPage=function(el,name){
-        document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-        document.querySelectorAll('.ntab').forEach(function(t){t.classList.remove('active');});
-        var pg=document.getElementById('page-'+name);if(pg)pg.classList.add('active');
-        el.classList.add('active');
-        document.querySelectorAll('.subloc').forEach(function(s){s.classList.remove('vis');});
-        var sub=document.getElementById('sub-'+name);if(sub)sub.classList.add('vis');
-        if(typeof loadWx==='function'&&name==='wx')loadWx();
-        if(typeof _currentPage!=='undefined')window._currentPage=name;
-        if(typeof setLogoPage==='function')setLogoPage(name);
-        if(name==='intel'){
-          if(!_ci.booted)setTimeout(ciInit,80);
-          else{ciSyncHealth();ciShowEditor();ciResize();}
-        }
-      };
-    })();
-
-    /* ── login patch ── */
-    (function patchLogin(){
-      var t=setInterval(function(){
-        if(typeof doLogin==='function'&&typeof doLogout==='function'){
-          clearInterval(t);
-          var ol=doLogin,oo=doLogout;
-          doLogin=async function(){await ol();setTimeout(ciShowEditor,200);};
-          doLogout=function(){oo();ciShowEditor();};
-        }
-      },400);
-    })();
-
-    /* ── auto-boot if intel tab already active ── */
+    /* ── Auto-boot if intel page already active on load ── */
     setTimeout(function(){
       var pg=document.getElementById('page-intel');
-      if(pg&&pg.classList.contains('active'))ciInit();
+      if(pg&&pg.classList.contains('active'))cascInit();
     },600);
 </script>
 </body>
