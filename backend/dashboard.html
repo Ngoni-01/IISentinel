@@ -1,3 +1,4 @@
+this is the rest of my html code, and deepseek i dont want that previous file wiht the dimensions of the cascade engine i just want my current code as i gave you, just make it to show dont start redesigning sizes and dimensions and what not:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -844,7 +845,7 @@
       <div class="ci2-layout">
         <div class="ci2-map-wrap">
           <div class="ci2-canvas-title">Live Cascade Map &mdash; click node to degrade &middot; drag to reposition</div>
-          <canvas id="ci2-canvas"></canvas>
+          <canvas id="cascade-canvas"></canvas>
           <div class="ci2-canvas-hint">Nodes colour-coded by health &middot; Edges show dependency direction &middot; Watch cascade propagate in real time</div>
         </div>
         <div class="ci2-panel">
@@ -1020,6 +1021,8 @@
       </div>
     </div>
   </div><!-- /wrap -->
+
+  why is the engine not showing any nodes:
 
   <script>
     var B=window.location.origin;
@@ -1210,395 +1213,362 @@
     setInterval(nmRefresh,35000);
 
     /* ══════════════════════════════════════════════════════════════
-   CASCADE INTELLIGENCE ENGINE — IISentinel™ v3
-   (matched to your HTML – uses ci2- IDs)
-   ══════════════════════════════════════════════════════════════ */
+       CASCADE INTELLIGENCE ENGINE — IISentinel™ v3
+       Integrated from Cascade Sentinel Demo (Space Grotesk edition)
+       Full BFS propagation · 5 scenarios · Economic model
+       ══════════════════════════════════════════════════════════════ */
 
-var CI2_NODES = [
-  {id:'wan',     label:'WAN Link',       domain:'net',  x:.12,y:.18,health:100,cost:12000, type:'net'},
-  {id:'core-sw', label:'Core Switch',    domain:'net',  x:.28,y:.28,health:100,cost:10000, type:'net'},
-  {id:'fw',      label:'Firewall',       domain:'net',  x:.18,y:.42,health:100,cost:20000, type:'net'},
-  {id:'noc',     label:'NOC Router',     domain:'net',  x:.42,y:.18,health:100,cost:15000, type:'net'},
-  {id:'tower',   label:'BTS Tower',      domain:'tc',   x:.62,y:.12,health:100,cost:35000, type:'tc'},
-  {id:'mw-link', label:'MW Backhaul',    domain:'tc',   x:.55,y:.28,health:100,cost:40000, type:'tc'},
-  {id:'bs',      label:'Base Station',   domain:'tc',   x:.72,y:.38,health:100,cost:25000, type:'tc'},
-  {id:'scada',   label:'SCADA Node',     domain:'mc',   x:.22,y:.62,health:100,cost:60000, type:'mc'},
-  {id:'plc',     label:'PLC Shaft 1',    domain:'mc',   x:.12,y:.76,health:100,cost:80000, type:'mc'},
-  {id:'pump',    label:'Dewater Pump',   domain:'mc',   x:.05,y:.88,health:100,cost:150000,type:'mc'},
-  {id:'conv',    label:'Conveyor',       domain:'mc',   x:.22,y:.88,health:100,cost:120000,type:'mc'},
-  {id:'pm',      label:'Power Meter',    domain:'mc',   x:.35,y:.72,health:100,cost:100000,type:'mc'},
-  {id:'vent',    label:'Ventilation',    domain:'mc',   x:.35,y:.88,health:100,cost:180000,type:'mc'},
-  {id:'cbs',     label:'CBS Controller', domain:'cbs',  x:.50,y:.62,health:100,cost:450000,type:'cbs'},
-  {id:'plant',   label:'Process Plant',  domain:'plant',x:.65,y:.72,health:100,cost:320000,type:'plant'},
-];
+    var CASC_NODES = [
+      {id:'wan',     label:'WAN Link',       type:'net',   x:.12,y:.18,health:100,domain:'Network',   cost:12000},
+      {id:'core-sw', label:'Core Switch',    type:'net',   x:.28,y:.28,health:100,domain:'Network',   cost:10000},
+      {id:'fw',      label:'Firewall',       type:'net',   x:.18,y:.42,health:100,domain:'Network',   cost:20000},
+      {id:'noc',     label:'NOC Router',     type:'net',   x:.42,y:.18,health:100,domain:'Network',   cost:15000},
+      {id:'tower',   label:'BTS Tower',      type:'tc',    x:.62,y:.12,health:100,domain:'Telecom',   cost:35000},
+      {id:'mw-link', label:'MW Backhaul',    type:'tc',    x:.55,y:.28,health:100,domain:'Telecom',   cost:40000},
+      {id:'bs',      label:'Base Station',   type:'tc',    x:.72,y:.38,health:100,domain:'Telecom',   cost:25000},
+      {id:'scada',   label:'SCADA Node',     type:'mc',    x:.22,y:.62,health:100,domain:'Mining OT', cost:60000},
+      {id:'plc',     label:'PLC Shaft 1',    type:'mc',    x:.12,y:.76,health:100,domain:'Mining OT', cost:80000},
+      {id:'pump',    label:'Dewater Pump',   type:'mc',    x:.05,y:.88,health:100,domain:'Mining OT', cost:150000},
+      {id:'conv',    label:'Conveyor',       type:'mc',    x:.22,y:.88,health:100,domain:'Mining OT', cost:120000},
+      {id:'pm',      label:'Power Meter',    type:'mc',    x:.35,y:.72,health:100,domain:'Mining OT', cost:100000},
+      {id:'vent',    label:'Ventilation',    type:'mc',    x:.35,y:.88,health:100,domain:'Mining OT', cost:180000},
+      {id:'cbs',     label:'CBS Controller', type:'cbs',   x:.50,y:.62,health:100,domain:'CBS Safety',cost:450000},
+      {id:'plant',   label:'Process Plant',  type:'plant', x:.65,y:.72,health:100,domain:'Production',cost:320000},
+    ];
 
-var CI2_EDGES = [
-  ['wan','core-sw'],['core-sw','fw'],['core-sw','noc'],
-  ['noc','mw-link'],['tower','mw-link'],['mw-link','bs'],
-  ['fw','scada'],['scada','plc'],['scada','cbs'],
-  ['plc','pump'],['plc','conv'],['pm','plc'],['pm','vent'],
-  ['conv','plant'],['vent','plant'],
-];
+    var CASC_EDGES = [
+      ['wan','core-sw'],['core-sw','fw'],['core-sw','noc'],
+      ['noc','mw-link'],['tower','mw-link'],['mw-link','bs'],
+      ['fw','scada'],['scada','plc'],['scada','cbs'],
+      ['plc','pump'],['plc','conv'],['pm','plc'],['pm','vent'],
+      ['conv','plant'],['vent','plant'],
+    ];
 
-var CI2_DOM_COL = {net:'#00d4c8',tc:'#a27cf8',mc:'#f5c420',cbs:'#f02e50',plant:'#22e07a'};
+    var CASC_TYPE_COL = {net:'#1ec8f5',tc:'#b06cfb',mc:'#f5a623',cbs:'#ff3356',plant:'#19e87c'};
 
-var CI2_CASC_MSG = {
-  'core-sw':'Core Switch failover — SCADA loses primary uplink.',
-  scada:    'SCADA comms lost — OT visibility degraded across all shafts.',
-  cbs:      'CBS heartbeat failed — BLAST HOLD auto-interlock triggered.',
-  plc:      'PLC lost SCADA sync — manual override required.',
-  pump:     'Dewatering pump stopped — shaft flooding risk elevated.',
-  conv:     'Conveyor halted — ore transport to plant interrupted.',
-  vent:     'Ventilation degraded — shaft temperature rising.',
-  plant:    'Process plant feed cut — production halted.',
-  'mw-link':'Microwave backhaul failed — NOC blinded to remote sites.',
-  bs:       'Base station offline — mobile comms to mine lost.',
-  noc:      'NOC router degraded — remote monitoring impaired.',
-  fw:       'Firewall degraded — OT/IT segmentation at risk.',
-  pm:       'Power anomaly detected — PLC I/O unstable.',
-};
+    var _cascCvs=null,_cascCtx=null,_cascW=700,_cascH=420;
+    var _cascTotalCost=0,_cascRunning=false,_cascTimers=[];
+    var _cascPackets=[],_cascLastPkt=0,_cascBooted=false;
+    var _cascActiveScenario=null;
 
-var CI2_INSIGHTS = {
-  wan:     '<strong>Causal chain confirmed:</strong> WAN degradation → Core Switch failover → SCADA loses primary link → CBS heartbeat fails → <strong>Blast hold auto-triggers.</strong> IISentinel traced this 5-hop cross-domain path before any threshold alarm fired. Economic exposure: <strong style="color:var(--red)">$450k/hr direct + downstream production loss.</strong>',
-  cbs:     '<strong>Safety interlock cascade:</strong> CBS DNP3 integrity drop triggers automatic blast hold. This cascades to a SCADA alarm flood, NOC alert storm, and production standby cost. <strong>IISentinel quantified the full exposure in real time.</strong>',
-  pm:      '<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Process plant starved of ore. <strong>IISentinel predicted this chain 8 minutes before threshold alarms fired.</strong>',
-  tower:   '<strong>Weather-correlated cascade:</strong> Storm drives tower to structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-routed SMS alerts before tower failure confirmed.</strong>',
-  compound:'<strong>Compound cascade confirmed across all four domains simultaneously.</strong> Cross-domain amplification: a 30% WAN degradation cascades into 100% production loss. <strong>Total real-time exposure modelled: $1.2M/hr.</strong>',
-};
+    function cascNx(n){return n.x*_cascW;}
+    function cascNy(n){return n.y*_cascH;}
+    function healthCol(h){return h>=70?'#19e87c':h>=40?'#f5a623':'#ff3356';}
 
-var _ci2={
-  canvas:null,ctx:null,W:700,H:420,
-  raf:null,lastPkt:0,packets:[],
-  cascadeRunning:false,cascadeTimers:[],
-  degraded:{},activeScenario:null,
-  booted:false,
-};
-
-/* helpers */
-function ci2Col(dom){ return CI2_DOM_COL[dom]||'#28c4f8'; }
-function ci2HCol(h){ return h>=70?'#22e07a':h>=40?'#f29510':'#f02e50'; }
-function ci2Nx(n){ return n.x*_ci2.W; }
-function ci2Ny(n){ return n.y*_ci2.H; }
-
-function ci2Resize(){
-  if(!_ci2.canvas)return;
-  var wrap=_ci2.canvas.parentElement;
-  var W=wrap?Math.max(320,wrap.clientWidth-2):700;
-  var H=Math.max(360,Math.round(W*.54));
-  _ci2.canvas.width=_ci2.W=W;
-  _ci2.canvas.height=_ci2.H=H;
-  _ci2.canvas.style.width='100%';
-  _ci2.canvas.style.height=H+'px';
-  if(wrap)wrap.style.minHeight=H+'px';
-}
-
-function ci2Init(){
-  var cvs=document.getElementById('ci2-canvas');           // <-- matches HTML
-  if(!cvs||_ci2.booted)return;
-  _ci2.canvas=cvs;_ci2.ctx=cvs.getContext('2d');
-  ci2Resize();
-  window.addEventListener('resize',ci2Resize);
-  cvs.addEventListener('click',function(e){
-    var r=cvs.getBoundingClientRect();
-    var mx=(e.clientX-r.left)*(_ci2.W/r.width);
-    var my=(e.clientY-r.top)*(_ci2.H/r.height);
-    for(var i=CI2_NODES.length-1;i>=0;i--){
-      var n=CI2_NODES[i],dx=ci2Nx(n)-mx,dy=ci2Ny(n)-my;
-      if(Math.sqrt(dx*dx+dy*dy)<20){
-        ci2DegradeNode(n.id,25+Math.random()*30);
-        break;
-      }
+    function cascResize(){
+      if(!_cascCvs)return;
+      var wrap=_cascCvs.parentElement;
+      var W=wrap?Math.max(320,wrap.clientWidth-2):700;
+      var H=Math.max(360,Math.round(W*.54));
+      _cascCvs.width=_cascW=W;
+      _cascCvs.height=_cascH=H;
+      _cascCvs.style.width='100%';
+      _cascCvs.style.height=H+'px';
+      if(wrap)wrap.style.minHeight=H+'px';
     }
-  });
-  ci2SyncHealth();
-  (function loop(t){
-    _ci2.raf=requestAnimationFrame(loop);
-    if(!document.getElementById('page-intel')||
-       !document.getElementById('page-intel').classList.contains('active'))return;
-    ci2Draw(t);
-  })(0);
-  _ci2.booted=true;
-}
 
-function ci2SyncHealth(){
-  if(!allData||!allData.length)return;
-  var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
-  CI2_NODES.forEach(function(n){
-    if(_ci2.cascadeRunning&&n.health<100)return;
-    var live=dm[n.id];
-    if(live)n.health=Math.min(100,Math.max(0,live.health_score));
-  });
-}
+    function cascDraw(){
+      if(!_cascCtx)return;
+      var ctx=_cascCtx,W=_cascW,H=_cascH;
+      ctx.clearRect(0,0,W,H);
 
-function ci2Draw(t){
-  var ctx=_ci2.ctx,W=_ci2.W,H=_ci2.H;
-  ctx.clearRect(0,0,W,H);
-  // background
-  ctx.fillStyle='#04080f';ctx.fillRect(0,0,W,H);
-  // grid
-  ctx.strokeStyle='rgba(255,255,255,.022)';ctx.lineWidth=.6;
-  for(var gx=0;gx<W;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
-  for(var gy=0;gy<H;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-  // zone labels
-  [{l:'NETWORK',c:'#00d4c8',x:.04,y:.03},{l:'TELECOM',c:'#a27cf8',x:.55,y:.03},
-   {l:'MINING OT',c:'#f5c420',x:.02,y:.55},{l:'CBS SAFETY',c:'#f02e50',x:.44,y:.55},
-   {l:'PRODUCTION',c:'#22e07a',x:.60,y:.67}
-  ].forEach(function(z){
-    ctx.font='700 8px "JetBrains Mono",monospace';
-    ctx.fillStyle=z.c+'44';ctx.textAlign='left';ctx.textBaseline='top';
-    ctx.fillText(z.l,z.x*W,z.y*H);
-  });
-  // edges
-  CI2_EDGES.forEach(function(e){
-    var a=CI2_NODES.find(function(n){return n.id===e[0];});
-    var b=CI2_NODES.find(function(n){return n.id===e[1];});
-    if(!a||!b)return;
-    var ax=ci2Nx(a),ay=ci2Ny(a),bx=ci2Nx(b),by=ci2Ny(b);
-    var crit=a.health<35||b.health<35,deg=a.health<70||b.health<70;
-    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
-    ctx.strokeStyle=crit?'rgba(240,46,80,.65)':deg?'rgba(242,149,16,.5)':'rgba(40,196,248,.14)';
-    ctx.lineWidth=crit?1.8:deg?1.2:.8;
-    if(crit)ctx.setLineDash([6,4]);else ctx.setLineDash([]);
-    ctx.stroke();ctx.setLineDash([]);
-    // arrowhead
-    var dx=bx-ax,dy=by-ay,len=Math.sqrt(dx*dx+dy*dy)||1;
-    var ux=dx/len,uy=dy/len,mx=ax+dx*.54,my=ay+dy*.54;
-    ctx.beginPath();
-    ctx.moveTo(mx+ux*5-uy*3,my+uy*5+ux*3);
-    ctx.lineTo(mx+ux*10,my+uy*10);
-    ctx.lineTo(mx+ux*5+uy*3,my+uy*5-ux*3);
-    ctx.strokeStyle=crit?'rgba(240,46,80,.7)':deg?'rgba(242,149,16,.65)':'rgba(40,196,248,.4)';
-    ctx.lineWidth=1;ctx.stroke();
-  });
-  // data packets
-  if(t&&t-_ci2.lastPkt>700){
-    _ci2.lastPkt=t;
-    CI2_EDGES.forEach(function(e){
-      if(Math.random()>.72)return;
-      var a=CI2_NODES.find(function(n){return n.id===e[0];});
-      var b=CI2_NODES.find(function(n){return n.id===e[1];});
-      if(a&&b&&a.health>45&&b.health>45)
-        _ci2.packets.push({from:e[0],to:e[1],t:0,
-          col:a.health<70?'rgba(242,149,16,.9)':'rgba(40,196,248,.8)',
-          size:a.domain==='cbs'?4:2.5});
-    });
-  }
-  _ci2.packets=_ci2.packets.filter(function(p){return p.t<1;});
-  _ci2.packets.forEach(function(p){
-    p.t+=.014;
-    var a=CI2_NODES.find(function(n){return n.id===p.from;});
-    var b=CI2_NODES.find(function(n){return n.id===p.to;});
-    if(!a||!b)return;
-    var px=ci2Nx(a)+(ci2Nx(b)-ci2Nx(a))*p.t;
-    var py=ci2Ny(a)+(ci2Ny(b)-ci2Ny(a))*p.t;
-    ctx.shadowColor=p.col;ctx.shadowBlur=10;
-    ctx.beginPath();ctx.arc(px,py,p.size,0,Math.PI*2);
-    ctx.fillStyle=p.col;ctx.fill();
-    ctx.shadowBlur=0;
-  });
-  // nodes
-  CI2_NODES.forEach(function(n){
-    var x=ci2Nx(n),y=ci2Ny(n),h=Math.max(0,Math.min(100,n.health||100));
-    var hcol=ci2HCol(h),dcol=ci2Col(n.domain);
-    var isCbs=n.domain==='cbs';
-    var r=isCbs?14:n.domain==='plant'?12:11;
-    if(h<70){
-      ctx.beginPath();ctx.arc(x,y,r+8,0,Math.PI*2);
-      ctx.strokeStyle=(h<35?'rgba(240,46,80,':'rgba(242,149,16,')+(h<35?.25:.18)+')';
-      ctx.lineWidth=1;ctx.stroke();
-    }
-    ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);
-    ctx.strokeStyle=dcol+'22';ctx.lineWidth=.8;ctx.stroke();
-    var arcLen=(h/100)*Math.PI*2;
-    ctx.beginPath();ctx.arc(x,y,r+2.5,-Math.PI/2,-Math.PI/2+arcLen);
-    ctx.strokeStyle=hcol;ctx.lineWidth=2.8;
-    ctx.shadowColor=hcol;ctx.shadowBlur=h<50?16:6;
-    ctx.stroke();ctx.shadowBlur=0;
-    if(isCbs&&h<90){
-      var pulse=(Math.sin(Date.now()*.004)+1)*.5;
-      ctx.beginPath();ctx.arc(x,y,r+10+pulse*4,0,Math.PI*2);
-      ctx.strokeStyle='rgba(240,46,80,'+(0.15+pulse*.2)+')';ctx.lineWidth=1.2;ctx.stroke();
-    }
-    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
-    var g=ctx.createRadialGradient(x-r*.35,y-r*.35,0,x,y,r);
-    g.addColorStop(0,dcol+'50');g.addColorStop(1,dcol+'18');
-    ctx.fillStyle=g;ctx.fill();
-    ctx.strokeStyle=dcol+'88';ctx.lineWidth=1.5;ctx.stroke();
-    ctx.font='700 '+(r>12?'9':'8')+'px "JetBrains Mono",monospace';
-    ctx.fillStyle=hcol;ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.shadowColor=hcol;ctx.shadowBlur=4;
-    ctx.fillText(Math.round(h),x,y);
-    ctx.shadowBlur=0;
-    ctx.font='600 8.5px "Sora",sans-serif';
-    var lbl=(n.label||n.id).slice(0,15);
-    var tw=ctx.measureText(lbl).width+8;
-    ctx.fillStyle='rgba(4,8,15,.72)';
-    var lx=x-tw/2,ly=y+r+4,lh=13,lr=4;
-    ctx.beginPath();ctx.moveTo(lx+lr,ly);ctx.lineTo(lx+tw-lr,ly);ctx.arcTo(lx+tw,ly,lx+tw,ly+lh,lr);ctx.lineTo(lx+tw,ly+lh-lr);ctx.arcTo(lx+tw,ly+lh,lx+tw-lr,ly+lh,lr);ctx.lineTo(lx+lr,ly+lh);ctx.arcTo(lx,ly+lh,lx,ly+lh-lr,lr);ctx.lineTo(lx,ly+lr);ctx.arcTo(lx,ly,lx+lr,ly,lr);ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle=h<35?'#f02e50':h<70?'#f29510':'rgba(224,234,248,.9)';
-    ctx.textAlign='center';ctx.textBaseline='top';
-    ctx.fillText(lbl,x,y+r+5);
-  });
-}
+      /* Background */
+      ctx.fillStyle='#04080f';ctx.fillRect(0,0,W,H);
 
-function ci2LogEvent(cls,dev,msg,time){
-  var log=document.getElementById('ci2-clog');if(!log)return;
-  var el=document.createElement('div');
-  el.className='ci2-clog-item '+(cls||'ok');
-  el.innerHTML='<div class="ci2-clog-t">'+(time||new Date().toLocaleTimeString())+'</div>'
-    +'<div class="ci2-clog-dev">'+dev+'</div>'
-    +'<div class="ci2-clog-msg">'+msg+'</div>';
-  log.insertBefore(el,log.firstChild);
-  while(log.children.length>14)log.removeChild(log.lastChild);
-}
+      /* Grid */
+      ctx.strokeStyle='rgba(255,255,255,.025)';ctx.lineWidth=.7;
+      for(var gx=0;gx<W;gx+=40){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}
+      for(var gy=0;gy<H;gy+=40){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
 
-function ci2DegradeNode(id,amount){
-  var n=CI2_NODES.find(function(x){return x.id===id;});if(!n)return;
-  n.health=Math.max(0,n.health-amount);_ci2.degraded[id]=true;
-  ci2LogEvent(n.health<35?'crit':'warn',n.label,
-    'Degraded to '+Math.round(n.health)+'% — tracing cascade…');
-  if(!_ci2.cascadeRunning)ci2Propagate(id);
-}
-
-function ci2Propagate(originId){
-  _ci2.cascadeRunning=true;
-  var queue=[{id:originId,delay:0}],visited={};visited[originId]=true;
-  function step(){
-    if(!queue.length){_ci2.cascadeRunning=false;ci2Finish(originId);return;}
-    var item=queue.shift();
-    var t=setTimeout(function(){
-      var node=CI2_NODES.find(function(n){return n.id===item.id;});
-      if(!node){step();return;}
-      CI2_EDGES.forEach(function(e){
-        var depId=e[0]===item.id?e[1]:null;
-        if(!depId||visited[depId])return;
-        var dep=CI2_NODES.find(function(n){return n.id===depId;});if(!dep)return;
-        if(node.health<55){
-          visited[depId]=true;
-          var amt=node.health<20?40:node.health<35?25:12;
-          dep.health=Math.max(0,dep.health-amt);_ci2.degraded[dep.id]=true;
-          var msg=CI2_CASC_MSG[dep.id]||('Cascade from '+node.label+' — now '+Math.round(dep.health)+'%');
-          if(dep.id==='cbs'&&dep.health<90){
-            ci2LogEvent('cbs','CBS HOLD','⚠ BLAST HOLD ISSUED — DNP3 integrity <90% — $450,000/hr');
-            var hp=document.getElementById('ci2-hold-pill');if(hp)hp.style.display='';
-            var cs=document.getElementById('ci2-stat-cbs');if(cs){cs.textContent='HOLD';cs.style.color='var(--red)';}
-          }else{
-            ci2LogEvent(dep.health<35?'crit':dep.health<70?'warn':'ok',dep.label,msg);
-          }
-          ci2UpdateStats();ci2UpdateEcon();
-          queue.push({id:depId,delay:500+Math.random()*400});
-        }
+      /* Zone labels */
+      [{l:'NETWORK',c:'#1ec8f5',x:.04,y:.03},{l:'TELECOM',c:'#b06cfb',x:.55,y:.03},
+       {l:'MINING OT',c:'#f5a623',x:.02,y:.55},{l:'CBS SAFETY',c:'#ff3356',x:.44,y:.55},
+       {l:'PRODUCTION',c:'#19e87c',x:.60,y:.67}
+      ].forEach(function(z){
+        ctx.font='700 8px "JetBrains Mono",monospace';
+        ctx.fillStyle=z.c+'44';ctx.textAlign='left';ctx.textBaseline='top';
+        ctx.fillText(z.l,z.x*W,z.y*H);
       });
-      step();
-    },item.delay);
-    _ci2.cascadeTimers.push(t);
-  }
-  step();
-}
 
-function ci2Finish(originId){
-  var affected=new Set();
-  CI2_NODES.forEach(function(n){if(n.health<90)affected.add(n.domain);});
-  var lowH=CI2_NODES.filter(function(n){return n.health<40&&n.health>0;}).length;
-  document.getElementById('ci2-stat-affected').textContent=affected.size;
-  document.getElementById('ci2-stat-predicted').textContent=lowH;
-  document.getElementById('ci2-stat-ttc').textContent=lowH>0?Math.floor(lowH*4+6)+'min':'--';
-  ci2UpdateStats();ci2UpdateEcon();
-  var key=_ci2.activeScenario||originId;
-  var body=document.getElementById('ci2-ai-insight');
-  if(body)body.innerHTML=CI2_INSIGHTS[key]||CI2_INSIGHTS['wan'];
-  ci2LogEvent('crit','Analysis','Complete — '+affected.size+' domains, '+lowH+' predicted failures');
-}
+      /* Edges */
+      CASC_EDGES.forEach(function(e){
+        var a=CASC_NODES.find(function(n){return n.id===e[0];});
+        var b=CASC_NODES.find(function(n){return n.id===e[1];});
+        if(!a||!b)return;
+        var crit=a.health<35||b.health<35,deg=a.health<70||b.health<70;
+        ctx.beginPath();ctx.moveTo(cascNx(a),cascNy(a));ctx.lineTo(cascNx(b),cascNy(b));
+        ctx.strokeStyle=crit?'rgba(255,51,86,.6)':deg?'rgba(245,166,35,.45)':'rgba(30,200,245,.18)';
+        ctx.lineWidth=crit?2:deg?1.5:1;
+        if(crit)ctx.setLineDash([6,4]);else ctx.setLineDash([]);
+        ctx.stroke();ctx.setLineDash([]);
+        /* Arrow */
+        var dx=cascNx(b)-cascNx(a),dy=cascNy(b)-cascNy(a),len=Math.sqrt(dx*dx+dy*dy)||1;
+        var ux=dx/len,uy=dy/len,mx2=cascNx(a)+dx*.55,my2=cascNy(a)+dy*.55;
+        ctx.beginPath();
+        ctx.moveTo(mx2+ux*6-uy*4,my2+uy*6+ux*4);
+        ctx.lineTo(mx2+ux*12,my2+uy*12);
+        ctx.lineTo(mx2+ux*6+uy*4,my2+uy*6-ux*4);
+        ctx.strokeStyle=crit?'rgba(255,51,86,.8)':deg?'rgba(245,166,35,.7)':'rgba(30,200,245,.4)';
+        ctx.lineWidth=1.2;ctx.stroke();
+      });
 
-function ci2UpdateStats(){
-  var total=0;
-  CI2_NODES.forEach(function(n){
-    var h=n.health||100;
-    var impact=h<20?.95:h<35?.6:h<50?.25:0;
-    total+=Math.round(n.cost*impact);
-  });
-  var el=document.getElementById('ci2-cost-main');if(el)el.textContent='$'+total.toLocaleString()+'/hr';
-}
+      /* Animated data packets */
+      _cascPackets=_cascPackets.filter(function(p){return p.t<1;});
+      _cascPackets.forEach(function(p){
+        p.t+=.016;
+        var a=CASC_NODES.find(function(n){return n.id===p.from;});
+        var b=CASC_NODES.find(function(n){return n.id===p.to;});
+        if(!a||!b)return;
+        var px=cascNx(a)+(cascNx(b)-cascNx(a))*p.t;
+        var py=cascNy(a)+(cascNy(b)-cascNy(a))*p.t;
+        ctx.beginPath();ctx.arc(px,py,2.5,0,Math.PI*2);
+        ctx.shadowColor=p.col;ctx.shadowBlur=8;
+        ctx.fillStyle=p.col;ctx.fill();ctx.shadowBlur=0;
+      });
 
-function ci2UpdateEcon(){
-  var direct=0,cascade=0;
-  CI2_NODES.forEach(function(n){
-    var h=n.health||100;
-    var d=h<20?.85:h<35?.5:h<50?.2:0;
-    var c=h<20?.1:h<35?.08:h<50?.05:0;
-    direct+=Math.round(n.cost*d);
-    cascade+=Math.round(n.cost*c);
-  });
-  var prevented=Math.round((direct+cascade)*0.62);
-  var roi=direct+cascade>0?Math.round(prevented/(direct+cascade)*10)/10:'∞';
-  document.getElementById('ci2-ec-direct').textContent='$'+Math.round(direct/1000)+'k';
-  document.getElementById('ci2-ec-cascade').textContent='$'+Math.round(cascade/1000)+'k';
-  document.getElementById('ci2-ec-prevented').textContent='$'+Math.round(prevented/1000)+'k';
-  document.getElementById('ci2-ec-roi').textContent=typeof roi==='number'?roi+'x':'∞';
-}
-
-// Called from HTML buttons
-function ci2RunScenario(name){
-  ci2ResetAll();_ci2.activeScenario=name;
-  document.querySelectorAll('.ci2-sim-btn').forEach(function(b){b.classList.remove('active');});
-  var btn=document.getElementById('ci2-sb-'+name);if(btn)btn.classList.add('active');
-  var map={
-    wan:     function(){ci2DegradeNode('wan',58);},
-    cbs:     function(){ci2DegradeNode('cbs',30);setTimeout(function(){ci2DegradeNode('cbs',38);},1200);},
-    power:   function(){ci2DegradeNode('pm',65);},
-    storm:   function(){ci2DegradeNode('tower',72);setTimeout(function(){ci2DegradeNode('mw-link',30);},900);},
-    compound:function(){ci2DegradeNode('wan',42);setTimeout(function(){ci2DegradeNode('pm',52);},600);setTimeout(function(){ci2DegradeNode('tower',62);},1300);},
-  };
-  if(map[name])map[name]();
-}
-
-function ci2ResetAll(){
-  _ci2.cascadeTimers.forEach(clearTimeout);_ci2.cascadeTimers=[];
-  _ci2.cascadeRunning=false;_ci2.degraded={};_ci2.activeScenario=null;
-  CI2_NODES.forEach(function(n){n.health=100;});
-  _ci2.packets=[];
-  ci2SyncHealth();
-  document.querySelectorAll('.ci2-sim-btn').forEach(function(b){b.classList.remove('active');});
-  document.getElementById('ci2-cost-main').textContent='$0/hr';
-  document.getElementById('ci2-stat-affected').textContent='0';
-  document.getElementById('ci2-stat-predicted').textContent='0';
-  document.getElementById('ci2-stat-ttc').textContent='--';
-  var cs=document.getElementById('ci2-stat-cbs');if(cs){cs.textContent='ARMED';cs.style.color='var(--grn)';}
-  var hp=document.getElementById('ci2-hold-pill');if(hp)hp.style.display='none';
-  ['ci2-ec-direct','ci2-ec-cascade','ci2-ec-prevented'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='$0';});
-  document.getElementById('ci2-ec-roi').textContent='∞';
-  var body=document.getElementById('ci2-ai-insight');
-  if(body)body.innerHTML='<div class="ci2-insight-title">Awaiting event...</div>IISentinel\'s causal graph engine maps <strong>dependency chains across all infrastructure domains simultaneously</strong>. Trigger a scenario or click any node to see predictive cascade analysis in real time.';
-  var log=document.getElementById('ci2-clog');
-  if(log)log.innerHTML='<div class="ci2-clog-item ok"><div class="ci2-clog-t">Reset</div><div class="ci2-clog-dev">IISentinel™ Engine</div><div class="ci2-clog-msg">All nodes restored to live health — topology unchanged.</div></div>';
-}
-
-// Page navigation hook
-(function(){
-  var origGoPage=goPage;
-  goPage=function(el,name){
-    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-    document.querySelectorAll('.ntab').forEach(function(t){t.classList.remove('active');});
-    var pg=document.getElementById('page-'+name);if(pg)pg.classList.add('active');
-    el.classList.add('active');
-    document.querySelectorAll('.subloc').forEach(function(s){s.classList.remove('vis');});
-    var sub=document.getElementById('sub-'+name);if(sub)sub.classList.add('vis');
-    if(name==='wx')loadWx();
-    _currentPage=name;
-    setLogoPage(name);
-    if(name==='intel'){
-      if(!_ci2.booted)setTimeout(ci2Init,80);
-      else{ci2SyncHealth();ci2Resize();}
+      /* Nodes */
+      CASC_NODES.forEach(function(n){
+        var x=cascNx(n),y=cascNy(n);
+        var r=n.type==='cbs'?14:n.type==='plant'?12:11;
+        var col=healthCol(n.health);
+        var tcol=CASC_TYPE_COL[n.type]||col;
+        ctx.shadowColor=n.health<35?'#ff3356':tcol;ctx.shadowBlur=n.health<35?22:10;
+        /* Outer domain ring */
+        ctx.beginPath();ctx.arc(x,y,r+4,0,Math.PI*2);
+        ctx.strokeStyle=tcol+(n.health<70?'88':'33');ctx.lineWidth=1;ctx.stroke();
+        /* Health arc */
+        var ang=(n.health/100)*Math.PI*2;
+        ctx.beginPath();ctx.arc(x,y,r+2,-Math.PI/2,-Math.PI/2+ang);
+        ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();
+        /* CBS pulse */
+        if(n.type==='cbs'&&n.health<90){
+          var pulse=(Math.sin(Date.now()*.004)+1)*.5;
+          ctx.beginPath();ctx.arc(x,y,r+10+pulse*4,0,Math.PI*2);
+          ctx.strokeStyle='rgba(255,51,86,'+(0.12+pulse*.18)+')';ctx.lineWidth=1.2;ctx.stroke();
+        }
+        /* Fill */
+        ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+        var grad=ctx.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r);
+        grad.addColorStop(0,tcol+'44');grad.addColorStop(1,tcol+'11');
+        ctx.fillStyle=grad;ctx.fill();
+        ctx.strokeStyle=tcol+'88';ctx.lineWidth=1.5;ctx.stroke();ctx.shadowBlur=0;
+        /* Score */
+        ctx.font='700 9px "JetBrains Mono",monospace';
+        ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(Math.round(n.health),x,y);
+        /* Label pill */
+        ctx.font='600 8.5px "Sora",sans-serif';
+        var lbl=(n.label||n.id).slice(0,15);
+        var tw=ctx.measureText(lbl).width+8;
+        ctx.fillStyle='rgba(4,8,15,.72)';
+        var lx=x-tw/2,ly=y+r+4,lh=13,lr=4;
+        ctx.beginPath();ctx.moveTo(lx+lr,ly);ctx.lineTo(lx+tw-lr,ly);ctx.arcTo(lx+tw,ly,lx+tw,ly+lh,lr);ctx.lineTo(lx+tw,ly+lh-lr);ctx.arcTo(lx+tw,ly+lh,lx+tw-lr,ly+lh,lr);ctx.lineTo(lx+lr,ly+lh);ctx.arcTo(lx,ly+lh,lx,ly+lh-lr,lr);ctx.lineTo(lx,ly+lr);ctx.arcTo(lx,ly,lx+lr,ly,lr);ctx.closePath();ctx.fill();
+        ctx.fillStyle=n.health<35?'#ff3356':n.health<70?'#f5a623':'rgba(224,234,248,.92)';
+        ctx.textAlign='center';ctx.textBaseline='top';
+        ctx.fillText(lbl,x,y+r+5);
+      });
     }
-  };
-})();
 
-// auto-boot on load if intel page active
-setTimeout(function(){
-  var pg=document.getElementById('page-intel');
-  if(pg&&pg.classList.contains('active'))ci2Init();
-},600);
+    function cascSyncHealth(){
+      if(!allData||!allData.length)return;
+      var dm={};allData.forEach(function(r){if(!dm[r.device_id])dm[r.device_id]=r;});
+      var typeMap={wan:'wan_link','core-sw':'switch',fw:'firewall',noc:'router',
+        tower:'network_tower','mw-link':'microwave_link',bs:'base_station',
+        scada:'scada_node',plc:'plc',pump:'pump',conv:'conveyor',
+        pm:'power_meter',vent:'ventilation',cbs:'cbs_controller'};
+      CASC_NODES.forEach(function(n){
+        if(_cascTimers.length&&n.health<100)return; /* don't overwrite active cascade */
+        var ttype=typeMap[n.id];if(!ttype)return;
+        var live=Object.values(dm).find(function(d){return d.device_type===ttype;});
+        if(live)n.health=Math.max(0,Math.min(100,live.health_score));
+      });
+    }
+
+    function cascInit(){
+      var cvs=document.getElementById('cascade-canvas');
+      if(!cvs||_cascBooted)return;
+      _cascCvs=cvs;_cascCtx=cvs.getContext('2d');
+      cascResize();
+      window.addEventListener('resize',cascResize);
+      cvs.addEventListener('click',function(e){
+        var rect=cvs.getBoundingClientRect();
+        var mx=(e.clientX-rect.left)*(_cascW/rect.width);
+        var my=(e.clientY-rect.top)*(_cascH/rect.height);
+        CASC_NODES.forEach(function(n){
+          var dx=cascNx(n)-mx,dy=cascNy(n)-my;
+          if(Math.sqrt(dx*dx+dy*dy)<20)degradeNode(n.id,25+Math.random()*30);
+        });
+      });
+      cascSyncHealth();
+      (function loop(t){
+        requestAnimationFrame(loop);
+        var pg=document.getElementById('page-intel');
+        if(!pg||!pg.classList.contains('active'))return;
+        if(t-_cascLastPkt>800){
+          _cascLastPkt=t;
+          CASC_EDGES.forEach(function(e){
+            if(Math.random()>.72)return;
+            var a=CASC_NODES.find(function(n){return n.id===e[0];});
+            var b=CASC_NODES.find(function(n){return n.id===e[1];});
+            if(a&&b&&a.health>50&&b.health>50)
+              _cascPackets.push({from:e[0],to:e[1],t:0,
+                col:a.health<70?'rgba(245,166,35,.9)':'rgba(30,200,245,.8)'});
+          });
+        }
+        cascDraw();
+      })(0);
+      _cascBooted=true;
+    }
+
+    function degradeNode(id,amount){
+      var n=CASC_NODES.find(function(n){return n.id===id;});if(!n)return;
+      n.health=Math.max(0,n.health-amount);
+      cascLogEvent(n.health<35?'crit':'warn',n.label,
+        'Health degraded to '+Math.round(n.health)+'% — analysing downstream dependencies...',
+        new Date().toLocaleTimeString());
+      propagateCascade(id);
+    }
+
+    function propagateCascade(originId){
+      if(_cascRunning)return;
+      _cascRunning=true;
+      var queue=[{id:originId,delay:0}];
+      var visited={};visited[originId]=true;
+      function step(){
+        if(!queue.length){_cascRunning=false;finalInsight(originId);return;}
+        var item=queue.shift();
+        var t=setTimeout(function(){
+          var node=CASC_NODES.find(function(n){return n.id===item.id;});
+          if(!node){step();return;}
+          CASC_EDGES.forEach(function(e){
+            var depId=e[0]===item.id?e[1]:(e[1]===item.id?e[0]:null);
+            if(!depId||visited[depId])return;
+            var dep=CASC_NODES.find(function(n){return n.id===depId;});if(!dep)return;
+            if(node.health<50){
+              visited[depId]=true;
+              var amt=node.health<20?40:node.health<35?25:12;
+              dep.health=Math.max(0,dep.health-amt);
+              _cascTotalCost+=dep.cost*0.001;
+              updateCostDisplay();
+              cascLogEvent(dep.health<35?'crit':dep.health<70?'warn':'ok',
+                dep.label,getCascadeMsg(dep,node),new Date().toLocaleTimeString());
+              if(dep.id==='cbs'&&dep.health<90){
+                cascLogEvent('cbs','CBS Controller',
+                  '⚠ BLAST HOLD ISSUED — DNP3 integrity below 90% — $450,000/hr exposure.',
+                  new Date().toLocaleTimeString());
+                var hp=document.getElementById('hold-pill');if(hp)hp.style.display='';
+              }
+              queue.push({id:depId,delay:600+Math.random()*400});
+            }
+          });
+          step();
+        },item.delay);
+        _cascTimers.push(t);
+      }
+      step();
+    }
+
+    function getCascadeMsg(dep,origin){
+      var msgs={
+        scada:   'SCADA lost comms via '+origin.label+' — OT visibility degraded.',
+        cbs:     'CBS controller unreachable via '+origin.label+' — preparing blast hold.',
+        plc:     'PLC lost SCADA sync — manual override required.',
+        pump:    'Dewatering pump control interrupted — shaft flooding risk.',
+        conv:    'Conveyor halted — ore transport stopped.',
+        vent:    'Ventilation reduced — temperature rising in shaft.',
+        plant:   'Process plant feed interrupted — production halted.',
+        'mw-link':'MW backhaul failed — NOC communication severed.',
+        bs:      'Base station offline — mobile coverage lost in mine area.',
+        noc:     'NOC router degraded — remote monitoring impaired.',
+        fw:      'Firewall degraded — OT/IT segmentation at risk.',
+        pm:      'Power anomaly — PLC I/O becoming unstable.',
+      };
+      return msgs[dep.id]||('Cascade from '+origin.label+' — '+dep.label+' now at '+Math.round(dep.health)+'%.');
+    }
+
+    function finalInsight(originId){
+      var insights={
+        wan:     '<strong>Causal chain identified:</strong> WAN degradation → Core Switch failover → SCADA loses primary link → CBS heartbeat fails → <strong>Blast hold auto-triggers.</strong> IISentinel traced this 5-hop cross-domain path before any threshold alarm fired. Exposure: <strong style="color:#ff3356">$450k/hr direct + downstream production loss.</strong>',
+        cbs:     '<strong>Safety interlock cascade:</strong> CBS DNP3 integrity drop triggers automatic blast hold. Cascades to SCADA alarm flood, NOC alert storm, and production standby cost. <strong>IISentinel quantified the full exposure in real time.</strong>',
+        pm:      '<strong>Power fault cascade:</strong> Power meter anomaly → PLC I/O instability → Conveyor e-stop → Process plant starved of ore. <strong>IISentinel predicted this chain 8 minutes before threshold alarms fired.</strong>',
+        tower:   '<strong>Weather-correlated cascade:</strong> Storm drives tower to structural wind limit → MW backhaul fails → NOC goes blind → CBS alerts undelivered. <strong>IISentinel pre-routed SMS alerts before tower failure confirmed.</strong>',
+        compound:'<strong>Compound cascade confirmed across all four domains simultaneously.</strong> Cross-domain amplification: a 30% WAN degradation cascades into 100% production loss. <strong>Total real-time exposure modelled: $1.2M/hr.</strong>',
+      };
+      var key=_cascActiveScenario||originId;
+      var insightEl=document.getElementById('ai-insight');
+      if(insightEl)insightEl.innerHTML='<div class="insight-title">Causal analysis complete</div>'+(insights[key]||insights['wan']);
+      var affected=new Set();
+      CASC_NODES.forEach(function(n){if(n.health<90)affected.add(n.domain);});
+      var low=CASC_NODES.filter(function(n){return n.health<40&&n.health>0;}).length;
+      var sa=document.getElementById('stat-affected');if(sa)sa.textContent=affected.size;
+      var sp2=document.getElementById('stat-predicted');if(sp2)sp2.textContent=low;
+      var st=document.getElementById('stat-ttc');if(st)st.textContent=low>0?Math.floor(low*4+8)+'min':'--';
+      var direct=CASC_NODES.filter(function(n){return n.health<50;})
+        .reduce(function(s,n){return s+n.cost*(1-n.health/100)*.5;},0);
+      var cascade2=_cascTotalCost*3200;
+      var prevented=direct*.65;
+      var ed=document.getElementById('ec-direct');if(ed)ed.textContent='$'+Math.round(direct/1000)+'k';
+      var ec=document.getElementById('ec-cascade');if(ec)ec.textContent='$'+Math.round(cascade2/1000)+'k';
+      var ep=document.getElementById('ec-prevented');if(ep)ep.textContent='$'+Math.round(prevented/1000)+'k';
+      var er=document.getElementById('ec-roi');if(er)er.textContent=prevented>0?Math.round(prevented/(Math.max(direct,.1)*.1))+'x':'∞';
+    }
+
+    function updateCostDisplay(){
+      var total=CASC_NODES.filter(function(n){return n.health<50;})
+        .reduce(function(s,n){return s+n.cost*(1-n.health/100)*.5;},0);
+      var el=document.getElementById('cost-anim');
+      if(el)el.textContent='$'+Math.round(total).toLocaleString()+'/hr';
+    }
+
+    function cascLogEvent(cls,dev,msg,time){
+      var log=document.getElementById('clog');if(!log)return;
+      var el=document.createElement('div');
+      el.className='clog-item '+(cls||'ok');
+      el.innerHTML='<div class="clog-t">'+(time||new Date().toLocaleTimeString())+'</div>'
+        +'<div class="clog-dev">'+dev+'</div>'
+        +'<div class="clog-msg">'+msg+'</div>';
+      log.insertBefore(el,log.firstChild);
+      while(log.children.length>14)log.removeChild(log.lastChild);
+    }
+
+    function runScenario(name){
+      resetAll();_cascActiveScenario=name;
+      document.querySelectorAll('.sim-btn').forEach(function(b){b.classList.remove('active');});
+      var btn=document.getElementById('sb-'+name);if(btn)btn.classList.add('active');
+      var map={
+        wan:      function(){degradeNode('wan',55);},
+        cbs:      function(){degradeNode('cbs',25);setTimeout(function(){degradeNode('cbs',35);},1200);},
+        power:    function(){degradeNode('pm',60);},
+        storm:    function(){degradeNode('tower',70);setTimeout(function(){degradeNode('mw-link',30);},800);},
+        compound: function(){degradeNode('wan',40);setTimeout(function(){degradeNode('pm',50);},600);setTimeout(function(){degradeNode('tower',60);},1200);},
+      };
+      if(map[name])map[name]();
+    }
+
+    function resetAll(){
+      _cascTimers.forEach(clearTimeout);_cascTimers=[];
+      _cascRunning=false;_cascTotalCost=0;_cascActiveScenario=null;
+      CASC_NODES.forEach(function(n){n.health=100;});
+      _cascPackets=[];
+      document.querySelectorAll('.sim-btn').forEach(function(b){b.classList.remove('active');});
+      var ce=document.getElementById('cost-anim');if(ce)ce.textContent='$0/hr';
+      ['stat-affected','stat-predicted'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='0';});
+      var st=document.getElementById('stat-ttc');if(st)st.textContent='--';
+      ['ec-direct','ec-cascade','ec-prevented'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='$0';});
+      var er=document.getElementById('ec-roi');if(er)er.textContent='∞';
+      var hp=document.getElementById('hold-pill');if(hp)hp.style.display='none';
+      var ai2=document.getElementById('ai-insight');
+      if(ai2)ai2.innerHTML='<div class="insight-title">Awaiting event...</div>IISentinel\'s causal graph engine maps <strong>dependency chains across all infrastructure domains simultaneously</strong>. Trigger a scenario or click any node to see predictive cascade analysis in real time.';
+      var log=document.getElementById('clog');
+      if(log)log.innerHTML='<div class="clog-item ok"><div class="clog-t">Reset</div><div class="clog-dev">IISentinel™ Engine</div><div class="clog-msg">All nodes restored. Ready for next simulation.</div></div>';
+      cascSyncHealth();
+    }
+
+    /* ── Auto-boot if intel page already active on load ── */
+    setTimeout(function(){
+      var pg=document.getElementById('page-intel');
+      if(pg&&pg.classList.contains('active'))cascInit();
+    },600);
 </script>
 </body>
 </html>
