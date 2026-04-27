@@ -1041,7 +1041,7 @@
     </div>
   </div>
 
-  <script>
+ <script>
     var B=window.location.origin;
     var spToken=null,spName=null,intel={},allData=[];
     var curNet='all',curTc='all',curMc='all';
@@ -1325,7 +1325,7 @@ function goPage(el, name) {
       if(!_ci.canvas)return;
       var wrap=_ci.canvas.parentElement;
       var W=wrap.clientWidth||700;
-      var H=Math.max(460,Math.round(W*.62));
+      var H=Math.max(460,Math.round(W*.62));  // dynamic height, no hardcoded value
       _ci.canvas.width=_ci.W=W;
       _ci.canvas.height=_ci.H=H;
       _ci.canvas.style.width='100%';
