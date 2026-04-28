@@ -178,7 +178,7 @@
     .esb:first-child { padding-left: 0; }
     .esb-v { font-family: var(--mono); font-size: 21px; font-weight: 700; line-height: 1; letter-spacing: -.03em; color: var(--acc); transition: color .6s; }
     .esb-l { font-size: 9px; color: var(--dim); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-    .esb-sep { width: 1px; height: 38px; background: var(--b2); margin: 0 24px 0 0; flex-shrink: 0; } .esb-fill { flex: 1; }
+    .esb-sep { width: 1px; height: 38px; background: var(--b2); margin: 0 24px 0 0; flex-shrink: 0; z-index: 1; } .esb-fill { flex: 1; }
     .live-chip { display: flex; align-items: center; gap: 5px; background: rgba(34,224,122,.06); border: 1px solid rgba(34,224,122,.16); border-radius: 30px; padding: 5px 13px; z-index: 1; }
     .lc-l { font-size: 9px; font-weight: 700; letter-spacing: .05em; }
     .kpi-bar { background: var(--s1); border: 1px solid var(--b1); border-radius: var(--r-md); padding: 12px 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; box-shadow: var(--sh-xs); }
@@ -363,84 +363,83 @@
     .ss-enter:hover:not(:disabled) { transform: translateY(-1px); } .ss-enter:disabled { opacity: .2; cursor: not-allowed; }
     .ss-note { text-align: center; font-size: 10px; color: var(--dim); margin-top: 18px; line-height: 1.65; }
 
-    /* ═══ CASCADE ENGINE STYLES — ORIGINAL (mostly kept) ═══ */
-    .cd-cost-bar { padding:12px 18px; background:linear-gradient(135deg,rgba(240,46,80,.08),rgba(240,46,80,.03)); border:1px solid rgba(240,46,80,.22); border-radius:var(--r-md); display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:14px; box-shadow:var(--sh-xs); }
-    .cd-cost-val { font-size:24px; font-weight:800; font-family:var(--mono); color:var(--red); letter-spacing:-.04em; line-height:1; animation:ctick 1.2s ease-in-out infinite; }
-    .cd-cost-label { font-size:9px; color:var(--mut); text-transform:uppercase; letter-spacing:.1em; margin-bottom:2px; }
-    .cd-cost-sep { width:1px; height:32px; background:rgba(240,46,80,.16); flex-shrink:0; }
-    .cd-cost-stat { display:flex; flex-direction:column; gap:2px; }
-    .cd-cost-stat-v { font-size:16px; font-weight:700; font-family:var(--mono); color:var(--amb); }
-    .cd-cost-stat-l { font-size:8px; color:var(--dim); text-transform:uppercase; letter-spacing:.08em; }
-    .cd-hold-pill { font-size:9px; font-weight:800; padding:4px 12px; border-radius:30px; letter-spacing:.06em; background:var(--reda); color:var(--red); border:1px solid rgba(240,46,80,.32); display:none; animation:opsBtnPulse 1.4s ease-in-out infinite; }
+    /* ═══ CASCADE ENGINE STYLES — REVISED ═══ */
+    .cd-cost-bar{padding:12px 18px;background:linear-gradient(135deg,rgba(240,46,80,.08),rgba(240,46,80,.03));border:1px solid rgba(240,46,80,.22);border-radius:var(--r-md);display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px;box-shadow:var(--sh-xs);}
+    .cd-cost-val{font-size:24px;font-weight:800;font-family:var(--mono);color:var(--red);letter-spacing:-.04em;line-height:1;animation:ctick 1.2s ease-in-out infinite;}
+    .cd-cost-label{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px;}
+    .cd-cost-sep{width:1px;height:32px;background:rgba(240,46,80,.16);flex-shrink:0;}
+    .cd-cost-stat{display:flex;flex-direction:column;gap:2px;}
+    .cd-cost-stat-v{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--amb);}
+    .cd-cost-stat-l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;}
+    .cd-hold-pill{font-size:9px;font-weight:800;padding:4px 12px;border-radius:30px;letter-spacing:.06em;background:var(--reda);color:var(--red);border:1px solid rgba(240,46,80,.32);display:none;animation:opsBtnPulse 1.4s ease-in-out infinite;}
 
-    /* ── FULL‑SCREEN OVERLAY FOR CASCADE PAGE ── */
-    #page-cascade {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: #0d1117; z-index: 1000; display: none; margin: 0; padding: 0;
-      overflow: hidden;
-    }
-    #page-cascade.active { display: block; }
+    /* Main layout: flex with square canvas + stats panel */
+    .cd-layout{display:flex;height:520px;border:1px solid var(--b1);border-radius:var(--r-lg);overflow:hidden;background:var(--s0);box-shadow:var(--sh-md);margin-bottom:14px;}
+    .cd-map-wrap{flex:0 0 520px;position:relative;background:#141414;overflow:hidden;}
+    body.light .cd-map-wrap{background:#6a6a6a;}
+    .cd-map-title{position:absolute;top:10px;left:12px;right:12px;z-index:10;font-size:8.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.42);display:flex;align-items:center;gap:6px;pointer-events:none;}
+    body.light .cd-map-title{color:rgba(255,255,255,.72);}
+    .cd-map-title::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 7px var(--red);flex-shrink:0;}
+    #cascade-canvas{position:absolute;top:0;left:0;width:100%;height:100%;display:block;cursor:crosshair;}
+    .cd-canvas-hint{position:absolute;bottom:7px;left:0;right:0;text-align:center;font-size:8px;color:rgba(255,255,255,.22);pointer-events:none;z-index:5;letter-spacing:.03em;}
+    body.light .cd-canvas-hint{color:rgba(255,255,255,.52);}
 
-    /* When cascade is active, hide normal header/nav/bars */
-    body.cascade-fullscreen .ops-banner,
-    body.cascade-fullscreen header,
-    body.cascade-fullscreen nav.mnav,
-    body.cascade-fullscreen .subloc,
-    body.cascade-fullscreen #toasts { display: none; }
-    /* Keep loader & sector selector behind (higher z‑index already) */
+    /* Stats panel */
+    .cd-panel{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--s0);border-left:1px solid var(--b1);min-width:0;}
+    .cd-panel::-webkit-scrollbar{width:2px;}
+    .cd-panel::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+    .cd-pcard{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r-md);padding:11px;}
+    .cd-pcard-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+    .cd-pcard-title::before{content:'';width:3px;height:3px;border-radius:50%;background:currentColor;box-shadow:0 0 5px currentColor;}
+    .cd-clog{display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;}
+    .cd-clog::-webkit-scrollbar{width:2px;}
+    .cd-clog::-webkit-scrollbar-thumb{background:var(--b2);}
+    .cd-clog-item{padding:5px 9px 5px 20px;border-radius:var(--r-sm);font-size:9px;background:rgba(255,255,255,.02);position:relative;line-height:1.5;animation:fadeUp .3s var(--ease);}
+    .cd-clog-item::before{content:'';position:absolute;left:7px;top:50%;transform:translateY(-50%);width:5px;height:5px;border-radius:50%;}
+    .cd-clog-item.ok::before{background:var(--grn);}
+    .cd-clog-item.warn::before{background:var(--amb);}
+    .cd-clog-item.crit::before{background:var(--red);animation:ldp .9s infinite;}
+    .cd-clog-item.cbs::before{background:var(--red);animation:ldp .6s infinite;}
+    .cd-clog-t{font-size:7.5px;color:var(--dim);font-family:var(--mono);margin-bottom:1px;}
+    .cd-clog-dev{font-weight:700;color:var(--acc);font-size:9px;}
+    .cd-clog-msg{color:var(--mut);}
+    .cd-insight{background:var(--pura);border:1px solid rgba(162,124,248,.18);border-radius:var(--r-sm);padding:9px;font-size:9.5px;color:var(--mut);line-height:1.7;}
+    .cd-insight strong{color:var(--pur);font-weight:700;}
+    .cd-insight-title{font-size:8.5px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;}
+    .cd-econ-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+    .cd-econ-cell{background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:var(--r-sm);padding:7px;text-align:center;}
+    .cd-econ-v{font-size:14px;font-weight:700;font-family:var(--mono);line-height:1;}
+    .cd-econ-l{font-size:7.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;}
+    .cd-sim-btns{display:flex;flex-direction:column;gap:4px;}
+    .cd-sim-btn{width:100%;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--b1);background:rgba(255,255,255,.02);color:var(--txt);font-size:9.5px;font-weight:600;cursor:pointer;font-family:var(--font);text-align:left;transition:all .2s var(--ease);display:flex;align-items:center;gap:6px;}
+    .cd-sim-btn:hover{background:rgba(255,255,255,.05);border-color:var(--b2);transform:translateX(2px);}
+    .cd-sim-btn.active{border-color:var(--red);background:var(--reda);color:var(--red);}
+    .cd-sim-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
 
-    /* Full‑page layout for cascade canvas */
-    #page-cascade .cd-layout {
-      width: 100%; height: 100%; display: flex; position: relative;
-      border: none; background: transparent; box-shadow: none;
-    }
-    #page-cascade .cd-map-wrap {
-      position: absolute; inset: 0; flex: none; width: 100%; height: 100%;
-      border: none; background: #0d1117;
-    }
-    #cascade-canvas {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      display: block; cursor: crosshair;
-    }
+    /* Ops stats below layout */
+    .cd-ops-stats{display:flex;gap:22px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--b1);margin-top:0;}
+    .cd-ops-stat{display:flex;flex-direction:column;gap:2px;}
+    .cd-ops-stat-v{font-size:14px;font-weight:700;color:var(--txt);font-family:var(--mono);}
+    .cd-ops-stat-l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;}
 
-    /* Floating right panel (hidden by default) */
-    #page-cascade .cd-panel {
-      position: absolute; top: 0; right: 0; width: 340px; height: 100%;
-      background: rgba(8,14,26,0.92); border-left: 1px solid var(--b1);
-      z-index: 10; overflow-y: auto; padding: 16px 12px;
-      backdrop-filter: blur(12px); display: none;
-    }
-
-    /* Toggle button for panel */
-    .cd-panel-toggle {
-      position: absolute; top: 14px; right: 14px; z-index: 20;
-      background: rgba(255,255,255,0.08); border: 1px solid var(--b2);
-      border-radius: 6px; color: var(--txt); font-size: 11px; font-weight: 600;
-      cursor: pointer; padding: 4px 10px; transition: background 0.2s;
-    }
-    .cd-panel-toggle:hover { background: rgba(255,255,255,0.15); }
-
-    /* Floating cost bar */
-    #page-cascade .cd-cost-bar {
-      position: absolute; bottom: 16px; left: 16px; max-width: calc(100% - 40px);
-      background: rgba(8,14,26,0.88); backdrop-filter: blur(12px);
-      border: 1px solid var(--b1); border-radius: var(--r-md);
-      padding: 10px 18px; z-index: 11; display: flex; align-items: center;
-      gap: 16px; flex-wrap: wrap; margin-bottom: 0;
+    @media(max-width:860px){
+      .cd-layout{flex-direction:column;height:auto;}
+      .cd-map-wrap{flex:none;width:100%;height:340px;}
+      .cd-panel{border-left:none;border-top:1px solid var(--b1);}
     }
 
-    /* Hide auxiliary things */
-    .cd-canvas-hint { display: none; }
-    .cd-map-title { position: absolute; top: 10px; left: 14px; z-index: 9; pointer-events: none;
-      font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-      color: rgba(255,255,255,0.42); display: flex; align-items: center; gap: 6px;
+    @media (max-width: 660px) {
+      .cgrid, .fgrid, .twin-grid { grid-template-columns: 1fr; }
+      .banner { grid-template-columns: repeat(2, 1fr); }
+      .wrap { padding: 12px 14px; } header { padding: 9px 14px; }
+      .ggrid { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); }
+      .hero-h1 { font-size: 18px; } .env-hero { height: 140px; }
+      .statbar { height: auto; flex-wrap: wrap; gap: 12px; padding: 14px 18px; }
+      .dm-grid { grid-template-columns: repeat(2, 1fr); } .twin-grid { grid-template-columns: repeat(2, 1fr); }
     }
-    body.light .cd-map-title { color: rgba(255,255,255,0.72); }
-    .cd-map-title::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--red);
-      box-shadow: 0 0 7px var(--red); flex-shrink: 0; }
-
-    @media (max-width: 860px) {
-      #page-cascade .cd-panel { width: 100%; }
+    @media print {
+      header, nav, #toasts, #sector-selector, .ops-banner, #amb, #grain, #ambient-svg, #detail-overlay { display: none !important; }
+      body { background: #fff !important; color: #000 !important; } .page { display: block !important; }
     }
   </style>
 </head>
@@ -836,70 +835,17 @@
       </div>
     </div>
 
-    <!-- ═══ CASCADE INTELLIGENCE ENGINE (FULL‑SCREEN) ═══ -->
+    <!-- ═══ CASCADE INTELLIGENCE ENGINE ═══ -->
     <div class="page" id="page-cascade">
 
-      <!-- Full‑screen canvas + floating controls -->
-      <div class="cd-layout">
-        <div class="cd-map-wrap">
-          <div class="cd-map-title">Live Cascade Map &mdash; click any node to degrade &middot; watch propagation in real time</div>
-          <canvas id="cascade-canvas"></canvas>
-          <button class="cd-panel-toggle" onclick="document.querySelector('#page-cascade .cd-panel').style.display = 
-            (document.querySelector('#page-cascade .cd-panel').style.display==='block' ? 'none' : 'block')">
-            ☰ Panel
-          </button>
-
-          <!-- Floating right panel (hidden by default) -->
-          <div class="cd-panel" style="display:none">
-            <!-- Scenario Simulator -->
-            <div class="cd-pcard">
-              <div class="cd-pcard-title" style="color:var(--amb)">Scenario Simulator</div>
-              <div class="cd-sim-btns">
-                <button class="cd-sim-btn" onclick="cdRunScenario('wan')" id="cd-sb-wan"><span class="cd-sim-dot" style="background:var(--amb)"></span>WAN link → CBS hold cascade</button>
-                <button class="cd-sim-btn" onclick="cdRunScenario('cbs')" id="cd-sb-cbs"><span class="cd-sim-dot" style="background:var(--red)"></span>CBS integrity → blast hold</button>
-                <button class="cd-sim-btn" onclick="cdRunScenario('power')" id="cd-sb-power"><span class="cd-sim-dot" style="background:var(--pur)"></span>Power → conveyor → plant idle</button>
-                <button class="cd-sim-btn" onclick="cdRunScenario('storm')" id="cd-sb-storm"><span class="cd-sim-dot" style="background:var(--blu)"></span>Storm → tower → MW link → NOC</button>
-                <button class="cd-sim-btn" onclick="cdRunScenario('compound')" id="cd-sb-compound"><span class="cd-sim-dot" style="background:var(--red)"></span><strong>⚠ Compound cascade</strong></button>
-              </div>
-            </div>
-
-            <!-- Cascade Event Log -->
-            <div class="cd-pcard">
-              <div class="cd-pcard-title" style="color:var(--red)">Cascade Event Log</div>
-              <div class="cd-clog" id="cd-clog">
-                <div class="cd-clog-item ok">
-                  <div class="cd-clog-t">System ready</div>
-                  <div class="cd-clog-dev">IISentinel™ Engine</div>
-                  <div class="cd-clog-msg">All infrastructure domains nominal.</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- AI Causal Insight -->
-            <div class="cd-pcard">
-              <div class="cd-pcard-title" style="color:var(--pur)">AI Causal Insight</div>
-              <div class="cd-insight" id="cd-ai-insight">
-                <div class="cd-insight-title">Awaiting event...</div>
-                The causal graph engine maps <strong>dependency chains across all domains</strong>.
-              </div>
-            </div>
-
-            <!-- Economic Consequence -->
-            <div class="cd-pcard">
-              <div class="cd-pcard-title" style="color:var(--gld)">Economic Consequence Model</div>
-              <div class="cd-econ-grid">
-                <div class="cd-econ-cell"><div class="cd-econ-v cr" id="cd-ec-direct">$0</div><div class="cd-econ-l">Direct loss/hr</div></div>
-                <div class="cd-econ-cell"><div class="cd-econ-v cw" id="cd-ec-cascade">$0</div><div class="cd-econ-l">Cascade loss/hr</div></div>
-                <div class="cd-econ-cell"><div class="cd-econ-v cg" id="cd-ec-prevented">$0</div><div class="cd-econ-l">Prevention value</div></div>
-                <div class="cd-econ-cell"><div class="cd-econ-v cp" id="cd-ec-roi">∞</div><div class="cd-econ-l">ROI multiplier</div></div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Functional header -->
+      <div style="margin-bottom:14px">
+        <div class="sl">Cascade Intelligence Engine &mdash; cross-domain infrastructure dependency analysis</div>
+        <div style="font-size:11px;color:var(--mut);line-height:1.75;max-width:700px;margin-top:4px">Real-time dependency graph spanning Network, Telecom, Mining OT and CBS Safety domains. Automated cascade prediction with event-to-action response and live economic impact quantification. Click any node to simulate degradation or run a predefined scenario.</div>
       </div>
 
-      <!-- Floating cost bar -->
-      <div class="cd-cost-bar" style="position:absolute; bottom:20px; left:20px; right:20px; width:auto;">
+      <!-- Cost / stats bar -->
+      <div class="cd-cost-bar">
         <div class="cd-cost-stat">
           <div class="cd-cost-label">Cascading exposure</div>
           <div class="cd-cost-val" id="cd-cost-main">$0/hr</div>
@@ -911,12 +857,74 @@
         <div class="cd-cost-sep"></div>
         <div class="cd-cost-stat"><div class="cd-cost-stat-v" id="cd-stat-ttc" style="color:var(--gld)">--</div><div class="cd-cost-stat-l">Time to cascade</div></div>
         <div style="flex:1"></div>
-        <span class="cd-hold-pill" id="cd-hold-pill">⚠ CBS HOLD ACTIVE</span>
-        <button onclick="cdResetAll()" class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:10px;padding:6px 14px;">↻ Reset</button>
+        <span class="cd-hold-pill" id="cd-hold-pill">&#9888; CBS HOLD ACTIVE</span>
+        <button onclick="cdResetAll()" class="btn" style="background:var(--s2);color:var(--txt);border:1px solid var(--b1);font-size:10px;padding:6px 14px">&#8635; Reset</button>
       </div>
 
-      <!-- Operational context (optional, can be added as another overlay if desired) -->
-      <!-- <div class="cd-ops-stats" style="position:absolute;bottom:90px;left:20px;..."></div> -->
+      <!-- Rectangle: square canvas left + stats panel right -->
+      <div class="cd-layout">
+        <div class="cd-map-wrap">
+          <div class="cd-map-title">Live Cascade Map &mdash; click any node to degrade &middot; watch propagation in real time</div>
+          <canvas id="cascade-canvas"></canvas>
+          <div class="cd-canvas-hint">Nodes colour-coded by health &middot; Edges show dependency direction &middot; Cascade propagates domain by domain</div>
+        </div>
+
+        <div class="cd-panel">
+          <!-- Scenario simulator -->
+          <div class="cd-pcard">
+            <div class="cd-pcard-title" style="color:var(--amb)">Scenario Simulator</div>
+            <div class="cd-sim-btns">
+              <button class="cd-sim-btn" onclick="cdRunScenario('wan')" id="cd-sb-wan"><span class="cd-sim-dot" style="background:var(--amb)"></span>WAN link degrades &rarr; CBS hold cascade</button>
+              <button class="cd-sim-btn" onclick="cdRunScenario('cbs')" id="cd-sb-cbs"><span class="cd-sim-dot" style="background:var(--red)"></span>CBS integrity drop &rarr; blast hold</button>
+              <button class="cd-sim-btn" onclick="cdRunScenario('power')" id="cd-sb-power"><span class="cd-sim-dot" style="background:var(--pur)"></span>Power fault &rarr; conveyor &rarr; plant idle</button>
+              <button class="cd-sim-btn" onclick="cdRunScenario('storm')" id="cd-sb-storm"><span class="cd-sim-dot" style="background:var(--blu)"></span>Storm &rarr; tower &rarr; MW link &rarr; NOC blind</button>
+              <button class="cd-sim-btn" onclick="cdRunScenario('compound')" id="cd-sb-compound"><span class="cd-sim-dot" style="background:var(--red)"></span><strong>&#9888; Compound cascade</strong> &mdash; all domains</button>
+            </div>
+          </div>
+
+          <!-- Cascade log -->
+          <div class="cd-pcard">
+            <div class="cd-pcard-title" style="color:var(--red)">Cascade Event Log</div>
+            <div class="cd-clog" id="cd-clog">
+              <div class="cd-clog-item ok">
+                <div class="cd-clog-t">System ready</div>
+                <div class="cd-clog-dev">IISentinel&#8482; Engine</div>
+                <div class="cd-clog-msg">All infrastructure domains nominal. Select a scenario or click any node.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Causal Insight -->
+          <div class="cd-pcard">
+            <div class="cd-pcard-title" style="color:var(--pur)">AI Causal Insight</div>
+            <div class="cd-insight" id="cd-ai-insight">
+              <div class="cd-insight-title">Awaiting event...</div>
+              The causal graph engine maps <strong>dependency chains across all infrastructure domains simultaneously</strong>. Trigger a scenario to see predictive cascade analysis.
+            </div>
+          </div>
+
+          <!-- Economic consequence -->
+          <div class="cd-pcard">
+            <div class="cd-pcard-title" style="color:var(--gld)">Economic Consequence Model</div>
+            <div class="cd-econ-grid">
+              <div class="cd-econ-cell"><div class="cd-econ-v cr" id="cd-ec-direct">$0</div><div class="cd-econ-l">Direct loss/hr</div></div>
+              <div class="cd-econ-cell"><div class="cd-econ-v cw" id="cd-ec-cascade">$0</div><div class="cd-econ-l">Cascade loss/hr</div></div>
+              <div class="cd-econ-cell"><div class="cd-econ-v cg" id="cd-ec-prevented">$0</div><div class="cd-econ-l">Prevention value</div></div>
+              <div class="cd-econ-cell"><div class="cd-econ-v cp" id="cd-ec-roi">&#8734;</div><div class="cd-econ-l">ROI multiplier</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Operational context -->
+      <div class="cd-ops-stats">
+        <div class="cd-ops-stat"><div class="cd-ops-stat-v">15</div><div class="cd-ops-stat-l">Infrastructure nodes</div></div>
+        <div class="cd-ops-stat"><div class="cd-ops-stat-v">15</div><div class="cd-ops-stat-l">Dependency edges</div></div>
+        <div class="cd-ops-stat"><div class="cd-ops-stat-v">5</div><div class="cd-ops-stat-l">Monitored domains</div></div>
+        <div class="cd-ops-stat"><div class="cd-ops-stat-v">&lt;60s</div><div class="cd-ops-stat-l">Event to automated action</div></div>
+        <div class="cd-ops-stat"><div class="cd-ops-stat-v">$450k</div><div class="cd-ops-stat-l">Max blast exposure / hr</div></div>
+        <div class="cd-ops-stat"><div class="cd-ops-stat-v">72h+</div><div class="cd-ops-stat-l">Acoustic pre-failure lead time</div></div>
+      </div>
     </div>
 
     <!-- CBS SAFETY -->
@@ -1004,56 +1012,6 @@
     </div>
 
   </div><!-- /wrap -->
-
-  <!-- ========== MINIMAL JAVASCRIPT FOR FULL‑SCREEN CASCADE ========== -->
-  <script>
-    // Ensure goPage toggles fullscreen for cascade
-    (function() {
-      const originalGoPage = window.goPage;  // assuming existing goPage is defined before this script
-      window.goPage = function(tab, page) {
-        if (originalGoPage) originalGoPage(tab, page);
-        // Update body class for cascade
-        if (page === 'cascade') {
-          document.body.classList.add('cascade-fullscreen');
-          setTimeout(resizeCascadeCanvas, 50);
-        } else {
-          document.body.classList.remove('cascade-fullscreen');
-        }
-      };
-    })();
-
-    // Resize canvas to fill window
-    function resizeCascadeCanvas() {
-      const canvas = document.getElementById('cascade-canvas');
-      if (!canvas) return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      // Redraw your cascade graph here (call your existing cdDrawGraph or similar)
-      if (typeof cdDrawGraph === 'function') cdDrawGraph();
-    }
-
-    window.addEventListener('resize', () => {
-      if (document.getElementById('page-cascade')?.classList.contains('active')) {
-        resizeCascadeCanvas();
-      }
-    });
-
-    // Placeholder for cascade functions (ensure they exist)
-    if (typeof cdRunScenario !== 'function') window.cdRunScenario = function(s){ console.log('Scenario:', s); };
-    if (typeof cdResetAll !== 'function') window.cdResetAll = function(){ console.log('Reset cascade'); };
-    if (typeof cdDrawGraph !== 'function') window.cdDrawGraph = function(){
-      const canvas = document.getElementById('cascade-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#0d1117';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#ffffff20';
-      ctx.font = '14px monospace';
-      ctx.fillText('Cascade canvas ready. Implement cdDrawGraph() to draw nodes.', 20, 40);
-    };
-  </script>
-</body>
-</html>
   <script>
     var B=window.location.origin;
     var spToken=null,spName=null,intel={},allData=[];
