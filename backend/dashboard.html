@@ -1861,12 +1861,767 @@ async function nmPollAll(sector){
   setTimeout(nmRefresh,4000);
 }
 
-// ================================================================
-// CASCADE ENGINE — paste the full CAS IIFE from Part 2 here
-// (unchanged — only the surrounding polling logic changed)
-// ================================================================
-// [CAS IIFE goes here — copy from your Part 2 file]
+var CAS = (function(){
+'use strict';
 
+var DOM_COL  = {net:'#1ec8f5',tc:'#b06cfb',mc:'#f5a623',cbs:'#ff3356',plant:'#19e87c'};
+var DOM_FILL = {net:'rgba(30,200,245,0.12)',tc:'rgba(176,106,251,0.12)',mc:'rgba(245,166,35,0.12)',cbs:'rgba(255,51,86,0.14)',plant:'rgba(25,232,124,0.10)'};
+var DOM_NAME = {net:'Network',tc:'TelecomCo',mc:'Mining OT',cbs:'CBS Safety',plant:'Production'};
+var COST_MAP = {net:20000,tc:35000,mc:140000,cbs:450000,plant:320000};
+
+var EDGE_W = {'net->net':0.55,'net->tc':0.45,'net->mc':0.65,'tc->mc':0.40,'mc->cbs':0.82,'mc->mc':0.55,'cbs->mc':0.88,'plant->mc':0.30};
+var NODE_RESILIENCE = {net:0.55,tc:0.48,mc:0.28,cbs:0.08,plant:0.18};
+
+var DEF_NODES = [
+  {id:'wan',     label:'WAN Link',    domain:'net', liveId:'net-hre-wan-link',     cost:12000},
+  {id:'core-sw', label:'Core Switch', domain:'net', liveId:'net-byo-switch-core',  cost:10000},
+  {id:'fw',      label:'Firewall',    domain:'net', liveId:'net-mut-firewall-01',  cost:20000},
+  {id:'noc',     label:'NOC Router',  domain:'net', liveId:'net-byo-router-01',    cost:15000},
+  {id:'tower',   label:'BTS Tower',   domain:'tc',  liveId:'tc-hre-tower-main',    cost:35000},
+  {id:'mw-link', label:'MW Backhaul', domain:'tc',  liveId:'tc-mut-microwave-01',  cost:40000},
+  {id:'bs',      label:'Base Station',domain:'tc',  liveId:'tc-byo-base-stn-01',  cost:25000},
+  {id:'scada',   label:'SCADA',       domain:'mc',  liveId:'mc-plant-plc-01',      cost:60000},
+  {id:'plc',     label:'PLC Shaft 1', domain:'mc',  liveId:'mc-plant-plc-01',      cost:80000},
+  {id:'pump',    label:'Dewater Pump',domain:'mc',  liveId:'mc-shaft1-pump-01',    cost:150000},
+  {id:'conv',    label:'Conveyor',    domain:'mc',  liveId:'mc-shaft2-conveyor',   cost:120000},
+  {id:'pm',      label:'Power Meter', domain:'mc',  liveId:'mc-surface-pwr-meter', cost:100000},
+  {id:'vent',    label:'Ventilation', domain:'mc',  liveId:'mc-shaft2-ventilation',cost:180000},
+  {id:'cbs',     label:'CBS Ctrl',    domain:'cbs', liveId:'cbs-dnp3-mine-ctrl',   cost:450000},
+  {id:'plant',   label:'Process Plant',domain:'plant',liveId:null,                 cost:320000}
+];
+var DEF_EDGES = [
+  {from:'wan',    to:'core-sw',crit:true},{from:'core-sw',to:'fw',    crit:true},
+  {from:'core-sw',to:'noc',   crit:true},{from:'noc',    to:'mw-link',crit:true},
+  {from:'tower',  to:'mw-link',crit:false},{from:'mw-link',to:'bs',  crit:false},
+  {from:'fw',     to:'scada', crit:true},{from:'scada',  to:'plc',   crit:true},
+  {from:'scada',  to:'cbs',   crit:true},{from:'plc',    to:'pump',  crit:true},
+  {from:'plc',    to:'conv',  crit:true},{from:'pm',     to:'plc',   crit:true},
+  {from:'pm',     to:'vent',  crit:false},{from:'conv',  to:'plant', crit:false},
+  {from:'vent',   to:'plant', crit:false}
+];
+
+var nodes=[], edges=[], nodeMap={};
+var alpha=1.0, k=120;
+var W=800, H=480;
+var viewX=0, viewY=0, viewScale=1;
+var selectedNode=null, hoveredNode=null, dragNode=null, dragOffset={x:0,y:0};
+var editMode=false, rightClickFirst=null;
+var liveHealth={};
+var cascadeActive=false, cascadeTimers=[];
+var particles=[], lastParticle=0;
+var animId=null, inited=false;
+var viewMode='force';
+var DPR=Math.min(window.devicePixelRatio||1,2);
+var canvas, ctx;
+
+var SCENARIO_INSIGHTS = {
+  wan: '<strong>Causal chain:</strong> WAN degradation &rarr; SCADA loses remote comms &rarr; CBS controller heartbeat fails &rarr; Blast hold triggers &rarr; $450k/hr exposure. <strong>Predicted 18 minutes before CBS hold fired.</strong>',
+  cbs: '<strong>Safety cascade:</strong> CBS integrity drop &rarr; blast hold &rarr; SCADA alarm storm &rarr; NOC overwhelmed. <strong>Economic impact: $450k direct + $280k lost production/hr.</strong>',
+  power: '<strong>Power fault cascade:</strong> Power meter anomaly &rarr; PLC I/O instability &rarr; Conveyor e-stop &rarr; Plant ore-starved. <strong>Acoustic signature was detectable 6+ hours prior.</strong>',
+  storm: '<strong>Weather-correlated cascade:</strong> Tower at wind limit &rarr; MW backhaul fails &rarr; NOC blind &rarr; CBS alerts undelivered. <strong>IISentinel pre-routed CBS alerts via SMS 22 minutes before failure.</strong>',
+  compound: '<strong>Compound cascade &mdash; all domains simultaneous.</strong> Inter-domain amplification: 30% WAN degradation &rarr; 100% production loss. <strong>Total exposure: $1.2M/hr. IISentinel detected compound risk 34 minutes ahead.</strong>',
+  live: '<strong>Live health simulation.</strong> Worst-performing device used as cascade origin. Dependency chain traced to CBS via shortest critical path. <strong>Predicted blast window impact calculated in real-time.</strong>'
+};
+
+function init() {
+  canvas = document.getElementById('cas-canvas');
+  if(!canvas) return;
+  ctx = canvas.getContext('2d');
+  resize();
+  setNodes(JSON.parse(JSON.stringify(DEF_NODES)), JSON.parse(JSON.stringify(DEF_EDGES)));
+  bindEvents();
+  loop();
+  loadTopologyQuiet();
+  inited = true;
+}
+
+function resize() {
+  if(!canvas) return;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  W = Math.max(400, rect.width - 28);
+  H = Math.min(520, Math.max(360, window.innerHeight * 0.52));
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(DPR, DPR);
+  k = Math.sqrt(W * H / Math.max(1, nodes.length)) * 0.65;
+  reheat(0.3);
+}
+
+function setNodes(_nodes, _edges) {
+  var oldPos = {};
+  nodes.forEach(function(n){ oldPos[n.id]={x:n.x,y:n.y,vx:n.vx,vy:n.vy}; });
+  nodes = _nodes.map(function(n){
+    return Object.assign({}, n, { health:100, fixed:false,
+      x: oldPos[n.id]?oldPos[n.id].x:W/2+(Math.random()-.5)*W*.55,
+      y: oldPos[n.id]?oldPos[n.id].y:H/2+(Math.random()-.5)*H*.55,
+      vx:0, vy:0 });
+  });
+  nodeMap = {};
+  nodes.forEach(function(n){ nodeMap[n.id]=n; });
+  edges = _edges.map(function(e){
+    return Object.assign({},e,{source:nodeMap[e.from||e.source&&e.source.id],target:nodeMap[e.to||e.target&&e.target.id]});
+  }).filter(function(e){return e.source&&e.target;});
+  reheat(1.0);
+}
+
+function applyLiveHealth() {
+  if(cascadeActive) return;
+  nodes.forEach(function(n){
+    if(n.liveId && liveHealth[n.liveId]!==undefined) n.health=liveHealth[n.liveId];
+    else if(!n.liveId) n.health=100;
+  });
+}
+
+function updateLiveHealth(hmap){ liveHealth=hmap; if(!cascadeActive) applyLiveHealth(); }
+
+function tick() {
+  if(alpha < 0.001 || viewMode !== 'force') {
+    if(viewMode !== 'force') applyTargetPositions();
+    return;
+  }
+  nodes.forEach(function(n){ n._fx=0; n._fy=0; });
+  for(var i=0;i<nodes.length;i++){
+    for(var j=i+1;j<nodes.length;j++){
+      var a=nodes[i], b=nodes[j];
+      var dx=b.x-a.x, dy=b.y-a.y;
+      if(Math.abs(dx)<0.5&&Math.abs(dy)<0.5){dx=Math.random()-.5; dy=Math.random()-.5;}
+      var d2=dx*dx+dy*dy, d=Math.sqrt(d2);
+      var force=k*k/d*alpha*0.55;
+      var ux=dx/d, uy=dy/d;
+      a._fx-=force*ux; a._fy-=force*uy; b._fx+=force*ux; b._fy+=force*uy;
+    }
+  }
+  for(var ei=0;ei<edges.length;ei++){
+    var e=edges[ei], s=e.source, t=e.target;
+    var dx2=t.x-s.x, dy2=t.y-s.y;
+    if(!dx2&&!dy2) dx2=0.1;
+    var d3=Math.sqrt(dx2*dx2+dy2*dy2), ideal=k*1.7;
+    var stretch=(d3-ideal)/d3*alpha*(e.crit?0.32:0.22);
+    var fx=dx2*stretch, fy=dy2*stretch;
+    if(!s.fixed){s._fx+=fx; s._fy+=fy;}
+    if(!t.fixed){t._fx-=fx; t._fy-=fy;}
+  }
+  nodes.forEach(function(n){ n._fx+=(W/2-n.x)*.0010*alpha; n._fy+=(H/2-n.y)*.0010*alpha; });
+  nodes.forEach(function(n){
+    if(n.fixed){n.vx=0;n.vy=0;return;}
+    n.vx=(n.vx+n._fx)*.52; n.vy=(n.vy+n._fy)*.52;
+    n.x=Math.max(22,Math.min(W-22,n.x+n.vx));
+    n.y=Math.max(22,Math.min(H-22,n.y+n.vy));
+  });
+  alpha*=0.975;
+}
+
+function applyTargetPositions() {
+  if(viewMode==='layered'){
+    var LAYERS={net:0,tc:1,mc:2,cbs:3,plant:3};
+    var byLayer={};
+    nodes.forEach(function(n){ var l=LAYERS[n.domain]!==undefined?LAYERS[n.domain]:2; if(!byLayer[l])byLayer[l]=[]; byLayer[l].push(n); });
+    var maxLayer=3;
+    Object.entries(byLayer).forEach(function(entry){
+      var l=Number(entry[0]), arr=entry[1];
+      arr.forEach(function(n,i){ n.tx=(i+1)*W/(arr.length+1); n.ty=H*.1+l*(H*.8/maxLayer); });
+    });
+  } else if(viewMode==='radial'){
+    var cx=W/2, cy=H/2;
+    var byDom={};
+    nodes.forEach(function(n){ if(!byDom[n.domain])byDom[n.domain]=[]; byDom[n.domain].push(n); });
+    var radii={net:.18,tc:.32,mc:.50,cbs:.65,plant:.65};
+    Object.entries(byDom).forEach(function(entry){
+      var dom=entry[0], arr=entry[1];
+      var rr=(radii[dom]||.4)*Math.min(W,H)*.5;
+      arr.forEach(function(n,i){ var ang=(i/arr.length)*Math.PI*2-Math.PI/2; n.tx=cx+Math.cos(ang)*rr; n.ty=cy+Math.sin(ang)*rr; });
+    });
+  }
+  nodes.forEach(function(n){
+    if(n.tx!==undefined){ n.x+=(n.tx-n.x)*.08; n.y+=(n.ty-n.y)*.08; }
+  });
+}
+
+function propagateCascade(originId, initialDeg) {
+  cascadeActive=true;
+  var visited=new Map();
+  var queue=[{id:originId,deg:initialDeg,hop:0}];
+  visited.set(originId,initialDeg);
+  var origin=nodeMap[originId];
+  if(origin){ origin.health=Math.max(0,(origin.health||100)-initialDeg); reheat(0.25); }
+  var now=new Date().toLocaleTimeString();
+  logEvent('crit', origin&&origin.label||originId, 'Health degraded to '+Math.round(origin&&origin.health||0)+'% - tracing downstream dependencies', now);
+  while(queue.length){
+    var item=queue.shift();
+    edges.filter(function(e){return e.source&&e.source.id===item.id;}).forEach(function(e){
+      var tId=e.target&&e.target.id; if(!tId||visited.has(tId)) return;
+      var edgeKey=(nodeMap[item.id]&&nodeMap[item.id].domain||'net')+'->'+(nodeMap[tId]&&nodeMap[tId].domain||'net');
+      var ew=EDGE_W[edgeKey]!==undefined?EDGE_W[edgeKey]:0.35;
+      var nr=NODE_RESILIENCE[nodeMap[tId]&&nodeMap[tId].domain||'net']!==undefined?NODE_RESILIENCE[nodeMap[tId].domain]:0.5;
+      var propagated=item.deg*ew*(1-nr)*Math.pow(0.62,item.hop);
+      if(propagated<1.5) return;
+      visited.set(tId,propagated);
+      var delay=600+item.hop*500+Math.random()*300;
+      (function(tid,prop,hop,srcId){
+        var t=setTimeout(function(){
+          var tn=nodeMap[tid]; if(!tn) return;
+          tn.health=Math.max(0,(tn.health||100)-prop);
+          var ts=new Date().toLocaleTimeString();
+          var cls=tn.health<35?'crit':tn.health<70?'warn':'ok';
+          logEvent(cls,tn.label,cascadeMsg(tn,nodeMap[srcId],prop),ts);
+          if(tn.domain==='cbs'&&tn.health<90){
+            logEvent('cbs','CBS Controller','&#x26A0; BLAST HOLD ISSUED - DNP3 integrity below 90%. Exposure: $450,000/hr',ts);
+            var hp=document.getElementById('cas-hold-pill'); if(hp)hp.classList.add('on');
+          }
+          updateCascadeKPIs(); reheat(0.12);
+        },delay);
+        cascadeTimers.push(t);
+      })(tId,propagated,item.hop,item.id);
+      queue.push({id:tId,deg:propagated,hop:item.hop+1});
+    });
+  }
+  updateCascadeKPIs();
+}
+
+function cascadeMsg(dep,src,deg){
+  var msgs={
+    scada:'SCADA lost comms via '+(src&&src.label||src&&src.id)+' - OT visibility degraded to '+Math.round(dep.health)+'%',
+    cbs:'CBS controller heartbeat via '+(src&&src.label)+' failing - preparing blast hold',
+    plc:'PLC lost SCADA sync - manual override required. Health: '+Math.round(dep.health)+'%',
+    pump:'Dewatering pump control interrupted - flooding risk. Health: '+Math.round(dep.health)+'%',
+    conv:'Conveyor stopped - ore transport halted. Health: '+Math.round(dep.health)+'%',
+    vent:'Ventilation degraded - temperature rising in shaft. Health: '+Math.round(dep.health)+'%',
+    plant:'Processing plant feed interrupted - production halted. Health: '+Math.round(dep.health)+'%',
+    'mw-link':'MW backhaul degraded via '+(src&&src.label)+' - link health '+Math.round(dep.health)+'%',
+    bs:'Base station offline - mine area mobile coverage lost',
+    noc:'NOC router degraded - remote monitoring impaired'
+  };
+  return msgs[dep.id]||'Cascade from '+(src&&src.label||src&&src.id)+' - health degraded to '+Math.round(dep.health)+'%';
+}
+
+function updateCascadeKPIs(){
+  var affected=new Set(), pred=0, safe=0, totalExp=0, holdOn=false;
+  nodes.forEach(function(n){
+    var h=n.health!==undefined?n.health:100;
+    if(h<90) affected.add(n.domain);
+    if(h<40) pred++;
+    if(h>=70) safe++;
+    if(n.domain==='cbs'&&h<90) holdOn=true;
+    var impact=h<20?.95:h<35?.6:h<50?.25:0;
+    totalExp+=Math.round((n.cost||COST_MAP[n.domain]||8000)*impact);
+  });
+  function s(id){ return document.getElementById(id); }
+  if(s('cas-cost-main'))  s('cas-cost-main').textContent='$'+totalExp.toLocaleString()+'/hr';
+  if(s('cas-stat-affected'))s('cas-stat-affected').textContent=affected.size;
+  if(s('cas-stat-pred'))  s('cas-stat-pred').textContent=pred;
+  if(s('cas-stat-safe'))  s('cas-stat-safe').textContent=safe;
+  if(s('cas-stat-ttc')){ var crits=nodes.filter(function(n){return n.health!==undefined&&n.health<40;}); s('cas-stat-ttc').textContent=crits.length?(Math.floor(crits.length*4+7)+'min'):'--'; }
+  var hp=s('cas-hold-pill'); if(hp) hp.classList.toggle('on',holdOn);
+  var direct=nodes.reduce(function(sum,n){return sum+((1-(n.health!==undefined?n.health:100)/100)*(n.cost||COST_MAP[n.domain]||8000)*.4);},0);
+  var cascade2=totalExp*2.6, saved=direct*.58;
+  if(s('ec-direct'))  s('ec-direct').textContent=rf(direct);
+  if(s('ec-cascade')) s('ec-cascade').textContent=rf(cascade2);
+  if(s('ec-saved'))   s('ec-saved').textContent=rf(saved);
+  if(s('ec-roi'))     s('ec-roi').textContent=direct>0&&saved>0?Math.round(saved/(direct*.06))+'x':'&#x221E;';
+}
+
+function healthCol(h){ return h>=70?'#00e676':h>=40?'#ffab00':'#ff1744'; }
+function nodeR(n){ return n.domain==='cbs'?17:n.domain==='plant'?16:13; }
+
+function draw(){
+  if(!ctx) return;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,.025)'; ctx.lineWidth=.5;
+  for(var x=0;x<W;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
+  for(var y=0;y<H;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke(); }
+  ctx.save();
+  ctx.translate(viewX,viewY);
+  ctx.scale(viewScale,viewScale);
+  if(viewMode==='layered'){
+    ctx.font='700 9px monospace'; ctx.textAlign='left'; ctx.textBaseline='top';
+    [['net',H*.08],['tc',H*.30],['mc',H*.55],['cbs',H*.80]].forEach(function(pair){
+      var dom=pair[0], yy=pair[1];
+      ctx.fillStyle=DOM_COL[dom]+'40'; ctx.fillText(DOM_NAME[dom].toUpperCase(),6,yy);
+      ctx.beginPath(); ctx.setLineDash([3,6]); ctx.strokeStyle=DOM_COL[dom]+'18'; ctx.lineWidth=.5;
+      ctx.moveTo(0,yy+14); ctx.lineTo(W/viewScale,yy+14); ctx.stroke(); ctx.setLineDash([]);
+    });
+  }
+  edges.forEach(function(e){
+    var es=e.source, et=e.target; if(!es||!et) return;
+    var hs=es.health!==undefined?es.health:100, ht=et.health!==undefined?et.health:100, hmin=Math.min(hs,ht);
+    var col=hmin<35?'rgba(255,23,68,.7)':hmin<70?'rgba(255,171,0,.55)':'rgba(30,200,245,.22)';
+    var mx=(es.x+et.x)/2, my=(es.y+et.y)/2-18;
+    ctx.beginPath(); ctx.moveTo(es.x,es.y); ctx.quadraticCurveTo(mx,my,et.x,et.y);
+    ctx.strokeStyle=col; ctx.lineWidth=hmin<35?2.5:e.crit?1.8:1.2;
+    if(hmin<50) ctx.setLineDash([6,4]); else ctx.setLineDash([]);
+    ctx.stroke(); ctx.setLineDash([]);
+    var dx=et.x-es.x, dy=et.y-es.y, d=Math.sqrt(dx*dx+dy*dy)||1, nr=nodeR(et)+4;
+    var ex=et.x-dx/d*nr, ey=et.y-dy/d*nr, ux=dx/d, uy=dy/d;
+    ctx.beginPath();
+    ctx.moveTo(ex+ux*9-uy*5,ey+uy*9+ux*5); ctx.lineTo(ex+ux*15,ey+uy*15); ctx.lineTo(ex+ux*9+uy*5,ey+uy*9-ux*5);
+    ctx.strokeStyle=col; ctx.lineWidth=1.2; ctx.stroke();
+  });
+  var now2=performance.now();
+  if(now2-lastParticle>650){
+    lastParticle=now2;
+    edges.forEach(function(e){
+      if(Math.random()>.6) return;
+      var es=e.source, et=e.target; if(!es||!et) return;
+      var h=Math.min(es.health!==undefined?es.health:100,et.health
+      !==undefined?et.health:100);
+      if(h<10) return;
+      particles.push({src:{x:es.x,y:es.y},edge:e,t:0,col:h<50?'rgba(255,171,0,.95)':'rgba(30,200,245,.8)'});
+    });
+  }
+  particles=particles.filter(function(p){return p.t<1;});
+  particles.forEach(function(p){
+    p.t+=.016;
+    var pe=p.edge, ps=pe.source, pt=pe.target; if(!ps||!pt) return;
+    var mx2=(ps.x+pt.x)/2, my2=(ps.y+pt.y)/2-18, u=p.t, ou=1-u;
+    var px=ou*ou*p.src.x+2*ou*u*mx2+u*u*pt.x, py=ou*ou*p.src.y+2*ou*u*my2+u*u*pt.y;
+    ctx.beginPath(); ctx.arc(px,py,2.2,0,Math.PI*2);
+    ctx.fillStyle=p.col; ctx.shadowColor=p.col; ctx.shadowBlur=7; ctx.fill(); ctx.shadowBlur=0;
+  });
+
+  nodes.forEach(function(n){
+    var h=n.health!==undefined?n.health:100, col=healthCol(h), dcol=DOM_COL[n.domain]||col, r=nodeR(n);
+    var sel=selectedNode&&selectedNode.id===n.id, hov=hoveredNode&&hoveredNode.id===n.id;
+    if(h<35){
+      var pulse=Math.sin(Date.now()/280)*.5+.5;
+      ctx.beginPath(); ctx.arc(n.x,n.y,r+9+pulse*5,0,Math.PI*2);
+      ctx.strokeStyle='rgba(255,23,68,'+(0.1+pulse*.12)+')'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+    ctx.shadowColor=sel?dcol:h<35?'#ff1744':dcol;
+    ctx.shadowBlur=sel?24:hov?16:h<35?18:6;
+    ctx.beginPath(); ctx.arc(n.x,n.y,r+3.5,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.lineWidth=4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(n.x,n.y,r+3.5,-Math.PI/2,-Math.PI/2+(h/100)*Math.PI*2);
+    ctx.strokeStyle=col; ctx.lineWidth=4; ctx.lineCap='round'; ctx.stroke(); ctx.lineCap='butt';
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    var g=ctx.createRadialGradient(n.x-r*.3,n.y-r*.3,0,n.x,n.y,r);
+    g.addColorStop(0,dcol+(sel?'55':'28')); g.addColorStop(1,dcol+'0a');
+    ctx.fillStyle=g; ctx.fill();
+    ctx.strokeStyle=sel?dcol:(hov?'rgba(255,255,255,.35)':'rgba(255,255,255,.14)');
+    ctx.lineWidth=sel?2:1; ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.font='bold '+(r<14?'9':'11')+'px monospace'; ctx.fillStyle=col;
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(Math.round(h),n.x,n.y);
+    ctx.font='9px -apple-system,system-ui,sans-serif'; ctx.fillStyle='rgba(196,212,236,.88)';
+    ctx.textBaseline='top';
+    var lbl=n.label.length>14?n.label.slice(0,13)+'...':n.label;
+    ctx.fillText(lbl,n.x,n.y+r+5);
+    if(n.domain==='cbs'&&h<90){
+      ctx.font='bold 8px monospace'; ctx.fillStyle='rgba(255,23,68,.9)';
+      ctx.fillText('HOLD',n.x,n.y+r+16);
+    }
+    if(editMode&&rightClickFirst&&rightClickFirst.id===n.id){
+      ctx.beginPath(); ctx.arc(n.x,n.y,r+7,0,Math.PI*2);
+      ctx.strokeStyle='rgba(0,212,255,.8)'; ctx.lineWidth=2; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+    }
+  });
+  ctx.restore();
+
+  if(hoveredNode&&!dragNode){
+    var hn=hoveredNode, sc2=viewScale;
+    var sx=hn.x*sc2+viewX, sy=hn.y*sc2+viewY;
+    var tx=sx+18, ty=sy-16;
+    var liveHv=(hn.liveId&&liveHealth[hn.liveId]!==undefined)?Math.round(liveHealth[hn.liveId])+'/100':'No live data';
+    var lines2=['Health: '+Math.round(hn.health!==undefined?hn.health:100)+'%','Domain: '+DOM_NAME[hn.domain],'Cost: '+rf((hn.cost||COST_MAP[hn.domain]||8000)*.6)+'/hr impact'];
+    if(hn.liveId) lines2.push('Live: '+hn.liveId.split('-').slice(-2).join('-'));
+    var bw=140, bh=lines2.length*14+14;
+    var bx=tx+bw>W?tx-bw-10:tx, by=ty+bh>H?ty-bh-8:ty;
+    ctx.fillStyle='rgba(6,14,28,.94)'; roundRect(ctx,bx,by,bw,bh,5); ctx.fill();
+    ctx.strokeStyle='rgba(0,212,255,.22)'; ctx.lineWidth=1; roundRect(ctx,bx,by,bw,bh,5); ctx.stroke();
+    ctx.font='10px -apple-system,system-ui,sans-serif'; ctx.fillStyle='rgba(196,212,236,.9)';
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    lines2.forEach(function(l,i){ ctx.fillText(l,bx+8,by+6+i*14); });
+  }
+  var zi=document.getElementById('cas-zoom-info');
+  if(zi) zi.textContent=Math.round(viewScale*100)+'%';
+}
+
+function roundRect(c,x,y,w,h,r){
+  c.beginPath(); c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
+  c.lineTo(x+w,y+h-r); c.arcTo(x+w,y+h,x+w-r,y+h,r); c.lineTo(x+r,y+h);
+  c.arcTo(x,y+h,x,y+h-r,r); c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r); c.closePath();
+}
+
+function loop(){
+  tick();
+  draw();
+  animId=requestAnimationFrame(loop);
+}
+
+function canvasXY(e){
+  var rect=canvas.getBoundingClientRect();
+  var src=e.touches?e.touches[0]:e;
+  return {
+    x:(src.clientX-rect.left)/viewScale-viewX/viewScale,
+    y:(src.clientY-rect.top)/viewScale-viewY/viewScale
+  };
+}
+
+function nodeAt(x,y){
+  for(var i=0;i<nodes.length;i++){
+    var n=nodes[i];
+    var dx=n.x-x, dy=n.y-y, r=nodeR(n)+10;
+    if(dx*dx+dy*dy<r*r) return n;
+  }
+  return null;
+}
+
+var isPanning=false, panStart={x:0,y:0}, panOrigin={x:0,y:0};
+
+function bindEvents(){
+  if(!canvas) return;
+
+  canvas.addEventListener('mousedown',function(e){
+    var p=canvasXY(e), n=nodeAt(p.x,p.y);
+    if(n&&editMode&&!e.shiftKey&&!e.altKey){
+      dragNode=n; n.fixed=true;
+      dragOffset={x:p.x-n.x,y:p.y-n.y};
+    } else if(!n){
+      isPanning=true;
+      panStart={x:e.clientX,y:e.clientY};
+      panOrigin={x:viewX,y:viewY};
+    }
+  });
+
+  canvas.addEventListener('mousemove',function(e){
+    if(dragNode&&editMode){
+      var p=canvasXY(e);
+      dragNode.x=p.x-dragOffset.x; dragNode.y=p.y-dragOffset.y;
+      dragNode.vx=0; dragNode.vy=0; reheat(0.05);
+    } else if(isPanning){
+      viewX=panOrigin.x+(e.clientX-panStart.x);
+      viewY=panOrigin.y+(e.clientY-panStart.y);
+    } else {
+      var p2=canvasXY(e); hoveredNode=nodeAt(p2.x,p2.y);
+    }
+  });
+
+  canvas.addEventListener('mouseup',function(e){
+    if(dragNode){dragNode.fixed=false; dragNode=null;}
+    isPanning=false;
+  });
+
+  canvas.addEventListener('mouseleave',function(){
+    hoveredNode=null; dragNode=null; isPanning=false;
+  });
+
+  canvas.addEventListener('click',function(e){
+    if(isPanning) return;
+    var p=canvasXY(e), n=nodeAt(p.x,p.y);
+    if(!n){selectedNode=null; showNodeDetail(null); return;}
+    selectedNode=n; showNodeDetail(n);
+    if(!editMode){
+      if(e.shiftKey){ var deg=20+Math.random()*32; propagateCascade(n.id,deg); updateInsight(n.id); }
+      else if(e.altKey){ n.health=liveHealth[n.liveId]!==undefined?liveHealth[n.liveId]:100; logEvent('ok',n.label,'Restored to '+Math.round(n.health)+'%',new Date().toLocaleTimeString()); reheat(0.15); }
+    }
+  });
+
+  canvas.addEventListener('contextmenu',function(e){
+    e.preventDefault(); if(!editMode) return;
+    var p=canvasXY(e), n=nodeAt(p.x,p.y); if(!n) return;
+    if(!rightClickFirst){
+      rightClickFirst=n; logEvent('ok','Editor','Select second node to connect to "'+n.label+'"','');
+    } else {
+      if(rightClickFirst.id!==n.id){
+        edges.push({from:rightClickFirst.id,to:n.id,crit:false,source:nodeMap[rightClickFirst.id],target:nodeMap[n.id]});
+        logEvent('ok','Editor','Edge added: '+rightClickFirst.label+' to '+n.label,'');
+      }
+      rightClickFirst=null;
+    }
+  });
+
+  canvas.addEventListener('dblclick',function(e){
+    if(!editMode) return;
+    var p=canvasXY(e), removed=false;
+    edges=edges.filter(function(edge){
+      var es=edge.source, et=edge.target;
+      if(!es||!et||removed) return true;
+      var mx=(es.x+et.x)/2, my=(es.y+et.y)/2-18;
+      var dx=mx-p.x, dy=my-p.y;
+      if(dx*dx+dy*dy<400){removed=true; return false;}
+      return true;
+    });
+    if(removed) logEvent('ok','Editor','Edge removed','');
+  });
+
+  canvas.addEventListener('wheel',function(e){
+    e.preventDefault();
+    var rect=canvas.getBoundingClientRect();
+    var mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    var zoomFactor=e.deltaY<0?1.1:0.91;
+    var newScale=Math.max(0.25,Math.min(4,viewScale*zoomFactor));
+    viewX=mx-(mx-viewX)*(newScale/viewScale);
+    viewY=my-(my-viewY)*(newScale/viewScale);
+    viewScale=newScale;
+  },{passive:false});
+
+  var lastTouchDist=0;
+  canvas.addEventListener('touchstart',function(e){
+    if(e.touches.length===1){
+      isPanning=true; panStart={x:e.touches[0].clientX,y:e.touches[0].clientY}; panOrigin={x:viewX,y:viewY};
+    } else if(e.touches.length===2){
+      var dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY;
+      lastTouchDist=Math.sqrt(dx*dx+dy*dy);
+    }
+  });
+  canvas.addEventListener('touchmove',function(e){
+    e.preventDefault();
+    if(e.touches.length===1&&isPanning){
+      viewX=panOrigin.x+(e.touches[0].clientX-panStart.x); viewY=panOrigin.y+(e.touches[0].clientY-panStart.y);
+    } else if(e.touches.length===2){
+      var dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY;
+      var dist=Math.sqrt(dx*dx+dy*dy);
+      viewScale=Math.max(0.25,Math.min(4,viewScale*(dist/lastTouchDist)));
+      lastTouchDist=dist;
+    }
+  },{passive:false});
+  canvas.addEventListener('touchend',function(){ isPanning=false; });
+}
+
+function fitView(){
+  if(!nodes.length) return;
+  var xs=nodes.map(function(n){return n.x;}), ys=nodes.map(function(n){return n.y;});
+  var minX=Math.min.apply(null,xs)-30, maxX=Math.max.apply(null,xs)+30;
+  var minY=Math.min.apply(null,ys)-30, maxY=Math.max.apply(null,ys)+30;
+  var scaleX=W/(maxX-minX), scaleY=H/(maxY-minY);
+  viewScale=Math.max(0.25,Math.min(2,Math.min(scaleX,scaleY)));
+  viewX=W/2-((minX+maxX)/2)*viewScale;
+  viewY=H/2-((minY+maxY)/2)*viewScale;
+}
+
+function resetView(){ viewX=0; viewY=0; viewScale=1; }
+function reheat(a){ alpha=Math.max(alpha,a!==undefined?a:0.6); }
+
+function scenario(name){
+  reset(true);
+  cascadeActive=true;
+  document.querySelectorAll('.cas-scenario-btn').forEach(function(b){b.classList.remove('active');});
+  var btn=document.getElementById('sb-'+name); if(btn) btn.classList.add('active');
+
+  if(name==='wan')      propagateCascade('wan',62);
+  else if(name==='cbs'){ propagateCascade('cbs',32); setTimeout(function(){propagateCascade('cbs',30);},1200); }
+  else if(name==='power') propagateCascade('pm',65);
+  else if(name==='storm'){ propagateCascade('tower',72); setTimeout(function(){propagateCascade('mw-link',28);},900); }
+  else if(name==='compound'){
+    propagateCascade('wan',42);
+    setTimeout(function(){propagateCascade('pm',55);},700);
+    setTimeout(function(){propagateCascade('tower',68);},1300);
+  } else if(name==='live'){
+    var worst=null, worstH=100;
+    nodes.forEach(function(n){
+      var lh=n.liveId?(liveHealth[n.liveId]!==undefined?liveHealth[n.liveId]:100):100;
+      if(lh<worstH){worstH=lh; worst=n;}
+    });
+    if(worst&&worstH<82){
+      logEvent('warn','Live Simulation','Starting from worst live device: '+worst.label+' at '+Math.round(worstH)+'%',new Date().toLocaleTimeString());
+      propagateCascade(worst.id,Math.min(35,100-worstH+5));
+    } else {
+      logEvent('ok','Live Simulation','All devices healthy - simulating WAN -22% for demonstration','');
+      propagateCascade('wan',22);
+    }
+  }
+
+  var insEl=document.getElementById('cas-ai-insight');
+  if(insEl){
+    var txt=SCENARIO_INSIGHTS[name]||SCENARIO_INSIGHTS.compound;
+    insEl.innerHTML='<div class="cas-insight-ttl">Causal analysis active</div>'+txt;
+  }
+}
+
+function showNodeDetail(n){
+  var el=document.getElementById('cas-node-detail'); if(!el) return;
+  if(!n){
+    el.innerHTML='<div class="cas-nd-box"><div class="cas-nd-name" style="color:var(--dim)">No node selected</div>'
+      +'<div style="font-size:9.5px;color:var(--dim);margin-top:5px">Click any node. Shift+click to degrade. Alt+click to restore.</div></div>';
+    return;
+  }
+  var h=n.health!==undefined?n.health:100;
+  var col=h>=70?'var(--grn)':h>=40?'var(--amb)':'var(--red)';
+  var impact=h<20?.95:h<35?.6:h<50?.25:0;
+  var exp=Math.round((n.cost||COST_MAP[n.domain]||8000)*impact);
+  var liveH=n.liveId?liveHealth[n.liveId]:undefined;
+  var liveStr=liveH!==undefined?(Math.round(liveH)+'/100'):'No live data';
+  var liveCol=liveH!==undefined&&liveH<50?'var(--red)':'var(--grn)';
+  var domSub=n.liveId?(' - '+n.liveId.split('-').slice(-2).join('-')):'';
+  var expStr=exp>0?('$'+exp.toLocaleString()):'$0';
+  var expCol=exp>0?'var(--red)':'var(--grn)';
+  var cbsHold=n.domain==='cbs'&&h<90
+    ?'<div style="margin-top:6px;padding:5px 8px;background:var(--reda);border:1px solid rgba(255,23,68,.28);border-radius:4px;font-size:9px;color:var(--red);font-weight:700">CBS BLAST HOLD CONDITION</div>'
+    :'';
+  el.innerHTML='<div class="cas-nd-box">'
+    +'<div class="cas-nd-name" style="color:'+col+'">'+n.label+'</div>'
+    +'<div style="font-size:9px;color:var(--dim);margin-bottom:7px">'+DOM_NAME[n.domain]+domSub+'</div>'
+    +'<div class="cas-nd-row"><span class="cas-nd-lbl">Health</span><span class="cas-nd-val" style="color:'+col+'">'+Math.round(h)+'/100</span></div>'
+    +'<div class="cas-nd-row"><span class="cas-nd-lbl">Live reading</span><span class="cas-nd-val" style="color:'+liveCol+'">'+liveStr+'</span></div>'
+    +'<div class="cas-nd-row"><span class="cas-nd-lbl">Hourly exposure</span><span class="cas-nd-val" style="color:'+expCol+'">'+expStr+'</span></div>'
+    +cbsHold
+    +'<div style="height:2px;background:rgba(255,255,255,.05);border-radius:1px;margin:8px 0;overflow:hidden">'
+    +'<div style="height:100%;width:'+h+'%;background:'+col+';border-radius:1px;transition:width 1s"></div></div>'
+    +'<div style="display:flex;gap:5px;flex-wrap:wrap">'
+    +'<button class="btn btn-ghost btn-sm" onclick="CAS.degradeNode(\''+n.id+'\',35)" style="font-size:9px;padding:3px 8px">Degrade -35</button>'
+    +'<button class="btn btn-ghost btn-sm" onclick="CAS.restoreNode(\''+n.id+'\')" style="font-size:9px;padding:3px 8px">Restore</button>'
+    +'</div>'
+    +'</div>';
+}
+
+function degradeNode(id,amount){
+  var n=nodeMap[id]; if(!n) return;
+  propagateCascade(id,amount||35);
+  updateInsight(id);
+  if(selectedNode&&selectedNode.id===id) showNodeDetail(n);
+}
+
+function restoreNode(id){
+  var n=nodeMap[id]; if(!n) return;
+  cascadeTimers.forEach(clearTimeout); cascadeTimers=[];
+  n.health=liveHealth[n.liveId]!==undefined?liveHealth[n.liveId]:100;
+  logEvent('ok',n.label,'Restored to '+Math.round(n.health)+'%',new Date().toLocaleTimeString());
+  reheat(0.15);
+  if(selectedNode&&selectedNode.id===id) showNodeDetail(n);
+}
+
+function logEvent(cls,dev,msg,time){
+  var log=document.getElementById('cas-log'); if(!log) return;
+  var el=document.createElement('div');
+  el.className='cas-log-item '+cls;
+  el.innerHTML='<div class="cas-log-t">'+(time||new Date().toLocaleTimeString())+'</div>'
+    +'<div class="cas-log-dev">'+dev+'</div><div class="cas-log-msg">'+msg+'</div>';
+  log.insertBefore(el,log.firstChild);
+  while(log.children.length>16) log.removeChild(log.lastChild);
+}
+
+function updateInsight(originId){
+  var insEl=document.getElementById('cas-ai-insight'); if(!insEl) return;
+  var affected=new Set();
+  nodes.forEach(function(n){ if((n.health!==undefined?n.health:100)<90) affected.add(n.domain); });
+  var txt=SCENARIO_INSIGHTS[originId]||('<strong>Causal analysis - '+(affected.size)+' domain'+(affected.size!==1?'s':'')+' affected.</strong> Cross-domain propagation traced from <em>'+(nodeMap[originId]&&nodeMap[originId].label||originId)+'</em>. CBS blast window integrity being re-evaluated.');
+  insEl.innerHTML='<div class="cas-insight-ttl">Causal analysis - '+affected.size+' domain'+(affected.size!==1?'s':'')+' affected</div>'+txt;
+}
+
+function setView(mode){
+  viewMode=mode;
+  if(mode==='force'){ reheat(0.8); }
+  else { nodes.forEach(function(n){ delete n.tx; delete n.ty; }); }
+}
+
+function toggleEdit(){
+  editMode=!editMode;
+  var btn=document.getElementById('cas-edit-btn');
+  var panel=document.getElementById('cas-edit-panel');
+  if(btn) btn.classList.toggle('active',editMode);
+  if(panel) panel.style.display=editMode?'block':'none';
+  var hint=document.getElementById('cas-hint-txt');
+  if(hint) hint.textContent=editMode
+    ?'Edit mode: drag nodes - right-click two nodes to add edge - double-click near edge midpoint to remove'
+    :'Click node to inspect - Shift+click to degrade - Alt+click to restore - Scroll to zoom - Drag to pan';
+}
+
+async function saveTopology(){
+  var token=window.spToken||'';
+  if(!token){ if(window.toast) toast('Login required','Specialist login required to save topology','tc'); return; }
+  try {
+    var payload={
+      nodes:nodes.map(function(n){return {id:n.id,label:n.label,domain:n.domain,x:n.x/W,y:n.y/H};}),
+      edges:edges.map(function(e){return {from:e.source&&e.source.id||e.from,to:e.target&&e.target.id||e.to};})
+    };
+    var r=await fetch(window.location.origin+'/api/cascade/topology',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Specialist-Token':token},
+      body:JSON.stringify(payload)
+    });
+    var d=await r.json();
+    if(d.ok){ if(window.toast) toast('Topology saved',d.nodes+' nodes, '+d.edges+' edges','tg'); }
+    else { if(window.toast) toast('Save failed',d.error||'Unknown error','tc'); }
+  } catch(e){ if(window.toast) toast('Save error',e.message,'tc'); }
+}
+
+async function loadTopology(){
+  try {
+    var r=await fetch(window.location.origin+'/api/cascade/topology');
+    var d=await r.json();
+    if(d.nodes&&d.nodes.length){
+      var savedMap={}; d.nodes.forEach(function(n){savedMap[n.id]=n;});
+      nodes.forEach(function(n){
+        if(savedMap[n.id]){n.tx=savedMap[n.id].x*W; n.ty=savedMap[n.id].y*H; n.label=savedMap[n.id].label||n.label;}
+      });
+      if(d.edges){
+        edges=d.edges.map(function(e){
+          var src=nodeMap[e.from], tgt=nodeMap[e.to];
+          return src&&tgt?{from:e.from,to:e.to,crit:false,source:src,target:tgt}:null;
+        }).filter(Boolean);
+      }
+      if(window.toast) toast('Topology loaded',d.nodes.length+' nodes','tg');
+    }
+  } catch(e){ console.warn('[Cascade] load topology:',e); }
+}
+
+async function loadTopologyQuiet(){
+  try {
+    var r=await fetch(window.location.origin+'/api/cascade/topology');
+    var d=await r.json();
+    if(d.nodes&&d.nodes.length){
+      var savedMap={}; d.nodes.forEach(function(n){savedMap[n.id]=n;});
+      nodes.forEach(function(n){
+        if(savedMap[n.id]){n.tx=savedMap[n.id].x*W; n.ty=savedMap[n.id].y*H;}
+      });
+      if(d.edges){
+        edges=d.edges.map(function(e){
+          var src=nodeMap[e.from], tgt=nodeMap[e.to];
+          return src&&tgt?{from:e.from,to:e.to,crit:false,source:src,target:tgt}:null;
+        }).filter(Boolean);
+      }
+    }
+  } catch(e){}
+}
+
+async function resetTopology(){
+  var token=window.spToken||'';
+  if(!token){ if(window.toast) toast('Login required','Specialist login required','tc'); return; }
+  try {
+    await fetch(window.location.origin+'/api/cascade/topology',{method:'DELETE',headers:{'X-Specialist-Token':token}});
+    setNodes(JSON.parse(JSON.stringify(DEF_NODES)),JSON.parse(JSON.stringify(DEF_EDGES)));
+    reheat(1.0);
+    if(window.toast) toast('Topology reset','Default topology restored','tg');
+  } catch(e){ if(window.toast) toast('Reset error',e.message,'tc'); }
+}
+
+function reset(keepScenario){
+  cascadeTimers.forEach(clearTimeout); cascadeTimers=[];
+  cascadeActive=false; particles=[];
+  if(!keepScenario){
+    document.querySelectorAll('.cas-scenario-btn').forEach(function(b){b.classList.remove('active');});
+    selectedNode=null; showNodeDetail(null);
+  }
+  applyLiveHealth();
+  var hp=document.getElementById('cas-hold-pill'); if(hp) hp.classList.remove('on');
+  var log=document.getElementById('cas-log');
+  if(log) log.innerHTML='<div class="cas-log-item ok"><div class="cas-log-t">'+new Date().toLocaleTimeString()+'</div>'
+    +'<div class="cas-log-dev">IISentinel&#x2122; Engine v2</div>'
+    +'<div class="cas-log-msg">Reset complete. Live health re-applied. Ready.</div></div>';
+  var insEl=document.getElementById('cas-ai-insight');
+  if(insEl) insEl.innerHTML='<div class="cas-insight-ttl">Awaiting event...</div>The causal graph engine maps <strong>dependency chains across all domains simultaneously</strong>. Trigger a scenario or shift+click a node to begin.';
+  ['cas-cost-main','cas-stat-affected','cas-stat-pred','ec-direct','ec-cascade','ec-saved'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.textContent='$0';
+  });
+  ['cas-stat-affected','cas-stat-pred'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.textContent='0';
+  });
+  var ecRoi=document.getElementById('ec-roi'); if(ecRoi) ecRoi.textContent='&#x221E;';
+  var ttc=document.getElementById('cas-stat-ttc'); if(ttc) ttc.textContent='--';
+  var safe=document.getElementById('cas-stat-safe'); if(safe) safe.textContent=nodes.filter(function(n){return (n.health!==undefined?n.health:100)>=70;}).length;
+  reheat(0.2);
+}
+
+return {
+  init:init, resize:resize, reset:reset, reheat:reheat, fitView:fitView, resetView:resetView,
+  setView:setView, toggleEdit:toggleEdit,
+  saveTopology:saveTopology, loadTopology:loadTopology, resetTopology:resetTopology,
+  updateLiveHealth:updateLiveHealth,
+  scenario:scenario,
+  degradeNode:degradeNode, restoreNode:restoreNode
+};
+})();
 // ================================================================
 // NAVIGATION  — now triggers immediate render on tab switch
 // ================================================================
