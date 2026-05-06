@@ -83,6 +83,8 @@ def _db_conn():
     finally:
         con.close()
 
+
+        # ── Ensure default admin ──────────────────────────────────────────
 def _db_init():
     with _db_conn() as con:
         con.executescript("""
@@ -119,61 +121,27 @@ def _db_init():
             payload TEXT NOT NULL, updated_at TEXT);
         """)
 
-        # ── Schema migration: plaintext → hashed passwords ────────────────
+        # ── Schema migrations (safe on existing DBs) ──────────────────────
         cols = {r[1] for r in con.execute("PRAGMA table_info(specialists)")}
-        if 'password' in cols and 'password_hash' not in cols:
-            con.execute("ALTER TABLE specialists ADD COLUMN password_hash TEXT")
-            for row in con.execute("SELECT id,password FROM specialists").fetchall():
-                ph = generate_password_hash(row['password'] or 'changeme!')
-                con.execute("UPDATE specialists SET password_hash=? WHERE id=?",
-                            (ph, row['id']))
-        elif 'password_hash' not in cols:
-            con.execute("ALTER TABLE specialists ADD COLUMN password_hash TEXT")
 
-        # ── Ensure default admin ──────────────────────────────────────────
-def _db_init():
-    with _db_conn() as con:
-        con.execute("""CREATE TABLE IF NOT EXISTS metrics (
-            id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
-            metric_name TEXT, metric_value REAL, health_score REAL,
-            anomaly_flag INTEGER, predicted_score REAL,
-            ai_diagnosis TEXT, automation_command TEXT, created_at TEXT)""")
-        con.execute("""CREATE TABLE IF NOT EXISTS incidents (
-            id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
-            health_score REAL, ai_diagnosis TEXT, automation_command TEXT,
-            status TEXT DEFAULT 'open', assigned_to TEXT, resolved_by TEXT,
-            notes TEXT, created_at TEXT)""")
-        con.execute("""CREATE TABLE IF NOT EXISTS specialists (
-            id TEXT PRIMARY KEY, name TEXT, password TEXT, role TEXT)""")
-        con.execute("""CREATE TABLE IF NOT EXISTS nodes (
-            id TEXT PRIMARY KEY, host TEXT NOT NULL, label TEXT,
-            sector TEXT DEFAULT 'net', created_at TEXT)""")
-        con.execute("""CREATE TABLE IF NOT EXISTS collectors (
-            id TEXT PRIMARY KEY, name TEXT NOT NULL, api_key TEXT NOT NULL,
-            sector TEXT DEFAULT 'net', description TEXT,
-            last_seen TEXT, reading_count INTEGER DEFAULT 0,
-            active INTEGER DEFAULT 1, created_at TEXT)""")
-        con.execute("""CREATE TABLE IF NOT EXISTS cascade_topology (
-            id TEXT PRIMARY KEY DEFAULT 'default',
-            payload TEXT NOT NULL, updated_at TEXT)""")
-
-        # Migrate: add token column if missing (safe on old DBs)
-        try:
+        if 'token' not in cols:
             con.execute("ALTER TABLE specialists ADD COLUMN token TEXT")
-        except Exception:
-            pass
 
-        # Now safe to query — token column guaranteed to exist
-        row = con.execute("SELECT id FROM specialists WHERE name='Admin'").fetchone()
-        if not row:
-            tok = secrets.token_hex(24)
-            con.execute("INSERT INTO specialists VALUES (?,?,?,?,?)",
-                        ('sp-001', 'Admin', tok, 'admin123', 'engineer'))
-        else:
-            row2 = con.execute("SELECT token FROM specialists WHERE name='Admin'").fetchone()
-            if not row2 or not row2[0]:
-                con.execute("UPDATE specialists SET token=? WHERE name='Admin'",
-                            (secrets.token_hex(24),))                
+        if 'password_hash' not in cols:
+            con.execute("ALTER TABLE specialists ADD COLUMN password_hash TEXT")
+
+        # Migrate plaintext passwords → hashed
+        if 'password' in cols:
+            for r in con.execute("SELECT id, password FROM specialists").fetchall():
+                ph = generate_password_hash(r['password'] or 'changeme!')
+                con.execute("UPDATE specialists SET password_hash=? WHERE id=?",
+                            (ph, r['id']))
+
+        # ── Ensure default admin exists ───────────────────────────────────
+        row = con.execute(
+            "SELECT id, token, password_hash FROM specialists WHERE name='Admin'"
+        ).fetchone()
+
         if not row:
             tok = secrets.token_hex(24)
             ph  = generate_password_hash('admin123')
@@ -183,14 +151,15 @@ def _db_init():
         else:
             if not row['token']:
                 tok = secrets.token_hex(24)
-                con.execute("UPDATE specialists SET token=? WHERE name='Admin'", (tok,))
+                con.execute("UPDATE specialists SET token=? WHERE id=?",
+                            (tok, row['id']))
                 print(f"\n  [IISentinel] Admin token set: {tok}\n")
             if not row['password_hash']:
-                con.execute("UPDATE specialists SET password_hash=? WHERE name='Admin'",
-                            (generate_password_hash('admin123'),))
+                con.execute(
+                    "UPDATE specialists SET password_hash=? WHERE id=?",
+                    (generate_password_hash('admin123'), row['id']))
 
 _db_init()
-
 # ── Rate limiter ──────────────────────────────────────────────────────────────
 _rate_buckets: dict[str, list] = {}
 _rate_lock = threading.Lock()
