@@ -131,8 +131,49 @@ def _db_init():
             con.execute("ALTER TABLE specialists ADD COLUMN password_hash TEXT")
 
         # ── Ensure default admin ──────────────────────────────────────────
-        row = con.execute("SELECT id,token,password_hash FROM specialists "
-                          "WHERE name='Admin'").fetchone()
+        def _db_init():
+    with _db_conn() as con:
+        con.execute("""CREATE TABLE IF NOT EXISTS metrics (
+            id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
+            metric_name TEXT, metric_value REAL, health_score REAL,
+            anomaly_flag INTEGER, predicted_score REAL,
+            ai_diagnosis TEXT, automation_command TEXT, created_at TEXT)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS incidents (
+            id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
+            health_score REAL, ai_diagnosis TEXT, automation_command TEXT,
+            status TEXT DEFAULT 'open', assigned_to TEXT, resolved_by TEXT,
+            notes TEXT, created_at TEXT)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS specialists (
+            id TEXT PRIMARY KEY, name TEXT, password TEXT, role TEXT)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS nodes (
+            id TEXT PRIMARY KEY, host TEXT NOT NULL, label TEXT,
+            sector TEXT DEFAULT 'net', created_at TEXT)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS collectors (
+            id TEXT PRIMARY KEY, name TEXT NOT NULL, api_key TEXT NOT NULL,
+            sector TEXT DEFAULT 'net', description TEXT,
+            last_seen TEXT, reading_count INTEGER DEFAULT 0,
+            active INTEGER DEFAULT 1, created_at TEXT)""")
+        con.execute("""CREATE TABLE IF NOT EXISTS cascade_topology (
+            id TEXT PRIMARY KEY DEFAULT 'default',
+            payload TEXT NOT NULL, updated_at TEXT)""")
+
+        # Migrate: add token column if missing (safe on old DBs)
+        try:
+            con.execute("ALTER TABLE specialists ADD COLUMN token TEXT")
+        except Exception:
+            pass
+
+        # Now safe to query — token column guaranteed to exist
+        row = con.execute("SELECT id FROM specialists WHERE name='Admin'").fetchone()
+        if not row:
+            tok = secrets.token_hex(24)
+            con.execute("INSERT INTO specialists VALUES (?,?,?,?,?)",
+                        ('sp-001', 'Admin', tok, 'admin123', 'engineer'))
+        else:
+            row2 = con.execute("SELECT token FROM specialists WHERE name='Admin'").fetchone()
+            if not row2 or not row2[0]:
+                con.execute("UPDATE specialists SET token=? WHERE name='Admin'",
+                            (secrets.token_hex(24),))                
         if not row:
             tok = secrets.token_hex(24)
             ph  = generate_password_hash('admin123')
