@@ -15,7 +15,6 @@ v3.2 changes vs v3.1:
   ✓ PostgreSQL support via env DATABASE_URL (SQLite fallback)
   ✓ admin123 placeholder removed from login endpoint comment
   ✓ /api/admin/token disabled in PRODUCTION=true environments
-  ✓ FIXED: duplicate _db_init removed — IndexError on Render resolved
 
 Run:     python app.py
 Demo:    DEMO_MODE=true python app.py
@@ -84,6 +83,8 @@ def _db_conn():
     finally:
         con.close()
 
+
+        # ── Ensure default admin ──────────────────────────────────────────
 def _db_init():
     with _db_conn() as con:
         con.executescript("""
@@ -159,7 +160,6 @@ def _db_init():
                     (generate_password_hash('admin123'), row['id']))
 
 _db_init()
-
 # ── Rate limiter ──────────────────────────────────────────────────────────────
 _rate_buckets: dict[str, list] = {}
 _rate_lock = threading.Lock()
@@ -205,7 +205,7 @@ MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','s
 CBS_TYPES     = ['cbs_controller']
 CBS_SAFETY_THRESHOLD = 90.0
 RETRAIN_THRESHOLD    = 50
-CACHE_TTL            = 2
+CACHE_TTL            = 2      # seconds (was 8)
 WEATHER_CACHE_TTL    = 60
 
 COST_RATES = {
@@ -239,6 +239,7 @@ queue_lock    = threading.Lock()
 _data_cache   = {'data': [], 'ts': 0}
 _weather_cache: dict = {}
 
+# FIXED: device_history now protected by RLock
 _history_lock  = threading.RLock()
 device_history: dict[str, list] = {}
 device_uptime:  dict[str, dict] = {}
@@ -263,6 +264,7 @@ platform_stats = {
     'collector_readings':0,'uptime_start':datetime.now(timezone.utc).isoformat()
 }
 
+# Optional API key for /api/data
 _DATA_API_KEY = os.environ.get('DATA_API_KEY', '')
 
 NOTIFY = {
@@ -301,6 +303,7 @@ def _history_get(did: str) -> list:
         return list(device_history.get(did, []))
 
 def _history_snapshot() -> dict[str, float]:
+    """Latest score per device — thread-safe snapshot."""
     with _history_lock:
         return {d: h[-1] for d, h in device_history.items() if h}
 
@@ -340,7 +343,7 @@ def send_email(subject,body,device_id=None,health_score=None,
     html = f"""<html><body style="font-family:Arial,sans-serif;background:#eef0f7;padding:32px 0">
 <table width="560" style="background:#fff;border-radius:12px;margin:auto">
 <tr><td style="background:{C};padding:20px 28px">
-  <b style="font-size:18px;color:#fff">IISentinel&#x2122;</b>
+  <b style="font-size:18px;color:#fff">IISentinel™</b>
   <span style="font-size:10px;background:rgba(255,255,255,.2);color:#fff;
         padding:2px 8px;border-radius:20px;margin-left:8px">{severity.upper()}</span>
 </td></tr>
@@ -390,6 +393,7 @@ def sse_broadcast(event_type: str, payload: dict):
 
 # ── Background workers ────────────────────────────────────────────────────────
 def flush_worker():
+    """Batch-flush metric queue to SQLite every 1 s (was 3 s)."""
     while True:
         time.sleep(1)
         with queue_lock:
@@ -465,21 +469,22 @@ def retrain_worker():
             with _retrain_lock: _retrain_in_progress = False
 
 def full_sync_worker():
+    """Push complete dataset snapshot to all SSE subscribers every 30 s."""
     while True:
         time.sleep(30)
         try:
             data  = get_cached_data()
             snap  = _history_snapshot()
             intel = {
-                'federated_index'      : get_federated_health_index(list(snap.values())),
+                'federated_index'     : get_federated_health_index(list(snap.values())),
                 'failure_probabilities': {d: get_failure_probability(d, s) for d,s in snap.items()},
-                'uptime'               : {d: get_uptime_pct(d) for d in device_uptime},
-                'ttf_minutes'          : {d: v for d,s in snap.items()
-                                          if (v := get_ettf_minutes(d, s, '')) is not None},
-                'anomaly_count'        : anomaly_count,
-                'total_devices'        : len(device_history),
-                'retrain_needed'       : anomaly_count >= RETRAIN_THRESHOLD,
-                'retrain_in_progress'  : _retrain_in_progress,
+                'uptime'              : {d: get_uptime_pct(d) for d in device_uptime},
+                'ttf_minutes'         : {d: v for d,s in snap.items()
+                                         if (v := get_ettf_minutes(d, s, '')) is not None},
+                'anomaly_count'       : anomaly_count,
+                'total_devices'       : len(device_history),
+                'retrain_needed'      : anomaly_count >= RETRAIN_THRESHOLD,
+                'retrain_in_progress' : _retrain_in_progress,
             }
             sse_broadcast('full_sync', {'data': data, 'intel': intel, 'ts': time.time()})
         except Exception as e: print(f'[FullSync] {e}')
@@ -627,6 +632,7 @@ def get_cached_data() -> list:
         return _data_cache['data']
 
 def process_single_metric(data: dict) -> dict:
+    """Core ML scoring + notification pipeline."""
     global anomaly_count
     did   = data['device_id']
     dtype = data['device_type']
@@ -651,7 +657,7 @@ def process_single_metric(data: dict) -> dict:
                   if len(reading_window)>=3 else score
     fail_prob   = get_failure_probability(did, score)
     ettf        = get_ettf_minutes(did, score, dtype)
-    fhi         = get_federated_health_index([_history_snapshot().get(d,50)
+    fhi         = get_federated_health_index([_history_snapshot().get(d,50) 
                                                for d in device_history])
     update_uptime(did, score)
     uptime_pct  = get_uptime_pct(did)
@@ -695,6 +701,7 @@ def process_single_metric(data: dict) -> dict:
                      'open',None,None,None,datetime.now(timezone.utc).isoformat()))
         except Exception: pass
 
+    # ── Enriched SSE payload (dashboard gauges update without polling) ──────
     sse_payload = {
         'device_id'          : did,
         'device_type'        : dtype,
@@ -745,6 +752,7 @@ def require_specialist(f):
         if not token: return jsonify({'error':'Unauthorised'}),401
         try:
             with _db_conn() as con:
+                # Only match against dedicated token column — NOT password
                 row = con.execute(
                     "SELECT * FROM specialists WHERE token=?", (token,)
                 ).fetchone()
@@ -755,6 +763,7 @@ def require_specialist(f):
     return decorated
 
 def optional_data_auth(f):
+    """If DATA_API_KEY is set, require X-Api-Key header on /api/data."""
     @wraps(f)
     def decorated(*args,**kwargs):
         if _DATA_API_KEY:
@@ -805,9 +814,9 @@ def demo_worker():
             temp = dev['btemp']*(1+sev*.5)+random.gauss(0,3)
             cpu  = min(98, 20+sev*75+random.gauss(0,8))
             loss = max(0,  sev*8+random.gauss(0,0.8))
-            if dtype in MINING_TYPES:              mn,mv='temperature',round(temp,1)
-            elif dtype in TELECOM_TYPES+CBS_TYPES: mn,mv='signal_strength',round(sig,1)
-            else:                                  mn,mv='latency_ms',round(lat,1)
+            if dtype in MINING_TYPES:             mn,mv='temperature',round(temp,1)
+            elif dtype in TELECOM_TYPES+CBS_TYPES:mn,mv='signal_strength',round(sig,1)
+            else:                                 mn,mv='latency_ms',round(lat,1)
             proto = ('DNP3/Ethernet'        if dtype=='cbs_controller' else
                      'Profinet/EtherNet-IP' if dtype in MINING_TYPES   else
                      'SNMP/Ethernet-802.3')
@@ -825,7 +834,7 @@ def demo_worker():
 if os.environ.get('DEMO_MODE','false').lower()=='true':
     threading.Thread(target=demo_worker, daemon=True).start()
 
-# ── Node monitor ──────────────────────────────────────────────────────────────
+# ── Node monitor — ThreadPoolExecutor, hard 2 s timeout ──────────────────────
 _nodes: dict      = {}
 _nodes_lock       = threading.Lock()
 _node_executor    = ThreadPoolExecutor(max_workers=32, thread_name_prefix='node-probe')
@@ -857,12 +866,14 @@ def _poll_node(node_id: str):
         if node_id not in _nodes: return
         node = dict(_nodes[node_id])
 
+    # Primary probe — hard 2 s timeout via future
     future = _node_executor.submit(_probe_host, node['host'], 1.5)
     try:
         reachable, latency = future.result(timeout=2.0)
     except Exception:
         reachable, latency = False, None
 
+    # Parallel loss check (3 concurrent pings, only if reachable)
     loss_pct = 0
     if reachable:
         futures = [_node_executor.submit(_probe_port, node['host'],
@@ -887,6 +898,7 @@ def _poll_node(node_id: str):
         hist.append({'ts':now,'status':status,'latency':latency,'health':health})
         _nodes[node_id]['history'] = hist
 
+    # Feed node result into ML pipeline
     sector = node.get('sector','net')
     label  = node.get('label', node['host'])
     did    = f"{sector}-node-{node_id[:8]}"
@@ -919,6 +931,7 @@ def _background_poller():
     while True:
         time.sleep(30)
         with _nodes_lock: ids = list(_nodes.keys())
+        # All nodes polled in parallel via executor
         for nid in ids:
             _node_executor.submit(_poll_node, nid)
 
@@ -992,8 +1005,8 @@ def receive_metrics_bulk():
     platform_stats['requests_total'] += 1
     payload  = request.get_json(silent=True) or {}
     readings = payload if isinstance(payload,list) else payload.get('readings',[])
-    if not readings:      return jsonify({'error':'Empty readings array'}),400
-    if len(readings)>200: return jsonify({'error':'Max 200 per bulk call'}),400
+    if not readings:           return jsonify({'error':'Empty readings array'}),400
+    if len(readings)>200:      return jsonify({'error':'Max 200 per bulk call'}),400
     results=[]; errors=[]
     for raw in readings:
         data, err = sanitize_metric(raw)
@@ -1013,7 +1026,7 @@ def register_collector():
     name   = str(data.get('name','')).strip()[:60]
     sector = str(data.get('sector','net')).strip()
     desc   = str(data.get('description','')).strip()[:200]
-    if not name:                              return jsonify({'error':'name required'}),400
+    if not name:                           return jsonify({'error':'name required'}),400
     if sector not in ('net','tc','mc','all'): sector='net'
     api_key = secrets.token_hex(32)
     cid     = f"col-{sector}-{uuid.uuid4().hex[:8]}"
@@ -1049,8 +1062,8 @@ def collector_ingest():
 
     payload  = request.get_json(silent=True) or {}
     readings = payload if isinstance(payload,list) else payload.get('readings',[])
-    if not readings:      return jsonify({'error':'readings must be non-empty array'}),400
-    if len(readings)>500: return jsonify({'error':'Max 500 per batch'}),400
+    if not readings:       return jsonify({'error':'readings must be non-empty array'}),400
+    if len(readings)>500:  return jsonify({'error':'Max 500 per batch'}),400
 
     results=[]; errors=[]; processed=0
     for raw in readings:
@@ -1307,9 +1320,9 @@ def test_notify():
     data = request.get_json(silent=True) or {}
     ch   = data.get('channel','all')
     msg  = 'IISentinel test notification — channels operational'
-    if ch in ('sms','all'):      threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
-    if ch in ('whatsapp','all'): threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
-    if ch in ('email','all'):    threading.Thread(target=send_email,
+    if ch in ('sms','all'):       threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
+    if ch in ('whatsapp','all'):  threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
+    if ch in ('email','all'):     threading.Thread(target=send_email,
         kwargs=dict(subject='Test',body=msg,severity='info'),daemon=True).start()
     return jsonify({'ok':True,'channel':ch})
 
@@ -1394,11 +1407,11 @@ def export_pdf():
             sty(fontName='Helvetica-Bold',fontSize=9,textColor=ACCENT,spaceBefore=8,spaceAfter=4)))
         drows=[[Paragraph(c,hdr) for c in ['Device','Score','Risk','ETTF','Status']]]
         for did,s in sorted(snap.items(),key=lambda x:x[1])[:20]:
-            p2   = get_failure_probability(did,s)
-            stat = 'CRITICAL' if s<20 else 'WARNING' if s<50 else 'OK'
-            col  = RED if s<20 else AMBER if s<50 else GREEN
+            p2  = get_failure_probability(did,s)
+            stat= 'CRITICAL' if s<20 else 'WARNING' if s<50 else 'OK'
+            col = RED if s<20 else AMBER if s<50 else GREEN
             dtype= dtype_map.get(did,'')
-            ttf  = get_ettf_minutes(did,s,dtype)
+            ttf = get_ettf_minutes(did,s,dtype)
             ttf_str=(f'{ttf}min' if ttf is not None and ttf<60
                      else f'{ttf//60}h {ttf%60}m' if ttf is not None else 'Stable')
             drows.append([Paragraph(did[-36:],cel),
@@ -1484,31 +1497,31 @@ def poll_node_now(node_id):
 # ── Cascade topology ──────────────────────────────────────────────────────────
 _DEFAULT_TOPOLOGY = {
     "nodes":[
-        {"id":"wan",     "label":"WAN Link",    "domain":"net", "x":.15,"y":.20},
-        {"id":"core-sw", "label":"Core Switch", "domain":"net", "x":.28,"y":.32},
-        {"id":"fw",      "label":"Firewall",    "domain":"net", "x":.18,"y":.44},
-        {"id":"noc",     "label":"NOC Router",  "domain":"net", "x":.08,"y":.32},
-        {"id":"tower",   "label":"BTS Tower",   "domain":"tc",  "x":.62,"y":.15},
-        {"id":"mw-link", "label":"MW Backhaul", "domain":"tc",  "x":.52,"y":.28},
-        {"id":"bs",      "label":"Base Station","domain":"tc",  "x":.72,"y":.32},
-        {"id":"scada",   "label":"SCADA",       "domain":"mc",  "x":.22,"y":.58},
-        {"id":"plc",     "label":"PLC Shaft 1", "domain":"mc",  "x":.18,"y":.70},
-        {"id":"pump",    "label":"Dewater Pump","domain":"mc",  "x":.10,"y":.82},
-        {"id":"conv",    "label":"Conveyor",    "domain":"mc",  "x":.30,"y":.80},
-        {"id":"pm",      "label":"Power Meter", "domain":"mc",  "x":.35,"y":.62},
-        {"id":"vent",    "label":"Ventilation", "domain":"mc",  "x":.40,"y":.75},
-        {"id":"cbs",     "label":"CBS Ctrl",    "domain":"cbs", "x":.52,"y":.68},
-        {"id":"plant",   "label":"Process Plant","domain":"plant","x":.55,"y":.85}
+        {"id":"wan","label":"WAN Link","domain":"net","x":.15,"y":.20},
+        {"id":"core-sw","label":"Core Switch","domain":"net","x":.28,"y":.32},
+        {"id":"fw","label":"Firewall","domain":"net","x":.18,"y":.44},
+        {"id":"noc","label":"NOC Router","domain":"net","x":.08,"y":.32},
+        {"id":"tower","label":"BTS Tower","domain":"tc","x":.62,"y":.15},
+        {"id":"mw-link","label":"MW Backhaul","domain":"tc","x":.52,"y":.28},
+        {"id":"bs","label":"Base Station","domain":"tc","x":.72,"y":.32},
+        {"id":"scada","label":"SCADA","domain":"mc","x":.22,"y":.58},
+        {"id":"plc","label":"PLC Shaft 1","domain":"mc","x":.18,"y":.70},
+        {"id":"pump","label":"Dewater Pump","domain":"mc","x":.10,"y":.82},
+        {"id":"conv","label":"Conveyor","domain":"mc","x":.30,"y":.80},
+        {"id":"pm","label":"Power Meter","domain":"mc","x":.35,"y":.62},
+        {"id":"vent","label":"Ventilation","domain":"mc","x":.40,"y":.75},
+        {"id":"cbs","label":"CBS Ctrl","domain":"cbs","x":.52,"y":.68},
+        {"id":"plant","label":"Process Plant","domain":"plant","x":.55,"y":.85}
     ],
     "edges":[
-        {"from":"wan",    "to":"core-sw"},{"from":"core-sw","to":"fw"},
-        {"from":"core-sw","to":"noc"},   {"from":"noc",    "to":"mw-link"},
-        {"from":"tower",  "to":"mw-link"},{"from":"mw-link","to":"bs"},
-        {"from":"fw",     "to":"scada"}, {"from":"scada",  "to":"plc"},
-        {"from":"scada",  "to":"cbs"},   {"from":"plc",    "to":"pump"},
-        {"from":"plc",    "to":"conv"},  {"from":"pm",     "to":"plc"},
-        {"from":"pm",     "to":"vent"},  {"from":"conv",   "to":"plant"},
-        {"from":"vent",   "to":"plant"}
+        {"from":"wan","to":"core-sw"},{"from":"core-sw","to":"fw"},
+        {"from":"core-sw","to":"noc"},{"from":"noc","to":"mw-link"},
+        {"from":"tower","to":"mw-link"},{"from":"mw-link","to":"bs"},
+        {"from":"fw","to":"scada"},{"from":"scada","to":"plc"},
+        {"from":"scada","to":"cbs"},{"from":"plc","to":"pump"},
+        {"from":"plc","to":"conv"},{"from":"pm","to":"plc"},
+        {"from":"pm","to":"vent"},{"from":"conv","to":"plant"},
+        {"from":"vent","to":"plant"}
     ]
 }
 
@@ -1575,7 +1588,7 @@ if __name__=='__main__':
         with _db_conn() as con:
             row = con.execute("SELECT name,token FROM specialists WHERE name='Admin'").fetchone()
             if row:
-                print(f"\n  Specialist login : Admin / admin123")
+                print(f"\n  Specialist login : Admin / [your password]")
                 print(f"  Specialist token : {row['token']}")
                 print(f"  Retrieve token   : GET /api/admin/token\n")
     except: pass
