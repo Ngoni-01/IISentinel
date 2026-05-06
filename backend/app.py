@@ -131,7 +131,7 @@ def _db_init():
             con.execute("ALTER TABLE specialists ADD COLUMN password_hash TEXT")
 
         # ── Ensure default admin ──────────────────────────────────────────
-        def _db_init():
+def _db_init():
     with _db_conn() as con:
         con.execute("""CREATE TABLE IF NOT EXISTS metrics (
             id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
