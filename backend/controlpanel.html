@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IISentinel&#x2122; v3.3 &mdash; Control Panel</title>
+<style>
+:root{
+  --bg:#050d1a;--s1:#091422;--s2:#0d1c30;--s3:#10233a;--s4:#152b47;
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--b3:rgba(255,255,255,.18);
+  --txt:#c4d4ec;--mut:#6b7f99;--dim:#2e4060;
+  --grn:#00e676;--grna:rgba(0,230,118,.10);
+  --amb:#ffab00;--amba:rgba(255,171,0,.10);
+  --red:#ff1744;--reda:rgba(255,23,68,.10);
+  --cyn:#00d4ff;--cyna:rgba(0,212,255,.08);
+  --pur:#d47cff;--pura:rgba(212,124,255,.09);
+  --gld:#ffc107;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --mono:'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:18px;
+  --sh-md:0 6px 24px rgba(0,0,0,.65);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --sidebar:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--font);font-size:13px;letter-spacing:-.01em;line-height:1.5}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+/* ── layout ── */
+#cp-app{display:flex;height:100vh;overflow:hidden}
+#login-wrap{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg)}
+
+/* ── sidebar ── */
+#sidebar{width:var(--sidebar);flex-shrink:0;display:flex;flex-direction:column;
+  background:rgba(5,13,26,.97);border-right:1px solid var(--b1);overflow-y:auto;overflow-x:hidden;
+  position:relative;z-index:10}
+#sidebar::-webkit-scrollbar{width:0}
+.sb-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--b1);flex-shrink:0}
+.sb-logo-ii{font-size:17px;font-weight:900;letter-spacing:-.07em;color:var(--cyn);text-shadow:0 0 16px rgba(0,212,255,.4)}
+.sb-logo-txt{font-size:11px;font-weight:700;color:var(--txt)}
+.sb-logo-sub{font-size:8.5px;color:var(--mut);letter-spacing:.04em}
+.sb-section{font-size:8px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.16em;
+  padding:14px 16px 5px;flex-shrink:0}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;
+  font-size:11.5px;font-weight:600;color:var(--mut);border-left:2px solid transparent;
+  transition:all .16s;user-select:none;flex-shrink:0}
+.sb-item:hover{color:var(--txt);background:var(--b1)}
+.sb-item.active{color:var(--cyn);border-left-color:var(--cyn);background:var(--cyna)}
+.sb-item.t-red.active{color:var(--red);border-left-color:var(--red);background:var(--reda)}
+.sb-item.t-amb.active{color:var(--amb);border-left-color:var(--amb);background:var(--amba)}
+.sb-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sb-badge{margin-left:auto;font-size:8.5px;padding:1px 6px;border-radius:30px;
+  background:var(--reda);color:var(--red);font-weight:700;font-family:var(--mono)}
+.sb-badge.ok{background:var(--grna);color:var(--grn)}
+.sb-user{padding:12px 16px;border-top:1px solid var(--b1);margin-top:auto;flex-shrink:0}
+.sb-user-name{font-size:11px;font-weight:700;color:var(--txt);margin-bottom:2px}
+.sb-user-role{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+
+/* ── main content ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{display:flex;align-items:center;gap:12px;padding:0 20px;height:48px;
+  background:rgba(5,13,26,.95);border-bottom:1px solid var(--b1);flex-shrink:0;backdrop-filter:blur(8px)}
+.topbar-title{font-size:13px;font-weight:700;color:var(--txt)}
+.topbar-sub{font-size:10px;color:var(--mut)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#content{flex:1;overflow-y:auto;padding:20px}
+
+/* ── common ── */
+.page{display:none}.page.active{display:block;animation:fup .22s var(--ease)}
+@keyframes fup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:30px;
+  border:none;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s;
+  font-family:var(--font);white-space:nowrap}
+.btn:active{transform:scale(.95)}
+.btn-cyn{background:var(--cyn);color:#000}.btn-cyn:hover{background:#33ddff}
+.btn-red{background:var(--red);color:#fff}
+.btn-grn{background:var(--grn);color:#002a12}
+.btn-amb{background:var(--amb);color:#140800}
+.btn-pur{background:var(--pur);color:#14003a}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--mut)}.btn-ghost:hover{border-color:var(--b3);color:var(--txt)}
+.btn-sm{padding:4px 10px;font-size:10px}
+.btn-xs{padding:3px 8px;font-size:9.5px}
+.card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r-lg);padding:16px;margin-bottom:14px}
+.card-title{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title span{flex:1}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px;margin-bottom:14px}
+.kpi-c{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r-md);padding:12px 14px}
+.kpi-v{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.04em;line-height:1;transition:color .4s}
+.kpi-l{font-size:8.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-top:4px;font-weight:700}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.field-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.field-row.cols4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:3px}
+.field-lbl{font-size:8.5px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.inp{padding:8px 11px;background:rgba(255,255,255,.04);border:1px solid var(--b1);
+  border-radius:var(--r-sm);color:var(--txt);font-size:12px;outline:none;
+  transition:border-color .18s;font-family:var(--font);width:100%}
+.inp:focus{border-color:rgba(0,212,255,.4);box-shadow:0 0 0 3px rgba(0,212,255,.08)}
+.sel{appearance:none;background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7f99'/%3E%3C/svg%3E") no-repeat right 10px center;
+  padding-right:28px}
+.sel option{background:var(--s3)}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{font-size:8.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;
+  font-weight:700;padding:7px 10px;border-bottom:1px solid var(--b1);text-align:left}
+.tbl td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+.tbl tr:hover td{background:rgba(255,255,255,.025)}
+.tbl tr:last-child td{border-bottom:none}
+.badge{display:inline-block;font-size:8.5px;padding:2px 7px;border-radius:30px;font-weight:700}
+.b-ok{background:var(--grna);color:var(--grn);border:1px solid rgba(0,230,118,.25)}
+.b-warn{background:var(--amba);color:var(--amb);border:1px solid rgba(255,171,0,.25)}
+.b-red{background:var(--reda);color:var(--red);border:1px solid rgba(255,23,68,.25)}
+.b-cyn{background:var(--cyna);color:var(--cyn);border:1px solid rgba(0,212,255,.25)}
+.b-pur{background:var(--pura);color:var(--pur);border:1px solid rgba(212,124,255,.25)}
+.b-dim{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--b1)}
+.mono{font-family:var(--mono);font-size:10.5px}
+.cg{color:var(--grn)}.cw{color:var(--amb)}.cr{color:var(--red)}.ca{color:var(--cyn)}.cp{color:var(--pur)}
+#toasts{position:fixed;top:14px;right:14px;z-index:9999;width:280px}
+.toast{background:rgba(9,20,34,.97);border:1px solid var(--b2);border-top:2px solid var(--cyn);
+  border-radius:var(--r-md);padding:10px 14px;margin-bottom:7px;font-size:11px;
+  box-shadow:var(--sh-md);animation:fup .2s var(--ease)}
+.toast.tc{border-top-color:var(--red)}.toast.tw{border-top-color:var(--amb)}.toast.tg{border-top-color:var(--grn)}
+.tt{font-weight:700;font-size:11.5px;margin-bottom:2px}.tm{color:var(--mut);font-size:10px}
+.page-hd{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.page-hd h2{font-size:16px;font-weight:800;letter-spacing:-.04em;flex:1}
+.page-hd .sub{font-size:10px;color:var(--mut)}
+.sep-h{height:1px;background:var(--b1);margin:14px 0}
+.hint{font-size:9.5px;color:var(--dim);line-height:1.65;margin-bottom:12px;padding:8px 12px;
+  background:rgba(255,255,255,.02);border:1px solid var(--b1);border-radius:var(--r-sm)}
+.danger-zone{border:1px solid rgba(255,23,68,.2);border-radius:var(--r-md);padding:14px;background:rgba(12,2,2,.5);margin-top:8px}
+.danger-title{font-size:10px;font-weight:700;color:var(--red);margin-bottom:10px;text-transform:uppercase;letter-spacing:.1em}
+.sys-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sys-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r-md);padding:13px}
+.sys-title{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:10px}
+.sys-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;align-items:center}
+.sys-lbl{color:var(--mut)}.sys-val{font-family:var(--mono);font-weight:700;font-size:11.5px}
+.bar{height:4px;background:rgba(255,255,255,.05);border-radius:2px;overflow:hidden;margin-top:5px}
+.bar-f{height:100%;border-radius:2px;transition:width .8s var(--ease)}
+.modal-ov{position:fixed;inset:0;background:rgba(2,6,14,.8);backdrop-filter:blur(5px);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-ov.open{display:flex;animation:fup .22s var(--ease)}
+.modal{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r-xl);
+  padding:22px 24px;width:100%;max-width:480px;box-shadow:var(--sh-md)}
+.modal-title{font-size:14px;font-weight:800;margin-bottom:4px;letter-spacing:-.03em}
+.modal-sub{font-size:10px;color:var(--mut);margin-bottom:18px;line-height:1.6}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--b1)}
+.err-msg{color:var(--red);font-size:10px;margin-top:8px}
+.audit-row{font-size:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.03);display:grid;grid-template-columns:120px 80px 110px 1fr 110px}
+.audit-row:last-child{border-bottom:none}
+.audit-hd{font-size:8.5px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding-bottom:6px;border-bottom:1px solid var(--b1);display:grid;grid-template-columns:120px 80px 110px 1fr 110px;margin-bottom:4px}
+.pg-row{display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:10px}
+.pg-btn{padding:4px 10px;border-radius:var(--r-sm);border:1px solid var(--b1);background:transparent;color:var(--dim);font-size:10px;cursor:pointer;font-family:var(--font)}
+.pg-btn:hover{border-color:var(--b2);color:var(--txt)}.pg-btn.cur{background:var(--cyna);border-color:rgba(0,212,255,.3);color:var(--cyn)}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px}
+.dot-grn{background:var(--grn);box-shadow:0 0 5px var(--grn)}
+.dot-red{background:var(--red);box-shadow:0 0 5px var(--red)}
+.dot-amb{background:var(--amb)}
+.dot-dim{background:var(--dim)}
+.pulse{animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.notify-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--b1)}
+.notify-row:last-child{border-bottom:none}
+.notify-lbl{flex:1;font-size:11px;font-weight:600}
+.notify-sub{font-size:9px;color:var(--dim)}
+.toggle{position:relative;width:34px;height:18px;flex-shrink:0;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:9px;transition:.25s}
+.toggle-slider::before{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.25s}
+.toggle input:checked+.toggle-slider{background:var(--grn)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(16px)}
+@media(max-width:800px){
+  #sidebar{display:none}
+  .field-row{grid-template-columns:1fr}
+  .field-row.cols3,.field-row.cols4{grid-template-columns:1fr 1fr}
+  .sys-grid{grid-template-columns:1fr}
+  .audit-row,.audit-hd{grid-template-columns:90px 70px 1fr 80px}
+  .audit-row>:nth-child(4),.audit-hd>:nth-child(4){display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<!-- LOGIN -->
+<div id="login-wrap">
+  <div style="max-width:340px;width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r-xl);padding:32px;box-shadow:var(--sh-md)">
+    <div style="font-size:18px;font-weight:900;letter-spacing:-.05em;margin-bottom:4px"><span style="color:var(--cyn)">II</span>Sentinel&#x2122; Control Panel</div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:24px;line-height:1.6">Sophos-style admin console &middot; v3.3<br>All actions are timestamped and audited.</div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:9px;color:var(--dim);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Username</div>
+      <input class="inp" id="l-name" type="text" placeholder="Admin" autocomplete="username">
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:9px;color:var(--dim);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Password</div>
+      <input class="inp" id="l-pass" type="password" placeholder="admin123" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password">
+    </div>
+    <button class="btn btn-cyn" style="width:100%;padding:11px;font-size:13px;border-radius:var(--r-sm);justify-content:center" onclick="doLogin()">Sign in to Control Panel</button>
+    <div class="err-msg" id="l-err"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--b1);font-size:9.5px;color:var(--dim)">
+      <a href="/" style="color:var(--cyn);text-decoration:none">&larr; Back to dashboard</a>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until login) -->
+<div id="cp-app" style="display:none">
+
+  <!-- sidebar -->
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <div><div class="sb-logo-ii">IIS</div></div>
+      <div><div class="sb-logo-txt">Control Panel</div><div class="sb-logo-sub">v3.3 Admin</div></div>
+    </div>
+
+    <div class="sb-section">Monitor</div>
+    <div class="sb-item active" data-page="system" onclick="nav(this)"><span class="sb-icon">&#x26A1;</span>System Overview</div>
+    <div class="sb-item" data-page="audit" onclick="nav(this)"><span class="sb-icon">&#x1F4CB;</span>Audit Log<span class="sb-badge" id="audit-badge">&#x2026;</span></div>
+
+    <div class="sb-section">Configure</div>
+    <div class="sb-item" data-page="devices" onclick="nav(this)"><span class="sb-icon">&#x1F4E1;</span>Device Registry</div>
+    <div class="sb-item" data-page="thresholds" onclick="nav(this)"><span class="sb-icon">&#x1F4CA;</span>Thresholds</div>
+    <div class="sb-item t-amb" data-page="maintenance" onclick="nav(this)"><span class="sb-icon">&#x1F6E0;</span>Maintenance Windows</div>
+    <div class="sb-item" data-page="collectors" onclick="nav(this)"><span class="sb-icon">&#x1F4E6;</span>Collectors</div>
+
+    <div class="sb-section">Security</div>
+    <div class="sb-item" data-page="users" onclick="nav(this)"><span class="sb-icon">&#x1F464;</span>User Management</div>
+    <div class="sb-item" data-page="notify" onclick="nav(this)"><span class="sb-icon">&#x1F514;</span>Notifications</div>
+
+    <div class="sb-section">Operations</div>
+    <div class="sb-item" data-page="dispatch" onclick="nav(this)"><span class="sb-icon">&#x1F4E4;</span>Command Dispatch</div>
+    <div class="sb-item t-red" data-page="db" onclick="nav(this)"><span class="sb-icon">&#x1F5C4;</span>Database</div>
+
+    <div class="sb-user">
+      <div class="sb-user-name" id="sb-name">Admin</div>
+      <div class="sb-user-role" id="sb-role">Engineer</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <a href="/" style="text-decoration:none"><div class="btn btn-ghost btn-xs">&#x2190; Dashboard</div></a>
+        <div class="btn btn-ghost btn-xs" onclick="doLogout()">Sign out</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- main -->
+  <div id="main">
+    <div id="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">System Overview</div>
+        <div class="topbar-sub" id="topbar-sub">IISentinel&#x2122; v3.3 Control Panel</div>
+      </div>
+      <div class="topbar-right">
+        <span id="live-ts" style="font-size:9px;color:var(--dim);font-family:var(--mono)"></span>
+        <div class="btn btn-ghost btn-sm" onclick="refreshCurrent()">&#x21BB; Refresh</div>
+        <div id="conn-pill" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:30px;background:rgba(0,230,118,.07);border:1px solid rgba(0,230,118,.18)">
+          <span id="conn-dot" style="width:5px;height:5px;border-radius:50%;background:var(--grn)"></span>
+          <span id="conn-txt" style="font-size:9px;font-weight:700;color:var(--grn)">LIVE</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="content">
+
+<!-- ══════════════════════════════════════════
+     SYSTEM OVERVIEW
+══════════════════════════════════════════ -->
+<div class="page active" id="page-system">
+  <div class="page-hd"><h2>System Overview</h2><div class="sub">Real-time platform diagnostics</div></div>
+  <div class="kpi-row" id="sys-kpis">
+    <div class="kpi-c"><div class="kpi-v cg" id="k-uptime">--</div><div class="kpi-l">Platform uptime</div></div>
+    <div class="kpi-c"><div class="kpi-v ca" id="k-devs">--</div><div class="kpi-l">Devices tracked</div></div>
+    <div class="kpi-c"><div class="kpi-v cp" id="k-queue">--</div><div class="kpi-l">Queue depth</div></div>
+    <div class="kpi-c"><div class="kpi-v cg" id="k-db">--</div><div class="kpi-l">DB size</div></div>
+    <div class="kpi-c"><div class="kpi-v cw" id="k-inc">--</div><div class="kpi-l">Open incidents</div></div>
+    <div class="kpi-c"><div class="kpi-v ca" id="k-col">--</div><div class="kpi-l">Active collectors</div></div>
+    <div class="kpi-c"><div class="kpi-v cg" id="k-sse">--</div><div class="kpi-l">SSE clients</div></div>
+    <div class="kpi-c"><div class="kpi-v cg" id="k-maint">--</div><div class="kpi-l">Active maint. windows</div></div>
+  </div>
+  <div class="sys-grid">
+    <div class="sys-card">
+      <div class="sys-title">Host Resources</div>
+      <div class="sys-row"><span class="sys-lbl">CPU usage</span><span class="sys-val" id="r-cpu">--</span></div>
+      <div class="bar"><div class="bar-f" id="r-cpu-bar" style="background:var(--cyn);width:0%"></div></div>
+      <div class="sys-row" style="margin-top:8px"><span class="sys-lbl">Memory used</span><span class="sys-val" id="r-mem">--</span></div>
+      <div class="bar"><div class="bar-f" id="r-mem-bar" style="background:var(--pur);width:0%"></div></div>
+      <div class="sys-row" style="margin-top:8px"><span class="sys-lbl">Disk used</span><span class="sys-val" id="r-disk">--</span></div>
+      <div class="bar"><div class="bar-f" id="r-disk-bar" style="background:var(--amb);width:0%"></div></div>
+      <div style="font-size:9px;color:var(--dim);margin-top:8px">psutil required for host metrics</div>
+    </div>
+    <div class="sys-card">
+      <div class="sys-title">ML Engine</div>
+      <div class="sys-row"><span class="sys-lbl">Model status</span><span class="sys-val" id="r-model">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Anomaly count</span><span class="sys-val" id="r-anom">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Retrain needed</span><span class="sys-val" id="r-retrain">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Scoring queue</span><span class="sys-val" id="r-scoring">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Total metrics</span><span class="sys-val" id="r-metrics">--</span></div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button class="btn btn-ghost btn-xs" onclick="triggerRetrain()">&#x21BA; Trigger retrain</button>
+        <button class="btn btn-ghost btn-xs" onclick="flushCache()">&#x1F5D1; Flush cache</button>
+      </div>
+    </div>
+    <div class="sys-card">
+      <div class="sys-title">Notification Channels</div>
+      <div class="sys-row"><span class="sys-lbl">Email</span><span id="r-email" class="sys-val">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">SMS</span><span id="r-sms" class="sys-val">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">WhatsApp</span><span id="r-wa" class="sys-val">--</span></div>
+      <div class="sys-row" style="margin-top:8px"><span class="sys-lbl">Sent (session)</span><span class="sys-val" id="r-nsent">--</span></div>
+      <div style="margin-top:10px">
+        <button class="btn btn-ghost btn-xs" onclick="testNotify('all')">&#x1F4F2; Test all channels</button>
+      </div>
+    </div>
+    <div class="sys-card">
+      <div class="sys-title">Platform Flags</div>
+      <div class="sys-row"><span class="sys-lbl">Demo mode</span><span class="sys-val" id="r-demo">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Production</span><span class="sys-val" id="r-prod">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Cache age</span><span class="sys-val" id="r-cache">--</span></div>
+      <div class="sys-row"><span class="sys-lbl">Nodes tracked</span><span class="sys-val" id="r-nodes">--</span></div>
+      <div style="margin-top:10px">
+        <a href="/health" target="_blank" style="text-decoration:none"><button class="btn btn-ghost btn-xs">&#x1F4F6; /health endpoint</button></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     DEVICE REGISTRY
+══════════════════════════════════════════ -->
+<div class="page" id="page-devices">
+  <div class="page-hd">
+    <h2>Device Registry</h2>
+    <div class="sub">Managed device inventory</div>
+    <button class="btn btn-cyn btn-sm" onclick="openDevModal()">+ Add device</button>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>Registered devices</span>
+      <input class="inp" style="width:180px;padding:5px 9px;font-size:11px" placeholder="&#x1F50D; Filter..." id="dev-filter" oninput="filterDevices()">
+    </div>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr>
+          <th>Device ID</th><th>Label</th><th>Type</th><th>Sector</th><th>IP</th>
+          <th>Protocol</th><th>Interval</th><th>Live score</th><th>Status</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="dev-tbody"><tr><td colspan="10" style="color:var(--dim);padding:20px;text-align:center">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     THRESHOLDS
+══════════════════════════════════════════ -->
+<div class="page" id="page-thresholds">
+  <div class="page-hd"><h2>Alert Thresholds</h2><div class="sub">Per device-type health thresholds</div></div>
+  <div class="hint">Changes take effect immediately in the scoring pipeline. CBS hold threshold also updates the safety interlock in real-time.</div>
+  <div id="thr-grid"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAINTENANCE WINDOWS
+══════════════════════════════════════════ -->
+<div class="page" id="page-maintenance">
+  <div class="page-hd">
+    <h2>Maintenance Windows</h2><div class="sub">Suppress alerts during planned work</div>
+    <button class="btn btn-cyn btn-sm" onclick="openMaintModal()">+ New window</button>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>Active &amp; upcoming windows</span></div>
+    <table class="tbl">
+      <thead><tr><th>Label</th><th>Devices</th><th>Start</th><th>End</th><th>Status</th><th>Created by</th><th>Actions</th></tr></thead>
+      <tbody id="maint-tbody"><tr><td colspan="7" style="color:var(--dim);padding:20px;text-align:center">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     COLLECTORS
+══════════════════════════════════════════ -->
+<div class="page" id="page-collectors">
+  <div class="page-hd">
+    <h2>Collector Management</h2><div class="sub">Data ingest agents</div>
+    <button class="btn btn-cyn btn-sm" onclick="openColModal()">+ Register collector</button>
+  </div>
+  <div class="card" id="new-col-result" style="display:none;border-color:rgba(0,230,118,.25)">
+    <div class="card-title" style="color:var(--grn)">&#x2714; Collector registered &mdash; store this key, it will not be shown again</div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:5px">Add to collector POST requests as header:</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--grn);word-break:break-all;padding:8px;background:rgba(0,230,118,.06);border-radius:var(--r-sm)" id="new-col-key"></div>
+    <div style="font-size:10px;color:var(--dim);margin-top:8px">Ingest endpoint: <span style="color:var(--cyn)" id="new-col-url"></span></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>Registered collectors</span></div>
+    <table class="tbl">
+      <thead><tr><th>ID</th><th>Name</th><th>Sector</th><th>Status</th><th>Readings</th><th>Last seen</th><th>Actions</th></tr></thead>
+      <tbody id="col-tbody"><tr><td colspan="7" style="color:var(--dim);padding:20px;text-align:center">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     USER MANAGEMENT
+══════════════════════════════════════════ -->
+<div class="page" id="page-users">
+  <div class="page-hd">
+    <h2>User Management</h2><div class="sub">Specialist accounts</div>
+    <button class="btn btn-cyn btn-sm" onclick="openUserModal()">+ Add user</button>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>Specialists</span></div>
+    <table class="tbl">
+      <thead><tr><th>ID</th><th>Name</th><th>Role</th><th>Token</th><th>Actions</th></tr></thead>
+      <tbody id="user-tbody"><tr><td colspan="5" style="color:var(--dim);padding:20px;text-align:center">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     NOTIFICATIONS
+══════════════════════════════════════════ -->
+<div class="page" id="page-notify">
+  <div class="page-hd"><h2>Notification Configuration</h2><div class="sub">Alert delivery channels</div></div>
+  <div class="hint">Sensitive credentials (passwords, tokens) are set via environment variables only. Use this panel to update non-secret config. Changes are in-memory until restart &mdash; update your .env for persistence.</div>
+  <div class="card">
+    <div class="card-title"><span>Channel Status</span></div>
+    <div id="notify-status" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="testNotify('email')">Test email</button>
+      <button class="btn btn-ghost btn-sm" onclick="testNotify('sms')">Test SMS</button>
+      <button class="btn btn-ghost btn-sm" onclick="testNotify('whatsapp')">Test WhatsApp</button>
+      <button class="btn btn-cyn btn-sm" onclick="testNotify('all')">Test all</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>SMTP configuration (non-secret)</span></div>
+    <div class="field-row cols3">
+      <div class="field"><div class="field-lbl">SMTP host</div><input class="inp" id="n-smtp-host" placeholder="smtp.gmail.com"></div>
+      <div class="field"><div class="field-lbl">SMTP port</div><input class="inp" id="n-smtp-port" placeholder="587" type="number"></div>
+      <div class="field"><div class="field-lbl">From address</div><input class="inp" id="n-from" placeholder="IISentinel &lt;alerts@example.com&gt;"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">To emails (comma-separated)</div><input class="inp" id="n-to" placeholder="ops@company.com,noc@company.com"></div>
+      <div class="field"><div class="field-lbl">SMS numbers (comma-separated)</div><input class="inp" id="n-sms" placeholder="+263771234567,+263772345678"></div>
+    </div>
+    <button class="btn btn-cyn btn-sm" onclick="saveNotifyConfig()">Save configuration</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     COMMAND DISPATCH
+══════════════════════════════════════════ -->
+<div class="page" id="page-dispatch">
+  <div class="page-hd"><h2>Command Dispatch</h2><div class="sub">Send webhooks, SMS, email or log commands</div></div>
+  <div class="card">
+    <div class="card-title"><span>New dispatch</span></div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Dispatch type</div>
+        <select class="inp sel" id="d-type" onchange="updateDispatchForm()">
+          <option value="webhook">Webhook (HTTP POST)</option>
+          <option value="email">Email</option>
+          <option value="sms">SMS</option>
+          <option value="whatsapp">WhatsApp</option>
+          <option value="log">Log only</option>
+        </select>
+      </div>
+      <div class="field"><div class="field-lbl" id="d-target-lbl">Target URL</div>
+        <input class="inp" id="d-target" placeholder="https://hooks.example.com/endpoint">
+      </div>
+    </div>
+    <div id="d-webhook-fields">
+      <div class="field-row">
+        <div class="field"><div class="field-lbl">JSON payload (optional)</div>
+          <textarea class="inp" id="d-payload" rows="3" style="resize:vertical;font-family:var(--mono);font-size:11px" placeholder='{"device":"mc-shaft1-pump-01","action":"restart"}'></textarea>
+        </div>
+      </div>
+    </div>
+    <div id="d-msg-fields" style="display:none">
+      <div class="field-row">
+        <div class="field"><div class="field-lbl">Subject (email only)</div><input class="inp" id="d-subject" placeholder="IISentinel Alert"></div>
+        <div class="field"><div class="field-lbl">Message</div><input class="inp" id="d-msg" placeholder="Device critical — manual intervention required"></div>
+      </div>
+    </div>
+    <button class="btn btn-cyn" style="margin-top:4px" onclick="sendDispatch()">&#x25B6; Dispatch command</button>
+    <div id="d-result" style="font-size:10px;color:var(--grn);margin-top:8px;font-family:var(--mono)"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span>Recent dispatches</span></div>
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>Type</th><th>Target</th><th>Result</th><th>Sent by</th></tr></thead>
+      <tbody id="dispatch-tbody"><tr><td colspan="5" style="color:var(--dim);padding:16px;text-align:center">Loading...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     AUDIT LOG
+══════════════════════════════════════════ -->
+<div class="page" id="page-audit">
+  <div class="page-hd">
+    <h2>Audit Log</h2><div class="sub">All admin actions timestamped</div>
+    <div style="display:flex;gap:6px">
+      <input class="inp" style="width:120px;padding:5px 9px;font-size:11px" id="audit-actor" placeholder="Actor..." oninput="loadAudit(1)">
+      <input class="inp" style="width:120px;padding:5px 9px;font-size:11px" id="audit-action" placeholder="Action..." oninput="loadAudit(1)">
+    </div>
+  </div>
+  <div class="card">
+    <div class="audit-hd"><div>Timestamp</div><div>Actor</div><div>Action</div><div>Target / Detail</div><div>Result</div></div>
+    <div id="audit-rows"><div style="color:var(--dim);padding:16px;text-align:center">Loading...</div></div>
+    <div class="pg-row" id="audit-pager"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     DATABASE
+══════════════════════════════════════════ -->
+<div class="page" id="page-db">
+  <div class="page-hd"><h2>Database Maintenance</h2><div class="sub">SQLite WAL — iisentinel.db</div></div>
+  <div class="card">
+    <div class="card-title"><span>Database stats</span></div>
+    <div class="field-row">
+      <div class="sys-card"><div class="sys-title">File size</div><div class="kpi-v ca" id="db-size">--</div></div>
+      <div class="sys-card"><div class="sys-title">Metric rows</div><div class="kpi-v ca" id="db-metrics">--</div></div>
+    </div>
+  </div>
+  <div class="danger-zone">
+    <div class="danger-title">&#x26A0; Danger zone &mdash; irreversible operations</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:rgba(255,23,68,.04);border:1px solid rgba(255,23,68,.14);border-radius:var(--r-md);padding:13px">
+        <div style="font-size:11.5px;font-weight:700;margin-bottom:4px">VACUUM &amp; prune</div>
+        <div style="font-size:9.5px;color:var(--mut);margin-bottom:10px;line-height:1.6">Deletes metrics beyond 5,000 most recent rows and resolved incidents older than 30 days. Then runs SQLite VACUUM to reclaim disk.</div>
+        <button class="btn btn-amb btn-sm" onclick="doVacuum()">&#x1F5D1; Run VACUUM</button>
+        <div id="vacuum-result" style="font-size:9.5px;color:var(--grn);margin-top:6px"></div>
+      </div>
+      <div style="background:rgba(255,23,68,.04);border:1px solid rgba(255,23,68,.14);border-radius:var(--r-md);padding:13px">
+        <div style="font-size:11.5px;font-weight:700;margin-bottom:4px">Clear resolved incidents</div>
+        <div style="font-size:9.5px;color:var(--mut);margin-bottom:10px;line-height:1.6">Permanently deletes all incidents with status=resolved. Open and assigned incidents are preserved.</div>
+        <button class="btn btn-red btn-sm" onclick="doClearInc()">&#x2715; Delete resolved</button>
+        <div id="clear-result" style="font-size:9.5px;color:var(--grn);margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /cp-app -->
+
+<!-- ══════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════ -->
+
+<!-- Add/Edit Device -->
+<div class="modal-ov" id="mod-device">
+  <div class="modal">
+    <div class="modal-title" id="mod-dev-title">Add device</div>
+    <div class="modal-sub">Register a new device in the IISentinel device registry</div>
+    <input type="hidden" id="mod-dev-id">
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Label *</div><input class="inp" id="dev-label" placeholder="Shaft 1 Pump A"></div>
+      <div class="field"><div class="field-lbl">Device type *</div>
+        <select class="inp sel" id="dev-type">
+          <optgroup label="Network"><option value="router">Router</option><option value="switch">Switch</option><option value="firewall">Firewall</option><option value="wan_link">WAN Link</option><option value="workstation">Workstation</option></optgroup>
+          <optgroup label="Telecom"><option value="base_station">Base Station</option><option value="network_tower">Network Tower</option><option value="microwave_link">Microwave Link</option></optgroup>
+          <optgroup label="Mining"><option value="pump">Pump</option><option value="conveyor">Conveyor</option><option value="ventilation">Ventilation</option><option value="power_meter">Power Meter</option><option value="sensor">Sensor</option><option value="plc">PLC</option><option value="scada_node">SCADA Node</option></optgroup>
+          <optgroup label="Safety"><option value="cbs_controller">CBS Controller</option></optgroup>
+        </select>
+      </div>
+    </div>
+    <div class="field-row cols3">
+      <div class="field"><div class="field-lbl">Sector</div>
+        <select class="inp sel" id="dev-sector"><option value="net">Network</option><option value="tc">TelecomCo</option><option value="mc">Mining</option></select>
+      </div>
+      <div class="field"><div class="field-lbl">IP address</div><input class="inp" id="dev-ip" placeholder="192.168.1.10"></div>
+      <div class="field"><div class="field-lbl">Poll interval (s)</div><input class="inp" id="dev-poll" type="number" value="15" min="5" max="3600"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Protocol</div><input class="inp" id="dev-proto" placeholder="SNMP v2c / Modbus TCP"></div>
+      <div class="field"><div class="field-lbl">SNMP community</div><input class="inp" id="dev-comm" placeholder="public"></div>
+    </div>
+    <div class="field"><div class="field-lbl">Notes</div><input class="inp" id="dev-notes" placeholder="Optional notes..."></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('mod-device')">Cancel</button>
+      <button class="btn btn-cyn btn-sm" onclick="saveDevice()">Save device</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Maintenance Window -->
+<div class="modal-ov" id="mod-maint">
+  <div class="modal">
+    <div class="modal-title">New maintenance window</div>
+    <div class="modal-sub">Alerts will be suppressed for listed devices during this window. Use device IDs or ALL for everything.</div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Label *</div><input class="inp" id="maint-label" placeholder="Shaft 1 pump overhaul"></div>
+      <div class="field"><div class="field-lbl">Device IDs (comma-separated or ALL)</div><input class="inp" id="maint-devids" placeholder="mc-shaft1-pump-01,mc-shaft1-pump-02"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Start time</div><input class="inp" id="maint-start" type="datetime-local"></div>
+      <div class="field"><div class="field-lbl">End time *</div><input class="inp" id="maint-end" type="datetime-local"></div>
+    </div>
+    <div class="err-msg" id="maint-err"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('mod-maint')">Cancel</button>
+      <button class="btn btn-cyn btn-sm" onclick="saveMaint()">Create window</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User -->
+<div class="modal-ov" id="mod-user">
+  <div class="modal">
+    <div class="modal-title">Add specialist</div>
+    <div class="modal-sub">New users can access the specialist panel and control panel.</div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Name *</div><input class="inp" id="user-name" placeholder="Jane Smith"></div>
+      <div class="field"><div class="field-lbl">Role</div>
+        <select class="inp sel" id="user-role"><option value="engineer">Engineer</option><option value="admin">Admin</option><option value="readonly">Read-only</option></select>
+      </div>
+    </div>
+    <div class="field"><div class="field-lbl">Password *</div><input class="inp" id="user-pass" type="password" placeholder="Minimum 6 characters"></div>
+    <div class="err-msg" id="user-err"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('mod-user')">Cancel</button>
+      <button class="btn btn-cyn btn-sm" onclick="saveUser()">Create user</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password -->
+<div class="modal-ov" id="mod-pwd">
+  <div class="modal">
+    <div class="modal-title">Reset password</div>
+    <div class="modal-sub">A new token will also be generated, invalidating existing sessions.</div>
+    <input type="hidden" id="pwd-uid">
+    <div class="field"><div class="field-lbl">New password *</div><input class="inp" id="pwd-new" type="password" placeholder="Minimum 6 characters"></div>
+    <div class="err-msg" id="pwd-err"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('mod-pwd')">Cancel</button>
+      <button class="btn btn-red btn-sm" onclick="doResetPwd()">Reset password</button>
+    </div>
+  </div>
+</div>
+
+<!-- Register Collector -->
+<div class="modal-ov" id="mod-col">
+  <div class="modal">
+    <div class="modal-title">Register collector</div>
+    <div class="modal-sub">Generates an API key for a new data ingest agent.</div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Collector name *</div><input class="inp" id="col-name-inp" placeholder="snmp-collector-byo-01"></div>
+      <div class="field"><div class="field-lbl">Sector</div>
+        <select class="inp sel" id="col-sector-inp"><option value="net">Network</option><option value="tc">TelecomCo</option><option value="mc">Mining</option><option value="all">All sectors</option></select>
+      </div>
+    </div>
+    <div class="field"><div class="field-lbl">Description</div><input class="inp" id="col-desc-inp" placeholder="SNMP collector for Bulawayo network devices"></div>
+    <div class="err-msg" id="col-err"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('mod-col')">Cancel</button>
+      <button class="btn btn-cyn btn-sm" onclick="saveCollector()">Register</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// CONFIG & STATE
+// ════════════════════════════════════════════════════
+var B = window.location.origin;
+var TOKEN = null, USERNAME = null;
+var currentPage = 'system';
+var auditPage = 1;
+var _sysData = {};
+
+// ════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════
+function toast(title, msg, type) {
+  var c = document.getElementById('toasts');
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  el.innerHTML = '<div class="tt">' + title + '</div><div class="tm">' + msg + '</div>';
+  c.insertBefore(el, c.firstChild);
+  while(c.children.length > 4) c.lastChild.remove();
+  setTimeout(function(){ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(function(){el.remove();},300); }, 4500);
+}
+
+function fmtTs(ts) {
+  if(!ts) return '--';
+  var d = new Date(ts);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+}
+
+function fmtDur(s) {
+  if(s === null || s === undefined) return '--';
+  var h = Math.floor(s/3600), m = Math.floor((s%3600)/60);
+  return h + 'h ' + m + 'm';
+}
+
+function hdr() { return {'Content-Type':'application/json','X-Specialist-Token':TOKEN}; }
+
+async function api(method, path, body) {
+  var opts = {method:method, headers:hdr()};
+  if(body) opts.body = JSON.stringify(body);
+  var r = await fetch(B + path, opts);
+  return r.json();
+}
+
+function sc(v, hi, mid) {
+  if(v === null || v === undefined) return 'var(--dim)';
+  return v >= hi ? 'var(--grn)' : v >= mid ? 'var(--amb)' : 'var(--red)';
+}
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+async function doLogin() {
+  var name = document.getElementById('l-name').value.trim();
+  var pass = document.getElementById('l-pass').value.trim();
+  document.getElementById('l-err').textContent = '';
+  if(!name || !pass) { document.getElementById('l-err').textContent = 'Enter credentials.'; return; }
+  try {
+    var r = await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,password:pass})});
+    var d = await r.json();
+    if(d.success) {
+      TOKEN = d.token; USERNAME = d.name;
+      document.getElementById('login-wrap').style.display = 'none';
+      document.getElementById('cp-app').style.display = 'flex';
+      document.getElementById('sb-name').textContent = d.name;
+      document.getElementById('sb-role').textContent = (d.role||'engineer').toUpperCase();
+      toast('Welcome '+d.name,'Control panel access granted','tg');
+      loadSystem();
+      setInterval(function(){ if(currentPage==='system') loadSystem(); }, 30000);
+      setInterval(function(){ document.getElementById('live-ts').textContent = new Date().toLocaleTimeString(); }, 1000);
+    } else {
+      document.getElementById('l-err').textContent = d.error || 'Invalid credentials.';
+    }
+  } catch(e) { document.getElementById('l-err').textContent = 'Connection error: '+e.message; }
+}
+
+function doLogout() {
+  TOKEN = null; USERNAME = null;
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('cp-app').style.display = 'none';
+  document.getElementById('l-pass').value = '';
+}
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+var PAGE_TITLES = {
+  system:'System Overview', devices:'Device Registry', thresholds:'Alert Thresholds',
+  maintenance:'Maintenance Windows', collectors:'Collector Management',
+  users:'User Management', notify:'Notification Config',
+  dispatch:'Command Dispatch', audit:'Audit Log', db:'Database Maintenance'
+};
+var PAGE_LOADERS = {
+  system:loadSystem, devices:loadDevices, thresholds:loadThresholds,
+  maintenance:loadMaint, collectors:loadCollectors, users:loadUsers,
+  notify:loadNotify, dispatch:loadDispatch, audit:function(){loadAudit(1);}, db:loadDb
+};
+
+function nav(el) {
+  document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});
+  el.classList.add('active');
+  var page = el.dataset.page;
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  var pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.add('active');
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[page]||page;
+  if(PAGE_LOADERS[page]) PAGE_LOADERS[page]();
+}
+
+function refreshCurrent() { if(PAGE_LOADERS[currentPage]) PAGE_LOADERS[currentPage](); }
+
+// ════════════════════════════════════════════════════
+// SYSTEM OVERVIEW
+// ════════════════════════════════════════════════════
+async function loadSystem() {
+  try {
+    var d = await api('GET','/api/admin/system');
+    _sysData = d;
+    function s(id,v,c){var e=document.getElementById(id);if(e){e.textContent=v;if(c)e.style.color=c;}}
+    s('k-uptime', fmtDur(d.uptime_s));
+    s('k-devs', d.devices_tracked);
+    s('k-queue', d.queue_depth, d.queue_depth>200?'var(--red)':d.queue_depth>50?'var(--amb)':'var(--grn)');
+    s('k-db', d.db_size_kb+'KB');
+    s('k-inc', d.open_incidents, d.open_incidents>0?'var(--amb)':'var(--grn)');
+    s('k-col', d.collector_count, d.collector_count>0?'var(--cyn)':'var(--dim)');
+    s('k-sse', d.sse_subscribers);
+    s('k-maint', d.active_maintenance, d.active_maintenance>0?'var(--cyn)':'var(--dim)');
+    s('db-size', d.db_size_kb+'KB');
+    s('db-metrics', d.metrics_total);
+    s('r-model', d.retrain_active?'Retraining':d.retrain_needed?'Needs retrain':'Optimal');
+    s('r-anom', d.anomaly_count);
+    s('r-retrain', d.retrain_needed?'Yes':'No', d.retrain_needed?'var(--amb)':'var(--grn)');
+    s('r-scoring', d.scoring_queue);
+    s('r-metrics', d.metrics_total);
+    s('r-demo', d.demo_mode?'Active':'Off', d.demo_mode?'var(--cyn)':'var(--dim)');
+    s('r-prod', d.production?'Yes':'No', d.production?'var(--grn)':'var(--amb)');
+    s('r-cache', d.cache_age_s+'s');
+    s('r-nodes', d.node_count);
+    var ntf = d.notifications||{};
+    s('r-email', ntf.email?'Enabled':'Disabled', ntf.email?'var(--grn)':'var(--dim)');
+    s('r-sms',   ntf.sms?'Enabled':'Disabled',   ntf.sms?'var(--grn)':'var(--dim)');
+    s('r-wa',    ntf.whatsapp?'Enabled':'Disabled',ntf.whatsapp?'var(--grn)':'var(--dim)');
+    var ps = d.platform_stats||{};
+    s('r-nsent', ps.notifications_sent||0);
+    // host resources
+    if(d.cpu_pct !== null && d.cpu_pct !== undefined) {
+      s('r-cpu', d.cpu_pct+'%', sc(100-d.cpu_pct,50,20));
+      document.getElementById('r-cpu-bar').style.width = d.cpu_pct+'%';
+      document.getElementById('r-cpu-bar').style.background = d.cpu_pct>80?'var(--red)':d.cpu_pct>60?'var(--amb)':'var(--cyn)';
+    } else { s('r-cpu','N/A (install psutil)'); }
+    if(d.mem_used_mb !== null && d.mem_total_mb) {
+      var mp = Math.round(d.mem_used_mb/d.mem_total_mb*100);
+      s('r-mem', Math.round(d.mem_used_mb)+'MB / '+Math.round(d.mem_total_mb)+'MB');
+      document.getElementById('r-mem-bar').style.width = mp+'%';
+      document.getElementById('r-mem-bar').style.background = mp>80?'var(--red)':mp>60?'var(--amb)':'var(--pur)';
+    } else { s('r-mem','N/A'); }
+    if(d.disk_pct !== null && d.disk_pct !== undefined) {
+      s('r-disk', d.disk_pct+'%');
+      document.getElementById('r-disk-bar').style.width = d.disk_pct+'%';
+      document.getElementById('r-disk-bar').style.background = d.disk_pct>85?'var(--red)':'var(--amb)';
+    } else { s('r-disk','N/A'); }
+  } catch(e) { toast('System load failed',e.message,'tc'); }
+}
+
+async function triggerRetrain() {
+  var d = await api('POST','/api/admin/retrain');
+  if(d.ok) toast('Retrain scheduled','Will run in next cycle (~60s)','tg');
+  else toast('Error',d.error||'?','tc');
+}
+
+async function flushCache() {
+  var d = await api('POST','/api/admin/cache/flush');
+  if(d.ok) { toast('Cache flushed','Data will reload on next request','tg'); loadSystem(); }
+  else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// DEVICE REGISTRY
+// ════════════════════════════════════════════════════
+var _devData = [];
+async function loadDevices() {
+  var d = await api('GET','/api/admin/devices');
+  _devData = Array.isArray(d)?d:[];
+  renderDevices(_devData);
+}
+
+function renderDevices(rows) {
+  var tb = document.getElementById('dev-tbody');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="10" style="color:var(--dim);padding:20px;text-align:center">No devices registered</td></tr>';return;}
+  tb.innerHTML = rows.map(function(r){
+    var sc2 = r.live_score >= 0 ? r.live_score : null;
+    var col = sc2===null?'var(--dim)':sc(sc2,70,40);
+    return '<tr>'
+      +'<td class="mono" style="color:var(--cyn);font-size:10px">'+r.id+'</td>'
+      +'<td style="font-weight:600">'+r.label+'</td>'
+      +'<td><span class="badge b-dim">'+r.device_type+'</span></td>'
+      +'<td>'+r.sector+'</td>'
+      +'<td class="mono">'+( r.ip||'—')+'</td>'
+      +'<td style="font-size:10px;color:var(--mut)">'+( r.protocol||'—')+'</td>'
+      +'<td class="mono">'+r.poll_interval+'s</td>'
+      +'<td class="mono" style="color:'+col+'">'+(sc2!==null?sc2+'/100':'—')+'</td>'
+      +'<td>'+(r.enabled?'<span class="badge b-ok">Active</span>':'<span class="badge b-dim">Disabled</span>')+'</td>'
+      +'<td style="display:flex;gap:5px">'
+      +'<button class="btn btn-ghost btn-xs" onclick="editDevice(\''+r.id+'\')">Edit</button>'
+      +'<button class="btn btn-red btn-xs" onclick="deleteDevice(\''+r.id+'\')">Del</button>'
+      +'</td></tr>';
+  }).join('');
+}
+
+function filterDevices() {
+  var q = (document.getElementById('dev-filter').value||'').toLowerCase();
+  renderDevices(_devData.filter(function(r){ return !q || (r.id+r.label+r.device_type+r.sector).toLowerCase().includes(q); }));
+}
+
+function openDevModal(id) {
+  document.getElementById('mod-dev-title').textContent = id ? 'Edit device' : 'Add device';
+  document.getElementById('mod-dev-id').value = id||'';
+  if(!id) {
+    ['dev-label','dev-ip','dev-notes','dev-comm'].forEach(function(i){ document.getElementById(i).value=''; });
+    document.getElementById('dev-poll').value='15';
+    document.getElementById('dev-proto').value='';
+  }
+  openModal('mod-device');
+}
+
+function editDevice(id) {
+  var r = _devData.find(function(d){ return d.id===id; }); if(!r) return;
+  document.getElementById('mod-dev-id').value = id;
+  document.getElementById('dev-label').value = r.label||'';
+  document.getElementById('dev-type').value = r.device_type||'sensor';
+  document.getElementById('dev-sector').value = r.sector||'net';
+  document.getElementById('dev-ip').value = r.ip||'';
+  document.getElementById('dev-poll').value = r.poll_interval||15;
+  document.getElementById('dev-proto').value = r.protocol||'';
+  document.getElementById('dev-comm').value = r.community||'public';
+  document.getElementById('dev-notes').value = r.notes||'';
+  openDevModal(id);
+}
+
+async function saveDevice() {
+  var id = document.getElementById('mod-dev-id').value;
+  var body = {
+    label:document.getElementById('dev-label').value.trim(),
+    device_type:document.getElementById('dev-type').value,
+    sector:document.getElementById('dev-sector').value,
+    ip:document.getElementById('dev-ip').value.trim(),
+    poll_interval:parseInt(document.getElementById('dev-poll').value)||15,
+    protocol:document.getElementById('dev-proto').value.trim(),
+    community:document.getElementById('dev-comm').value.trim()||'public',
+    notes:document.getElementById('dev-notes').value.trim(),
+    enabled:true
+  };
+  if(!body.label){toast('Error','Label required','tw');return;}
+  var d = id ? await api('PUT','/api/admin/devices/'+id,body) : await api('POST','/api/admin/devices',body);
+  if(d.ok||d.id){toast(id?'Device updated':'Device added','','tg');closeModal('mod-device');loadDevices();}
+  else toast('Error',d.error||'?','tc');
+}
+
+async function deleteDevice(id) {
+  if(!confirm('Delete '+id+'? This cannot be undone.')) return;
+  var d = await api('DELETE','/api/admin/devices/'+id);
+  if(d.ok){toast('Device deleted','','tg');loadDevices();}
+  else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// THRESHOLDS
+// ════════════════════════════════════════════════════
+async function loadThresholds() {
+  var rows = await api('GET','/api/admin/thresholds');
+  if(!Array.isArray(rows)){toast('Error loading thresholds','','tc');return;}
+  var grid = document.getElementById('thr-grid');
+  var sections = {
+    'Network':[],
+    'TelecomCo':[],
+    'Mining OT':[],
+    'CBS Safety':[]
+  };
+  rows.forEach(function(r){
+    if(['router','switch','firewall','wan_link','workstation'].includes(r.device_type)) sections['Network'].push(r);
+    else if(['base_station','network_tower','microwave_link'].includes(r.device_type)) sections['TelecomCo'].push(r);
+    else if(['cbs_controller'].includes(r.device_type)) sections['CBS Safety'].push(r);
+    else sections['Mining OT'].push(r);
+  });
+  grid.innerHTML = Object.entries(sections).map(function(entry){
+    var name=entry[0], arr=entry[1];
+    return '<div class="card"><div class="card-title"><span>'+name+'</span></div>'
+      +'<div style="overflow-x:auto"><table class="tbl">'
+      +'<thead><tr><th>Device type</th><th>Critical below</th><th>Warning below</th>'+(name==='CBS Safety'?'<th>CBS hold below</th>':'')+'<th>ETTF warn (min)</th><th>ETTF critical (min)</th><th>Updated</th><th></th></tr></thead><tbody>'
+      +arr.map(function(r){
+        return '<tr id="thr-row-'+r.device_type+'">'
+          +'<td><span class="badge b-dim">'+r.device_type+'</span></td>'
+          +'<td><input class="inp" id="thr-crit-'+r.device_type+'" style="width:70px;padding:4px 7px" type="number" min="0" max="100" value="'+(r.critical_below||20)+'"></td>'
+          +'<td><input class="inp" id="thr-warn-'+r.device_type+'" style="width:70px;padding:4px 7px" type="number" min="0" max="100" value="'+(r.warning_below||50)+'"></td>'
+          +(name==='CBS Safety'?'<td><input class="inp" id="thr-cbs-'+r.device_type+'" style="width:70px;padding:4px 7px" type="number" min="0" max="100" value="'+(r.cbs_hold_below||90)+'"></td>':'')
+          +'<td><input class="inp" id="thr-ewarn-'+r.device_type+'" style="width:70px;padding:4px 7px" type="number" min="0" value="'+(r.ettf_warn_minutes||120)+'"></td>'
+          +'<td><input class="inp" id="thr-ecrit-'+r.device_type+'" style="width:70px;padding:4px 7px" type="number" min="0" value="'+(r.ettf_crit_minutes||30)+'"></td>'
+          +'<td style="font-size:9.5px;color:var(--dim)">'+(r.updated_at?fmtTs(r.updated_at).slice(0,16):'Default')+'</td>'
+          +'<td><button class="btn btn-cyn btn-xs" onclick="saveThr(\''+r.device_type+'\','+( name==='CBS Safety')+')">Save</button></td>'
+          +'</tr>';
+      }).join('')
+      +'</tbody></table></div></div>';
+  }).join('');
+}
+
+async function saveThr(dt, isCbs) {
+  var body = {
+    device_type:dt,
+    critical_below:parseFloat(document.getElementById('thr-crit-'+dt).value)||20,
+    warning_below:parseFloat(document.getElementById('thr-warn-'+dt).value)||50,
+    ettf_warn_minutes:parseInt(document.getElementById('thr-ewarn-'+dt).value)||120,
+    ettf_crit_minutes:parseInt(document.getElementById('thr-ecrit-'+dt).value)||30
+  };
+  if(isCbs) {
+    var cbsEl = document.getElementById('thr-cbs-'+dt);
+    if(cbsEl) body.cbs_hold_below = parseFloat(cbsEl.value)||90;
+  }
+  var d = await api('POST','/api/admin/thresholds',body);
+  if(d.ok) toast('Threshold saved',dt,'tg'); else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// MAINTENANCE WINDOWS
+// ════════════════════════════════════════════════════
+async function loadMaint() {
+  var rows = await api('GET','/api/admin/maintenance');
+  var tb = document.getElementById('maint-tbody');
+  if(!Array.isArray(rows)||!rows.length){tb.innerHTML='<tr><td colspan="7" style="color:var(--dim);padding:16px;text-align:center">No maintenance windows</td></tr>';return;}
+  tb.innerHTML = rows.map(function(r){
+    var badge = r.active ? '<span class="badge b-cyn">Active</span>' : new Date(r.end_ts)<new Date() ? '<span class="badge b-dim">Expired</span>' : '<span class="badge b-warn">Upcoming</span>';
+    return '<tr>'
+      +'<td style="font-weight:600">'+r.label+'</td>'
+      +'<td class="mono" style="font-size:9.5px;color:var(--mut);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.device_ids+'</td>'
+      +'<td class="mono" style="font-size:10px">'+fmtTs(r.start_ts).slice(0,16)+'</td>'
+      +'<td class="mono" style="font-size:10px">'+fmtTs(r.end_ts).slice(0,16)+'</td>'
+      +'<td>'+badge+'</td>'
+      +'<td style="color:var(--mut);font-size:10px">'+( r.created_by||'—')+'</td>'
+      +'<td><button class="btn btn-red btn-xs" onclick="deleteMaint(\''+r.id+'\')">Delete</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function openMaintModal() {
+  document.getElementById('maint-label').value='';
+  document.getElementById('maint-devids').value='';
+  document.getElementById('maint-err').textContent='';
+  // default: now to now+4h
+  var now = new Date(); var end = new Date(now.getTime()+4*3600000);
+  document.getElementById('maint-start').value = now.toISOString().slice(0,16);
+  document.getElementById('maint-end').value   = end.toISOString().slice(0,16);
+  openModal('mod-maint');
+}
+
+async function saveMaint() {
+  var label = document.getElementById('maint-label').value.trim();
+  var devids = document.getElementById('maint-devids').value.trim();
+  var start  = document.getElementById('maint-start').value;
+  var end    = document.getElementById('maint-end').value;
+  document.getElementById('maint-err').textContent='';
+  if(!label||!end){document.getElementById('maint-err').textContent='Label and end time required.';return;}
+  var body = {label,device_ids:devids||'ALL',
+    start_ts:new Date(start).toISOString(),end_ts:new Date(end).toISOString()};
+  var d = await api('POST','/api/admin/maintenance',body);
+  if(d.ok||d.id){toast('Window created',label,'tg');closeModal('mod-maint');loadMaint();}
+  else{document.getElementById('maint-err').textContent=d.error||'Error';toast('Error',d.error||'?','tc');}
+}
+
+async function deleteMaint(id) {
+  if(!confirm('Delete this maintenance window?')) return;
+  var d = await api('DELETE','/api/admin/maintenance/'+id);
+  if(d.ok){toast('Window deleted','','tg');loadMaint();}
+  else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// COLLECTORS
+// ════════════════════════════════════════════════════
+async function loadCollectors() {
+  var rows = await api('GET','/api/collectors');
+  var tb = document.getElementById('col-tbody');
+  if(!Array.isArray(rows)||!rows.length){tb.innerHTML='<tr><td colspan="7" style="color:var(--dim);padding:16px;text-align:center">No collectors registered</td></tr>';return;}
+  tb.innerHTML = rows.map(function(r){
+    var sbadge = r.status==='active'?'b-ok':r.status==='idle'?'b-warn':r.status==='never'?'b-red':'b-red';
+    return '<tr>'
+      +'<td class="mono" style="font-size:10px;color:var(--cyn)">'+r.id+'</td>'
+      +'<td style="font-weight:600">'+r.name+'</td>'
+      +'<td>'+r.sector+'</td>'
+      +'<td><span class="badge '+sbadge+'">'+r.status.toUpperCase()+'</span></td>'
+      +'<td class="mono">'+(r.reading_count||0)+'</td>'
+      +'<td style="font-size:10px;color:var(--mut)">'+(r.last_seen?fmtTs(r.last_seen).slice(0,16):'Never')+'</td>'
+      +'<td><button class="btn btn-red btn-xs" onclick="deactivateCollector(\''+r.id+'\')">Deactivate</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function openColModal() {
+  document.getElementById('col-name-inp').value='';
+  document.getElementById('col-desc-inp').value='';
+  document.getElementById('col-err').textContent='';
+  openModal('mod-col');
+}
+
+async function saveCollector() {
+  var name = document.getElementById('col-name-inp').value.trim();
+  var sector = document.getElementById('col-sector-inp').value;
+  var desc = document.getElementById('col-desc-inp').value.trim();
+  document.getElementById('col-err').textContent='';
+  if(!name){document.getElementById('col-err').textContent='Name required.';return;}
+  var d = await api('POST','/api/collector/register',{name,sector,description:desc});
+  if(d.api_key){
+    closeModal('mod-col');
+    var res = document.getElementById('new-col-result');
+    res.style.display='block';
+    document.getElementById('new-col-key').textContent='X-Collector-Key: '+d.api_key;
+    document.getElementById('new-col-url').textContent=B+d.ingest_url;
+    toast('Collector registered',name+' — copy the API key now','tg');
+    loadCollectors();
+  } else {
+    document.getElementById('col-err').textContent=d.error||'Error registering collector.';
+  }
+}
+
+async function deactivateCollector(id) {
+  if(!confirm('Deactivate this collector? It can be re-registered later.')) return;
+  var d = await api('DELETE','/api/collectors/'+id);
+  if(d.ok){toast('Collector deactivated','','tg');loadCollectors();}
+  else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// USER MANAGEMENT
+// ════════════════════════════════════════════════════
+async function loadUsers() {
+  var rows = await api('GET','/api/admin/users');
+  var tb = document.getElementById('user-tbody');
+  if(!Array.isArray(rows)){tb.innerHTML='<tr><td colspan="5" style="color:var(--dim);padding:16px;text-align:center">Error loading users</td></tr>';return;}
+  tb.innerHTML = rows.map(function(r){
+    var roleB = r.role==='admin'?'b-pur':r.role==='readonly'?'b-dim':'b-cyn';
+    return '<tr>'
+      +'<td class="mono" style="font-size:10px;color:var(--dim)">'+r.id+'</td>'
+      +'<td style="font-weight:700">'+r.name+'</td>'
+      +'<td><span class="badge '+roleB+'">'+r.role+'</span></td>'
+      +'<td><span class="badge '+(r.has_token?'b-ok':'b-dim')+'">'+(r.has_token?'Active':'No token')+'</span></td>'
+      +'<td style="display:flex;gap:5px">'
+      +'<button class="btn btn-ghost btn-xs" onclick="openPwdModal(\''+r.id+'\')">&#x1F511; Reset pwd</button>'
+      +(r.name!=='Admin'?'<button class="btn btn-red btn-xs" onclick="deleteUser(\''+r.id+'\',\''+r.name+'\')">Del</button>':'')
+      +'</td></tr>';
+  }).join('');
+}
+
+function openUserModal() {
+  document.getElementById('user-name').value='';
+  document.getElementById('user-pass').value='';
+  document.getElementById('user-err').textContent='';
+  openModal('mod-user');
+}
+
+async function saveUser() {
+  var name=document.getElementById('user-name').value.trim();
+  var pwd=document.getElementById('user-pass').value.trim();
+  var role=document.getElementById('user-role').value;
+  document.getElementById('user-err').textContent='';
+  if(!name||!pwd){document.getElementById('user-err').textContent='Name and password required.';return;}
+  if(pwd.length<6){document.getElementById('user-err').textContent='Password must be 6+ chars.';return;}
+  var d=await api('POST','/api/admin/users',{name,password:pwd,role});
+  if(d.ok||d.id){toast('User created',name+' ('+role+')','tg');closeModal('mod-user');loadUsers();}
+  else{document.getElementById('user-err').textContent=d.error||'Error';toast('Error',d.error||'?','tc');}
+}
+
+function openPwdModal(uid) {
+  document.getElementById('pwd-uid').value=uid;
+  document.getElementById('pwd-new').value='';
+  document.getElementById('pwd-err').textContent='';
+  openModal('mod-pwd');
+}
+
+async function doResetPwd() {
+  var uid=document.getElementById('pwd-uid').value;
+  var pwd=document.getElementById('pwd-new').value.trim();
+  document.getElementById('pwd-err').textContent='';
+  if(!pwd||pwd.length<6){document.getElementById('pwd-err').textContent='Password must be 6+ chars.';return;}
+  var d=await api('POST','/api/admin/users/'+uid+'/password',{password:pwd});
+  if(d.ok){toast('Password reset','Existing sessions invalidated','tg');closeModal('mod-pwd');}
+  else{document.getElementById('pwd-err').textContent=d.error||'Error';}
+}
+
+async function deleteUser(uid,name) {
+  if(!confirm('Delete user '+name+'? This cannot be undone.')) return;
+  var d=await api('DELETE','/api/admin/users/'+uid);
+  if(d.ok){toast('User deleted',name,'tg');loadUsers();}
+  else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ════════════════════════════════════════════════════
+async function loadNotify() {
+  var d = await api('GET','/api/admin/system');
+  var n = d.notifications||{};
+  var el = document.getElementById('notify-status');
+  el.innerHTML = [
+    {lbl:'Email',key:'email',sub:'SMTP / TLS'},
+    {lbl:'SMS',key:'sms',sub:'Africa\'s Talking / Twilio'},
+    {lbl:'WhatsApp',key:'whatsapp',sub:'WhatsApp Business API'}
+  ].map(function(c){
+    var on=n[c.key];
+    return '<div class="notify-row">'
+      +'<span class="status-dot '+(on?'dot-grn':'dot-dim')+'"></span>'
+      +'<div style="flex:1"><div class="notify-lbl">'+c.lbl+'</div><div class="notify-sub">'+c.sub+'</div></div>'
+      +'<span class="badge '+(on?'b-ok':'b-dim')+'">'+(on?'Enabled':'Disabled')+'</span>'
+      +'</div>';
+  }).join('');
+}
+
+async function testNotify(ch) {
+  var d = await api('POST','/api/notify/test',{channel:ch});
+  if(d.ok) toast('Test dispatched',ch+' notification sent','tg');
+  else toast('Error',d.error||'?','tc');
+}
+
+async function saveNotifyConfig() {
+  var to=document.getElementById('n-to').value.trim().split(',').map(function(e){return e.trim();}).filter(Boolean);
+  var sms=document.getElementById('n-sms').value.trim().split(',').map(function(e){return e.trim();}).filter(Boolean);
+  var body={
+    smtp_host:document.getElementById('n-smtp-host').value.trim()||undefined,
+    smtp_port:parseInt(document.getElementById('n-smtp-port').value)||undefined,
+    from_email:document.getElementById('n-from').value.trim()||undefined,
+  };
+  if(to.length) body.to_emails=to;
+  if(sms.length) body.sms_numbers=sms;
+  Object.keys(body).forEach(function(k){if(!body[k])delete body[k];});
+  var d=await api('POST','/api/admin/notify/config',body);
+  if(d.ok){toast('Config saved',d.note||'','tg');}
+  else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// COMMAND DISPATCH
+// ════════════════════════════════════════════════════
+function updateDispatchForm() {
+  var t=document.getElementById('d-type').value;
+  var lbl=document.getElementById('d-target-lbl');
+  var wf=document.getElementById('d-webhook-fields');
+  var mf=document.getElementById('d-msg-fields');
+  if(t==='webhook'){lbl.textContent='Target URL';wf.style.display='block';mf.style.display='none';}
+  else if(t==='email'){lbl.textContent='Recipient';wf.style.display='none';mf.style.display='block';}
+  else if(t==='sms'||t==='whatsapp'){lbl.textContent='Phone / To';wf.style.display='none';mf.style.display='block';}
+  else{lbl.textContent='Reference';wf.style.display='block';mf.style.display='none';}
+}
+
+async function sendDispatch() {
+  var dtype=document.getElementById('d-type').value;
+  var target=document.getElementById('d-target').value.trim();
+  var payload={};
+  if(dtype==='webhook'){
+    try{payload=JSON.parse(document.getElementById('d-payload').value||'{}');}
+    catch(e){toast('Invalid JSON','Check payload field','tw');return;}
+  } else {
+    payload={subject:document.getElementById('d-subject').value,message:document.getElementById('d-msg').value};
+    if(dtype==='email') payload.body=payload.message;
+  }
+  var d=await api('POST','/api/admin/dispatch',{dispatch_type:dtype,target,payload});
+  if(d.ok){
+    document.getElementById('d-result').textContent='Result: '+d.result+' @ '+d.ts;
+    toast('Dispatched',dtype+' → '+d.result,'tg');
+    loadDispatch();
+  } else toast('Error',d.error||'?','tc');
+}
+
+async function loadDispatch() {
+  var rows=await api('GET','/api/admin/dispatch/log');
+  var tb=document.getElementById('dispatch-tbody');
+  if(!Array.isArray(rows)||!rows.length){tb.innerHTML='<tr><td colspan="5" style="color:var(--dim);padding:16px;text-align:center">No dispatches yet</td></tr>';return;}
+  tb.innerHTML=rows.slice(0,20).map(function(r){
+    var ok=r.result&&r.result.startsWith('HTTP 2');
+    return '<tr>'
+      +'<td class="mono" style="font-size:9.5px;color:var(--dim)">'+fmtTs(r.ts).slice(0,16)+'</td>'
+      +'<td><span class="badge b-dim">'+r.command_type+'</span></td>'
+      +'<td class="mono" style="font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+r.device_id+'</td>'
+      +'<td class="mono" style="color:'+(ok?'var(--grn)':r.result&&r.result.includes('dispatched')?'var(--cyn)':'var(--amb)')+'">'+r.result+'</td>'
+      +'<td style="color:var(--mut)">'+( r.sent_by||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════
+// AUDIT LOG
+// ════════════════════════════════════════════════════
+async function loadAudit(page) {
+  auditPage=page||auditPage;
+  var actor=document.getElementById('audit-actor').value.trim();
+  var action=document.getElementById('audit-action').value.trim();
+  var url='/api/admin/audit?page='+auditPage+'&limit=30'+(actor?'&actor='+encodeURIComponent(actor):'')+(action?'&action='+encodeURIComponent(action):'');
+  var d=await api('GET',url.replace('/api/admin/audit','').replace(B+'/api/admin/audit','/api/admin/audit'));
+  // rebuild url properly
+  d=await fetch(B+'/api/admin/audit?page='+auditPage+'&limit=30'+(actor?'&actor='+encodeURIComponent(actor):'')+(action?'&action='+encodeURIComponent(action):''),{headers:hdr()}).then(function(r){return r.json();});
+  var rows=d.rows||[];
+  var total=d.total||0;
+  // badge
+  document.getElementById('audit-badge').textContent=total;
+  document.getElementById('audit-badge').className='sb-badge'+(total===0?' ok':'');
+  var el=document.getElementById('audit-rows');
+  if(!rows.length){el.innerHTML='<div style="color:var(--dim);padding:16px;text-align:center">No audit entries</div>';document.getElementById('audit-pager').innerHTML='';return;}
+  el.innerHTML=rows.map(function(r){
+    var rc=r.result==='ok'?'var(--grn)':r.result&&r.result.startsWith('HTTP')?'var(--cyn)':'var(--amb)';
+    return '<div class="audit-row">'
+      +'<div class="mono" style="font-size:9px;color:var(--dim)">'+fmtTs(r.ts).slice(0,16)+'</div>'
+      +'<div style="font-weight:600;font-size:10.5px">'+( r.actor||'—')+'</div>'
+      +'<div><span class="badge b-dim" style="font-size:8px">'+( r.action||'?')+'</span></div>'
+      +'<div class="mono" style="font-size:9.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.target||'')+(r.detail?' &middot; '+r.detail:'')+'</div>'
+      +'<div class="mono" style="font-size:9.5px;color:'+rc+'">'+( r.result||'?')+'</div>'
+      +'</div>';
+  }).join('');
+  // pager
+  var pages=Math.ceil(total/30);
+  var pager='';
+  for(var i=1;i<=Math.min(pages,8);i++){pager+='<button class="pg-btn'+(i===auditPage?' cur':'')+'" onclick="loadAudit('+i+')">'+i+'</button>';}
+  if(pages>8) pager+='<span style="color:var(--dim);font-size:10px">+'+( pages-8)+' more</span>';
+  document.getElementById('audit-pager').innerHTML=pager;
+}
+
+// ════════════════════════════════════════════════════
+// DATABASE
+// ════════════════════════════════════════════════════
+function loadDb() { loadSystem(); }
+
+async function doVacuum() {
+  if(!confirm('Run VACUUM? This will prune old metrics and VACUUM the database.')) return;
+  var d=await api('POST','/api/admin/db/vacuum');
+  if(d.ok){
+    document.getElementById('vacuum-result').textContent='Freed '+d.freed_kb+'KB. New size: '+d.size_kb+'KB';
+    toast('VACUUM complete','Freed '+d.freed_kb+'KB','tg');
+    loadSystem();
+  } else toast('Error',d.error||'?','tc');
+}
+
+async function doClearInc() {
+  if(!confirm('Delete ALL resolved incidents? This cannot be undone.')) return;
+  var d=await api('POST','/api/admin/db/clear-incidents');
+  if(d.ok){
+    document.getElementById('clear-result').textContent='Deleted '+d.deleted+' resolved incidents.';
+    toast('Incidents cleared',''+d.deleted+' rows deleted','tg');
+  } else toast('Error',d.error||'?','tc');
+}
+
+// ════════════════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-ov').forEach(function(ov){
+  ov.addEventListener('click',function(e){ if(e.target===ov) ov.classList.remove('open'); });
+});
+
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') document.querySelectorAll('.modal-ov.open').forEach(function(m){m.classList.remove('open');}); });
+
+// ════════════════════════════════════════════════════
+// KEYBOARD NAV
+// ════════════════════════════════════════════════════
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  if(e.key==='r'||e.key==='R') refreshCurrent();
+});
+
+// ════════════════════════════════════════════════════
+// AUTO-LOGIN if token stored
+// ════════════════════════════════════════════════════
+(function tryAutoLogin(){
+  var stored=sessionStorage.getItem('ii-cp-token');
+  var uname=sessionStorage.getItem('ii-cp-user');
+  if(stored&&uname){
+    TOKEN=stored;USERNAME=uname;
+    document.getElementById('login-wrap').style.display='none';
+    document.getElementById('cp-app').style.display='flex';
+    document.getElementById('sb-name').textContent=uname;
+    loadSystem();
+    setInterval(function(){ if(currentPage==='system') loadSystem(); }, 30000);
+    setInterval(function(){ document.getElementById('live-ts').textContent=new Date().toLocaleTimeString(); }, 1000);
+  }
+})();
+
+// Persist session
+var _origLogin=doLogin;
+doLogin=async function(){
+  await _origLogin();
+  if(TOKEN){sessionStorage.setItem('ii-cp-token',TOKEN);sessionStorage.setItem('ii-cp-user',USERNAME);}
+};
+var _origLogout=doLogout;
+doLogout=function(){ _origLogout(); sessionStorage.removeItem('ii-cp-token');sessionStorage.removeItem('ii-cp-user'); };
+
+</script>
+</body>
+</html>
