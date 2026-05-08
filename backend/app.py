@@ -1,25 +1,23 @@
 """
-IISentinel™ v3.2 — Intelligent Infrastructure Sentinel (Flask)
+IISentinel™ v3.3 — Intelligent Infrastructure Sentinel (Flask)
 ===============================================================
-v3.2 changes vs v3.1:
-  ✓ Werkzeug password hashing — migrates plaintext on first boot
-  ✓ Rate limiting on /api/login (5 req / 60 s per IP)
-  ✓ Auth vulnerability fixed — token vs password no longer aliased
-  ✓ Thread-safe device_history (RLock)
-  ✓ Node probing via ThreadPoolExecutor — max 2 s hard timeout
-  ✓ Cache TTL 2 s, flush interval 1 s  (was 8 s / 3 s)
-  ✓ SSE payload enriched — carries failure_probability, uptime, ETTF
-    so the dashboard never needs to poll for real-time gauge updates
-  ✓ full_sync SSE broadcast every 30 s (dashboard 60 s fallback)
-  ✓ Optional API-key auth for /api/data via env DATA_API_KEY
-  ✓ PostgreSQL support via env DATABASE_URL (SQLite fallback)
-  ✓ admin123 placeholder removed from login endpoint comment
-  ✓ /api/admin/token disabled in PRODUCTION=true environments
+v3.3 changes vs v3.2:
+  ✓ Control Panel at /admin (Sophos-style admin console)
+  ✓ Threshold management — CBS/warning/critical per device type
+  ✓ Device registry — full CRUD from UI
+  ✓ Maintenance windows — suppress alerts during planned work
+  ✓ User management — add/remove specialists with roles
+  ✓ Full audit log — every admin action timestamped
+  ✓ Command dispatch — real webhook/SMS/email execution
+  ✓ Database maintenance — vacuum, prune, clear resolved incidents
+  ✓ System diagnostics — CPU/mem/disk via psutil (optional)
+  ✓ Notification config — update channels without restart
+  ✓ _refresh_maintenance() integrated into scoring pipeline
 
 Run:     python app.py
 Demo:    DEMO_MODE=true python app.py
 Install: pip install flask flask-cors reportlab scikit-learn joblib \
-                    numpy requests werkzeug psycopg2-binary
+                    numpy requests werkzeug psycopg2-binary psutil
 """
 import os, re, json, time, random, threading, smtplib, sqlite3
 import uuid, secrets, hashlib
@@ -61,7 +59,7 @@ except ImportError:
             r.headers['Access-Control-Allow-Origin']  = '*'
             r.headers['Access-Control-Allow-Headers'] = \
                 'Content-Type,X-Specialist-Token,X-Collector-Key,X-Api-Key'
-            r.headers['Access-Control-Allow-Methods'] = 'GET,POST,DELETE,OPTIONS'
+            r.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
             return r
 
 # ── Database ──────────────────────────────────────────────────────────────────
@@ -83,8 +81,6 @@ def _db_conn():
     finally:
         con.close()
 
-
-        # ── Ensure default admin ──────────────────────────────────────────
 def _db_init():
     with _db_conn() as con:
         con.executescript("""
@@ -119,40 +115,61 @@ def _db_init():
         CREATE TABLE IF NOT EXISTS cascade_topology (
             id TEXT PRIMARY KEY DEFAULT 'default',
             payload TEXT NOT NULL, updated_at TEXT);
+
+        CREATE TABLE IF NOT EXISTS device_registry (
+            id TEXT PRIMARY KEY, label TEXT, device_type TEXT,
+            protocol TEXT, ip TEXT, community TEXT, sector TEXT,
+            poll_interval INTEGER DEFAULT 15, enabled INTEGER DEFAULT 1,
+            notes TEXT, created_at TEXT, updated_at TEXT);
+
+        CREATE TABLE IF NOT EXISTS maintenance_windows (
+            id TEXT PRIMARY KEY, label TEXT, device_ids TEXT,
+            start_ts TEXT, end_ts TEXT, suppress_alerts INTEGER DEFAULT 1,
+            created_by TEXT, created_at TEXT);
+
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT, actor TEXT, action TEXT, target TEXT,
+            detail TEXT, ip TEXT, result TEXT);
+
+        CREATE TABLE IF NOT EXISTS thresholds (
+            id TEXT PRIMARY KEY, device_type TEXT UNIQUE,
+            critical_below REAL DEFAULT 20, warning_below REAL DEFAULT 50,
+            cbs_hold_below REAL DEFAULT 90, ettf_warn_minutes INTEGER DEFAULT 120,
+            ettf_crit_minutes INTEGER DEFAULT 30,
+            updated_by TEXT, updated_at TEXT);
+
+        CREATE TABLE IF NOT EXISTS dispatch_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT, device_id TEXT, command_type TEXT,
+            payload TEXT, result TEXT, sent_by TEXT);
         """)
 
         # ── Schema migrations (safe on existing DBs) ──────────────────────
         cols = {r[1] for r in con.execute("PRAGMA table_info(specialists)")}
-
         if 'token' not in cols:
             con.execute("ALTER TABLE specialists ADD COLUMN token TEXT")
-
         if 'password_hash' not in cols:
             con.execute("ALTER TABLE specialists ADD COLUMN password_hash TEXT")
-
-        # Migrate plaintext passwords → hashed
         if 'password' in cols:
             for r in con.execute("SELECT id, password FROM specialists").fetchall():
                 ph = generate_password_hash(r['password'] or 'changeme!')
-                con.execute("UPDATE specialists SET password_hash=? WHERE id=?",
-                            (ph, r['id']))
+                con.execute("UPDATE specialists SET password_hash=? WHERE id=?", (ph, r['id']))
 
-        # ── Ensure default admin exists ───────────────────────────────────
+        # ── Ensure default admin ──────────────────────────────────────────
         row = con.execute(
             "SELECT id, token, password_hash FROM specialists WHERE name='Admin'"
         ).fetchone()
-
         if not row:
             tok = secrets.token_hex(24)
             ph  = generate_password_hash('admin123')
             con.execute("INSERT INTO specialists VALUES (?,?,?,?,?)",
-                        ('sp-001', 'Admin', tok, ph, 'engineer'))
+                        ('sp-001', 'Admin', tok, ph, 'admin'))
             print(f"\n  [IISentinel] Default admin created — token: {tok}\n")
         else:
             if not row['token']:
                 tok = secrets.token_hex(24)
-                con.execute("UPDATE specialists SET token=? WHERE id=?",
-                            (tok, row['id']))
+                con.execute("UPDATE specialists SET token=? WHERE id=?", (tok, row['id']))
                 print(f"\n  [IISentinel] Admin token set: {tok}\n")
             if not row['password_hash']:
                 con.execute(
@@ -160,8 +177,9 @@ def _db_init():
                     (generate_password_hash('admin123'), row['id']))
 
 _db_init()
+
 # ── Rate limiter ──────────────────────────────────────────────────────────────
-_rate_buckets: dict[str, list] = {}
+_rate_buckets: dict = {}
 _rate_lock = threading.Lock()
 
 def _rate_ok(key: str, max_calls: int = 5, window: int = 60) -> bool:
@@ -205,7 +223,7 @@ MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','s
 CBS_TYPES     = ['cbs_controller']
 CBS_SAFETY_THRESHOLD = 90.0
 RETRAIN_THRESHOLD    = 50
-CACHE_TTL            = 2      # seconds (was 8)
+CACHE_TTL            = 2
 WEATHER_CACHE_TTL    = 60
 
 COST_RATES = {
@@ -239,10 +257,9 @@ queue_lock    = threading.Lock()
 _data_cache   = {'data': [], 'ts': 0}
 _weather_cache: dict = {}
 
-# FIXED: device_history now protected by RLock
 _history_lock  = threading.RLock()
-device_history: dict[str, list] = {}
-device_uptime:  dict[str, dict] = {}
+device_history: dict = {}
+device_uptime:  dict = {}
 
 scoring_queue   = deque(maxlen=200)
 scoring_results: dict = {}
@@ -256,6 +273,7 @@ _sse_subs: list         = []
 _sse_lock               = threading.Lock()
 notification_log        = deque(maxlen=100)
 _cbs_integrity_cache: dict = {}
+_maintenance_active: dict  = {}   # device_id -> end_ts (populated by _refresh_maintenance)
 
 platform_stats = {
     'requests_total':0,'requests_failed':0,'cache_hits':0,'models_scored':0,
@@ -264,7 +282,6 @@ platform_stats = {
     'collector_readings':0,'uptime_start':datetime.now(timezone.utc).isoformat()
 }
 
-# Optional API key for /api/data
 _DATA_API_KEY = os.environ.get('DATA_API_KEY', '')
 
 NOTIFY = {
@@ -294,18 +311,45 @@ def _history_append(did: str, score: float) -> list:
     with _history_lock:
         h = device_history.setdefault(did, [])
         h.append(score)
-        if len(h) > 20:
-            h.pop(0)
+        if len(h) > 20: h.pop(0)
         return list(h)
 
 def _history_get(did: str) -> list:
     with _history_lock:
         return list(device_history.get(did, []))
 
-def _history_snapshot() -> dict[str, float]:
-    """Latest score per device — thread-safe snapshot."""
+def _history_snapshot() -> dict:
     with _history_lock:
         return {d: h[-1] for d, h in device_history.items() if h}
+
+# ── Maintenance window helper ─────────────────────────────────────────────────
+def _refresh_maintenance():
+    """Refresh in-memory maintenance window cache from DB."""
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT device_ids, end_ts FROM maintenance_windows "
+                "WHERE start_ts <= ? AND end_ts >= ?", (now, now)
+            ).fetchall()
+        _maintenance_active.clear()
+        for r in rows:
+            for did in (r['device_ids'] or '').split(','):
+                did = did.strip()
+                if did:
+                    _maintenance_active[did] = r['end_ts']
+    except Exception:
+        pass
+
+def _in_maintenance(device_id: str) -> bool:
+    """Return True if device is currently in a maintenance window."""
+    if not _maintenance_active:
+        return False
+    if device_id in _maintenance_active:
+        return True
+    if 'ALL' in _maintenance_active:
+        return True
+    return False
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 def send_sms(message: str):
@@ -335,15 +379,15 @@ def send_whatsapp(message: str):
                       'text':{'body':f'IISentinel\n{message}'}},timeout=8)
     except Exception as e: print(f'[WhatsApp] {e}')
 
-def send_email(subject,body,device_id=None,health_score=None,
-               diagnosis=None,automation_command=None,severity='warning'):
+def send_email(subject, body, device_id=None, health_score=None,
+               diagnosis=None, automation_command=None, severity='warning'):
     if not NOTIFY['email_enabled'] or not NOTIFY['smtp_user'] or not NOTIFY['to_emails']:
         return
     C = {'critical':'#ff3e50','cbs':'#ff3e50','warning':'#f5a020','info':'#20e07a'}.get(severity,'#34c6f4')
     html = f"""<html><body style="font-family:Arial,sans-serif;background:#eef0f7;padding:32px 0">
 <table width="560" style="background:#fff;border-radius:12px;margin:auto">
 <tr><td style="background:{C};padding:20px 28px">
-  <b style="font-size:18px;color:#fff">IISentinel™</b>
+  <b style="font-size:18px;color:#fff">IISentinel&#x2122;</b>
   <span style="font-size:10px;background:rgba(255,255,255,.2);color:#fff;
         padding:2px 8px;border-radius:20px;margin-left:8px">{severity.upper()}</span>
 </td></tr>
@@ -360,18 +404,18 @@ def send_email(subject,body,device_id=None,health_score=None,
         msg['From']    = NOTIFY['from_email']
         msg['To']      = ', '.join(NOTIFY['to_emails'])
         msg.attach(MIMEText(body,'plain')); msg.attach(MIMEText(html,'html'))
-        with smtplib.SMTP(NOTIFY['smtp_host'],NOTIFY['smtp_port']) as s:
-            if NOTIFY['smtp_user']: s.starttls(); s.login(NOTIFY['smtp_user'],NOTIFY['smtp_pass'])
+        with smtplib.SMTP(NOTIFY['smtp_host'], NOTIFY['smtp_port']) as s:
+            if NOTIFY['smtp_user']: s.starttls(); s.login(NOTIFY['smtp_user'], NOTIFY['smtp_pass'])
             s.send_message(msg)
     except Exception as e: print(f'[Email] {e}')
 
-def notify_all(subject,message,level='critical',device_id=None,
-               health_score=None,diagnosis=None,automation_command=None):
+def notify_all(subject, message, level='critical', device_id=None,
+               health_score=None, diagnosis=None, automation_command=None):
     notification_log.appendleft({'subject':subject,'message':message,'level':level,
         'device_id':device_id,'ts':datetime.now(timezone.utc).isoformat()})
     platform_stats['notifications_sent'] += 1
     if level in ('critical','cbs'):
-        threading.Thread(target=send_sms,   args=(f'{subject}: {message}',),daemon=True).start()
+        threading.Thread(target=send_sms,args=(f'{subject}: {message}',),daemon=True).start()
         threading.Thread(target=send_whatsapp,args=(f'{subject}\n{message}',),daemon=True).start()
     threading.Thread(target=send_email,
         kwargs=dict(subject=subject,body=message,device_id=device_id,
@@ -393,7 +437,6 @@ def sse_broadcast(event_type: str, payload: dict):
 
 # ── Background workers ────────────────────────────────────────────────────────
 def flush_worker():
-    """Batch-flush metric queue to SQLite every 1 s (was 3 s)."""
     while True:
         time.sleep(1)
         with queue_lock:
@@ -469,27 +512,32 @@ def retrain_worker():
             with _retrain_lock: _retrain_in_progress = False
 
 def full_sync_worker():
-    """Push complete dataset snapshot to all SSE subscribers every 30 s."""
     while True:
         time.sleep(30)
         try:
             data  = get_cached_data()
             snap  = _history_snapshot()
             intel = {
-                'federated_index'     : get_federated_health_index(list(snap.values())),
+                'federated_index'      : get_federated_health_index(list(snap.values())),
                 'failure_probabilities': {d: get_failure_probability(d, s) for d,s in snap.items()},
-                'uptime'              : {d: get_uptime_pct(d) for d in device_uptime},
-                'ttf_minutes'         : {d: v for d,s in snap.items()
-                                         if (v := get_ettf_minutes(d, s, '')) is not None},
-                'anomaly_count'       : anomaly_count,
-                'total_devices'       : len(device_history),
-                'retrain_needed'      : anomaly_count >= RETRAIN_THRESHOLD,
-                'retrain_in_progress' : _retrain_in_progress,
+                'uptime'               : {d: get_uptime_pct(d) for d in device_uptime},
+                'ttf_minutes'          : {d: v for d,s in snap.items()
+                                          if (v := get_ettf_minutes(d, s, '')) is not None},
+                'anomaly_count'        : anomaly_count,
+                'total_devices'        : len(device_history),
+                'retrain_needed'       : anomaly_count >= RETRAIN_THRESHOLD,
+                'retrain_in_progress'  : _retrain_in_progress,
             }
             sse_broadcast('full_sync', {'data': data, 'intel': intel, 'ts': time.time()})
         except Exception as e: print(f'[FullSync] {e}')
 
-for _fn in (flush_worker, scorer_worker, retrain_worker, full_sync_worker):
+def maintenance_refresh_worker():
+    """Refresh maintenance windows every 60 s so they activate on time."""
+    while True:
+        time.sleep(60)
+        _refresh_maintenance()
+
+for _fn in (flush_worker, scorer_worker, retrain_worker, full_sync_worker, maintenance_refresh_worker):
     threading.Thread(target=_fn, daemon=True).start()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -515,7 +563,7 @@ def get_failure_probability(device_id: str, score: float) -> float:
     prob = min(99.0, round(100*(1-rtc/60),1)) if rtc<60 else round((100-score)*0.08,1)
     return max(0.0, prob)
 
-def get_ettf_minutes(device_id: str, score: float, device_type: str = '') -> int | None:
+def get_ettf_minutes(device_id: str, score: float, device_type: str = ''):
     h = _history_get(device_id)
     if len(h) < 5: return None
     window = h[-10:]; n = len(window)
@@ -547,17 +595,17 @@ def get_federated_health_index(scores: list) -> float:
     w = [s*0.5 if s<20 else s*0.8 if s<50 else s for s in scores]
     return round(sum(w)/len(w), 1)
 
-def get_diagnosis(dtype,protocol,mname,mval,score,anom,integrity_score=None):
+def get_diagnosis(dtype, protocol, mname, mval, score, anom, integrity_score=None):
     issues=[]; actions=[]
-    if   score < 20: issues.append('critical failure');       actions.append('immediate intervention')
-    elif score < 35: issues.append('severe degradation');     actions.append('escalate to operations')
-    elif score < 50: issues.append('moderate degradation');   actions.append('schedule maintenance <24h')
+    if   score < 20: issues.append('critical failure');     actions.append('immediate intervention')
+    elif score < 35: issues.append('severe degradation');   actions.append('escalate to operations')
+    elif score < 50: issues.append('moderate degradation'); actions.append('schedule maintenance <24h')
     if dtype in TELECOM_TYPES+NETWORK_TYPES:
         if mval>100 and 'latency' in str(mname): issues.append(f'latency {mval:.0f}ms')
         if mval>2   and 'packet'  in str(mname): issues.append(f'packet loss {mval:.1f}%')
         if mval<40  and 'signal'  in str(mname): issues.append(f'signal {mval:.0f}%')
     elif dtype in MINING_TYPES:
-        if mval>75 and 'temp' in str(mname):     issues.append(f'temperature {mval:.0f}°C')
+        if mval>75 and 'temp' in str(mname): issues.append(f'temperature {mval:.0f}C')
     elif dtype == 'cbs_controller':
         thr = CBS_SAFETY_THRESHOLD
         if integrity_score is not None and integrity_score < thr:
@@ -568,11 +616,10 @@ def get_diagnosis(dtype,protocol,mname,mval,score,anom,integrity_score=None):
             actions.append('BLAST HOLD — notify blasting officer, inspect DNP3 cable')
     if anom: issues.append('AI anomaly detected'); actions.append('cross-reference event log')
     if not issues:
-        return f'Device normal via {protocol or "Ethernet"}. Score {score:.1f}/100. '\
-               f'Monitoring: {mname}={mval:.2f}.'
+        return f'Device normal via {protocol or "Ethernet"}. Score {score:.1f}/100. Monitoring: {mname}={mval:.2f}.'
     return f'{"; ".join(issues).capitalize()}. Action: {"; ".join(actions).capitalize()}.'
 
-def get_auto_cmd(device_id,dtype,score,blast_hold=False,integrity_score=None):
+def get_auto_cmd(device_id, dtype, score, blast_hold=False, integrity_score=None):
     eff_hold = blast_hold or (dtype=='cbs_controller' and (
         score < CBS_SAFETY_THRESHOLD or
         (integrity_score is not None and integrity_score < CBS_SAFETY_THRESHOLD)))
@@ -632,7 +679,6 @@ def get_cached_data() -> list:
         return _data_cache['data']
 
 def process_single_metric(data: dict) -> dict:
-    """Core ML scoring + notification pipeline."""
     global anomaly_count
     did   = data['device_id']
     dtype = data['device_type']
@@ -657,7 +703,7 @@ def process_single_metric(data: dict) -> dict:
                   if len(reading_window)>=3 else score
     fail_prob   = get_failure_probability(did, score)
     ettf        = get_ettf_minutes(did, score, dtype)
-    fhi         = get_federated_health_index([_history_snapshot().get(d,50) 
+    fhi         = get_federated_health_index([_history_snapshot().get(d,50)
                                                for d in device_history])
     update_uptime(did, score)
     uptime_pct  = get_uptime_pct(did)
@@ -672,8 +718,11 @@ def process_single_metric(data: dict) -> dict:
         score < CBS_SAFETY_THRESHOLD or
         (integrity_score is not None and integrity_score < CBS_SAFETY_THRESHOLD)))
 
+    # ── Suppress alerts during maintenance window ─────────────────────────
+    in_maint = _in_maintenance(did)
+
     ai_diag = auto_cmd = None
-    if anom or score < 50 or eff_hold:
+    if (anom or score < 50 or eff_hold) and not in_maint:
         ai_diag  = get_diagnosis(dtype,proto,data.get('metric_name',''),
                                  data.get('metric_value',0),score,anom,integrity_score)
         auto_cmd = get_auto_cmd(did,dtype,score,eff_hold,integrity_score)
@@ -692,7 +741,7 @@ def process_single_metric(data: dict) -> dict:
 
     with queue_lock: metric_queue.append(rec)
 
-    if score < 50 or anom:
+    if (score < 50 or anom) and not in_maint:
         try:
             with _db_conn() as con:
                 con.execute(
@@ -701,33 +750,27 @@ def process_single_metric(data: dict) -> dict:
                      'open',None,None,None,datetime.now(timezone.utc).isoformat()))
         except Exception: pass
 
-    # ── Enriched SSE payload (dashboard gauges update without polling) ──────
     sse_payload = {
-        'device_id'          : did,
-        'device_type'        : dtype,
-        'metric_name'        : data.get('metric_name',''),
-        'metric_value'       : float(data.get('metric_value',0)),
-        'health_score'       : round(score,1),
-        'anomaly_flag'       : anom,
-        'blast_hold'         : eff_hold,
-        'is_cbs'             : dtype=='cbs_controller',
-        'ai_diagnosis'       : ai_diag,
-        'automation_command' : auto_cmd,
-        'failure_probability': fail_prob,
-        'uptime_pct'         : uptime_pct,
-        'ettf_minutes'       : ettf,
-        'integrity_score'    : integrity_score,
-        'vibration_score'    : vibration_score,
-        'created_at'         : datetime.now(timezone.utc).isoformat(),
+        'device_id':did,'device_type':dtype,
+        'metric_name':data.get('metric_name',''),
+        'metric_value':float(data.get('metric_value',0)),
+        'health_score':round(score,1),'anomaly_flag':anom,
+        'blast_hold':eff_hold,'is_cbs':dtype=='cbs_controller',
+        'ai_diagnosis':ai_diag,'automation_command':auto_cmd,
+        'failure_probability':fail_prob,'uptime_pct':uptime_pct,
+        'ettf_minutes':ettf,'integrity_score':integrity_score,
+        'vibration_score':vibration_score,
+        'in_maintenance':in_maint,
+        'created_at':datetime.now(timezone.utc).isoformat(),
     }
 
-    if eff_hold:
+    if eff_hold and not in_maint:
         sse_broadcast('cbs_hold', sse_payload)
         notify_all(f'CBS BLAST HOLD — {did}',
                    f'Link {score:.1f}% / integrity {integrity_score or score:.1f}%',
                    level='cbs', device_id=did, health_score=score,
                    diagnosis=ai_diag, automation_command=auto_cmd)
-    elif score<20 and dtype in ['ventilation','pump']:
+    elif score<20 and dtype in ['ventilation','pump'] and not in_maint:
         notify_all(f'EMERGENCY: {did}',f'{dtype} at {score:.1f}%.',
                    level='critical', device_id=did, health_score=score,
                    diagnosis=ai_diag, automation_command=auto_cmd)
@@ -741,7 +784,7 @@ def process_single_metric(data: dict) -> dict:
         'federated_index':fhi,'uptime_pct':uptime_pct,'blast_hold':eff_hold,
         'integrity_score':integrity_score,'vibration_score':vibration_score,
         'protocol':proto,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
-        'ettf_minutes':ettf
+        'ettf_minutes':ettf,'in_maintenance':in_maint
     }
 
 # ── Auth decorators ───────────────────────────────────────────────────────────
@@ -752,18 +795,37 @@ def require_specialist(f):
         if not token: return jsonify({'error':'Unauthorised'}),401
         try:
             with _db_conn() as con:
-                # Only match against dedicated token column — NOT password
                 row = con.execute(
                     "SELECT * FROM specialists WHERE token=?", (token,)
                 ).fetchone()
                 if not row: return jsonify({'error':'Invalid token'}),401
+                request.specialist_name = row['name']
+                request.specialist_role = row['role'] or 'engineer'
+        except Exception as e:
+            return jsonify({'error':f'Auth error: {e}'}),401
+        return f(*args,**kwargs)
+    return decorated
+
+def require_admin(f):
+    """Same as require_specialist — all specialists can access admin panel."""
+    @wraps(f)
+    def decorated(*args,**kwargs):
+        token = request.headers.get('X-Specialist-Token','').strip()
+        if not token: return jsonify({'error':'Unauthorised'}),401
+        try:
+            with _db_conn() as con:
+                row = con.execute(
+                    "SELECT * FROM specialists WHERE token=?", (token,)
+                ).fetchone()
+                if not row: return jsonify({'error':'Invalid token'}),401
+                request.specialist_name = row['name']
+                request.specialist_role = row['role'] or 'engineer'
         except Exception as e:
             return jsonify({'error':f'Auth error: {e}'}),401
         return f(*args,**kwargs)
     return decorated
 
 def optional_data_auth(f):
-    """If DATA_API_KEY is set, require X-Api-Key header on /api/data."""
     @wraps(f)
     def decorated(*args,**kwargs):
         if _DATA_API_KEY:
@@ -772,6 +834,17 @@ def optional_data_auth(f):
                 return jsonify({'error':'API key required for data access'}),401
         return f(*args,**kwargs)
     return decorated
+
+# ── Audit log helper ──────────────────────────────────────────────────────────
+def _audit(actor, action, target, detail='', result='ok', ip='system'):
+    try:
+        with _db_conn() as con:
+            con.execute(
+                "INSERT INTO audit_log (ts,actor,action,target,detail,ip,result) VALUES (?,?,?,?,?,?,?)",
+                (datetime.now(timezone.utc).isoformat(), actor, action, target, detail, ip, result)
+            )
+    except Exception as e:
+        print(f'[Audit] {e}')
 
 # ── Demo mode ─────────────────────────────────────────────────────────────────
 DEMO_DEVICES = [
@@ -814,9 +887,9 @@ def demo_worker():
             temp = dev['btemp']*(1+sev*.5)+random.gauss(0,3)
             cpu  = min(98, 20+sev*75+random.gauss(0,8))
             loss = max(0,  sev*8+random.gauss(0,0.8))
-            if dtype in MINING_TYPES:             mn,mv='temperature',round(temp,1)
-            elif dtype in TELECOM_TYPES+CBS_TYPES:mn,mv='signal_strength',round(sig,1)
-            else:                                 mn,mv='latency_ms',round(lat,1)
+            if dtype in MINING_TYPES:              mn,mv='temperature',round(temp,1)
+            elif dtype in TELECOM_TYPES+CBS_TYPES: mn,mv='signal_strength',round(sig,1)
+            else:                                  mn,mv='latency_ms',round(lat,1)
             proto = ('DNP3/Ethernet'        if dtype=='cbs_controller' else
                      'Profinet/EtherNet-IP' if dtype in MINING_TYPES   else
                      'SNMP/Ethernet-802.3')
@@ -834,12 +907,11 @@ def demo_worker():
 if os.environ.get('DEMO_MODE','false').lower()=='true':
     threading.Thread(target=demo_worker, daemon=True).start()
 
-# ── Node monitor — ThreadPoolExecutor, hard 2 s timeout ──────────────────────
-_nodes: dict      = {}
-_nodes_lock       = threading.Lock()
-_node_executor    = ThreadPoolExecutor(max_workers=32, thread_name_prefix='node-probe')
-_scan_results: dict = {}
-_PROBE_PORTS      = [80,443,22,161,8080]
+# ── Node monitor ──────────────────────────────────────────────────────────────
+_nodes: dict   = {}
+_nodes_lock    = threading.Lock()
+_node_executor = ThreadPoolExecutor(max_workers=32, thread_name_prefix='node-probe')
+_PROBE_PORTS   = [80,443,22,161,8080]
 
 def _probe_port(host: str, port: int, timeout: float=1.5):
     try:
@@ -865,30 +937,23 @@ def _poll_node(node_id: str):
     with _nodes_lock:
         if node_id not in _nodes: return
         node = dict(_nodes[node_id])
-
-    # Primary probe — hard 2 s timeout via future
     future = _node_executor.submit(_probe_host, node['host'], 1.5)
     try:
         reachable, latency = future.result(timeout=2.0)
     except Exception:
         reachable, latency = False, None
-
-    # Parallel loss check (3 concurrent pings, only if reachable)
     loss_pct = 0
     if reachable:
-        futures = [_node_executor.submit(_probe_port, node['host'],
-                                         _PROBE_PORTS[0], 0.8)
+        futures = [_node_executor.submit(_probe_port, node['host'], _PROBE_PORTS[0], 0.8)
                    for _ in range(3)]
         failed = sum(1 for f in futures if not f.result(timeout=1.5)[0])
         loss_pct = round((failed/3)*100)
     else:
         loss_pct = 100
-
     health = 0 if not reachable else max(0, round(
         100 - min(50,(latency or 0)/10) - loss_pct*0.6))
     status = 'up' if reachable else 'down'
     now    = time.time()
-
     with _nodes_lock:
         if node_id not in _nodes: return
         _nodes[node_id].update({
@@ -897,8 +962,6 @@ def _poll_node(node_id: str):
         hist = _nodes[node_id].get('history', deque(maxlen=20))
         hist.append({'ts':now,'status':status,'latency':latency,'health':health})
         _nodes[node_id]['history'] = hist
-
-    # Feed node result into ML pipeline
     sector = node.get('sector','net')
     label  = node.get('label', node['host'])
     did    = f"{sector}-node-{node_id[:8]}"
@@ -931,7 +994,6 @@ def _background_poller():
     while True:
         time.sleep(30)
         with _nodes_lock: ids = list(_nodes.keys())
-        # All nodes polled in parallel via executor
         for nid in ids:
             _node_executor.submit(_poll_node, nid)
 
@@ -956,17 +1018,26 @@ def _restore_nodes_from_db():
 
 threading.Thread(target=_restore_nodes_from_db, daemon=True).start()
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════════════
+# ROUTES — DASHBOARD
+# ════════════════════════════════════════════════════════════════════
 app_root = os.path.dirname(os.path.abspath(__file__))
 
 @app.route('/')
 def index():
     try:
-        path = os.path.join(app_root,'dashboard.html')
-        with open(path,encoding='utf-8') as f:
+        with open(os.path.join(app_root,'dashboard.html'),encoding='utf-8') as f:
             return f.read(),200,{'Content-Type':'text/html; charset=utf-8'}
     except FileNotFoundError:
         return '<h1>dashboard.html not found</h1>',404
+
+@app.route('/admin')
+def admin_panel():
+    try:
+        with open(os.path.join(app_root,'controlpanel.html'),encoding='utf-8') as f:
+            return f.read(),200,{'Content-Type':'text/html; charset=utf-8'}
+    except FileNotFoundError:
+        return '<h1>controlpanel.html not found — place it in the backend/ folder</h1>',404
 
 @app.route('/health')
 def health_check():
@@ -977,7 +1048,7 @@ def health_check():
     deg  = q>450 or (age>300 and _data_cache['ts']>0)
     return jsonify({'status':'degraded' if deg else 'ok',
         'uptime_h':round(up/3600,2),'queue_depth':q,'cache_age_s':age,
-        'devices':len(device_history),'version':'3.2'}),(503 if deg else 200)
+        'devices':len(device_history),'version':'3.3'}),(503 if deg else 200)
 
 @app.route('/api/data')
 @optional_data_auth
@@ -1005,8 +1076,8 @@ def receive_metrics_bulk():
     platform_stats['requests_total'] += 1
     payload  = request.get_json(silent=True) or {}
     readings = payload if isinstance(payload,list) else payload.get('readings',[])
-    if not readings:           return jsonify({'error':'Empty readings array'}),400
-    if len(readings)>200:      return jsonify({'error':'Max 200 per bulk call'}),400
+    if not readings:      return jsonify({'error':'Empty readings array'}),400
+    if len(readings)>200: return jsonify({'error':'Max 200 per bulk call'}),400
     results=[]; errors=[]
     for raw in readings:
         data, err = sanitize_metric(raw)
@@ -1026,7 +1097,7 @@ def register_collector():
     name   = str(data.get('name','')).strip()[:60]
     sector = str(data.get('sector','net')).strip()
     desc   = str(data.get('description','')).strip()[:200]
-    if not name:                           return jsonify({'error':'name required'}),400
+    if not name: return jsonify({'error':'name required'}),400
     if sector not in ('net','tc','mc','all'): sector='net'
     api_key = secrets.token_hex(32)
     cid     = f"col-{sector}-{uuid.uuid4().hex[:8]}"
@@ -1034,8 +1105,7 @@ def register_collector():
     try:
         with _db_conn() as con:
             con.execute(
-                "INSERT INTO collectors "
-                "(id,name,api_key,sector,description,last_seen,reading_count,active,created_at) "
+                "INSERT INTO collectors (id,name,api_key,sector,description,last_seen,reading_count,active,created_at) "
                 "VALUES (?,?,?,?,?,?,0,1,?)",
                 (cid,name,api_key,sector,desc,ts,ts))
     except Exception as e:
@@ -1059,12 +1129,10 @@ def collector_ingest():
             col_id,col_name = row['id'],row['name']
     except Exception as e:
         return jsonify({'error':f'Auth error: {e}'}),500
-
     payload  = request.get_json(silent=True) or {}
     readings = payload if isinstance(payload,list) else payload.get('readings',[])
-    if not readings:       return jsonify({'error':'readings must be non-empty array'}),400
-    if len(readings)>500:  return jsonify({'error':'Max 500 per batch'}),400
-
+    if not readings:      return jsonify({'error':'readings must be non-empty array'}),400
+    if len(readings)>500: return jsonify({'error':'Max 500 per batch'}),400
     results=[]; errors=[]; processed=0
     for raw in readings:
         data, err = sanitize_metric(raw)
@@ -1075,7 +1143,6 @@ def collector_ingest():
             processed+=1
         except Exception as e:
             errors.append({'device_id':data.get('device_id','?'),'error':str(e)})
-
     try:
         ts = datetime.now(timezone.utc).isoformat()
         with _db_conn() as con:
@@ -1159,8 +1226,8 @@ def digital_twin(device_id):
     if not h: return jsonify({'error':'No history'}),404
     cur = h[-1]; scenarios=[]
     for mult in [1.1,1.2,1.5,2.0]:
-        arr = np.array([[min(100,50*mult),min(1000,100*mult),min(500,10*mult),
-                         min(20,mult*.5),10,40,80]])
+        arr  = np.array([[min(100,50*mult),min(1000,100*mult),min(500,10*mult),
+                          min(20,mult*.5),10,40,80]])
         sim  = float(np.clip(rf_model.predict(arr)[0],0,100))
         anom = bool(iso_model.predict(arr)[0]==-1)
         scenarios.append({'load_increase':f'+{int((mult-1)*100)}%',
@@ -1206,7 +1273,7 @@ def get_weather():
         if wind>40:   alerts.append(f'High winds {wind:.0f}km/h — microwave at risk')
         if gusts>60:  alerts.append(f'Dangerous gusts {gusts:.0f}km/h — tower stability risk')
         if precip>10: alerts.append(f'Heavy precipitation {precip:.1f}mm — pump load increasing')
-        if temp>38:   alerts.append(f'Extreme heat {temp:.0f}°C — thermal stress elevated')
+        if temp>38:   alerts.append(f'Extreme heat {temp:.0f}C — thermal stress elevated')
         pp24   = hrly.get('precipitation_probability',[])[:24]
         result = {'location':loc['name'],'temperature':temp,
             'humidity':cur.get('relative_humidity_2m',50),
@@ -1224,7 +1291,6 @@ def get_weather():
             'weather_code':0,'cloud_cover':0,'alerts':[],'equipment_impact':[],
             'max_precip_probability_24h':0,'hourly_wind':[],'hourly_precip_prob':[]}),200
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
 @app.route('/api/login', methods=['POST','OPTIONS'])
 def login():
     if request.method=='OPTIONS': return '',204
@@ -1238,15 +1304,13 @@ def login():
         return jsonify({'success':False,'error':'Missing credentials'}),400
     try:
         with _db_conn() as con:
-            row = con.execute(
-                "SELECT * FROM specialists WHERE name=?", (name,)
-            ).fetchone()
+            row = con.execute("SELECT * FROM specialists WHERE name=?", (name,)).fetchone()
             if not row or not check_password_hash(row['password_hash'] or '', pwd):
                 return jsonify({'success':False,'error':'Invalid credentials'}),401
             token = row['token'] or secrets.token_hex(24)
             if not row['token']:
-                con.execute("UPDATE specialists SET token=? WHERE id=?",
-                            (token, row['id']))
+                con.execute("UPDATE specialists SET token=? WHERE id=?", (token, row['id']))
+            _audit(name, 'LOGIN', name, ip=ip)
             return jsonify({'success':True,'token':token,
                             'name':row['name'],'role':row['role'] or 'engineer'})
     except Exception as e:
@@ -1259,8 +1323,8 @@ def get_incidents():
     try:
         with _db_conn() as con:
             rows = con.execute(
-                "SELECT * FROM incidents WHERE status=? "
-                "ORDER BY created_at DESC LIMIT 50", (status,)).fetchall()
+                "SELECT * FROM incidents WHERE status=? ORDER BY created_at DESC LIMIT 50",
+                (status,)).fetchall()
         return jsonify([dict(r) for r in rows])
     except Exception as e: return jsonify({'error':str(e)}),500
 
@@ -1272,6 +1336,7 @@ def assign_incident(inc_id):
         with _db_conn() as con:
             con.execute("UPDATE incidents SET assigned_to=?,notes=?,status='assigned' WHERE id=?",
                         (data.get('assigned_to',''),data.get('notes',''),inc_id))
+        _audit(getattr(request,'specialist_name','?'), 'ASSIGN_INCIDENT', inc_id, data.get('assigned_to',''))
         return jsonify({'success':True})
     except Exception as e: return jsonify({'error':str(e)}),500
 
@@ -1283,6 +1348,7 @@ def resolve_incident(inc_id):
         with _db_conn() as con:
             con.execute("UPDATE incidents SET resolved_by=?,notes=?,status='resolved' WHERE id=?",
                         (data.get('resolved_by',''),data.get('notes',''),inc_id))
+        _audit(getattr(request,'specialist_name','?'), 'RESOLVE_INCIDENT', inc_id)
         return jsonify({'success':True})
     except Exception as e: return jsonify({'error':str(e)}),500
 
@@ -1296,11 +1362,11 @@ def shift_report():
                 "GROUP BY device_id LIMIT 500").fetchall()
             inc_rows = con.execute(
                 "SELECT * FROM incidents ORDER BY created_at DESC LIMIT 100").fetchall()
-        dm  = {r['device_id']:dict(r) for r in metrics_rows}
-        crit= [d for d in dm.values() if d['health_score']<20]
-        warn= [d for d in dm.values() if 20<=d['health_score']<50]
-        ok  = [d for d in dm.values() if d['health_score']>=50]
-        oi  = [dict(r) for r in inc_rows if r['status']=='open']
+        dm   = {r['device_id']:dict(r) for r in metrics_rows}
+        crit = [d for d in dm.values() if d['health_score']<20]
+        warn = [d for d in dm.values() if 20<=d['health_score']<50]
+        ok   = [d for d in dm.values() if d['health_score']>=50]
+        oi   = [dict(r) for r in inc_rows if r['status']=='open']
         scores=[d['health_score'] for d in dm.values()]
         return jsonify({'generated_at':datetime.now(timezone.utc).isoformat(),
             'total_devices':len(dm),
@@ -1320,9 +1386,9 @@ def test_notify():
     data = request.get_json(silent=True) or {}
     ch   = data.get('channel','all')
     msg  = 'IISentinel test notification — channels operational'
-    if ch in ('sms','all'):       threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
-    if ch in ('whatsapp','all'):  threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
-    if ch in ('email','all'):     threading.Thread(target=send_email,
+    if ch in ('sms','all'):      threading.Thread(target=send_sms,args=(msg,),daemon=True).start()
+    if ch in ('whatsapp','all'): threading.Thread(target=send_whatsapp,args=(msg,),daemon=True).start()
+    if ch in ('email','all'):    threading.Thread(target=send_email,
         kwargs=dict(subject='Test',body=msg,severity='info'),daemon=True).start()
     return jsonify({'ok':True,'channel':ch})
 
@@ -1340,8 +1406,7 @@ def sse_stream():
                 yield ':heartbeat\n\n'
     return Response(stream_with_context(generate()),
         mimetype='text/event-stream',
-        headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no',
-                 'Connection':'keep-alive'})
+        headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no','Connection':'keep-alive'})
 
 @app.route('/api/export-pdf')
 def export_pdf():
@@ -1365,18 +1430,18 @@ def export_pdf():
     def sty(n='Normal',**kw): return ParagraphStyle(n,parent=styles['Normal'],**kw)
     hdr = sty(fontName='Helvetica-Bold',fontSize=8,textColor=colors.white)
     cel = sty(fontName='Helvetica',fontSize=8,textColor=DARK)
-    snap   = _history_snapshot(); scores=list(snap.values())
-    fhi_v  = get_federated_health_index(scores)
-    crit   = sum(1 for s in scores if s<20)
-    warn   = sum(1 for s in scores if 20<=s<50)
-    ok     = sum(1 for s in scores if s>=50)
-    all_d  = get_cached_data()
+    snap      = _history_snapshot(); scores=list(snap.values())
+    fhi_v     = get_federated_health_index(scores)
+    crit      = sum(1 for s in scores if s<20)
+    warn      = sum(1 for s in scores if 20<=s<50)
+    ok        = sum(1 for s in scores if s>=50)
+    all_d     = get_cached_data()
     dtype_map = {r['device_id']:r.get('device_type','') for r in all_d}
     total_exp = sum(COST_RATES.get('sensor',8000)*(
         0.95 if s<20 else 0.6 if s<35 else 0.25 if s<50 else 0) for s in scores)
     now_s = datetime.now(timezone.utc).strftime('%d %B %Y  %H:%M UTC')
     story=[]
-    story.append(Paragraph('IISentinel™ v3.2',
+    story.append(Paragraph('IISentinel v3.3',
         sty(fontName='Helvetica-Bold',fontSize=22,textColor=DARK,spaceAfter=2)))
     story.append(Paragraph('Intelligent Infrastructure Sentinel — Shift Report',
         sty(fontName='Helvetica',fontSize=10,textColor=MUTED,spaceAfter=4)))
@@ -1386,10 +1451,10 @@ def export_pdf():
     kpi = [[Paragraph(c,hdr) for c in ['Metric','Value','Status']],
            [Paragraph(c,cel) for c in ['Federated Health Index',f'{fhi_v:.1f}/100',
                                        'HEALTHY' if fhi_v>=70 else 'WARNING' if fhi_v>=40 else 'CRITICAL']],
-           [Paragraph(c,cel) for c in ['Total Devices',str(len(snap)),'—']],
+           [Paragraph(c,cel) for c in ['Total Devices',str(len(snap)),'']],
            [Paragraph(c,cel) for c in ['Critical (<20)',str(crit),'ALERT' if crit else 'NONE']],
-           [Paragraph(c,cel) for c in ['Warning (20–50)',str(warn),'MONITOR' if warn else 'NONE']],
-           [Paragraph(c,cel) for c in ['Healthy (≥50)',str(ok),'OK']],
+           [Paragraph(c,cel) for c in ['Warning (20-50)',str(warn),'MONITOR' if warn else 'NONE']],
+           [Paragraph(c,cel) for c in ['Healthy (>=50)',str(ok),'OK']],
            [Paragraph(c,cel) for c in ['Anomalies',str(anomaly_count),
                                        'HIGH' if anomaly_count>=RETRAIN_THRESHOLD else 'NORMAL']],
            [Paragraph(c,cel) for c in ['Hourly Risk Exposure',f'${total_exp:,.0f}/hr',
@@ -1407,11 +1472,11 @@ def export_pdf():
             sty(fontName='Helvetica-Bold',fontSize=9,textColor=ACCENT,spaceBefore=8,spaceAfter=4)))
         drows=[[Paragraph(c,hdr) for c in ['Device','Score','Risk','ETTF','Status']]]
         for did,s in sorted(snap.items(),key=lambda x:x[1])[:20]:
-            p2  = get_failure_probability(did,s)
-            stat= 'CRITICAL' if s<20 else 'WARNING' if s<50 else 'OK'
-            col = RED if s<20 else AMBER if s<50 else GREEN
+            p2   = get_failure_probability(did,s)
+            stat = 'CRITICAL' if s<20 else 'WARNING' if s<50 else 'OK'
+            col  = RED if s<20 else AMBER if s<50 else GREEN
             dtype= dtype_map.get(did,'')
-            ttf = get_ettf_minutes(did,s,dtype)
+            ttf  = get_ettf_minutes(did,s,dtype)
             ttf_str=(f'{ttf}min' if ttf is not None and ttf<60
                      else f'{ttf//60}h {ttf%60}m' if ttf is not None else 'Stable')
             drows.append([Paragraph(did[-36:],cel),
@@ -1428,7 +1493,7 @@ def export_pdf():
         story.append(dt)
     story.append(Spacer(1,14))
     story.append(HRFlowable(width='100%',thickness=0.7,color=MUTED,spaceAfter=5))
-    story.append(Paragraph(f'IISentinel™ v3.2 Confidential — {now_s}',
+    story.append(Paragraph(f'IISentinel v3.3 Confidential — {now_s}',
         sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
     doc.build(story); buf.seek(0)
     return send_file(buf,as_attachment=True,
@@ -1568,7 +1633,6 @@ def reset_cascade_topology():
         return jsonify({'ok':True,'message':'Topology reset to default'})
     except Exception as e: return jsonify({'error':str(e)}),500
 
-# ── Admin token (dev only) ────────────────────────────────────────────────────
 @app.route('/api/admin/token')
 def get_admin_token():
     if os.environ.get('PRODUCTION','').lower()=='true':
@@ -1576,30 +1640,506 @@ def get_admin_token():
     try:
         with _db_conn() as con:
             row = con.execute("SELECT token FROM specialists WHERE name='Admin'").fetchone()
-            if row: return jsonify({'token':row['token'],
-                                    'note':'Use as X-Specialist-Token header'})
+            if row: return jsonify({'token':row['token'],'note':'Use as X-Specialist-Token header'})
         return jsonify({'error':'No admin found'}),404
     except Exception as e: return jsonify({'error':str(e)}),500
 
-# ── Boot ──────────────────────────────────────────────────────────────────────
+# ════════════════════════════════════════════════════════════════════
+# ROUTES — CONTROL PANEL (admin)
+# ════════════════════════════════════════════════════════════════════
+
+@app.route('/api/admin/system')
+@require_admin
+def admin_system():
+    try:
+        db_size = os.path.getsize(_DB_PATH) if os.path.exists(_DB_PATH) else 0
+        start   = platform_stats['uptime_start'].replace('Z','+00:00')
+        up_s    = (datetime.now(timezone.utc)-datetime.fromisoformat(start)).total_seconds()
+        with _db_conn() as con:
+            metrics_count  = con.execute("SELECT COUNT(*) FROM metrics").fetchone()[0]
+            incident_count = con.execute("SELECT COUNT(*) FROM incidents WHERE status='open'").fetchone()[0]
+            node_count     = con.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
+            col_count      = con.execute("SELECT COUNT(*) FROM collectors WHERE active=1").fetchone()[0]
+            audit_count    = con.execute("SELECT COUNT(*) FROM audit_log").fetchone()[0]
+            maint_count    = con.execute(
+                "SELECT COUNT(*) FROM maintenance_windows WHERE end_ts >= ?",
+                (datetime.now(timezone.utc).isoformat(),)
+            ).fetchone()[0]
+        cpu_pct = mem_used = mem_tot = disk_pct = None
+        try:
+            import psutil
+            cpu_pct  = psutil.cpu_percent(interval=0.3)
+            mem      = psutil.virtual_memory()
+            disk     = psutil.disk_usage('/')
+            mem_used = round(mem.used/1024/1024,1)
+            mem_tot  = round(mem.total/1024/1024,1)
+            disk_pct = round(disk.percent,1)
+        except ImportError:
+            pass
+        return jsonify({
+            'uptime_s'           : round(up_s),
+            'uptime_h'           : round(up_s/3600,2),
+            'queue_depth'        : len(metric_queue),
+            'scoring_queue'      : len(scoring_queue),
+            'cache_age_s'        : round(time.time()-_data_cache['ts'],1),
+            'devices_tracked'    : len(device_history),
+            'db_size_kb'         : round(db_size/1024,1),
+            'metrics_total'      : metrics_count,
+            'open_incidents'     : incident_count,
+            'node_count'         : node_count,
+            'collector_count'    : col_count,
+            'audit_entries'      : audit_count,
+            'active_maintenance' : maint_count,
+            'anomaly_count'      : anomaly_count,
+            'retrain_needed'     : anomaly_count>=RETRAIN_THRESHOLD,
+            'retrain_active'     : _retrain_in_progress,
+            'sse_subscribers'    : len(_sse_subs),
+            'cpu_pct'            : cpu_pct,
+            'mem_used_mb'        : mem_used,
+            'mem_total_mb'       : mem_tot,
+            'disk_pct'           : disk_pct,
+            'demo_mode'          : os.environ.get('DEMO_MODE','false').lower()=='true',
+            'production'         : os.environ.get('PRODUCTION','false').lower()=='true',
+            'platform_stats'     : platform_stats,
+            'notifications'      : {
+                'email'    : NOTIFY['email_enabled'],
+                'sms'      : NOTIFY['sms_enabled'],
+                'whatsapp' : NOTIFY['whatsapp_enabled'],
+            }
+        })
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── Thresholds ────────────────────────────────────────────────────
+@app.route('/api/admin/thresholds', methods=['GET'])
+@require_admin
+def get_thresholds():
+    try:
+        with _db_conn() as con:
+            rows = con.execute("SELECT * FROM thresholds").fetchall()
+        stored = {r['device_type']: dict(r) for r in rows}
+        all_types = NETWORK_TYPES + TELECOM_TYPES + MINING_TYPES + CBS_TYPES
+        result = []
+        for dt in all_types:
+            if dt in stored:
+                result.append(stored[dt])
+            else:
+                result.append({
+                    'id': f'thr-{dt}', 'device_type': dt,
+                    'critical_below': 20.0, 'warning_below': 50.0,
+                    'cbs_hold_below': 90.0 if dt=='cbs_controller' else None,
+                    'ettf_warn_minutes': 120, 'ettf_crit_minutes': 30,
+                    'updated_by': None, 'updated_at': None
+                })
+        return jsonify(result)
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/thresholds', methods=['POST'])
+@require_admin
+def save_threshold():
+    data  = request.get_json(silent=True) or {}
+    dt    = str(data.get('device_type','')).strip()
+    if not dt: return jsonify({'error':'device_type required'}),400
+    actor = getattr(request,'specialist_name','unknown')
+    ts    = datetime.now(timezone.utc).isoformat()
+    try:
+        with _db_conn() as con:
+            con.execute("""
+                INSERT INTO thresholds
+                (id,device_type,critical_below,warning_below,cbs_hold_below,
+                 ettf_warn_minutes,ettf_crit_minutes,updated_by,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(device_type) DO UPDATE SET
+                    critical_below=excluded.critical_below,
+                    warning_below=excluded.warning_below,
+                    cbs_hold_below=excluded.cbs_hold_below,
+                    ettf_warn_minutes=excluded.ettf_warn_minutes,
+                    ettf_crit_minutes=excluded.ettf_crit_minutes,
+                    updated_by=excluded.updated_by,
+                    updated_at=excluded.updated_at
+            """, (f'thr-{dt}', dt,
+                  float(data.get('critical_below', 20)),
+                  float(data.get('warning_below', 50)),
+                  float(data.get('cbs_hold_below', 90)) if data.get('cbs_hold_below') else None,
+                  int(data.get('ettf_warn_minutes', 120)),
+                  int(data.get('ettf_crit_minutes', 30)),
+                  actor, ts))
+        global CBS_SAFETY_THRESHOLD
+        if dt=='cbs_controller' and data.get('cbs_hold_below'):
+            CBS_SAFETY_THRESHOLD = float(data['cbs_hold_below'])
+        _audit(actor,'UPDATE_THRESHOLD',dt,
+               f"crit={data.get('critical_below')} warn={data.get('warning_below')}")
+        return jsonify({'ok':True,'device_type':dt})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── Device registry ───────────────────────────────────────────────
+@app.route('/api/admin/devices', methods=['GET'])
+@require_admin
+def admin_get_devices():
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT * FROM device_registry ORDER BY sector, label").fetchall()
+        snap   = _history_snapshot()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['live_score'] = round(snap.get(r['id'], snap.get(r['label'], -1)), 1)
+            result.append(d)
+        return jsonify(result)
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/devices', methods=['POST'])
+@require_admin
+def admin_add_device():
+    data   = request.get_json(silent=True) or {}
+    label  = str(data.get('label','')).strip()[:80]
+    dtype  = str(data.get('device_type','sensor')).strip()
+    sector = str(data.get('sector','net')).strip()
+    if not label: return jsonify({'error':'label required'}),400
+    dev_id = f"{sector}-{dtype}-{uuid.uuid4().hex[:8]}"
+    actor  = getattr(request,'specialist_name','unknown')
+    ts     = datetime.now(timezone.utc).isoformat()
+    try:
+        with _db_conn() as con:
+            con.execute("""
+                INSERT INTO device_registry
+                (id,label,device_type,protocol,ip,community,sector,
+                 poll_interval,enabled,notes,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,1,?,?,?)
+            """, (dev_id,label,dtype,
+                  str(data.get('protocol','SNMP')),
+                  str(data.get('ip','')),
+                  str(data.get('community','public')),
+                  sector,int(data.get('poll_interval',15)),
+                  str(data.get('notes','')),ts,ts))
+        _audit(actor,'ADD_DEVICE',dev_id,f"{dtype} @ {data.get('ip','N/A')}")
+        return jsonify({'ok':True,'id':dev_id}),201
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/devices/<dev_id>', methods=['PUT'])
+@require_admin
+def admin_update_device(dev_id):
+    data  = request.get_json(silent=True) or {}
+    actor = getattr(request,'specialist_name','unknown')
+    ts    = datetime.now(timezone.utc).isoformat()
+    try:
+        with _db_conn() as con:
+            con.execute("""
+                UPDATE device_registry SET
+                    label=?,device_type=?,protocol=?,ip=?,community=?,
+                    sector=?,poll_interval=?,enabled=?,notes=?,updated_at=?
+                WHERE id=?
+            """, (str(data.get('label','')),str(data.get('device_type','sensor')),
+                  str(data.get('protocol','SNMP')),str(data.get('ip','')),
+                  str(data.get('community','public')),str(data.get('sector','net')),
+                  int(data.get('poll_interval',15)),
+                  1 if data.get('enabled',True) else 0,
+                  str(data.get('notes','')),ts,dev_id))
+        _audit(actor,'UPDATE_DEVICE',dev_id,f"enabled={data.get('enabled')}")
+        return jsonify({'ok':True})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/devices/<dev_id>', methods=['DELETE'])
+@require_admin
+def admin_delete_device(dev_id):
+    actor = getattr(request,'specialist_name','unknown')
+    try:
+        with _db_conn() as con:
+            con.execute("DELETE FROM device_registry WHERE id=?",(dev_id,))
+        _audit(actor,'DELETE_DEVICE',dev_id)
+        return jsonify({'ok':True})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── Maintenance windows ───────────────────────────────────────────
+@app.route('/api/admin/maintenance', methods=['GET'])
+@require_admin
+def get_maintenance():
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT * FROM maintenance_windows ORDER BY start_ts DESC LIMIT 50"
+            ).fetchall()
+        now = datetime.now(timezone.utc).isoformat()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d['active'] = r['start_ts'] <= now <= r['end_ts']
+            result.append(d)
+        return jsonify(result)
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/maintenance', methods=['POST'])
+@require_admin
+def add_maintenance():
+    data  = request.get_json(silent=True) or {}
+    actor = getattr(request,'specialist_name','unknown')
+    label = str(data.get('label','Maintenance')).strip()[:120]
+    dids  = str(data.get('device_ids','')).strip()
+    start = str(data.get('start_ts',datetime.now(timezone.utc).isoformat()))
+    end   = str(data.get('end_ts',''))
+    if not end: return jsonify({'error':'end_ts required'}),400
+    mid = f"mw-{uuid.uuid4().hex[:10]}"
+    ts  = datetime.now(timezone.utc).isoformat()
+    try:
+        with _db_conn() as con:
+            con.execute(
+                "INSERT INTO maintenance_windows "
+                "(id,label,device_ids,start_ts,end_ts,suppress_alerts,created_by,created_at) "
+                "VALUES (?,?,?,?,?,1,?,?)",
+                (mid,label,dids,start,end,actor,ts))
+        _refresh_maintenance()
+        _audit(actor,'ADD_MAINTENANCE',mid,f"{label} until {end}")
+        return jsonify({'ok':True,'id':mid}),201
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/maintenance/<mid>', methods=['DELETE'])
+@require_admin
+def delete_maintenance(mid):
+    actor = getattr(request,'specialist_name','unknown')
+    try:
+        with _db_conn() as con:
+            con.execute("DELETE FROM maintenance_windows WHERE id=?",(mid,))
+        _refresh_maintenance()
+        _audit(actor,'DELETE_MAINTENANCE',mid)
+        return jsonify({'ok':True})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── User management ───────────────────────────────────────────────
+@app.route('/api/admin/users', methods=['GET'])
+@require_admin
+def admin_get_users():
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT id,name,role,token FROM specialists").fetchall()
+        return jsonify([{'id':r['id'],'name':r['name'],
+                         'role':r['role'] or 'engineer',
+                         'has_token':bool(r['token'])} for r in rows])
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/users', methods=['POST'])
+@require_admin
+def admin_add_user():
+    data  = request.get_json(silent=True) or {}
+    name  = str(data.get('name','')).strip()[:60]
+    role  = str(data.get('role','engineer')).strip()
+    pwd   = str(data.get('password','')).strip()
+    actor = getattr(request,'specialist_name','unknown')
+    if not name or not pwd: return jsonify({'error':'name and password required'}),400
+    if role not in ('engineer','admin','readonly'): role='engineer'
+    uid = f"sp-{uuid.uuid4().hex[:8]}"
+    tok = secrets.token_hex(24)
+    ph  = generate_password_hash(pwd)
+    try:
+        with _db_conn() as con:
+            con.execute("INSERT INTO specialists VALUES (?,?,?,?,?)",(uid,name,tok,ph,role))
+        _audit(actor,'ADD_USER',name,f"role={role}")
+        return jsonify({'ok':True,'id':uid,'name':name,'role':role}),201
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/users/<uid>/password', methods=['POST'])
+@require_admin
+def admin_reset_password(uid):
+    data  = request.get_json(silent=True) or {}
+    pwd   = str(data.get('password','')).strip()
+    actor = getattr(request,'specialist_name','unknown')
+    if not pwd or len(pwd)<6: return jsonify({'error':'Password must be >= 6 characters'}),400
+    ph  = generate_password_hash(pwd)
+    tok = secrets.token_hex(24)
+    try:
+        with _db_conn() as con:
+            con.execute("UPDATE specialists SET password_hash=?,token=? WHERE id=?",(ph,tok,uid))
+        _audit(actor,'RESET_PASSWORD',uid)
+        return jsonify({'ok':True})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/users/<uid>', methods=['DELETE'])
+@require_admin
+def admin_delete_user(uid):
+    actor = getattr(request,'specialist_name','unknown')
+    try:
+        with _db_conn() as con:
+            row = con.execute("SELECT name FROM specialists WHERE id=?",(uid,)).fetchone()
+            if row and row['name']=='Admin':
+                return jsonify({'error':'Cannot delete default Admin'}),400
+            con.execute("DELETE FROM specialists WHERE id=?",(uid,))
+        _audit(actor,'DELETE_USER',uid)
+        return jsonify({'ok':True})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── Audit log ─────────────────────────────────────────────────────
+@app.route('/api/admin/audit')
+@require_admin
+def get_audit_log():
+    page     = int(request.args.get('page',1))
+    limit    = min(int(request.args.get('limit',50)),200)
+    actor_f  = request.args.get('actor','')
+    action_f = request.args.get('action','')
+    offset   = (page-1)*limit
+    try:
+        with _db_conn() as con:
+            query = "SELECT * FROM audit_log"; params=[]; conds=[]
+            if actor_f:  conds.append("actor LIKE ?");  params.append(f'%{actor_f}%')
+            if action_f: conds.append("action LIKE ?"); params.append(f'%{action_f}%')
+            if conds: query += ' WHERE '+' AND '.join(conds)
+            count_q = query.replace('SELECT *','SELECT COUNT(*)')
+            total   = con.execute(count_q,params).fetchone()[0]
+            query  += ' ORDER BY id DESC LIMIT ? OFFSET ?'
+            params += [limit,offset]
+            rows    = con.execute(query,params).fetchall()
+        return jsonify({'total':total,'page':page,'rows':[dict(r) for r in rows]})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── Command dispatch ──────────────────────────────────────────────
+@app.route('/api/admin/dispatch', methods=['POST'])
+@require_admin
+def admin_dispatch():
+    data   = request.get_json(silent=True) or {}
+    dtype  = str(data.get('dispatch_type','webhook')).strip()
+    target = str(data.get('target','')).strip()
+    payload= data.get('payload',{})
+    actor  = getattr(request,'specialist_name','unknown')
+    ts     = datetime.now(timezone.utc).isoformat()
+    result = 'pending'
+    if dtype=='webhook' and target.startswith('http'):
+        try:
+            r = req.post(target,json=payload,timeout=8)
+            result = f"HTTP {r.status_code}"
+        except Exception as e:
+            result = f"ERROR: {e}"
+    elif dtype=='email':
+        threading.Thread(target=send_email,kwargs=dict(
+            subject=payload.get('subject','IISentinel Command'),
+            body=payload.get('body',''),severity='critical'),daemon=True).start()
+        result='email_dispatched'
+    elif dtype=='sms':
+        threading.Thread(target=send_sms,args=(payload.get('message',''),),daemon=True).start()
+        result='sms_dispatched'
+    elif dtype=='whatsapp':
+        threading.Thread(target=send_whatsapp,args=(payload.get('message',''),),daemon=True).start()
+        result='whatsapp_dispatched'
+    else:
+        result=f'type {dtype} logged only'
+    try:
+        with _db_conn() as con:
+            con.execute(
+                "INSERT INTO dispatch_log (ts,device_id,command_type,payload,result,sent_by) "
+                "VALUES (?,?,?,?,?,?)",
+                (ts,target,dtype,json.dumps(payload),result,actor))
+    except Exception: pass
+    _audit(actor,'DISPATCH_COMMAND',target,f"type={dtype} result={result}")
+    return jsonify({'ok':True,'result':result,'ts':ts})
+
+@app.route('/api/admin/dispatch/log')
+@require_admin
+def get_dispatch_log():
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT * FROM dispatch_log ORDER BY id DESC LIMIT 100").fetchall()
+        return jsonify([dict(r) for r in rows])
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+# ── Notification config ───────────────────────────────────────────
+@app.route('/api/admin/notify/config', methods=['POST'])
+@require_admin
+def update_notify_config():
+    data  = request.get_json(silent=True) or {}
+    actor = getattr(request,'specialist_name','unknown')
+    safe_keys = ['smtp_host','smtp_port','smtp_user','from_email',
+                 'at_username','sms_gateway','wa_phone_id']
+    changed = []
+    for k in safe_keys:
+        if k in data: NOTIFY[k]=data[k]; changed.append(k)
+    if 'to_emails' in data and isinstance(data['to_emails'],list):
+        NOTIFY['to_emails']=data['to_emails'][:10]; changed.append('to_emails')
+    if 'sms_numbers' in data and isinstance(data['sms_numbers'],list):
+        NOTIFY['sms_numbers']=data['sms_numbers'][:10]; changed.append('sms_numbers')
+    if 'wa_numbers' in data and isinstance(data['wa_numbers'],list):
+        NOTIFY['wa_numbers']=data['wa_numbers'][:10]; changed.append('wa_numbers')
+    _audit(actor,'UPDATE_NOTIFY_CONFIG','notifications',f"changed={changed}")
+    return jsonify({'ok':True,'changed':changed,
+                    'note':'In-memory only — update .env for persistence'})
+
+# ── DB maintenance ────────────────────────────────────────────────
+@app.route('/api/admin/db/vacuum', methods=['POST'])
+@require_admin
+def db_vacuum():
+    actor = getattr(request,'specialist_name','unknown')
+    try:
+        size_before = os.path.getsize(_DB_PATH) if os.path.exists(_DB_PATH) else 0
+        with _db_conn() as con:
+            con.execute("""
+                DELETE FROM metrics WHERE id NOT IN (
+                    SELECT id FROM metrics ORDER BY created_at DESC LIMIT 5000
+                )
+            """)
+            cutoff = datetime.now(timezone.utc).isoformat()[:10]
+            con.execute("""
+                DELETE FROM incidents WHERE status='resolved'
+                AND created_at < date(?,'-30 days')
+            """, (cutoff,))
+            con.execute("VACUUM")
+        size_after = os.path.getsize(_DB_PATH) if os.path.exists(_DB_PATH) else 0
+        freed_kb   = round((size_before-size_after)/1024,1)
+        _audit(actor,'DB_VACUUM','database',f"freed={freed_kb}KB")
+        return jsonify({'ok':True,'freed_kb':freed_kb,'size_kb':round(size_after/1024,1)})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/db/clear-incidents', methods=['POST'])
+@require_admin
+def db_clear_incidents():
+    actor = getattr(request,'specialist_name','unknown')
+    try:
+        with _db_conn() as con:
+            n = con.execute("SELECT COUNT(*) FROM incidents WHERE status='resolved'").fetchone()[0]
+            con.execute("DELETE FROM incidents WHERE status='resolved'")
+        _audit(actor,'CLEAR_INCIDENTS','incidents',f"deleted {n} resolved")
+        return jsonify({'ok':True,'deleted':n})
+    except Exception as e: return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/cache/flush', methods=['POST'])
+@require_admin
+def flush_cache_route():
+    actor = getattr(request,'specialist_name','unknown')
+    _data_cache['ts']   = 0
+    _data_cache['data'] = []
+    _audit(actor,'FLUSH_CACHE','data_cache')
+    return jsonify({'ok':True})
+
+@app.route('/api/admin/retrain', methods=['POST'])
+@require_admin
+def trigger_retrain():
+    global anomaly_count
+    actor         = getattr(request,'specialist_name','unknown')
+    anomaly_count = RETRAIN_THRESHOLD
+    _audit(actor,'TRIGGER_RETRAIN','ml_model')
+    return jsonify({'ok':True,'message':'Retrain scheduled for next cycle (~60s)'})
+
+# ════════════════════════════════════════════════════════════════════
+# BOOT
+# ════════════════════════════════════════════════════════════════════
 if __name__=='__main__':
+    _refresh_maintenance()   # load any active windows from DB at startup
     demo = os.environ.get('DEMO_MODE','false').lower()=='true'
     try:
         with _db_conn() as con:
             row = con.execute("SELECT name,token FROM specialists WHERE name='Admin'").fetchone()
             if row:
-                print(f"\n  Specialist login : Admin / [your password]")
+                print(f"\n  Specialist login : Admin / admin123")
                 print(f"  Specialist token : {row['token']}")
                 print(f"  Retrieve token   : GET /api/admin/token\n")
     except: pass
     print("""
-  IISentinel™ v3.2 — Intelligent Infrastructure Sentinel
+  IISentinel v3.3 — Intelligent Infrastructure Sentinel
   ────────────────────────────────────────────────────────
-  Dashboard  : http://localhost:5000
-  Health     : http://localhost:5000/health
-  PDF Report : http://localhost:5000/api/export-pdf
-  Collector  : POST /api/collector/register
-               POST /api/collector/ingest  (X-Collector-Key: <key>)
+  Dashboard    : http://localhost:5000
+  Control Panel: http://localhost:5000/admin
+  Health check : http://localhost:5000/health
+  PDF Report   : http://localhost:5000/api/export-pdf
+
+  Collector ingest: POST /api/collector/ingest
+                    Header: X-Collector-Key: <key>
     """)
     if demo: print('  [DEMO MODE] 15 devices, 4 sites — live injection active\n')
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT',5000)),
