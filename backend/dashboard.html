@@ -1073,6 +1073,13 @@ var _retryCount = 0;
 var _MAX_RETRY = 5;
 var _serverAwake = false;
 
+// ── Performance: render pipeline ────────────────────────────────
+var _renderScheduled = false;  // RAF guard
+var _pendingFeedItems = [];    // SSE-sourced feed items pending prepend
+var _chartsDirty = false;      // batch chart redraws
+var _kpiDirty = false;         // batch KPI redraws
+var _sseAlive = false;         // is SSE connection healthy?
+
 // ================================================================
 // HELPERS
 // ================================================================
@@ -1270,11 +1277,82 @@ function updateGaugeEl(el, d, intl) {
   var newClass = 'gc '+(s>=70?'g-ok':s>=40?'g-w':'g-r')+(isCbs(d)?' g-cbs':'')+(inMaint?' g-maint':'');
   var prevScore = parseInt(el.dataset.score || '-1');
   var prevMaint = el.dataset.maint === '1';
-  if(el.className !== newClass || prevScore !== s || prevMaint !== inMaint) {
-    el.className = newClass;
+  var prevAnom  = el.dataset.anom === '1';
+
+  // Class update (cheap, skip if unchanged)
+  if(el.className !== newClass) el.className = newClass;
+
+  // Score / colour change — surgical child updates, no innerHTML
+  if(prevScore !== s || prevMaint !== inMaint || prevAnom !== !!d.anomaly_flag) {
+    var col = sc(s);
+
+    // SVG arc: stroke-dasharray only (keeps CSS transition alive)
+    var arc = el.querySelector('.gw svg circle:last-child');
+    if(arc) {
+      var r=30, ci=(2*Math.PI*r);
+      var dashArr = (ci*(s/100)).toFixed(2)+' '+ci.toFixed(2);
+      if(arc.getAttribute('stroke-dasharray') !== dashArr) {
+        arc.setAttribute('stroke-dasharray', dashArr);
+        arc.setAttribute('stroke', col);
+      }
+    }
+
+    // Score number
+    var val = el.querySelector('.gval');
+    if(val) { val.textContent = s; val.style.color = col; }
+
+    // Risk probability
+    var prob = (intl && intl.failure_probabilities && intl.failure_probabilities[d.device_id]) || 0;
+    var probEl = el.querySelector('.gprob');
+    if(probEl) {
+      if(inMaint) {
+        probEl.style.color = 'var(--cyn)';
+        probEl.textContent = 'Alerts suppressed';
+      } else {
+        probEl.style.color = prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)';
+        probEl.textContent = 'Risk: '+prob+'%';
+      }
+    }
+
+    // ETTF — create/update/remove as needed
+    var ttf = intl && intl.ttf_minutes && intl.ttf_minutes[d.device_id];
+    var ettfEl = el.querySelector('.geta');
+    if(!inMaint && ttf !== undefined && ttf !== null) {
+      if(!ettfEl) { ettfEl = document.createElement('div'); ettfEl.className='geta'; el.appendChild(ettfEl); }
+      var tc2 = ttf<30?'var(--red)':ttf<120?'var(--amb)':'var(--grn)';
+      var ts2 = ttf===0?'Failing now':ttf<60?(ttf+'min'):(Math.floor(ttf/60)+'h '+ttf%60+'m');
+      ettfEl.style.color = tc2; ettfEl.textContent = 'Fail: '+ts2;
+    } else if(ettfEl) { ettfEl.remove(); }
+
+    // CBS integrity line
+    if(d.integrity_score !== undefined) {
+      var intgEl = el.querySelector('[data-intg]');
+      if(!intgEl) {
+        intgEl = document.createElement('div');
+        intgEl.dataset.intg = '1';
+        intgEl.style.cssText = 'font-size:7.5px;margin-top:2px;font-family:var(--mono)';
+        el.appendChild(intgEl);
+      }
+      var ic = d.integrity_score>=90?'var(--grn)':d.integrity_score>=70?'var(--amb)':'var(--red)';
+      intgEl.style.color = ic; intgEl.textContent = 'Integ: '+d.integrity_score+'%';
+    }
+
+    // Anomaly badge — toggle class only
+    var idEl = el.querySelector('.gid');
+    if(idEl) {
+      var anomBadge = idEl.querySelector('.gpill-anom');
+      if(d.anomaly_flag && !anomBadge) {
+        var ab = document.createElement('span');
+        ab.className = 'gpill gpill-anom'; ab.textContent = 'ANOM';
+        idEl.appendChild(ab);
+      } else if(!d.anomaly_flag && anomBadge) {
+        anomBadge.remove();
+      }
+    }
+
     el.dataset.score = s;
     el.dataset.maint = inMaint ? '1' : '0';
-    el.innerHTML = _gaugeHTML(d, intl);
+    el.dataset.anom  = d.anomaly_flag ? '1' : '0';
   }
 }
 
@@ -1444,7 +1522,7 @@ async function fetchAll() {
     var changed   = (dataHash!==_lastDataHash || intelHash!==_lastIntelHash);
     allData=newData; intel=newIntel;
     _lastDataHash=dataHash; _lastIntelHash=intelHash;
-    _retryCount=0; _serverAwake=true;
+    _retryCount=0; _serverAwake=true; _sseAlive=true;
     setConnState('live');
     deviceIndex.clear();
     allData.forEach(function(r){ if(r.device_id) deviceIndex.set(r.device_id,r); });
@@ -2457,16 +2535,136 @@ async function exportPDF(){
 // SSE
 // ================================================================
 var _sseConn=null;
+// ================================================================
+// RAF-BASED RENDER SCHEDULER  — batch micro-updates from SSE
+// ================================================================
+function scheduleRender() {
+  if(_renderScheduled) return;
+  _renderScheduled = true;
+  requestAnimationFrame(function() {
+    _renderScheduled = false;
+    // Flush pending feed items (prepend, no full rebuild)
+    if(_pendingFeedItems.length) {
+      _flushPendingFeed();
+      _pendingFeedItems = [];
+    }
+    // KPIs
+    if(_kpiDirty) { updateKPIs(); _kpiDirty = false; }
+    // Charts only when on the right page
+    if(_chartsDirty) { _updateChartsIfVisible(); _chartsDirty = false; }
+  });
+}
+
+function _flushPendingFeed() {
+  // Prepend new feed items instead of rebuilding entire feed
+  ['diag-feed','auto-feed'].forEach(function(feedId) {
+    var el = document.getElementById(feedId); if(!el) return;
+    _pendingFeedItems.forEach(function(d) {
+      if(feedId === 'auto-feed' && !d.automation_command) return;
+      if(feedId === 'diag-feed' && !d.ai_diagnosis && d.health_score >= 50) return;
+      var item = document.createElement('div');
+      item.innerHTML = feedId === 'auto-feed' ? autoItem(d) : diagItem(d);
+      var child = item.firstElementChild;
+      if(child) {
+        el.insertBefore(child, el.firstChild);
+        // Keep feed capped at 10 items
+        while(el.children.length > 10) el.lastChild.remove();
+      }
+    });
+  });
+}
+
+function _updateChartsIfVisible() {
+  if(currentPage === 'main' || currentPage === 'net' || currentPage === 'tc' || currentPage === 'mc') {
+    var scores=[]; deviceIndex.forEach(function(d){ scores.push(d.health_score); });
+    // dist chart
+    var dist=[0,0,0];
+    scores.forEach(function(s){ if(s<20)dist[2]++;else if(s<50)dist[1]++;else dist[0]++; });
+    if(charts.dist){ charts.dist.data.datasets[0].data=dist; charts.dist.update('none'); }
+    // uptime chart
+    var up = (intel && intel.uptime) || {};
+    if(charts.up && Object.keys(up).length){
+      charts.up.data.labels=Object.keys(up).map(sid);
+      charts.up.data.datasets[0].data=Object.values(up).map(Math.round);
+      charts.up.update('none');
+    }
+  }
+}
+
 function initSSE(){
-  if(_sseConn)_sseConn.close();
-  _sseConn=new EventSource(B+'/api/stream');
-  _sseConn.addEventListener('metric',function(e){
-    try{var d=JSON.parse(e.data);if(d.blast_hold||d.is_cbs||d.health_score<35||d.anomaly_flag)fetchAll();}catch(ex){}
+  if(_sseConn) _sseConn.close();
+  _sseConn = new EventSource(B+'/api/stream');
+
+  _sseConn.addEventListener('connected', function(){
+    _sseAlive = true; _serverAwake = true; _retryCount = 0;
+    setConnState('live');
   });
-  _sseConn.addEventListener('cbs_hold',function(e){
-    try{var d=JSON.parse(e.data);toast('CBS BLAST HOLD',d.device_id+' \u2014 link at '+d.health_score+'%'+(d.integrity_score?' / integrity '+d.integrity_score+'%':''),'tc');fetchAll();}catch(ex){}
+
+  // ── Hot path: individual device metric ──────────────────────────
+  _sseConn.addEventListener('metric', function(e){
+    try {
+      var d = JSON.parse(e.data);
+      // Merge into deviceIndex — no HTTP round-trip
+      var existing = deviceIndex.get(d.device_id) || {};
+      var merged = Object.assign({}, existing, d);
+      deviceIndex.set(d.device_id, merged);
+      allData = Array.from(deviceIndex.values()); // keep allData in sync
+      _serverAwake = true; _sseAlive = true;
+      setConnState('live');
+
+      // Surgical gauge update (zero innerHTML)
+      if(gaugeEls.has(d.device_id)) {
+        updateGaugeEl(gaugeEls.get(d.device_id), merged, intel);
+      }
+
+      // Queue feed item and KPI refresh via RAF
+      if(d.ai_diagnosis || d.automation_command || d.anomaly_flag || d.health_score < 50) {
+        _pendingFeedItems.push(merged);
+      }
+      _kpiDirty = true;
+      _chartsDirty = true;
+      scheduleRender();
+
+      // Only trigger full HTTP fetch for CBS blast-hold (rare safety event)
+      if(d.blast_hold) fetchAll();
+
+    } catch(ex) {}
   });
-  _sseConn.onerror=function(){setTimeout(initSSE,5000);};
+
+  // ── Cold path: intel sync every 30s (small payload) ─────────────
+  _sseConn.addEventListener('full_sync', function(e){
+    try {
+      var payload = JSON.parse(e.data);
+      if(payload.intel) {
+        intel = payload.intel;
+        _kpiDirty = true; _chartsDirty = true;
+        scheduleRender();
+      }
+      // If data included (legacy), absorb it
+      if(payload.data && Array.isArray(payload.data)) {
+        allData = payload.data;
+        deviceIndex.clear();
+        allData.forEach(function(r){ if(r.device_id) deviceIndex.set(r.device_id,r); });
+        renderCurrentPage();
+      }
+      _serverAwake = true; _sseAlive = true;
+      setConnState('live');
+    } catch(ex) {}
+  });
+
+  _sseConn.addEventListener('cbs_hold', function(e){
+    try{
+      var d=JSON.parse(e.data);
+      toast('CBS BLAST HOLD',d.device_id+' \u2014 link at '+d.health_score+'%'+(d.integrity_score?' / integrity '+d.integrity_score+'%':''),'tc');
+      fetchAll();
+    } catch(ex){}
+  });
+
+  _sseConn.onerror = function(){
+    _sseAlive = false;
+    setConnState('connecting');
+    setTimeout(initSSE, 5000);
+  };
 }
 
 // ================================================================
@@ -2723,10 +2921,15 @@ window.addEventListener('resize', function(){
   fetchPlatform();
   nmRefresh();
 
-  // Polling intervals
-  setInterval(fetchAll,    10000);   // 10 s full data refresh
-  setInterval(fetchPlatform,15000);  // 15 s platform stats
-  setInterval(nmRefresh,   30000);   // 30 s node monitor
+  // ── Polling intervals ───────────────────────────────────────────
+  // SSE drives real-time updates. HTTP polling is now just a fallback
+  // for when SSE drops or misses a full_sync cycle.
+  setInterval(function(){
+    // Only poll via HTTP if SSE hasn't delivered data recently
+    if(!_sseAlive) fetchAll();
+  }, 60000);                             // 60s fallback (was 10s)
+  setInterval(fetchPlatform, 30000);     // 30s platform stats (was 15s)
+  setInterval(nmRefresh,     30000);     // 30s node monitor (unchanged)
 
   // SSE for real-time CBS and low-health alerts
   initSSE();

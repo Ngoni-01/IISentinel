@@ -73,6 +73,7 @@ def _db_conn():
         con.execute("PRAGMA journal_mode=WAL")
         con.execute("PRAGMA synchronous=NORMAL")
         con.execute("PRAGMA cache_size=-8192")
+        con.execute("PRAGMA temp_store=MEMORY")  # keep temp tables in RAM
         yield con
         con.commit()
     except Exception:
@@ -515,7 +516,6 @@ def full_sync_worker():
     while True:
         time.sleep(30)
         try:
-            data  = get_cached_data()
             snap  = _history_snapshot()
             intel = {
                 'federated_index'      : get_federated_health_index(list(snap.values())),
@@ -528,7 +528,9 @@ def full_sync_worker():
                 'retrain_needed'       : anomaly_count >= RETRAIN_THRESHOLD,
                 'retrain_in_progress'  : _retrain_in_progress,
             }
-            sse_broadcast('full_sync', {'data': data, 'intel': intel, 'ts': time.time()})
+            # Send intel-only — the full data array was hundreds of KB per cycle
+            # and the frontend now maintains its own deviceIndex via SSE metric events.
+            sse_broadcast('full_sync', {'intel': intel, 'ts': time.time()})
         except Exception as e: print(f'[FullSync] {e}')
 
 def maintenance_refresh_worker():
@@ -2140,6 +2142,12 @@ if __name__=='__main__':
 
   Collector ingest: POST /api/collector/ingest
                     Header: X-Collector-Key: <key>
+
+  ── PRODUCTION (recommended) ────────────────────────────
+  pip install gunicorn gevent
+  gunicorn -w 1 -k gevent --worker-connections 1000 \\
+           -b 0.0.0.0:5000 app:app
+  (Single worker required — in-memory state; gevent for SSE)
     """)
     if demo: print('  [DEMO MODE] 15 devices, 4 sites — live injection active\n')
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT',5000)),
