@@ -521,8 +521,8 @@ def full_sync_worker():
                 'federated_index'      : get_federated_health_index(list(snap.values())),
                 'failure_probabilities': {d: get_failure_probability(d, s) for d,s in snap.items()},
                 'uptime'               : {d: get_uptime_pct(d) for d in device_uptime},
-                'ttf_minutes'          : {d: v for d,s in snap.items()
-                                          if (v := get_ettf_minutes(d, s, '')) is not None},
+                'ttf_minutes'          : {d: get_ettf_minutes(d,s,'') for d,s in snap.items()
+                                          if get_ettf_minutes(d,s,'') is not None},
                 'anomaly_count'        : anomaly_count,
                 'total_devices'        : len(device_history),
                 'retrain_needed'       : anomaly_count >= RETRAIN_THRESHOLD,
@@ -563,7 +563,7 @@ def get_failure_probability(device_id: str, score: float) -> float:
     prob = min(99.0, round(100*(1-rtc/60),1)) if rtc<60 else round((100-score)*0.08,1)
     return max(0.0, prob)
 
-def get_ettf_minutes(device_id: str, score: float, device_type: str = ''):
+def get_ettf_minutes(device_id, score, device_type=''):
     h = _history_get(device_id)
     if len(h) < 5: return None
     window = h[-10:]; n = len(window)

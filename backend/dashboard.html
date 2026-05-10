@@ -2538,21 +2538,9 @@ async function assignInc(id){
   await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})}).catch(function(){});
   toast('Assigned','to '+v,'tw');loadInc();
 }
-async function resolveInc(id) {
-  await fetch(B + '/api/incidents/' + id + '/resolve', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Specialist-Token': spToken
-    },
-    body: JSON.stringify({
-      resolved_by: data.get('resolved_by', ''),
-      notes: data.get('notes', '')
-    })
-  }).catch(function () {});
-  
-  toast('Resolved', 'Incident closed', 'tg');
-  loadInc();
+async function resolveInc(id){
+  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})}).catch(function(){});
+  toast('Resolved','By '+spName,'tg'); loadInc();
 }
 
 // ================================================================
@@ -2671,7 +2659,7 @@ async function toggleMaintenance(deviceId, enable){
   try {
     // We send a regular metric reading with in_maintenance=true/false.
     // The backend stores it and propagates via SSE.
-    var all=get_cached_data?get_cached_data():allData;
+    var all=allData;
     var dev=deviceIndex.get(deviceId)||{};
     var payload={
       device_id:deviceId,
@@ -2771,10 +2759,9 @@ window.addEventListener('resize', function(){
 // UTILITY — seconds since last successful data fetch
 // ================================================================
 var _lastFetchTime = Date.now();
-var _origFetchAll  = fetchAll;
+var _realFetch = fetchAll;
 fetchAll = async function(){
-  await _origFetchAll.apply(this,arguments);
-  _lastFetchTime = Date.now();
+  try { await _realFetch(); } finally { _lastFetchTime = Date.now(); }
 };
 function time_since_last_update(){
   return (Date.now()-_lastFetchTime)/1000;
