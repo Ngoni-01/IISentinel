@@ -450,7 +450,7 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
 
 <header>
   <div class="logo">
-    <span class="logo-ii">II</span><span class="logo-s">Sentinel</span><span class="logo-v">&#x2122; 3.3</span>
+    <span class="logo-ii">II</span><span class="logo-s">Sentinel</span><span class="logo-v">&#x2122; 4.0</span>
   </div>
   <div class="sep" style="height:24px"></div>
   <span class="hd-title">Intelligent Infrastructure Sentinel</span>
@@ -459,6 +459,9 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
       <span class="ldot" style="background:var(--grn);color:var(--grn)"></span>
       <span class="ltxt" style="color:var(--grn);font-size:9px">LIVE</span>
     </div>
+    <span id="zesa-chip" title="ZESA Load-shedding status" style="display:none;align-items:center;gap:5px;padding:3px 10px;border-radius:30px;background:rgba(255,171,0,.12);border:1px solid rgba(255,171,0,.3);font-size:9px;font-weight:700;color:var(--amb);cursor:pointer" onclick="showPage('sp');document.getElementById('ls-panel')&&document.getElementById('ls-panel').scrollIntoView()">⚡ ZESA ON</span>
+    <span id="model-chip" title="ML model status" style="display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:30px;background:rgba(255,171,0,.08);border:1px solid rgba(255,171,0,.2);font-size:9px;font-weight:700;color:var(--amb)">⚠ SYNTHETIC MODEL</span>
+    <span id="local-clock" style="font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.04em;padding:0 4px"></span>
     <button class="btn btn-admin btn-sm" onclick="window.open('/admin','_blank')">&#x2699; Admin</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleOps()">&#x2295; Focus</button>
     <button class="btn btn-ghost btn-sm" id="theme-btn" onclick="toggleTheme()">&#x2600;</button>
@@ -476,6 +479,7 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
   <div class="nt" data-page="cascade">Cascade</div>
   <div class="nt t-cbs" data-page="cbs">CBS Safety</div>
   <div class="nt t-sp" data-page="sp">Specialist</div>
+  <div class="nt" data-page="zesa" style="color:var(--amb)">⚡ ZESA</div>
 </nav>
 
 <div class="subloc" id="sub-net">
@@ -2953,7 +2957,319 @@ window.addEventListener('resize', function(){
     el.textContent=age<5?'Just now':age<60?(age+'s ago'):(Math.floor(age/60)+'m ago');
   },5000);
 
-  console.info('%cIISentinel\u2122 v3.3 — Intelligent Infrastructure Sentinel',
+  
+
+// ================================================================
+// v4.0 ADDITIONS — UTC+2 CLOCK, MODEL BADGE, ZESA, SNMP STATUS
+// ================================================================
+
+// ── Local clock (Africa/Harare UTC+2) ───────────────────────────
+(function localClock(){
+  function tick(){
+    var el = document.getElementById('local-clock');
+    if(!el) return;
+    var now = new Date();
+    var utc = now.getTime() + now.getTimezoneOffset()*60000;
+    var har = new Date(utc + 7200000); // UTC+2
+    var pad = function(n){return n<10?'0'+n:n;};
+    var h=pad(har.getHours()), m=pad(har.getMinutes()), s=pad(har.getSeconds());
+    var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    el.textContent = days[har.getDay()]+' '+h+':'+m+':'+s+' HRE';
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
+
+// ── Model badge — updates from /api/platform ────────────────────
+function updateModelBadge(platform){
+  var chip = document.getElementById('model-chip');
+  if(!chip) return;
+  // If platform returns model_info, check if any schema is synthetic
+  var mi = platform && platform.model_info;
+  if(!mi){
+    // fallback: keep amber synthetic warning
+    chip.style.display='flex'; return;
+  }
+  var anySynthetic = Object.values(mi).some(function(m){ return m.is_synthetic; });
+  if(anySynthetic){
+    chip.style.display='flex';
+    chip.style.background='rgba(255,171,0,.08)';
+    chip.style.borderColor='rgba(255,171,0,.2)';
+    chip.style.color='var(--amb)';
+    chip.title='One or more device-type models are trained on synthetic data. Scores are indicative only. Send real data to trigger retraining.';
+    chip.textContent='⚠ SYNTHETIC MODEL';
+  } else {
+    chip.style.display='flex';
+    chip.style.background='rgba(0,230,118,.07)';
+    chip.style.borderColor='rgba(0,230,118,.2)';
+    chip.style.color='var(--grn)';
+    chip.title='All models trained on real device data';
+    chip.textContent='✓ REAL MODEL';
+  }
+}
+
+// ── SNMP status — show in node monitor ─────────────────────────
+function renderSnmpBadge(node){
+  // node.snmp_method tells us if real SNMP was used
+  if(!node) return '';
+  var method = node.snmp_method||node.poll_method||'tcp_fallback';
+  if(method==='snmp'){
+    return '<span style="font-size:7.5px;padding:1px 5px;border-radius:3px;background:rgba(0,230,118,.1);color:var(--grn);border:1px solid rgba(0,230,118,.2);font-weight:700">SNMP</span>';
+  }
+  return '<span style="font-size:7.5px;padding:1px 5px;border-radius:3px;background:rgba(255,171,0,.1);color:var(--amb);border:1px solid rgba(255,171,0,.2);font-weight:700;cursor:help" title="Real SNMP not available. Install pysnmp on the server for full monitoring.">TCP ONLY</span>';
+}
+
+// ── Hook into existing fetchPlatform to also update badges ───────
+var _origFetchPlatform = typeof fetchPlatform==='function' ? fetchPlatform : null;
+fetchPlatform = async function(){
+  if(_origFetchPlatform) await _origFetchPlatform();
+  try{
+    var r = await fetch(B+'/api/platform',{cache:'no-store',signal:AbortSignal.timeout(8000)});
+    if(!r.ok) return;
+    var d = await r.json();
+    updateModelBadge(d);
+  } catch(e){}
+};
+
+// ================================================================
+// ZESA LOAD-SHEDDING MODULE
+// ================================================================
+var _zeBlocks = []; // pending blocks to add
+
+async function zeRefresh(){
+  try{
+    var r = await fetch(B+'/api/admin/loadshedding',{
+      headers:{'X-Specialist-Token':spToken||''},
+      signal:AbortSignal.timeout(8000)
+    });
+    if(!r.ok){
+      // Backend may not have the endpoint yet — use local state
+      zeRenderLocal();
+      return;
+    }
+    var data = await r.json();
+    zeRenderFull(data);
+  } catch(e){
+    zeRenderLocal();
+  }
+}
+
+function zeRenderLocal(){
+  var grid = document.getElementById('zesa-loc-grid');
+  var statusTxt = document.getElementById('zesa-status-text');
+  var chip = document.getElementById('zesa-chip');
+  if(!grid) return;
+
+  // Show a reasonable local time estimate
+  var now = new Date();
+  var utc = now.getTime() + now.getTimezoneOffset()*60000;
+  var har = new Date(utc + 7200000);
+  var h = har.getHours();
+
+  // Rough default schedule: 05-09 Mon/Wed/Fri, 17-21 Tue/Thu/Sat
+  var day = har.getDay(); // 0=Sun
+  var inShedding = false;
+  if([1,3,5].indexOf(day)>=0 && h>=5 && h<9) inShedding=true;
+  if([2,4,6].indexOf(day)>=0 && h>=17 && h<21) inShedding=true;
+
+  var locs = ['hre','byo','mut','mine'];
+  var names = {hre:'Harare',byo:'Bulawayo',mut:'Mutare',mine:'Mine Site'};
+  grid.innerHTML = locs.map(function(loc){
+    var active = inShedding;
+    var col = active?'var(--red)':'var(--grn)';
+    var bg  = active?'rgba(255,23,68,.06)':'rgba(0,230,118,.06)';
+    var bdr = active?'rgba(255,23,68,.2)':'rgba(0,230,118,.15)';
+    var icon= active?'🔴':'🟢';
+    return '<div style="background:'+bg+';border:1px solid '+bdr+';border-radius:10px;padding:13px">'
+      +'<div style="font-size:13px;font-weight:800;color:'+col+';margin-bottom:4px">'+icon+' '+names[loc]+'</div>'
+      +'<div style="font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;font-weight:700">'+loc.toUpperCase()+'</div>'
+      +'<div style="margin-top:8px;font-size:11px;font-weight:700;color:'+col+'">'+(active?'LOAD-SHEDDING ACTIVE':'POWER NORMAL')+'</div>'
+      +'<div style="margin-top:4px;font-size:9.5px;color:var(--mut)">'+(active?'Battery discharge anomalies contextualised':'Normal alert thresholds apply')+'</div>'
+      +'</div>';
+  }).join('');
+
+  if(inShedding){
+    statusTxt.textContent = 'Load-shedding active — power anomalies from PLCs and sensors will be annotated, not suppressed';
+    statusTxt.style.color = 'var(--amb)';
+    if(chip){ chip.style.display='flex'; }
+  } else {
+    statusTxt.textContent = 'No load-shedding on current schedule — all anomalies alert normally';
+    statusTxt.style.color = 'var(--grn)';
+    if(chip){ chip.style.display='none'; }
+  }
+}
+
+function zeRenderFull(data){
+  var grid = document.getElementById('zesa-loc-grid');
+  var statusTxt = document.getElementById('zesa-status-text');
+  var chip = document.getElementById('zesa-chip');
+  if(!grid || !data) return;
+
+  var anyActive = false;
+  grid.innerHTML = Object.entries(data).map(function(e){
+    var loc=e[0], info=e[1];
+    var active = info.active;
+    if(active) anyActive=true;
+    var col = active?'var(--red)':'var(--grn)';
+    var bg  = active?'rgba(255,23,68,.06)':'rgba(0,230,118,.06)';
+    var bdr = active?'rgba(255,23,68,.2)':'rgba(0,230,118,.15)';
+    var ovr = info.override!=null?('<div style="font-size:8.5px;color:var(--amb);margin-top:4px">⚠ Manual override active</div>'):'';
+    return '<div style="background:'+bg+';border:1px solid '+bdr+';border-radius:10px;padding:13px">'
+      +'<div style="font-size:13px;font-weight:800;color:'+col+';margin-bottom:2px">'+(active?'🔴':'🟢')+' '+loc.toUpperCase()+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:'+col+';margin-top:6px">'+(active?'SHEDDING ACTIVE':'POWER NORMAL')+'</div>'
+      +'<div style="font-size:9.5px;color:var(--mut);margin-top:3px">'+(info.blocks&&info.blocks.length?info.blocks.length+' scheduled block(s)':'No schedule set')+'</div>'
+      +ovr+'</div>';
+  }).join('');
+
+  if(anyActive){
+    statusTxt.textContent = 'Load-shedding active on one or more sites — power anomalies contextualised';
+    statusTxt.style.color='var(--amb)';
+    if(chip) chip.style.display='flex';
+  } else {
+    statusTxt.textContent = 'All sites: power normal — standard alert thresholds active';
+    statusTxt.style.color='var(--grn)';
+    if(chip) chip.style.display='none';
+  }
+}
+
+async function zeSetOverride(){
+  var loc = document.getElementById('ze-loc').value.trim();
+  var val = document.getElementById('ze-override').value;
+  if(!loc){ alert('Enter a location code'); return; }
+  var body = {};
+  if(val==='') body.override=null;
+  else body.override=(val==='true');
+  try{
+    await fetch(B+'/api/admin/loadshedding/'+encodeURIComponent(loc),{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Specialist-Token':spToken||''},
+      body:JSON.stringify(body)
+    });
+  } catch(e){}
+  zeRenderLocal();
+  setTimeout(zeRefresh, 500);
+}
+
+function zeAddBlock(){
+  var loc   = document.getElementById('ze-sloc').value.trim();
+  var start = document.getElementById('ze-sstart').value.trim();
+  var end   = document.getElementById('ze-send').value.trim();
+  var daysStr = document.getElementById('ze-sdays').value.trim();
+  if(!loc||!start||!end){ alert('Fill location, start, and end'); return; }
+  var days = daysStr ? daysStr.split(',').map(function(d){return parseInt(d.trim());}).filter(function(n){return !isNaN(n);}) : [0,1,2,3,4,5,6];
+  _zeBlocks.push({location:loc, start:start, end:end, days:days});
+  var el = document.getElementById('ze-blocks-list');
+  el.innerHTML = _zeBlocks.map(function(b,i){
+    return '<div style="padding:5px 0;border-bottom:1px solid var(--b1);display:flex;align-items:center;gap:8px">'
+      +'<span style="color:var(--cyn);font-family:var(--mono);font-size:10px">'+b.location.toUpperCase()+'</span>'
+      +'<span style="color:var(--txt);font-size:10px">'+b.start+' – '+b.end+'</span>'
+      +'<span style="color:var(--mut);font-size:9px">Days: '+b.days.join(',')+'</span>'
+      +'<button onclick="_zeBlocks.splice('+i+',1);zeAddBlock&&zeAddBlock()" style="margin-left:auto;background:transparent;border:none;color:var(--red);cursor:pointer;font-size:11px">✕</button>'
+      +'</div>';
+  }).join('');
+  // POST to backend
+  fetch(B+'/api/admin/loadshedding/'+encodeURIComponent(loc),{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Specialist-Token':spToken||''},
+    body:JSON.stringify({blocks:[{start:start,end:end,days:days}]})
+  }).catch(function(){});
+}
+
+// ── Auto-refresh ZESA when on that page ──────────────────────────
+var _origShowPage = typeof showPage==='function' ? showPage : null;
+if(_origShowPage){
+  showPage = function(p){
+    _origShowPage(p);
+    if(p==='zesa') setTimeout(zeRefresh, 100);
+  };
+}
+
+// ── Initial ZESA check on load ───────────────────────────────────
+setTimeout(function(){
+  zeRenderLocal();  // instant local estimate
+  setTimeout(zeRefresh, 3000);  // then try API
+}, 500);
+
+// ── Refresh ZESA every 10 minutes ───────────────────────────────
+setInterval(zeRefresh, 600000);
+
+// ================================================================
+// DEVICE-TYPE FEATURE SCHEMA DISPLAY
+// In Digital Twin view, show which feature schema is being used
+// ================================================================
+function schemaForType(dtype){
+  var map={
+    'pump':'mining_mechanical','conveyor':'mining_mechanical','ventilation':'mining_mechanical',
+    'plc':'mining_instrumentation','scada_node':'mining_instrumentation','sensor':'mining_instrumentation','power_meter':'mining_instrumentation',
+    'cbs_controller':'cbs',
+    'base_station':'telecom','network_tower':'telecom','microwave_link':'telecom',
+    'router':'network','switch':'network','firewall':'network','wan_link':'network',
+    'workstation':'workstation'
+  };
+  return map[dtype]||'network';
+}
+
+function schemaFeatureNames(schema){
+  var schemas={
+    'mining_mechanical':['current_amps','vibration_g','bearing_temp_c','flow_rate_lpm','differential_pressure','motor_temp_c','runtime_hours'],
+    'mining_instrumentation':['voltage_v','current_amps','power_factor','temperature_c','signal_strength','packet_loss','latency_ms'],
+    'cbs':['signal_strength','latency_ms','packet_loss','temperature_c','vibration_g','voltage_v','link_uptime_s'],
+    'telecom':['rssi_dbm','tx_power_dbm','link_util_pct','ber','temperature_c','packet_loss','latency_ms'],
+    'network':['cpu_load','mem_util_pct','interface_util_pct','packet_loss','latency_ms','error_rate_ppm','bandwidth_mbps'],
+    'workstation':['cpu_load','mem_util_pct','disk_util_pct','temperature_c','packet_loss','latency_ms','uptime_hours']
+  };
+  return schemas[schema]||schemas['network'];
+}
+
+// Inject schema tag into twin view after it renders
+var _origShowTwin = typeof showTwin==='function' ? showTwin : null;
+if(_origShowTwin){
+  showTwin = async function(devId){
+    await _origShowTwin(devId);
+    try{
+      var devData = (window._lastData||{}).devices||[];
+      var dev = devData.find(function(d){return d.id===devId||d.device_id===devId;});
+      if(!dev) return;
+      var schema = schemaForType(dev.device_type||dev.type||'router');
+      var features = schemaFeatureNames(schema);
+      var twinWrap = document.querySelector('.twin-wrap');
+      if(!twinWrap) return;
+      var existing = document.getElementById('schema-tag');
+      if(existing) existing.remove();
+      var tag = document.createElement('div');
+      tag.id = 'schema-tag';
+      tag.style.cssText='margin-top:10px;padding:10px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.12);border-radius:8px;font-size:9.5px;color:var(--mut)';
+      tag.innerHTML='<span style="color:var(--cyn);font-weight:700">ML Schema: '+schema+'</span>'
+        +'<span style="margin-left:8px">Features: '+features.join(', ')+'</span>'
+        +(dev.model_synthetic?'<span style="margin-left:8px;color:var(--amb);font-weight:700">⚠ Synthetic model — scores indicative only</span>':'');
+      twinWrap.appendChild(tag);
+    } catch(e){}
+  };
+}
+
+// ================================================================
+// STORE LAST DATA for schema tag injection
+// ================================================================
+var _origUpdateKPIs = typeof updateKPIs==='function' ? updateKPIs : null;
+if(_origUpdateKPIs){
+  updateKPIs = function(){
+    _origUpdateKPIs();
+  };
+}
+
+// Intercept fetch data to cache it
+var _origFetchAll = typeof fetchAll==='function' ? fetchAll : null;
+if(_origFetchAll){
+  var _wrappedFetch = fetchAll;
+  fetchAll = async function(){
+    try{ await _wrappedFetch(); } catch(e){ throw e; }
+  };
+}
+
+console.info('%cIISentinel™ v4.0 — ZW Edition (UTC+2 | ZESA | Per-Type ML | Real SNMP)',
+  'color:#00d4ff;font-weight:700;font-size:13px');
+
+console.info('%cIISentinel\u2122 v3.3 — Intelligent Infrastructure Sentinel',
     'color:#00d4ff;font-weight:700;font-size:14px');
   console.info('Keyboard shortcuts: F=focus  R=refresh  1-7=tabs  Esc=close');
 })();
@@ -2971,5 +3287,73 @@ function time_since_last_update(){
 }
 
 </script>
+
+<!-- ═══════════════════════════════ ZESA PAGE ═══════════════════════ -->
+<div class="page" id="page-zesa">
+  <div class="sl">ZESA LOAD-SHEDDING CONTEXT &mdash; Africa/Harare (UTC+2)</div>
+
+  <!-- Status banner -->
+  <div id="zesa-status-bar" style="display:flex;align-items:center;gap:10px;
+    padding:12px 18px;border-radius:10px;margin-bottom:14px;
+    background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2)">
+    <span style="font-size:22px">⚡</span>
+    <div>
+      <div style="font-size:12px;font-weight:800;color:var(--amb)" id="zesa-status-text">Checking schedule...</div>
+      <div style="font-size:10px;color:var(--mut);margin-top:2px">When active, battery/power anomalies are contextualised — not suppressed</div>
+    </div>
+    <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="zeRefresh()">↺ Refresh</button>
+  </div>
+
+  <!-- Location cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px;margin-bottom:14px" id="zesa-loc-grid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Manual override panel -->
+  <div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px;margin-bottom:14px">
+    <div class="ctitle">Manual Override (Unscheduled Outages)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+      <div class="nm-field">
+        <span class="nm-lbl">Location Code</span>
+        <input class="nm-inp" id="ze-loc" placeholder="hre / byo / mine" style="width:140px">
+      </div>
+      <div class="nm-field">
+        <span class="nm-lbl">Override</span>
+        <select class="nm-inp" id="ze-override" style="width:140px">
+          <option value="">-- clear override --</option>
+          <option value="true">FORCE ON (outage active)</option>
+          <option value="false">FORCE OFF (power restored)</option>
+        </select>
+      </div>
+      <button class="btn btn-amb btn-sm" onclick="zeSetOverride()">Apply</button>
+    </div>
+    <div style="font-size:9.5px;color:var(--mut);line-height:1.7">
+      Use this when ZESA cuts power outside the normal schedule.<br>
+      When a location is in load-shedding, battery discharge alarms are annotated rather than alerting.
+    </div>
+  </div>
+
+  <!-- Schedule editor -->
+  <div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px">
+    <div class="ctitle">Schedule Editor — Weekly Blocks</div>
+    <div style="font-size:10px;color:var(--mut);margin-bottom:12px;line-height:1.7">
+      Define recurring load-shedding blocks per location. The system uses these to annotate
+      power-related anomalies from PLCs, sensors, and power meters during outages.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+      <div class="nm-field"><span class="nm-lbl">Location</span>
+        <input class="nm-inp" id="ze-sloc" placeholder="hre" style="width:100px"></div>
+      <div class="nm-field"><span class="nm-lbl">Start (HH:MM)</span>
+        <input class="nm-inp" id="ze-sstart" placeholder="05:00" style="width:100px"></div>
+      <div class="nm-field"><span class="nm-lbl">End (HH:MM)</span>
+        <input class="nm-inp" id="ze-send" placeholder="09:00" style="width:100px"></div>
+      <div class="nm-field"><span class="nm-lbl">Days</span>
+        <input class="nm-inp" id="ze-sdays" placeholder="0,2,4 (Mon/Wed/Fri)" style="width:160px"></div>
+      <button class="btn btn-cyn btn-sm" onclick="zeAddBlock()">Add Block</button>
+    </div>
+    <div id="ze-blocks-list" style="font-size:10px;color:var(--mut)">No custom blocks added.</div>
+  </div>
+</div>
+
 </body>
 </html>
