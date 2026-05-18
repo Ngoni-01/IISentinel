@@ -442,19 +442,23 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
   .reg-grid{grid-template-columns:1fr}
 }
 
-/* v4.0: PNG banner backgrounds with gradient fallback */
-#page-net  .hero-bg{background:url('/static/images/banner-net.png') center/cover no-repeat,
+/* v4.0: PNG banner backgrounds — exact filenames from static/ folder */
+#page-net  .hero-bg{background:url('/static/server-room.png') center/cover no-repeat,
   linear-gradient(135deg,#001a2e 0%,#003352 60%,#001a2e 100%)}
-#page-tc   .hero-bg{background:url('/static/images/banner-tc.png') center/cover no-repeat,
+#page-tc   .hero-bg{background:url('/static/tc-tower.png') center/cover no-repeat,
   linear-gradient(135deg,#001e2e 0%,#00284a 60%,#001020 100%)}
-#page-mc   .hero-bg{background:url('/static/images/banner-mc.png') center/cover no-repeat,
+#page-mc   .hero-bg{background:url('/static/mine-plant.png') center/top/cover no-repeat,
   linear-gradient(135deg,#1a1200 0%,#2e1f00 60%,#0d0900 100%)}
-#page-cbs  .hero-bg{background:url('/static/images/banner-cbs.png') center/cover no-repeat,
+#page-cbs  .hero-bg{background:url('/static/mine-plant.png') center/cover no-repeat,
   linear-gradient(135deg,#1a0005 0%,#300010 60%,#0e0003 100%)}
-#page-sp   .hero-bg{background:url('/static/images/banner-sp.png') center/cover no-repeat,
+#page-sp   .hero-bg{background:url('/static/server-room.png') center/cover no-repeat,
   linear-gradient(135deg,#0a001e 0%,#180038 60%,#08001a 100%)}
-/* Hero body overlay stronger so text readable over PNG */
-.hero-body{background:linear-gradient(120deg,rgba(3,9,20,.96) 0%,rgba(5,14,28,.82) 50%,rgba(3,9,20,.55) 100%) !important}
+#page-zesa .hero-bg{background:url('/static/mine-plant.png') center/cover no-repeat,
+  linear-gradient(135deg,#1a0e00 0%,#2a1800 60%,#0e0800 100%)}
+/* Strong overlay so text always readable over any photo */
+.hero-body{background:linear-gradient(120deg,rgba(3,8,18,.97) 0%,rgba(5,12,25,.88) 45%,rgba(3,8,18,.65) 100%) !important}
+/* Slightly more visible SVG patterns over photos */
+.hero-bg svg{width:100%;height:100%;opacity:.18}
 
 </style>
 </head>
