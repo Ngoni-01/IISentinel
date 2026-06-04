@@ -1,15 +1,6 @@
 """
-IISentinel™ v3.4 — Intelligent Infrastructure Sentinel (Flask)
+IISentinel™ v3.3 — Intelligent Infrastructure Sentinel (Flask)
 ===============================================================
-v3.4 fixes vs v3.3:
-  ✓ FIX: retrain_worker now correctly pivots metric_name/metric_value rows
-          (v3.3 used r.get('cpu_load',50) which always returned defaults)
-  ✓ FIX: device-type-specific feature vectors (mining/net/telecom/cbs/power)
-  ✓ FIX: Africa/Harare (UTC+2) timezone in shift reports and audit logs
-  ✓ NEW: model_is_synthetic flag — operators know when scores are unvalidated
-  ✓ NEW: per-sector ML models trained separately after enough real data arrives
-  ✓ NEW: SNMP polling support (install easysnmp or pysnmp for real SNMP)
-
 v3.3 changes vs v3.2:
   ✓ Control Panel at /admin (Sophos-style admin console)
   ✓ Threshold management — CBS/warning/critical per device type
@@ -30,8 +21,8 @@ Install: pip install flask flask-cors reportlab scikit-learn joblib \
 """
 import os, re, json, time, random, threading, smtplib, sqlite3
 import uuid, secrets, hashlib
-from collections import deque, defaultdict
-from datetime import datetime, timezone, timedelta
+from collections import deque
+from datetime import datetime, timezone
 from io import BytesIO
 from functools import wraps
 from email.mime.text import MIMEText
@@ -45,194 +36,6 @@ import numpy as np
 import joblib
 import requests as req
 from flask import Flask, request, jsonify, send_file, Response, stream_with_context
-
-# ── Timezone (Africa/Harare = UTC+2, no DST) ──────────────────────────────────
-try:
-    from zoneinfo import ZoneInfo as _ZoneInfo
-    _TZ = _ZoneInfo('Africa/Harare')
-except Exception:
-    _TZ = timezone(timedelta(hours=2))
-
-def _now_harare():
-    return datetime.now(_TZ)
-
-def _fmt_harare(dt=None):
-    if dt is None: dt = _now_harare()
-    if isinstance(dt, str):
-        try: dt = datetime.fromisoformat(dt.replace('Z','+00:00'))
-        except Exception: return dt
-    try: dt = dt.astimezone(_TZ)
-    except Exception: pass
-    return dt.strftime('%Y-%m-%d %H:%M:%S CAT')
-
-# ── Optional SNMP backend ─────────────────────────────────────────────────────
-_SNMP_BACKEND = None
-try:
-    from easysnmp import Session as _EasySnmpSession
-    _SNMP_BACKEND = 'easysnmp'
-except ImportError:
-    try:
-        from pysnmp.hlapi import (getCmd, SnmpEngine, CommunityData,
-            UdpTransportTarget, ContextData, ObjectType, ObjectIdentity)
-        _SNMP_BACKEND = 'pysnmp'
-    except ImportError:
-        pass
-
-_SNMP_OIDS = {
-    'sysDescr'     : '1.3.6.1.2.1.1.1.0',
-    'sysUpTime'    : '1.3.6.1.2.1.1.3.0',
-    'cpuLoad'      : '1.3.6.1.2.1.25.3.3.1.2.1',
-    'memUsed'      : '1.3.6.1.2.1.25.2.3.1.6.1',
-    'memSize'      : '1.3.6.1.2.1.25.2.3.1.5.1',
-    'ifOperStatus' : '1.3.6.1.2.1.2.2.1.8.1',
-    'ifInOctets'   : '1.3.6.1.2.1.2.2.1.10.1',
-    'ifOutOctets'  : '1.3.6.1.2.1.2.2.1.16.1',
-    'ifSpeed'      : '1.3.6.1.2.1.2.2.1.5.1',
-}
-
-def _snmp_poll(host, community='public', port=161, timeout=5):
-    """Poll device via SNMP. Returns dict with cpu_pct, mem_pct, uptime_s etc."""
-    t0 = time.monotonic()
-    empty = {'cpu_pct':50.0,'mem_pct':50.0,'uptime_s':0.0,
-             'interface_util_pct':0.0,'packet_loss':100.0,
-             'latency_ms':9999.0,'snmp_ok':False,'error':None}
-    if _SNMP_BACKEND == 'easysnmp':
-        try:
-            sess  = _EasySnmpSession(hostname=host, community=community,
-                                     version=2, timeout=timeout, retries=1, remote_port=port)
-            items = sess.get(list(_SNMP_OIDS.values()))
-            ms    = round((time.monotonic()-t0)*1000, 1)
-            vals  = {n: items[i].value for i,(n,_) in enumerate(_SNMP_OIDS.items())}
-            return {**empty, **_snmp_parse(vals), 'latency_ms':ms, 'snmp_ok':True, 'packet_loss':0.0}
-        except Exception as e:
-            return {**empty, 'latency_ms':round((time.monotonic()-t0)*1000,1), 'error':str(e)}
-    elif _SNMP_BACKEND == 'pysnmp':
-        try:
-            objs = [ObjectType(ObjectIdentity(oid)) for oid in _SNMP_OIDS.values()]
-            ei, es, _, vb = next(getCmd(SnmpEngine(), CommunityData(community),
-                UdpTransportTarget((host,port),timeout=timeout,retries=1),
-                ContextData(), *objs))
-            ms = round((time.monotonic()-t0)*1000, 1)
-            if ei: raise RuntimeError(str(ei))
-            vals = {n: str(vb[i][1]) for i,n in enumerate(_SNMP_OIDS.keys())}
-            return {**empty, **_snmp_parse(vals), 'latency_ms':ms, 'snmp_ok':True, 'packet_loss':0.0}
-        except Exception as e:
-            return {**empty, 'latency_ms':round((time.monotonic()-t0)*1000,1), 'error':str(e)}
-    return {**empty, 'error':'No SNMP library — pip install easysnmp'}
-
-def _snmp_parse(vals):
-    out = {}
-    try: out['cpu_pct'] = float(vals.get('cpuLoad') or 50)
-    except: out['cpu_pct'] = 50.0
-    try:
-        u,s = float(vals.get('memUsed') or 0), float(vals.get('memSize') or 1)
-        out['mem_pct'] = round(min(100.0, u/max(s,1)*100), 1)
-    except: out['mem_pct'] = 50.0
-    try:
-        raw = str(vals.get('sysUpTime') or '0').split()[0].replace(',','')
-        out['uptime_s'] = round(int(raw)/100.0)
-    except: out['uptime_s'] = 0.0
-    try:
-        spd = float(vals.get('ifSpeed') or 1_000_000)
-        out_b = float(vals.get('ifOutOctets') or 0)
-        out['interface_util_pct'] = min(100.0, round(out_b/max(spd,1)*8*100, 1))
-    except: out['interface_util_pct'] = 0.0
-    try: out['if_oper_status'] = int(float(vals.get('ifOperStatus') or 1))
-    except: out['if_oper_status'] = 1
-    out['sys_descr'] = str(vals.get('sysDescr') or '').strip()[:200]
-    return out
-
-# ── Device-type feature schemas ───────────────────────────────────────────────
-# (key, default, min_clip, max_clip)
-_FEATURE_SCHEMAS = {
-    'mining'  : [('current_amps',30.,0.,1000.),('vibration_g',.5,0.,50.),
-                 ('bearing_temp_c',45.,0.,200.),('flow_rate_lpm',200.,0.,10000.),
-                 ('differential_pressure',2.,0.,100.),('runtime_hours',0.,0.,9000.),
-                 ('motor_temp_c',55.,0.,200.)],
-    'cbs'     : [('link_health',100.,0.,100.),('vibration_g',.1,0.,50.),
-                 ('temperature_c',35.,0.,150.),('battery_pct',100.,0.,100.),
-                 ('signal_strength',80.,0.,100.),('latency_ms',5.,0.,5000.),
-                 ('packet_loss',0.,0.,100.)],
-    'net'     : [('interface_util_pct',20.,0.,100.),('error_rate_ppm',0.,0.,1000.),
-                 ('cpu_pct',30.,0.,100.),('mem_pct',40.,0.,100.),
-                 ('packet_loss',0.,0.,100.),('latency_ms',5.,0.,60000.),
-                 ('uptime_s',86400.,0.,1e8)],
-    'telecom' : [('rssi_dbm',-70.,-150.,0.),('ber',0.,0.,1.),
-                 ('link_util_pct',30.,0.,100.),('tx_power_dbm',20.,-10.,50.),
-                 ('temperature_c',35.,0.,100.),('uptime_s',86400.,0.,1e8),
-                 ('packet_loss',0.,0.,100.)],
-    'power'   : [('voltage_v',230.,0.,1000.),('current_amps',10.,0.,1000.),
-                 ('frequency_hz',50.,45.,55.),('power_factor',.9,0.,1.),
-                 ('temperature_c',40.,0.,200.),('uptime_s',86400.,0.,1e8),
-                 ('battery_pct',100.,0.,100.)],
-    'generic' : [('cpu_load',50.,0.,100.),('bandwidth_mbps',100.,0.,100000.),
-                 ('latency_ms',10.,0.,60000.),('packet_loss',0.,0.,100.),
-                 ('connected_devices',10.,0.,1000.),('temperature',40.,-50.,200.),
-                 ('signal_strength',80.,0.,100.)],
-}
-_DTYPE_ALIAS = {
-    'router':'net','switch':'net','firewall':'net','wan_link':'net',
-    'workstation':'net','ap':'net','wifi':'net',
-    'base_station':'telecom','network_tower':'telecom','microwave_link':'telecom',
-    'repeater':'telecom',
-    'pump':'mining','conveyor':'mining','ventilation':'mining',
-    'crusher':'mining','hoist':'mining','fan':'mining',
-    'plc':'power','scada_node':'power','generator':'power',
-    'ups':'power','power_meter':'power',
-    'cbs_controller':'cbs',
-}
-
-def _resolve_schema(device_type):
-    dt  = (device_type or 'generic').lower().strip()
-    key = _DTYPE_ALIAS.get(dt, dt)
-    return _FEATURE_SCHEMAS.get(key, _FEATURE_SCHEMAS['generic'])
-
-def _extract_features(device_type, data):
-    """Build fixed-length float vector from data dict using device-type schema."""
-    schema = _resolve_schema(device_type)
-    vec = []
-    for key, default, lo, hi in schema:
-        raw = data.get(key)
-        if raw is None: raw = default
-        try:    val = float(raw)
-        except: val = default
-        if not (val == val): val = default   # NaN check
-        vec.append(float(np.clip(val, lo, hi)))
-    return vec
-
-def _pivot_metrics_rows(rows):
-    """
-    Convert DB metrics rows (one metric_name/metric_value per row) into
-    (X, y, types) arrays suitable for model training.
-    Groups by (device_id, created_at minute) to reconstruct full feature vectors.
-    """
-    groups = defaultdict(lambda: {'metrics':{}, 'health_score':None, 'device_type':'generic'})
-    for r in rows:
-        did   = r.get('device_id','')
-        dtype = r.get('device_type','generic') or 'generic'
-        ts    = (r.get('created_at') or '')[:16]   # truncate to minute
-        hs    = r.get('health_score')
-        mname = r.get('metric_name','')
-        mval  = r.get('metric_value')
-        key   = (did, ts)
-        g     = groups[key]
-        g['device_type'] = dtype
-        if mname and mval is not None:
-            try: g['metrics'][mname] = float(mval)
-            except: pass
-        if hs is not None:
-            try: g['health_score'] = float(hs)
-            except: pass
-    X_list, y_list, type_list = [], [], []
-    for g in groups.values():
-        hs = g['health_score']
-        if hs is None: continue
-        dtype = g['device_type']
-        vec   = _extract_features(dtype, g['metrics'])
-        X_list.append(vec); y_list.append(hs); type_list.append(dtype)
-    if not X_list:
-        return np.empty((0,7), dtype=float), np.empty(0, dtype=float), []
-    return np.array(X_list, dtype=float), np.array(y_list, dtype=float), type_list
 
 # ── Password hashing ──────────────────────────────────────────────────────────
 try:
@@ -270,7 +73,6 @@ def _db_conn():
         con.execute("PRAGMA journal_mode=WAL")
         con.execute("PRAGMA synchronous=NORMAL")
         con.execute("PRAGMA cache_size=-8192")
-        con.execute("PRAGMA temp_store=MEMORY")  # keep temp tables in RAM
         yield con
         con.commit()
     except Exception:
@@ -472,14 +274,33 @@ _sse_lock               = threading.Lock()
 notification_log        = deque(maxlen=100)
 _cbs_integrity_cache: dict = {}
 _maintenance_active: dict  = {}   # device_id -> end_ts (populated by _refresh_maintenance)
+_psutil_cache: dict        = {}   # refreshed every 5 s by background thread — never blocks a request
+
+def _psutil_refresh_worker():
+    """Update CPU/mem/disk in background every 5 s so admin endpoint returns instantly."""
+    try:
+        import psutil as _ps
+    except ImportError:
+        return   # psutil not installed — cache stays empty, UI shows N/A
+    while True:
+        try:
+            mem  = _ps.virtual_memory()
+            disk = _ps.disk_usage('/')
+            _psutil_cache['cpu']      = _ps.cpu_percent(interval=1)   # 1-s sample inside background thread
+            _psutil_cache['mem_used'] = round(mem.used  / 1024 / 1024, 1)
+            _psutil_cache['mem_tot']  = round(mem.total / 1024 / 1024, 1)
+            _psutil_cache['disk']     = round(disk.percent, 1)
+        except Exception:
+            pass
+        time.sleep(5)
+
+threading.Thread(target=_psutil_refresh_worker, daemon=True).start()
 
 platform_stats = {
     'requests_total':0,'requests_failed':0,'cache_hits':0,'models_scored':0,
     'queue_depth':0,'last_flush':None,'last_retrain_attempt':None,
     'last_retrain_success':None,'retrain_count':0,'notifications_sent':0,
-    'collector_readings':0,'uptime_start':datetime.now(timezone.utc).isoformat(),
-    'model_is_synthetic':True,   # True until retrain runs on real data
-    'retrain_sample_count':0,
+    'collector_readings':0,'uptime_start':datetime.now(timezone.utc).isoformat()
 }
 
 _DATA_API_KEY = os.environ.get('DATA_API_KEY', '')
@@ -684,55 +505,30 @@ def retrain_worker():
         try:
             from sklearn.ensemble import RandomForestRegressor, IsolationForest
             platform_stats['last_retrain_attempt'] = datetime.now(timezone.utc).isoformat()
-
             with _db_conn() as con:
-                rows = [dict(r) for r in con.execute(
-                    'SELECT device_id, device_type, metric_name, metric_value, '
-                    'health_score, created_at FROM metrics '
-                    'ORDER BY created_at DESC LIMIT 5000')]
-
-            if len(rows) < 20:
-                print(f'[Retrain] Only {len(rows)} rows — skipping')
-                continue
-
-            # ── THE FIX: pivot metric_name/metric_value rows into feature vectors ──
-            # The old code used r.get("cpu_load", 50) which always returned 50
-            # because the DB stores metric_name/metric_value, not named columns.
-            X, y, types = _pivot_metrics_rows(rows)
-
-            if len(X) < 20:
-                reason = (f'Only {len(X)} pivoted samples from {len(rows)} rows. '
-                          'Collectors may not be sending named metric fields yet.')
-                platform_stats['retrain_skip_reason'] = reason
-                print(f'[Retrain] {reason}')
-                continue
-
-            print(f'[Retrain] Training on {len(X)} real samples from {len(rows)} rows')
-
-            nrf = RandomForestRegressor(n_estimators=150, max_depth=12,
-                                        random_state=42, n_jobs=-1, min_samples_leaf=3)
-            nrf.fit(X, y)
-            hmask = y >= 50
-            niso = IsolationForest(n_estimators=150, contamination=0.08, random_state=42)
-            niso.fit(X[hmask] if hmask.sum() >= 20 else X)
-
-            joblib.dump(nrf, 'health_model.pkl')
-            joblib.dump(niso, 'anomaly_model.pkl')
-            rf_model  = nrf
-            iso_model = niso
-            anomaly_count = 0
-
-            platform_stats['last_retrain_success']  = datetime.now(timezone.utc).isoformat()
-            platform_stats['retrain_count']         = platform_stats.get('retrain_count',0)+1
-            platform_stats['model_is_synthetic']    = False   # now trained on real data
-            platform_stats['retrain_sample_count']  = int(len(X))
-            platform_stats.pop('retrain_skip_reason', None)
-
-            print(f'[Retrain] ✓ Done — {len(X)} samples, sectors: {set(types)}')
-
-        except Exception as e:
-            print(f'[Retrain] ERROR: {e}')
-            import traceback; traceback.print_exc()
+                rows = [dict(r) for r in
+                        con.execute("SELECT * FROM metrics ORDER BY created_at DESC LIMIT 2000")]
+            if len(rows) < 50: continue
+            X, y = [], []
+            for r in rows:
+                f = [r.get('cpu_load',50) or 50, r.get('bandwidth_mbps',100) or 100,
+                     r.get('latency_ms',10) or 10, r.get('packet_loss',0) or 0,
+                     r.get('connected_devices',10) or 10,
+                     r.get('temperature',40) or 40, r.get('signal_strength',80) or 80]
+                if None not in f and r.get('health_score') is not None:
+                    X.append(f); y.append(r['health_score'])
+            if len(X) < 50: continue
+            X = np.array(X); y = np.array(y)
+            nrf  = RandomForestRegressor(n_estimators=100,max_depth=10,random_state=42)
+            nrf.fit(X,y)
+            niso = IsolationForest(n_estimators=100,contamination=0.08,random_state=42)
+            niso.fit(X[y>=50])
+            joblib.dump(nrf,'health_model.pkl'); joblib.dump(niso,'anomaly_model.pkl')
+            rf_model = nrf; iso_model = niso; anomaly_count = 0
+            platform_stats['last_retrain_success'] = datetime.now(timezone.utc).isoformat()
+            platform_stats['retrain_count'] = platform_stats.get('retrain_count',0)+1
+            print(f'[Retrain] Done — {len(X)} samples')
+        except Exception as e: print(f'[Retrain] {e}')
         finally:
             with _retrain_lock: _retrain_in_progress = False
 
@@ -740,21 +536,20 @@ def full_sync_worker():
     while True:
         time.sleep(30)
         try:
+            data  = get_cached_data()
             snap  = _history_snapshot()
             intel = {
                 'federated_index'      : get_federated_health_index(list(snap.values())),
                 'failure_probabilities': {d: get_failure_probability(d, s) for d,s in snap.items()},
                 'uptime'               : {d: get_uptime_pct(d) for d in device_uptime},
-                'ttf_minutes'          : {d: get_ettf_minutes(d,s,'') for d,s in snap.items()
-                                          if get_ettf_minutes(d,s,'') is not None},
+                'ttf_minutes'          : {d: v for d,s in snap.items()
+                                          if (v := get_ettf_minutes(d, s, '')) is not None},
                 'anomaly_count'        : anomaly_count,
                 'total_devices'        : len(device_history),
                 'retrain_needed'       : anomaly_count >= RETRAIN_THRESHOLD,
                 'retrain_in_progress'  : _retrain_in_progress,
             }
-            # Send intel-only — the full data array was hundreds of KB per cycle
-            # and the frontend now maintains its own deviceIndex via SSE metric events.
-            sse_broadcast('full_sync', {'intel': intel, 'ts': time.time()})
+            sse_broadcast('full_sync', {'data': data, 'intel': intel, 'ts': time.time()})
         except Exception as e: print(f'[FullSync] {e}')
 
 def maintenance_refresh_worker():
@@ -768,11 +563,13 @@ for _fn in (flush_worker, scorer_worker, retrain_worker, full_sync_worker, maint
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def build_features(data: dict) -> list:
-    """
-    Build feature vector using device-type-specific schema.
-    Falls back to generic 7-feature vector if device_type unknown.
-    """
-    return _extract_features(data.get('device_type', 'generic'), data)
+    return [float(data.get('cpu_load',50) or 50),
+            float(data.get('bandwidth_mbps',100) or 100),
+            float(data.get('latency_ms',10) or 10),
+            float(data.get('packet_loss',0) or 0),
+            float(data.get('connected_devices',10) or 10),
+            float(data.get('temperature',40) or 40),
+            float(data.get('signal_strength',80) or 80)]
 
 def get_failure_probability(device_id: str, score: float) -> float:
     h = _history_get(device_id)
@@ -787,7 +584,7 @@ def get_failure_probability(device_id: str, score: float) -> float:
     prob = min(99.0, round(100*(1-rtc/60),1)) if rtc<60 else round((100-score)*0.08,1)
     return max(0.0, prob)
 
-def get_ettf_minutes(device_id, score, device_type=''):
+def get_ettf_minutes(device_id: str, score: float, device_type: str = ''):
     h = _history_get(device_id)
     if len(h) < 5: return None
     window = h[-10:]; n = len(window)
@@ -1161,82 +958,55 @@ def _poll_node(node_id: str):
     with _nodes_lock:
         if node_id not in _nodes: return
         node = dict(_nodes[node_id])
-    host   = node['host']
-    sector = node.get('sector', 'net')
-
-    # ── Real SNMP for network devices if library available ────────────────────
-    if _SNMP_BACKEND and sector == 'net':
-        community = node.get('community', 'public')
-        snmp_res  = _snmp_poll(host, community=community, port=161, timeout=3)
-        reachable = snmp_res.get('snmp_ok', False)
-        latency   = snmp_res.get('latency_ms', 9999) if reachable else None
-        loss_pct  = 0 if reachable else 100
-        # Build health from SNMP metrics
-        if reachable:
-            cpu  = snmp_res.get('cpu_pct', 50)
-            mem  = snmp_res.get('mem_pct', 50)
-            util = snmp_res.get('interface_util_pct', 0)
-            health = max(0, round(100 - cpu*0.3 - mem*0.2 - util*0.1
-                                  - min(50,(latency or 0)/10)))
-        else:
-            health = 0
-        snmp_data = snmp_res   # pass through for ML scoring
+    future = _node_executor.submit(_probe_host, node['host'], 1.5)
+    try:
+        reachable, latency = future.result(timeout=2.0)
+    except Exception:
+        reachable, latency = False, None
+    loss_pct = 0
+    if reachable:
+        futures = [_node_executor.submit(_probe_port, node['host'], _PROBE_PORTS[0], 0.8)
+                   for _ in range(3)]
+        failed = sum(1 for f in futures if not f.result(timeout=1.5)[0])
+        loss_pct = round((failed/3)*100)
     else:
-        # ── TCP-ping fallback (original behaviour) ────────────────────────────
-        future = _node_executor.submit(_probe_host, host, 1.5)
-        try:    reachable, latency = future.result(timeout=2.0)
-        except: reachable, latency = False, None
-        loss_pct = 0
-        if reachable:
-            futures = [_node_executor.submit(_probe_port, host, _PROBE_PORTS[0], 0.8)
-                       for _ in range(3)]
-            failed  = sum(1 for f in futures if not f.result(timeout=1.5)[0])
-            loss_pct = round((failed/3)*100)
-        else:
-            loss_pct = 100
-        health = 0 if not reachable else max(0, round(
-            100 - min(50,(latency or 0)/10) - loss_pct*0.6))
-        snmp_data = {}
-
+        loss_pct = 100
+    health = 0 if not reachable else max(0, round(
+        100 - min(50,(latency or 0)/10) - loss_pct*0.6))
     status = 'up' if reachable else 'down'
     now    = time.time()
     with _nodes_lock:
         if node_id not in _nodes: return
         _nodes[node_id].update({
             'status':status,'latency_ms':latency,'loss_pct':loss_pct,
-            'last_check':now,'health_score':health,
-            'snmp_ok':snmp_data.get('snmp_ok', False)})
+            'last_check':now,'health_score':health})
         hist = _nodes[node_id].get('history', deque(maxlen=20))
         hist.append({'ts':now,'status':status,'latency':latency,'health':health})
         _nodes[node_id]['history'] = hist
-
-    label = node.get('label', host)
-    did   = f"{sector}-node-{node_id[:8]}"
+    sector = node.get('sector','net')
+    label  = node.get('label', node['host'])
+    did    = f"{sector}-node-{node_id[:8]}"
     try:
-        # Use device-type-appropriate features
-        dtype   = ('router' if sector=='net' else
-                   'base_station' if sector=='tc' else 'sensor')
-        # Merge node data with SNMP result for feature extraction
-        node_data = {'device_type': dtype, 'latency_ms': latency or 0,
-                     'packet_loss': loss_pct, **snmp_data}
-        features  = _extract_features(dtype, node_data)
-        arr       = np.array([features])
-        score     = float(np.clip(rf_model.predict(arr)[0], 0, 100))
-        anom      = bool(iso_model.predict(arr)[0] == -1)
+        features = [min(100,(latency or 0)/5), max(0,100-loss_pct*2),
+                    min(500,latency or 0), loss_pct, 1, 35, health]
+        arr   = np.array([features])
+        score = float(np.clip(rf_model.predict(arr)[0],0,100))
+        anom  = bool(iso_model.predict(arr)[0]==-1)
         _history_append(did, score)
         update_uptime(did, score)
         rec = {
-            'device_id'         : did,
-            'device_type'       : dtype,
-            'metric_name'       : 'latency_ms',
-            'metric_value'      : float(latency or 0),
-            'health_score'      : score,
-            'anomaly_flag'      : anom,
-            'predicted_score'   : score,
-            'ai_diagnosis'      : (f'Node {label} unreachable — packet loss 100%.' if not reachable
-                                   else f'Elevated latency {latency}ms.' if (latency or 0)>120
-                                   else None),
-            'automation_command': (f'ALERT: Node {label} ({host}) DOWN.' if not reachable else None)
+            'device_id'        : did,
+            'device_type'      : 'router' if sector=='net' else
+                                 'base_station' if sector=='tc' else 'sensor',
+            'metric_name'      : 'latency_ms',
+            'metric_value'     : float(latency or 0),
+            'health_score'     : score,
+            'anomaly_flag'     : anom,
+            'predicted_score'  : score,
+            'ai_diagnosis'     : (f'Node {label} unreachable — packet loss 100%.' if not reachable
+                                  else f'Elevated latency {latency}ms.' if (latency or 0)>120 else None),
+            'automation_command': (f'ALERT: Node {label} ({node["host"]}) DOWN.'
+                                   if not reachable else None)
         }
         with queue_lock: metric_queue.append(rec)
     except Exception as e: print(f'[NodePoll ML] {e}')
@@ -1447,10 +1217,6 @@ def platform_api():
         'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
         'retrain_in_progress':_retrain_in_progress,
         'platform_uptime_h':round(up/3600,2),'platform_stats':platform_stats,
-        'model_is_synthetic':platform_stats.get('model_is_synthetic',True),
-        'retrain_sample_count':platform_stats.get('retrain_sample_count',0),
-        'snmp_backend':_SNMP_BACKEND or 'none (pip install easysnmp)',
-        'timezone':'Africa/Harare (UTC+2)',
         'demo_mode':os.environ.get('DEMO_MODE','false').lower()=='true',
         'notifications':{'email_enabled':NOTIFY['email_enabled'],
             'sms_enabled':NOTIFY['sms_enabled'],'whatsapp_enabled':NOTIFY['whatsapp_enabled'],
@@ -1623,7 +1389,7 @@ def shift_report():
         ok   = [d for d in dm.values() if d['health_score']>=50]
         oi   = [dict(r) for r in inc_rows if r['status']=='open']
         scores=[d['health_score'] for d in dm.values()]
-        return jsonify({'generated_at':_fmt_harare(),
+        return jsonify({'generated_at':datetime.now(timezone.utc).isoformat(),
             'total_devices':len(dm),
             'avg_health':round(sum(scores)/len(scores),1) if scores else 100,
             'critical_devices':len(crit),'warning_devices':len(warn),'healthy_devices':len(ok),
@@ -1694,7 +1460,7 @@ def export_pdf():
     dtype_map = {r['device_id']:r.get('device_type','') for r in all_d}
     total_exp = sum(COST_RATES.get('sensor',8000)*(
         0.95 if s<20 else 0.6 if s<35 else 0.25 if s<50 else 0) for s in scores)
-    now_s = _fmt_harare()
+    now_s = datetime.now(timezone.utc).strftime('%d %B %Y  %H:%M UTC')
     story=[]
     story.append(Paragraph('IISentinel v3.3',
         sty(fontName='Helvetica-Bold',fontSize=22,textColor=DARK,spaceAfter=2)))
@@ -1748,7 +1514,7 @@ def export_pdf():
         story.append(dt)
     story.append(Spacer(1,14))
     story.append(HRFlowable(width='100%',thickness=0.7,color=MUTED,spaceAfter=5))
-    story.append(Paragraph(f'IISentinel v3.4 Confidential — {_fmt_harare()}',
+    story.append(Paragraph(f'IISentinel v3.3 Confidential — {now_s}',
         sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
     doc.build(story); buf.seek(0)
     return send_file(buf,as_attachment=True,
@@ -1923,13 +1689,11 @@ def admin_system():
         cpu_pct = mem_used = mem_tot = disk_pct = None
         try:
             import psutil
-            cpu_pct  = psutil.cpu_percent(interval=0.3)
-            mem      = psutil.virtual_memory()
-            disk     = psutil.disk_usage('/')
-            mem_used = round(mem.used/1024/1024,1)
-            mem_tot  = round(mem.total/1024/1024,1)
-            disk_pct = round(disk.percent,1)
-        except ImportError:
+            cpu_pct  = _psutil_cache.get('cpu')
+            mem_used = _psutil_cache.get('mem_used')
+            mem_tot  = _psutil_cache.get('mem_tot')
+            disk_pct = _psutil_cache.get('disk')
+        except Exception:
             pass
         return jsonify({
             'uptime_s'           : round(up_s),
@@ -2386,24 +2150,15 @@ if __name__=='__main__':
                 print(f"  Retrieve token   : GET /api/admin/token\n")
     except: pass
     print("""
-  IISentinel v3.4 — Intelligent Infrastructure Sentinel
+  IISentinel v3.3 — Intelligent Infrastructure Sentinel
   ────────────────────────────────────────────────────────
   Dashboard    : http://localhost:5000
   Control Panel: http://localhost:5000/admin
   Health check : http://localhost:5000/health
   PDF Report   : http://localhost:5000/api/export-pdf
 
-  Timezone     : Africa/Harare (UTC+2)
-  SNMP backend : """ + (_SNMP_BACKEND or 'none — pip install easysnmp') + """
-
   Collector ingest: POST /api/collector/ingest
                     Header: X-Collector-Key: <key>
-
-  ── PRODUCTION (recommended) ────────────────────────────
-  pip install gunicorn gevent
-  gunicorn -w 1 -k gevent --worker-connections 1000 \\
-           -b 0.0.0.0:5000 app:app
-  (Single worker required — in-memory state; gevent for SSE)
     """)
     if demo: print('  [DEMO MODE] 15 devices, 4 sites — live injection active\n')
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT',5000)),

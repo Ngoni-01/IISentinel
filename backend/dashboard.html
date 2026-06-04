@@ -4,7 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IISentinel&#x2122; v3.3 &mdash; Intelligent Infrastructure Sentinel</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// Load Chart.js asynchronously — page content renders immediately, charts fill in when ready
+var _chartJsReady = false;
+var _chartJsCallbacks = [];
+(function(){
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js';
+  s.async = true;
+  s.onload = function(){
+    _chartJsReady = true;
+    Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif";
+    Chart.defaults.color = '#6b7f99';
+    _chartJsCallbacks.forEach(function(fn){ try{ fn(); }catch(e){} });
+    _chartJsCallbacks = [];
+  };
+  document.head.appendChild(s);
+})();
+function onChartReady(fn){ if(_chartJsReady) fn(); else _chartJsCallbacks.push(fn); }
+</script>
 <style>
 :root {
   --bg:    #050d1a;
@@ -162,7 +180,7 @@ main{flex:1;overflow-y:auto;overflow-x:hidden;position:relative}
   background:linear-gradient(120deg,rgba(5,13,26,.95) 0%,rgba(9,20,34,.75) 55%,rgba(5,13,26,.4) 100%);
   position:relative;z-index:1}
 .hero-bg{position:absolute;inset:0;z-index:0}
-.hero-bg svg{width:100%;height:100%;opacity:.22}
+.hero-bg svg{width:100%;height:100%;opacity:.12}
 .hero-eyebrow{font-size:8.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-bottom:5px}
 .hero-h{font-size:21px;font-weight:900;letter-spacing:-.05em;line-height:1;color:#fff}
 .hero-sub{font-size:10px;color:rgba(180,210,255,.75);margin-top:4px}
@@ -441,25 +459,6 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
   .cas-body{grid-template-columns:1fr}
   .reg-grid{grid-template-columns:1fr}
 }
-
-/* v4.0: PNG banner backgrounds — exact filenames from static/ folder */
-#page-net  .hero-bg{background:url('/static/server-room.png') center/cover no-repeat,
-  linear-gradient(135deg,#001a2e 0%,#003352 60%,#001a2e 100%)}
-#page-tc   .hero-bg{background:url('/static/tc-tower.png') center/cover no-repeat,
-  linear-gradient(135deg,#001e2e 0%,#00284a 60%,#001020 100%)}
-#page-mc   .hero-bg{background:url('/static/mine-plant.png') center/top/cover no-repeat,
-  linear-gradient(135deg,#1a1200 0%,#2e1f00 60%,#0d0900 100%)}
-#page-cbs  .hero-bg{background:url('/static/mine-plant.png') center/cover no-repeat,
-  linear-gradient(135deg,#1a0005 0%,#300010 60%,#0e0003 100%)}
-#page-sp   .hero-bg{background:url('/static/server-room.png') center/cover no-repeat,
-  linear-gradient(135deg,#0a001e 0%,#180038 60%,#08001a 100%)}
-#page-zesa .hero-bg{background:url('/static/mine-plant.png') center/cover no-repeat,
-  linear-gradient(135deg,#1a0e00 0%,#2a1800 60%,#0e0800 100%)}
-/* Strong overlay so text always readable over any photo */
-.hero-body{background:linear-gradient(120deg,rgba(3,8,18,.97) 0%,rgba(5,12,25,.88) 45%,rgba(3,8,18,.65) 100%) !important}
-/* Slightly more visible SVG patterns over photos */
-.hero-bg svg{width:100%;height:100%;opacity:.18}
-
 </style>
 </head>
 <body>
@@ -469,7 +468,7 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
 
 <header>
   <div class="logo">
-    <span class="logo-ii">II</span><span class="logo-s">Sentinel</span><span class="logo-v">&#x2122; v4.0</span>
+    <span class="logo-ii">II</span><span class="logo-s">Sentinel</span><span class="logo-v">&#x2122; 3.3</span>
   </div>
   <div class="sep" style="height:24px"></div>
   <span class="hd-title">Intelligent Infrastructure Sentinel</span>
@@ -478,9 +477,6 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
       <span class="ldot" style="background:var(--grn);color:var(--grn)"></span>
       <span class="ltxt" style="color:var(--grn);font-size:9px">LIVE</span>
     </div>
-    <span id="ze-hdr-chip" title="ZESA load-shedding active" style="display:none;align-items:center;gap:5px;padding:3px 10px;border-radius:30px;background:rgba(255,171,0,.12);border:1px solid rgba(255,171,0,.3);font-size:9px;font-weight:800;color:#ffab00;cursor:pointer;letter-spacing:.04em" onclick="spNav('zesa')">⚡ ZESA</span>
-    <span id="mdl-badge" style="display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:30px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);font-size:9px;font-weight:800;color:var(--cyn);letter-spacing:.04em;cursor:help" title="Adaptive model calibrating to your infrastructure. Accuracy improves as data accumulates.">◉ MODEL LEARNING</span>
-    <span id="hre-clock" style="font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.05em;padding:0 4px;min-width:130px;text-align:right"></span>
     <button class="btn btn-admin btn-sm" onclick="window.open('/admin','_blank')">&#x2699; Admin</button>
     <button class="btn btn-ghost btn-sm" onclick="toggleOps()">&#x2295; Focus</button>
     <button class="btn btn-ghost btn-sm" id="theme-btn" onclick="toggleTheme()">&#x2600;</button>
@@ -498,7 +494,6 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
   <div class="nt" data-page="cascade">Cascade</div>
   <div class="nt t-cbs" data-page="cbs">CBS Safety</div>
   <div class="nt t-sp" data-page="sp">Specialist</div>
-  <div class="nt" data-page="zesa" style="color:#ffab00;font-weight:700" onclick="spNav('zesa')">⚡ ZESA</div>
 </nav>
 
 <div class="subloc" id="sub-net">
@@ -1096,13 +1091,6 @@ var _retryCount = 0;
 var _MAX_RETRY = 5;
 var _serverAwake = false;
 
-// ── Performance: render pipeline ────────────────────────────────
-var _renderScheduled = false;  // RAF guard
-var _pendingFeedItems = [];    // SSE-sourced feed items pending prepend
-var _chartsDirty = false;      // batch chart redraws
-var _kpiDirty = false;         // batch KPI redraws
-var _sseAlive = false;         // is SSE connection healthy?
-
 // ================================================================
 // HELPERS
 // ================================================================
@@ -1168,11 +1156,8 @@ function showWakeMessage(containerId, attempt) {
 }
 
 // ================================================================
-// CHART SETUP
+// CHART SETUP — lazy-init after Chart.js CDN loads (non-blocking)
 // ================================================================
-Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif";
-Chart.defaults.color = '#6b7f99';
-
 var CHART_OPT = {
   responsive:true, maintainAspectRatio:false, animation:{duration:400},
   plugins:{legend:{labels:{color:'#6b7f99',font:{size:9},boxWidth:10}}},
@@ -1182,49 +1167,59 @@ var CHART_OPT = {
   }
 };
 
-function mkChart(id, type, label, color, yMax) {
-  var el = document.getElementById(id); if(!el) return null;
-  return new Chart(el, {
-    type:type,
-    data:{labels:[],datasets:[{label:label,data:[],borderColor:color,
-      backgroundColor:color.replace('rgb','rgba').replace(')',',0.07)'),
-      borderWidth:1.5,tension:.42,fill:true,pointRadius:2}]},
-    options:Object.assign({},CHART_OPT,{scales:Object.assign({},CHART_OPT.scales,{y:Object.assign({},CHART_OPT.scales.y,{max:yMax||100})})})
-  });
-}
+var charts = {main:null,dist:null,net:null,netL:null,tcH:null,tcS:null,
+              mcH:null,mcT:null,cbs:null,up:null,wind:null,precip:null};
+var _chartsInited = false;
 
-var charts = {
-  main:  mkChart('cMain','line','Health','rgb(0,212,255)'),
-  dist:  new Chart(document.getElementById('cDist'),{
+function _initCharts(){
+  if(_chartsInited || !window.Chart) return;
+  _chartsInited = true;
+  function mkChart(id, type, label, color, yMax) {
+    var el = document.getElementById(id); if(!el) return null;
+    return new Chart(el, {
+      type:type,
+      data:{labels:[],datasets:[{label:label,data:[],borderColor:color,
+        backgroundColor:color.replace('rgb','rgba').replace(')',',0.07)'),
+        borderWidth:1.5,tension:.42,fill:true,pointRadius:2}]},
+      options:Object.assign({},CHART_OPT,{scales:Object.assign({},CHART_OPT.scales,{y:Object.assign({},CHART_OPT.scales.y,{max:yMax||100})})})
+    });
+  }
+  charts.main  = mkChart('cMain','line','Health','rgb(0,212,255)');
+  charts.dist  = new Chart(document.getElementById('cDist'),{
     type:'bar',
     data:{labels:['0-20','20-40','40-60','60-80','80-100'],
       datasets:[{label:'Devices',data:[0,0,0,0,0],
         backgroundColor:['rgba(255,23,68,.7)','rgba(255,171,0,.7)','rgba(255,171,0,.4)','rgba(0,230,118,.4)','rgba(0,230,118,.7)'],
         borderRadius:4}]},
     options:Object.assign({},CHART_OPT,{scales:Object.assign({},CHART_OPT.scales,{y:Object.assign({},CHART_OPT.scales.y,{max:20})})})
-  }),
-  net:   mkChart('cNet','line','Health','rgb(0,188,212)'),
-  netL:  mkChart('cNetL','line','Latency ms','rgb(255,171,0)',500),
-  tcH:   mkChart('cTcH','line','Health','rgb(0,212,255)'),
-  tcS:   mkChart('cTcS','line','Signal %','rgb(0,188,212)'),
-  mcH:   mkChart('cMcH','line','Health','rgb(255,193,7)'),
-  mcT:   mkChart('cMcT','line','Temp C','rgb(255,23,68)',120),
-  cbs:   new Chart(document.getElementById('cCbs'),{
+  });
+  charts.net   = mkChart('cNet','line','Health','rgb(0,188,212)');
+  charts.netL  = mkChart('cNetL','line','Latency ms','rgb(255,171,0)',500);
+  charts.tcH   = mkChart('cTcH','line','Health','rgb(0,212,255)');
+  charts.tcS   = mkChart('cTcS','line','Signal %','rgb(0,188,212)');
+  charts.mcH   = mkChart('cMcH','line','Health','rgb(255,193,7)');
+  charts.mcT   = mkChart('cMcT','line','Temp C','rgb(255,23,68)',120);
+  charts.cbs   = new Chart(document.getElementById('cCbs'),{
     type:'line',
     data:{labels:[],datasets:[
       {label:'CBS health',data:[],borderColor:'rgb(255,23,68)',backgroundColor:'rgba(255,23,68,.06)',borderWidth:1.5,tension:.42,fill:true,pointRadius:2},
       {label:'Threshold 90%',data:[],borderColor:'rgba(255,171,0,.7)',borderDash:[5,4],borderWidth:1.2,pointRadius:0}
     ]},
     options:Object.assign({},CHART_OPT)
-  }),
-  up:    new Chart(document.getElementById('cUp'),{
+  });
+  charts.up    = new Chart(document.getElementById('cUp'),{
     type:'bar',
     data:{labels:[],datasets:[{label:'Uptime %',data:[],backgroundColor:'rgba(0,212,255,.55)',borderRadius:4}]},
     options:Object.assign({},CHART_OPT)
-  }),
-  wind:  mkChart('cWind','line','km/h','rgb(0,188,212)',120),
-  precip:mkChart('cPrecip','line','%','rgb(0,212,255)')
-};
+  });
+  charts.wind  = mkChart('cWind','line','km/h','rgb(0,188,212)',120);
+  charts.precip= mkChart('cPrecip','line','%','rgb(0,212,255)');
+  // push any queued data that arrived before charts were ready
+  renderCurrentPage();
+}
+
+// Kick off chart init as soon as Chart.js is available
+onChartReady(_initCharts);
 
 function updChart(ch, labels, data) {
   if(!ch) return;
@@ -1300,82 +1295,11 @@ function updateGaugeEl(el, d, intl) {
   var newClass = 'gc '+(s>=70?'g-ok':s>=40?'g-w':'g-r')+(isCbs(d)?' g-cbs':'')+(inMaint?' g-maint':'');
   var prevScore = parseInt(el.dataset.score || '-1');
   var prevMaint = el.dataset.maint === '1';
-  var prevAnom  = el.dataset.anom === '1';
-
-  // Class update (cheap, skip if unchanged)
-  if(el.className !== newClass) el.className = newClass;
-
-  // Score / colour change — surgical child updates, no innerHTML
-  if(prevScore !== s || prevMaint !== inMaint || prevAnom !== !!d.anomaly_flag) {
-    var col = sc(s);
-
-    // SVG arc: stroke-dasharray only (keeps CSS transition alive)
-    var arc = el.querySelector('.gw svg circle:last-child');
-    if(arc) {
-      var r=30, ci=(2*Math.PI*r);
-      var dashArr = (ci*(s/100)).toFixed(2)+' '+ci.toFixed(2);
-      if(arc.getAttribute('stroke-dasharray') !== dashArr) {
-        arc.setAttribute('stroke-dasharray', dashArr);
-        arc.setAttribute('stroke', col);
-      }
-    }
-
-    // Score number
-    var val = el.querySelector('.gval');
-    if(val) { val.textContent = s; val.style.color = col; }
-
-    // Risk probability
-    var prob = (intl && intl.failure_probabilities && intl.failure_probabilities[d.device_id]) || 0;
-    var probEl = el.querySelector('.gprob');
-    if(probEl) {
-      if(inMaint) {
-        probEl.style.color = 'var(--cyn)';
-        probEl.textContent = 'Alerts suppressed';
-      } else {
-        probEl.style.color = prob>50?'var(--red)':prob>25?'var(--amb)':'var(--grn)';
-        probEl.textContent = 'Risk: '+prob+'%';
-      }
-    }
-
-    // ETTF — create/update/remove as needed
-    var ttf = intl && intl.ttf_minutes && intl.ttf_minutes[d.device_id];
-    var ettfEl = el.querySelector('.geta');
-    if(!inMaint && ttf !== undefined && ttf !== null) {
-      if(!ettfEl) { ettfEl = document.createElement('div'); ettfEl.className='geta'; el.appendChild(ettfEl); }
-      var tc2 = ttf<30?'var(--red)':ttf<120?'var(--amb)':'var(--grn)';
-      var ts2 = ttf===0?'Failing now':ttf<60?(ttf+'min'):(Math.floor(ttf/60)+'h '+ttf%60+'m');
-      ettfEl.style.color = tc2; ettfEl.textContent = 'Fail: '+ts2;
-    } else if(ettfEl) { ettfEl.remove(); }
-
-    // CBS integrity line
-    if(d.integrity_score !== undefined) {
-      var intgEl = el.querySelector('[data-intg]');
-      if(!intgEl) {
-        intgEl = document.createElement('div');
-        intgEl.dataset.intg = '1';
-        intgEl.style.cssText = 'font-size:7.5px;margin-top:2px;font-family:var(--mono)';
-        el.appendChild(intgEl);
-      }
-      var ic = d.integrity_score>=90?'var(--grn)':d.integrity_score>=70?'var(--amb)':'var(--red)';
-      intgEl.style.color = ic; intgEl.textContent = 'Integ: '+d.integrity_score+'%';
-    }
-
-    // Anomaly badge — toggle class only
-    var idEl = el.querySelector('.gid');
-    if(idEl) {
-      var anomBadge = idEl.querySelector('.gpill-anom');
-      if(d.anomaly_flag && !anomBadge) {
-        var ab = document.createElement('span');
-        ab.className = 'gpill gpill-anom'; ab.textContent = 'ANOM';
-        idEl.appendChild(ab);
-      } else if(!d.anomaly_flag && anomBadge) {
-        anomBadge.remove();
-      }
-    }
-
+  if(el.className !== newClass || prevScore !== s || prevMaint !== inMaint) {
+    el.className = newClass;
     el.dataset.score = s;
     el.dataset.maint = inMaint ? '1' : '0';
-    el.dataset.anom  = d.anomaly_flag ? '1' : '0';
+    el.innerHTML = _gaugeHTML(d, intl);
   }
 }
 
@@ -1545,7 +1469,7 @@ async function fetchAll() {
     var changed   = (dataHash!==_lastDataHash || intelHash!==_lastIntelHash);
     allData=newData; intel=newIntel;
     _lastDataHash=dataHash; _lastIntelHash=intelHash;
-    _retryCount=0; _serverAwake=true; _sseAlive=true;
+    _retryCount=0; _serverAwake=true;
     setConnState('live');
     deviceIndex.clear();
     allData.forEach(function(r){ if(r.device_id) deviceIndex.set(r.device_id,r); });
@@ -2558,136 +2482,16 @@ async function exportPDF(){
 // SSE
 // ================================================================
 var _sseConn=null;
-// ================================================================
-// RAF-BASED RENDER SCHEDULER  — batch micro-updates from SSE
-// ================================================================
-function scheduleRender() {
-  if(_renderScheduled) return;
-  _renderScheduled = true;
-  requestAnimationFrame(function() {
-    _renderScheduled = false;
-    // Flush pending feed items (prepend, no full rebuild)
-    if(_pendingFeedItems.length) {
-      _flushPendingFeed();
-      _pendingFeedItems = [];
-    }
-    // KPIs
-    if(_kpiDirty) { updateKPIs(); _kpiDirty = false; }
-    // Charts only when on the right page
-    if(_chartsDirty) { _updateChartsIfVisible(); _chartsDirty = false; }
-  });
-}
-
-function _flushPendingFeed() {
-  // Prepend new feed items instead of rebuilding entire feed
-  ['diag-feed','auto-feed'].forEach(function(feedId) {
-    var el = document.getElementById(feedId); if(!el) return;
-    _pendingFeedItems.forEach(function(d) {
-      if(feedId === 'auto-feed' && !d.automation_command) return;
-      if(feedId === 'diag-feed' && !d.ai_diagnosis && d.health_score >= 50) return;
-      var item = document.createElement('div');
-      item.innerHTML = feedId === 'auto-feed' ? autoItem(d) : diagItem(d);
-      var child = item.firstElementChild;
-      if(child) {
-        el.insertBefore(child, el.firstChild);
-        // Keep feed capped at 10 items
-        while(el.children.length > 10) el.lastChild.remove();
-      }
-    });
-  });
-}
-
-function _updateChartsIfVisible() {
-  if(currentPage === 'main' || currentPage === 'net' || currentPage === 'tc' || currentPage === 'mc') {
-    var scores=[]; deviceIndex.forEach(function(d){ scores.push(d.health_score); });
-    // dist chart
-    var dist=[0,0,0];
-    scores.forEach(function(s){ if(s<20)dist[2]++;else if(s<50)dist[1]++;else dist[0]++; });
-    if(charts.dist){ charts.dist.data.datasets[0].data=dist; charts.dist.update('none'); }
-    // uptime chart
-    var up = (intel && intel.uptime) || {};
-    if(charts.up && Object.keys(up).length){
-      charts.up.data.labels=Object.keys(up).map(sid);
-      charts.up.data.datasets[0].data=Object.values(up).map(Math.round);
-      charts.up.update('none');
-    }
-  }
-}
-
 function initSSE(){
-  if(_sseConn) _sseConn.close();
-  _sseConn = new EventSource(B+'/api/stream');
-
-  _sseConn.addEventListener('connected', function(){
-    _sseAlive = true; _serverAwake = true; _retryCount = 0;
-    setConnState('live');
+  if(_sseConn)_sseConn.close();
+  _sseConn=new EventSource(B+'/api/stream');
+  _sseConn.addEventListener('metric',function(e){
+    try{var d=JSON.parse(e.data);if(d.blast_hold||d.is_cbs||d.health_score<35||d.anomaly_flag)fetchAll();}catch(ex){}
   });
-
-  // ── Hot path: individual device metric ──────────────────────────
-  _sseConn.addEventListener('metric', function(e){
-    try {
-      var d = JSON.parse(e.data);
-      // Merge into deviceIndex — no HTTP round-trip
-      var existing = deviceIndex.get(d.device_id) || {};
-      var merged = Object.assign({}, existing, d);
-      deviceIndex.set(d.device_id, merged);
-      allData = Array.from(deviceIndex.values()); // keep allData in sync
-      _serverAwake = true; _sseAlive = true;
-      setConnState('live');
-
-      // Surgical gauge update (zero innerHTML)
-      if(gaugeEls.has(d.device_id)) {
-        updateGaugeEl(gaugeEls.get(d.device_id), merged, intel);
-      }
-
-      // Queue feed item and KPI refresh via RAF
-      if(d.ai_diagnosis || d.automation_command || d.anomaly_flag || d.health_score < 50) {
-        _pendingFeedItems.push(merged);
-      }
-      _kpiDirty = true;
-      _chartsDirty = true;
-      scheduleRender();
-
-      // Only trigger full HTTP fetch for CBS blast-hold (rare safety event)
-      if(d.blast_hold) fetchAll();
-
-    } catch(ex) {}
+  _sseConn.addEventListener('cbs_hold',function(e){
+    try{var d=JSON.parse(e.data);toast('CBS BLAST HOLD',d.device_id+' \u2014 link at '+d.health_score+'%'+(d.integrity_score?' / integrity '+d.integrity_score+'%':''),'tc');fetchAll();}catch(ex){}
   });
-
-  // ── Cold path: intel sync every 30s (small payload) ─────────────
-  _sseConn.addEventListener('full_sync', function(e){
-    try {
-      var payload = JSON.parse(e.data);
-      if(payload.intel) {
-        intel = payload.intel;
-        _kpiDirty = true; _chartsDirty = true;
-        scheduleRender();
-      }
-      // If data included (legacy), absorb it
-      if(payload.data && Array.isArray(payload.data)) {
-        allData = payload.data;
-        deviceIndex.clear();
-        allData.forEach(function(r){ if(r.device_id) deviceIndex.set(r.device_id,r); });
-        renderCurrentPage();
-      }
-      _serverAwake = true; _sseAlive = true;
-      setConnState('live');
-    } catch(ex) {}
-  });
-
-  _sseConn.addEventListener('cbs_hold', function(e){
-    try{
-      var d=JSON.parse(e.data);
-      toast('CBS BLAST HOLD',d.device_id+' \u2014 link at '+d.health_score+'%'+(d.integrity_score?' / integrity '+d.integrity_score+'%':''),'tc');
-      fetchAll();
-    } catch(ex){}
-  });
-
-  _sseConn.onerror = function(){
-    _sseAlive = false;
-    setConnState('connecting');
-    setTimeout(initSSE, 5000);
-  };
+  _sseConn.onerror=function(){setTimeout(initSSE,5000);};
 }
 
 // ================================================================
@@ -2759,9 +2563,21 @@ async function assignInc(id){
   await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})}).catch(function(){});
   toast('Assigned','to '+v,'tw');loadInc();
 }
-async function resolveInc(id){
-  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})}).catch(function(){});
-  toast('Resolved','By '+spName,'tg'); loadInc();
+async function resolveInc(id) {
+  await fetch(B + '/api/incidents/' + id + '/resolve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Specialist-Token': spToken
+    },
+    body: JSON.stringify({
+      resolved_by: data.get('resolved_by', ''),
+      notes: data.get('notes', '')
+    })
+  }).catch(function () {});
+  
+  toast('Resolved', 'Incident closed', 'tg');
+  loadInc();
 }
 
 // ================================================================
@@ -2880,7 +2696,7 @@ async function toggleMaintenance(deviceId, enable){
   try {
     // We send a regular metric reading with in_maintenance=true/false.
     // The backend stores it and propagates via SSE.
-    var all=allData;
+    var all=get_cached_data?get_cached_data():allData;
     var dev=deviceIndex.get(deviceId)||{};
     var payload={
       device_id:deviceId,
@@ -2944,15 +2760,10 @@ window.addEventListener('resize', function(){
   fetchPlatform();
   nmRefresh();
 
-  // ── Polling intervals ───────────────────────────────────────────
-  // SSE drives real-time updates. HTTP polling is now just a fallback
-  // for when SSE drops or misses a full_sync cycle.
-  setInterval(function(){
-    // Only poll via HTTP if SSE hasn't delivered data recently
-    if(!_sseAlive) fetchAll();
-  }, 60000);                             // 60s fallback (was 10s)
-  setInterval(fetchPlatform, 30000);     // 30s platform stats (was 15s)
-  setInterval(nmRefresh,     30000);     // 30s node monitor (unchanged)
+  // Polling intervals
+  setInterval(fetchAll,    10000);   // 10 s full data refresh
+  setInterval(fetchPlatform,15000);  // 15 s platform stats
+  setInterval(nmRefresh,   30000);   // 30 s node monitor
 
   // SSE for real-time CBS and low-health alerts
   initSSE();
@@ -2985,380 +2796,15 @@ window.addEventListener('resize', function(){
 // UTILITY — seconds since last successful data fetch
 // ================================================================
 var _lastFetchTime = Date.now();
-var _realFetch = fetchAll;
+var _origFetchAll  = fetchAll;
 fetchAll = async function(){
-  try { await _realFetch(); } finally { _lastFetchTime = Date.now(); }
+  await _origFetchAll.apply(this,arguments);
+  _lastFetchTime = Date.now();
 };
 function time_since_last_update(){
   return (Date.now()-_lastFetchTime)/1000;
 }
 
-
-// ═══════════════════════════════════════════════════════════
-// IISentinel v4.0 — HRE Clock | Model Badge | ZESA | Schemas
-// ═══════════════════════════════════════════════════════════
-
-// ── 1. Africa/Harare clock (UTC+2, no DST) ──────────────────
-(function(){
-  var el=document.getElementById('hre-clock');
-  if(!el)return;
-  function tick(){
-    var n=new Date(), u=n.getTime()+n.getTimezoneOffset()*60000;
-    var h=new Date(u+7200000);
-    var p=function(x){return x<10?'0'+x:x;};
-    var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var shift=h.getHours()<6?'Night':h.getHours()<14?'Day':h.getHours()<22?'Aftn':'Night';
-    el.textContent=days[h.getDay()]+' '+p(h.getHours())+':'+p(h.getMinutes())+':'+p(h.getSeconds())+' HRE · '+shift+' shift';
-  }
-  tick(); setInterval(tick,1000);
-})();
-
-// ── 2. spNav — navigate to any page by id ───────────────────
-function spNav(pg){
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.nt').forEach(function(t){t.classList.remove('active');});
-  var pg_el=document.getElementById('page-'+pg);
-  if(pg_el) pg_el.classList.add('active');
-  var nt_el=document.querySelector('.nt[data-page="'+pg+'"]');
-  if(nt_el) nt_el.classList.add('active');
-  if(pg==='zesa') zeInitImmediate();
-}
-
-// ── 3. Model badge (professional LEARNING/CALIBRATED) ────────
-function updateModelBadge(platform){
-  var chip=document.getElementById('mdl-badge');
-  if(!chip)return;
-  var mi=platform&&platform.model_info;
-  if(!mi){ return; } // stay at LEARNING default
-  var schemas=Object.values(mi);
-  var realCount=schemas.filter(function(m){return !m.is_synthetic;}).length;
-  var pct=schemas.length?Math.round(realCount/schemas.length*100):0;
-  if(pct===0){
-    chip.style.background='rgba(0,212,255,.06)';chip.style.borderColor='rgba(0,212,255,.15)';
-    chip.style.color='var(--cyn)';chip.textContent='◉ MODEL LEARNING';
-    chip.title='Adaptive model calibrating to your infrastructure. Scores are baseline estimates. Accuracy improves as real device data accumulates.';
-  } else if(pct<100){
-    chip.style.background='rgba(255,171,0,.07)';chip.style.borderColor='rgba(255,171,0,.2)';
-    chip.style.color='#ffab00';chip.textContent='◎ CALIBRATING '+pct+'%';
-    chip.title=pct+'% of device schemas trained on real data. '+Math.round(100-pct)+'% still on baseline estimates.';
-  } else {
-    chip.style.background='rgba(0,230,118,.06)';chip.style.borderColor='rgba(0,230,118,.18)';
-    chip.style.color='var(--grn)';chip.textContent='✓ MODEL CALIBRATED';
-    chip.title='All device-type models trained on real infrastructure data.';
-  }
-}
-
-// Wrap existing fetchPlatform to also update badge
-(function(){
-  var orig=window.fetchPlatform;
-  if(typeof orig!=='function')return;
-  window.fetchPlatform=async function(){
-    await orig();
-    try{
-      var r=await fetch((window.B||'')+'/api/platform',{cache:'no-store',signal:AbortSignal.timeout(6000)});
-      if(r.ok){ var d=await r.json(); updateModelBadge(d); }
-    }catch(e){}
-  };
-})();
-
-// ═══════════════════════════════════════════════════════════
-// ZESA MODULE
-// ═══════════════════════════════════════════════════════════
-var ZE = {
-  DAYS:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
-  LOCS:{hre:'Harare',byo:'Bulawayo',bul:'Bulawayo North',mut:'Mutare',mine:'Mine Site',kwk:'Kwekwe',gwn:'Gwanda',gwru:'Gweru'},
-  DEFAULTS:[
-    {loc:'hre',  start:'05:00',end:'09:00',days:[0,2,4]},
-    {loc:'hre',  start:'17:00',end:'21:00',days:[1,3,5]},
-    {loc:'byo',  start:'06:00',end:'10:00',days:[0,2,4]},
-    {loc:'byo',  start:'18:00',end:'22:00',days:[1,3,5]},
-    {loc:'mine', start:'05:00',end:'13:00',days:[1,3]},
-    {loc:'mut',  start:'07:00',end:'11:00',days:[0,2,4]},
-    {loc:'gwn',  start:'06:00',end:'14:00',days:[2,4]},
-  ],
-  overrides:{},
-  customBlocks:[],
-
-  harNow:function(){
-    var n=new Date(), u=n.getTime()+n.getTimezoneOffset()*60000;
-    return new Date(u+7200000);
-  },
-  isInBlock:function(block, now){
-    var day=now.getDay(); // 0=Sun
-    // convert Sun=0 to Mon=0 system
-    var mday=(day+6)%7;
-    if(block.days.indexOf(mday)<0) return false;
-    var h=now.getHours(), m=now.getMinutes();
-    var cur=h*60+m;
-    var s=block.start.split(':'); var e=block.end.split(':');
-    var st=parseInt(s[0])*60+parseInt(s[1]);
-    var en=parseInt(e[0])*60+parseInt(e[1]);
-    return cur>=st && cur<=en;
-  },
-  isActive:function(loc){
-    if(loc in this.overrides) return this.overrides[loc];
-    var allBlocks=this.DEFAULTS.concat(this.customBlocks);
-    var now=this.harNow();
-    return allBlocks.filter(function(b){return b.loc===loc;}).some(function(b){return ZE.isInBlock(b,now);});
-  },
-  curShift:function(){
-    var h=this.harNow().getHours();
-    return h>=6&&h<14?'Day':h>=14&&h<22?'Afternoon':'Night';
-  },
-  nextBlockFor:function(loc){
-    // rough: scan next 24h in 15min increments
-    var now=this.harNow();
-    var allBlocks=this.DEFAULTS.concat(this.customBlocks).filter(function(b){return b.loc===loc;});
-    for(var i=1;i<=96;i++){
-      var t=new Date(now.getTime()+i*15*60000);
-      for(var j=0;j<allBlocks.length;j++){
-        if(this.isInBlock(allBlocks[j],t)){
-          var h=t.getHours(), m=t.getMinutes();
-          return (h<10?'0'+h:h)+':'+(m<10?'0'+m:m)+' today';
-        }
-      }
-    }
-    return 'None in 24h';
-  }
-};
-
-// Render immediately — no timeout — no blank page
-function zeInitImmediate(){
-  var locs=Object.keys(ZE.LOCS);
-  var activeN=0, normalN=0;
-  var grid=document.getElementById('ze-loc-grid');
-  if(!grid)return;
-  grid.innerHTML=locs.map(function(loc){
-    var active=ZE.isActive(loc);
-    if(active) activeN++; else normalN++;
-    var col=active?'#ff1744':'#00e676';
-    var bg=active?'rgba(255,23,68,.07)':'rgba(0,230,118,.05)';
-    var bdr=active?'rgba(255,23,68,.22)':'rgba(0,230,118,.15)';
-    var icon=active?'🔴':'🟢';
-    var ov=loc in ZE.overrides?'<div style="font-size:8px;color:#ffab00;margin-top:3px;font-weight:700">⚠ Manual override</div>':'';
-    return '<div style="background:'+bg+';border:1px solid '+bdr+';border-radius:10px;padding:13px 14px">'
-      +'<div style="font-weight:800;font-size:13px;color:'+col+'">'+icon+' '+ZE.LOCS[loc]+'</div>'
-      +'<div style="font-size:9px;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-top:2px">'+loc.toUpperCase()+'</div>'
-      +'<div style="margin-top:8px;font-size:11px;font-weight:800;color:'+col+'">'+(active?'SHEDDING ACTIVE':'POWER NORMAL')+'</div>'
-      +'<div style="font-size:9px;color:var(--mut);margin-top:3px;line-height:1.5">'+(active?'Battery alarms annotated<br>Generator runtime tracked':'Standard thresholds apply')+'</div>'
-      +ov+'</div>';
-  }).join('');
-  // stat bar
-  var ac=document.getElementById('ze-active-count');
-  var nc=document.getElementById('ze-normal-count');
-  var sh=document.getElementById('ze-cur-shift');
-  var nb=document.getElementById('ze-next-block');
-  if(ac) ac.textContent=activeN;
-  if(nc) nc.textContent=normalN;
-  if(sh) sh.textContent=ZE.curShift();
-  if(nb) nb.textContent=ZE.nextBlockFor('hre');
-  // header chip
-  var chip=document.getElementById('ze-hdr-chip');
-  if(chip) chip.style.display=activeN>0?'flex':'none';
-}
-
-function zeRefresh(){ zeInitImmediate(); }
-
-function zeApplyOverride(){
-  var loc=document.getElementById('ze-ov-loc').value.trim().toLowerCase();
-  var val=document.getElementById('ze-ov-val').value;
-  var msg=document.getElementById('ze-ov-msg');
-  if(!loc){if(msg)msg.textContent='Enter a location code';return;}
-  if(val==='on') ZE.overrides[loc]=true;
-  else if(val==='off') ZE.overrides[loc]=false;
-  else delete ZE.overrides[loc];
-  zeInitImmediate();
-  if(msg){msg.textContent='Override applied for '+loc.toUpperCase();setTimeout(function(){msg.textContent='';},3000);}
-  // Try API
-  try{fetch((window.B||'')+'/api/admin/loadshedding/'+encodeURIComponent(loc),{
-    method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':window.spToken||''},
-    body:JSON.stringify({override:val==='on'?true:val==='off'?false:null})
-  });}catch(e){}
-}
-
-var _zeCustomBlocks=[];
-function zeAddBlock(){
-  var loc=document.getElementById('ze-s-loc').value.trim().toLowerCase();
-  var st=document.getElementById('ze-s-start').value.trim();
-  var en=document.getElementById('ze-s-end').value.trim();
-  var ds=document.getElementById('ze-s-days').value.trim();
-  if(!loc||!st||!en){alert('Fill Location, Start and End');return;}
-  var days=ds?ds.split(',').map(function(d){return parseInt(d.trim());}).filter(function(n){return !isNaN(n)&&n>=0&&n<7;}):[0,1,2,3,4,5,6];
-  var block={loc:loc,start:st,end:en,days:days};
-  _zeCustomBlocks.push(block);
-  ZE.customBlocks=_zeCustomBlocks;
-  // render table
-  var body=document.getElementById('ze-blocks-body');
-  if(body) body.innerHTML=_zeCustomBlocks.map(function(b,i){
-    return '<div style="padding:7px 0;border-bottom:1px solid var(--b1);display:grid;grid-template-columns:80px 80px 80px 1fr 30px;gap:8px;align-items:center">'
-      +'<span style="color:var(--cyn);font-weight:700;font-family:var(--mono)">'+b.loc.toUpperCase()+'</span>'
-      +'<span style="color:var(--txt)">'+b.start+'</span>'
-      +'<span style="color:var(--txt)">'+b.end+'</span>'
-      +'<span style="color:var(--mut);font-size:9px">Days: '+b.days.map(function(d){return ZE.DAYS[d];}).join(', ')+'</span>'
-      +'<button onclick="_zeCustomBlocks.splice('+i+',1);ZE.customBlocks=_zeCustomBlocks;zeAddBlock&&zeAddBlock()" '
-      +'style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px;padding:0">✕</button>'
-      +'</div>';
-  }).join('');
-  zeInitImmediate();
-  // POST to API
-  try{fetch((window.B||'')+'/api/admin/loadshedding/'+encodeURIComponent(loc),{
-    method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':window.spToken||''},
-    body:JSON.stringify({blocks:[{start:st,end:en,days:days}]})
-  });}catch(e){}
-}
-
-// Auto-init ZESA on page load + every 10 min
-setTimeout(zeInitImmediate, 100);
-setInterval(zeInitImmediate, 600000);
-
-// ── ZESA nav tab click handler ───────────────────────────────
-document.addEventListener('DOMContentLoaded',function(){
-  var zt=document.querySelector('.nt[data-page="zesa"]');
-  if(zt) zt.addEventListener('click',function(){spNav('zesa');});
-});
-
-// ── SNMP badge helper ────────────────────────────────────────
-window.renderSnmpBadge=function(method){
-  if(method==='snmp')
-    return '<span style="font-size:7.5px;padding:1px 6px;border-radius:3px;background:rgba(0,230,118,.1);color:var(--grn);border:1px solid rgba(0,230,118,.2);font-weight:700">SNMP</span>';
-  return '<span style="font-size:7.5px;padding:1px 6px;border-radius:3px;background:rgba(255,171,0,.1);color:#ffab00;border:1px solid rgba(255,171,0,.2);font-weight:700" title="Install pysnmp for full SNMP monitoring">TCP</span>';
-};
-
-// ── Schema helper ────────────────────────────────────────────
-window.schemaForType=function(t){
-  var m={pump:'mining_mechanical',conveyor:'mining_mechanical',ventilation:'mining_mechanical',
-    plc:'mining_instrumentation',scada_node:'mining_instrumentation',sensor:'mining_instrumentation',power_meter:'mining_instrumentation',
-    cbs_controller:'cbs',
-    base_station:'telecom',network_tower:'telecom',microwave_link:'telecom',
-    router:'network',switch:'network',firewall:'network',wan_link:'network',
-    workstation:'workstation'};
-  return m[t]||'network';
-};
-
-console.info('%cIISentinel™ v4.0 — ZW Edition loaded','color:#00d4ff;font-weight:800;font-size:12px');
-
 </script>
-
-<!-- ════════════════ ZESA PAGE ════════════════ -->
-<div class="page" id="page-zesa">
-  <div class="hero" style="margin-bottom:14px">
-    <div class="hero-bg" style="background:linear-gradient(135deg,#1a0e00 0%,#2a1800 60%,#0e0800 100%)">
-      <svg viewBox="0 0 900 140" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="zp" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M30 5 L35 25 L25 25 Z" fill="#ffab00" opacity=".25"/>
-            <line x1="30" y1="25" x2="30" y2="55" stroke="#ffab00" stroke-width="1.5" opacity=".2"/>
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#zp)"/>
-        <circle cx="150" cy="70" r="40" fill="none" stroke="#ffab00" stroke-width=".6" opacity=".15"><animate attributeName="r" values="40;70;40" dur="5s" repeatCount="indefinite"/></circle>
-        <circle cx="750" cy="70" r="40" fill="none" stroke="#ffab00" stroke-width=".6" opacity=".15"><animate attributeName="r" values="40;70;40" dur="5s" repeatCount="indefinite" begin="2.5s"/></circle>
-      </svg>
-    </div>
-    <div class="hero-body">
-      <div>
-        <div class="hero-eyebrow" style="color:#ffab00">ZESA Load-shedding &middot; Africa/Harare (UTC+2) &middot; Power Context</div>
-        <div class="hero-h">Load-Shedding Manager</div>
-        <div class="hero-sub">Power anomalies contextualised during outages &middot; Battery discharge annotated not alarmed &middot; Generator tracking</div>
-      </div>
-      <div class="hero-protos">
-        <div class="hp" style="color:#ffab00">UTC+2 HRE</div>
-        <div class="hp">ZESA API</div>
-        <div class="hp">Auto-annotate</div>
-      </div>
-    </div>
-    <div class="statbar">
-      <div class="sb-item"><div class="sb-v" id="ze-active-count" style="color:#ffab00">0</div><div class="sb-l">Sites shedding</div></div>
-      <div class="sb-sep"></div>
-      <div class="sb-item"><div class="sb-v cg" id="ze-normal-count">0</div><div class="sb-l">Sites normal</div></div>
-      <div class="sb-sep"></div>
-      <div class="sb-item"><div class="sb-v cw" id="ze-cur-shift">&mdash;</div><div class="sb-l">Current shift</div></div>
-      <div class="sb-sep"></div>
-      <div class="sb-item"><div class="sb-v" id="ze-next-block" style="color:var(--mut);font-size:13px">&mdash;</div><div class="sb-l">Next block</div></div>
-      <div class="sb-fill"></div>
-      <button class="btn btn-ghost btn-sm" onclick="zeRefresh()" style="margin-right:8px">&#x21BB; Refresh</button>
-    </div>
-  </div>
-
-  <!-- Location status cards - rendered immediately, no blank gap -->
-  <div class="sl">Site Load-shedding Status</div>
-  <div id="ze-loc-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:9px;margin-bottom:14px">
-    <!-- Rendered synchronously by zeInitImmediate() -->
-  </div>
-
-  <!-- Two-column layout: override + schedule side by side -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-
-    <!-- Override panel -->
-    <div class="card">
-      <div class="ctitle">Manual Override — Unscheduled Outages</div>
-      <div style="font-size:9.5px;color:var(--mut);margin-bottom:12px;line-height:1.7">
-        Use when ZESA cuts power outside the normal schedule.<br>
-        During active shedding, battery alarms are annotated not escalated.
-      </div>
-      <div class="nm-field" style="margin-bottom:8px">
-        <span class="nm-lbl">Location Code</span>
-        <input class="nm-inp" id="ze-ov-loc" placeholder="hre / byo / bul / mine" style="width:100%">
-      </div>
-      <div class="nm-field" style="margin-bottom:10px">
-        <span class="nm-lbl">Set Override</span>
-        <select class="nm-inp" id="ze-ov-val" style="width:100%">
-          <option value="">— clear override (use schedule) —</option>
-          <option value="on">FORCE ON — outage active now</option>
-          <option value="off">FORCE OFF — power restored</option>
-        </select>
-      </div>
-      <button class="btn btn-amb btn-sm" style="width:100%" onclick="zeApplyOverride()">Apply Override</button>
-      <div id="ze-ov-msg" style="margin-top:8px;font-size:9px;color:var(--grn);min-height:14px"></div>
-    </div>
-
-    <!-- Impact summary -->
-    <div class="card">
-      <div class="ctitle">Power Anomaly Behaviour During Shedding</div>
-      <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px">
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:rgba(0,230,118,.04);border-radius:6px;border:1px solid rgba(0,230,118,.12)">
-          <span style="color:var(--grn);font-size:13px;flex-shrink:0">✓</span>
-          <div style="font-size:9.5px;color:var(--mut);line-height:1.6"><span style="color:var(--grn);font-weight:700">Battery discharge</span> — flagged as EXPECTED, not critical. Alarm annotated with shedding context.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:rgba(0,230,118,.04);border-radius:6px;border:1px solid rgba(0,230,118,.12)">
-          <span style="color:var(--grn);font-size:13px;flex-shrink:0">✓</span>
-          <div style="font-size:9.5px;color:var(--mut);line-height:1.6"><span style="color:var(--grn);font-weight:700">Low voltage on power meters</span> — annotated, not escalated. Generator runtime tracked separately.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:rgba(255,23,68,.04);border-radius:6px;border:1px solid rgba(255,23,68,.12)">
-          <span style="color:var(--red);font-size:13px;flex-shrink:0">!</span>
-          <div style="font-size:9.5px;color:var(--mut);line-height:1.6"><span style="color:var(--red);font-weight:700">CBS controllers</span> — always alert regardless of shedding status. Blast safety is never suppressed.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:rgba(255,23,68,.04);border-radius:6px;border:1px solid rgba(255,23,68,.12)">
-          <span style="color:var(--red);font-size:13px;flex-shrink:0">!</span>
-          <div style="font-size:9.5px;color:var(--mut);line-height:1.6"><span style="color:var(--red);font-weight:700">Network / Telecom outages</span> — always alert. Connectivity faults are never suppressed by power context.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Schedule editor -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="ctitle">Weekly Schedule Editor</div>
-    <div style="font-size:9.5px;color:var(--mut);margin-bottom:12px;line-height:1.7">
-      Define recurring load-shedding blocks per location. Default schedule reflects typical ZESA patterns for Harare/Bulawayo.
-      Days: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
-      <div class="nm-field"><span class="nm-lbl">Location</span><input class="nm-inp" id="ze-s-loc" placeholder="hre" style="width:90px"></div>
-      <div class="nm-field"><span class="nm-lbl">Start</span><input class="nm-inp" id="ze-s-start" placeholder="05:00" style="width:85px"></div>
-      <div class="nm-field"><span class="nm-lbl">End</span><input class="nm-inp" id="ze-s-end" placeholder="09:00" style="width:85px"></div>
-      <div class="nm-field"><span class="nm-lbl">Days (comma-sep)</span><input class="nm-inp" id="ze-s-days" placeholder="0,2,4" style="width:120px"></div>
-      <button class="btn btn-cyn btn-sm" onclick="zeAddBlock()">+ Add Block</button>
-    </div>
-    <div id="ze-blocks" style="font-size:10px;color:var(--mut)">
-      <div style="padding:8px 0;border-bottom:1px solid var(--b1);display:grid;grid-template-columns:80px 80px 80px 1fr;gap:8px;font-weight:700;font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em">
-        <span>Location</span><span>Start</span><span>End</span><span>Days</span>
-      </div>
-      <div id="ze-blocks-body"><div style="padding:10px 0;color:var(--dim);font-size:9.5px">No custom blocks — using system defaults</div></div>
-    </div>
-  </div>
-</div>
-<!-- ════════════════ END ZESA PAGE ════════════════ -->
-
 </body>
 </html>

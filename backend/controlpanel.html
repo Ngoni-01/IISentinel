@@ -710,28 +710,50 @@ function sc(v, hi, mid) {
 // ════════════════════════════════════════════════════
 // AUTH
 // ════════════════════════════════════════════════════
+function _showShell(name, role) {
+  document.getElementById('login-wrap').style.display = 'none';
+  document.getElementById('cp-app').style.display = 'flex';
+  document.getElementById('sb-name').textContent = name || '...';
+  document.getElementById('sb-role').textContent = (role||'engineer').toUpperCase();
+  // Skeleton values so layout doesn't jump
+  ['k-uptime','k-devs','k-queue','k-db','k-inc','k-col','k-sse','k-maint'].forEach(function(id){
+    var el=document.getElementById(id); if(el && el.textContent==='--') el.textContent='…';
+  });
+  if(!_clockInited){
+    _clockInited=true;
+    setInterval(function(){ document.getElementById('live-ts').textContent=new Date().toLocaleTimeString(); },1000);
+    setInterval(function(){ if(currentPage==='system') loadSystem(); }, 30000);
+  }
+}
+var _clockInited = false;
+
 async function doLogin() {
   var name = document.getElementById('l-name').value.trim();
   var pass = document.getElementById('l-pass').value.trim();
   document.getElementById('l-err').textContent = '';
   if(!name || !pass) { document.getElementById('l-err').textContent = 'Enter credentials.'; return; }
+  // Optimistic: show the shell frame immediately — feels instant
+  _showShell(name, 'engineer');
   try {
     var r = await fetch(B+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,password:pass})});
     var d = await r.json();
     if(d.success) {
       TOKEN = d.token; USERNAME = d.name;
-      document.getElementById('login-wrap').style.display = 'none';
-      document.getElementById('cp-app').style.display = 'flex';
       document.getElementById('sb-name').textContent = d.name;
       document.getElementById('sb-role').textContent = (d.role||'engineer').toUpperCase();
       toast('Welcome '+d.name,'Control panel access granted','tg');
       loadSystem();
-      setInterval(function(){ if(currentPage==='system') loadSystem(); }, 30000);
-      setInterval(function(){ document.getElementById('live-ts').textContent = new Date().toLocaleTimeString(); }, 1000);
     } else {
+      // Login failed — hide shell, go back to login
+      document.getElementById('login-wrap').style.display = 'flex';
+      document.getElementById('cp-app').style.display = 'none';
       document.getElementById('l-err').textContent = d.error || 'Invalid credentials.';
     }
-  } catch(e) { document.getElementById('l-err').textContent = 'Connection error: '+e.message; }
+  } catch(e) {
+    document.getElementById('login-wrap').style.display = 'flex';
+    document.getElementById('cp-app').style.display = 'none';
+    document.getElementById('l-err').textContent = 'Connection error: '+e.message;
+  }
 }
 
 function doLogout() {
@@ -1248,36 +1270,40 @@ async function loadDispatch() {
 // AUDIT LOG
 // ════════════════════════════════════════════════════
 async function loadAudit(page) {
-  auditPage=page||auditPage;
-  var actor=document.getElementById('audit-actor').value.trim();
-  var action=document.getElementById('audit-action').value.trim();
-  var url='/api/admin/audit?page='+auditPage+'&limit=30'+(actor?'&actor='+encodeURIComponent(actor):'')+(action?'&action='+encodeURIComponent(action):'');
-  var d=await api('GET',url.replace('/api/admin/audit','').replace(B+'/api/admin/audit','/api/admin/audit'));
-  // rebuild url properly
-  d=await fetch(B+'/api/admin/audit?page='+auditPage+'&limit=30'+(actor?'&actor='+encodeURIComponent(actor):'')+(action?'&action='+encodeURIComponent(action):''),{headers:hdr()}).then(function(r){return r.json();});
-  var rows=d.rows||[];
-  var total=d.total||0;
-  // badge
-  document.getElementById('audit-badge').textContent=total;
-  document.getElementById('audit-badge').className='sb-badge'+(total===0?' ok':'');
-  var el=document.getElementById('audit-rows');
-  if(!rows.length){el.innerHTML='<div style="color:var(--dim);padding:16px;text-align:center">No audit entries</div>';document.getElementById('audit-pager').innerHTML='';return;}
-  el.innerHTML=rows.map(function(r){
-    var rc=r.result==='ok'?'var(--grn)':r.result&&r.result.startsWith('HTTP')?'var(--cyn)':'var(--amb)';
+  auditPage = page || auditPage;
+  var actor  = document.getElementById('audit-actor').value.trim();
+  var action = document.getElementById('audit-action').value.trim();
+  var qs = '?page='+auditPage+'&limit=30'
+    +(actor  ? '&actor='+encodeURIComponent(actor)   : '')
+    +(action ? '&action='+encodeURIComponent(action) : '');
+  var d = await fetch(B+'/api/admin/audit'+qs, {headers:hdr()}).then(function(r){return r.json();});
+  var rows  = d.rows  || [];
+  var total = d.total || 0;
+  document.getElementById('audit-badge').textContent = total;
+  document.getElementById('audit-badge').className = 'sb-badge'+(total===0?' ok':'');
+  var el = document.getElementById('audit-rows');
+  if(!rows.length){
+    el.innerHTML='<div style="color:var(--dim);padding:16px;text-align:center">No audit entries</div>';
+    document.getElementById('audit-pager').innerHTML='';
+    return;
+  }
+  el.innerHTML = rows.map(function(r){
+    var rc = r.result==='ok'?'var(--grn)':r.result&&r.result.startsWith('HTTP')?'var(--cyn)':'var(--amb)';
     return '<div class="audit-row">'
       +'<div class="mono" style="font-size:9px;color:var(--dim)">'+fmtTs(r.ts).slice(0,16)+'</div>'
-      +'<div style="font-weight:600;font-size:10.5px">'+( r.actor||'—')+'</div>'
-      +'<div><span class="badge b-dim" style="font-size:8px">'+( r.action||'?')+'</span></div>'
+      +'<div style="font-weight:600;font-size:10.5px">'+(r.actor||'\u2014')+'</div>'
+      +'<div><span class="badge b-dim" style="font-size:8px">'+(r.action||'?')+'</span></div>'
       +'<div class="mono" style="font-size:9.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(r.target||'')+(r.detail?' &middot; '+r.detail:'')+'</div>'
-      +'<div class="mono" style="font-size:9.5px;color:'+rc+'">'+( r.result||'?')+'</div>'
+      +'<div class="mono" style="font-size:9.5px;color:'+rc+'">'+(r.result||'?')+'</div>'
       +'</div>';
   }).join('');
-  // pager
-  var pages=Math.ceil(total/30);
-  var pager='';
-  for(var i=1;i<=Math.min(pages,8);i++){pager+='<button class="pg-btn'+(i===auditPage?' cur':'')+'" onclick="loadAudit('+i+')">'+i+'</button>';}
-  if(pages>8) pager+='<span style="color:var(--dim);font-size:10px">+'+( pages-8)+' more</span>';
-  document.getElementById('audit-pager').innerHTML=pager;
+  var pages = Math.ceil(total/30);
+  var pager = '';
+  for(var i=1;i<=Math.min(pages,8);i++){
+    pager+='<button class="pg-btn'+(i===auditPage?' cur':'')+'" onclick="loadAudit('+i+')">'+i+'</button>';
+  }
+  if(pages>8) pager+='<span style="color:var(--dim);font-size:10px">+'+(pages-8)+' more</span>';
+  document.getElementById('audit-pager').innerHTML = pager;
 }
 
 // ════════════════════════════════════════════════════
@@ -1330,25 +1356,32 @@ document.addEventListener('keydown',function(e){
 (function tryAutoLogin(){
   var stored=sessionStorage.getItem('ii-cp-token');
   var uname=sessionStorage.getItem('ii-cp-user');
+  var role=sessionStorage.getItem('ii-cp-role')||'engineer';
   if(stored&&uname){
-    TOKEN=stored;USERNAME=uname;
-    document.getElementById('login-wrap').style.display='none';
-    document.getElementById('cp-app').style.display='flex';
-    document.getElementById('sb-name').textContent=uname;
+    TOKEN=stored; USERNAME=uname;
+    _showShell(uname, role);
     loadSystem();
-    setInterval(function(){ if(currentPage==='system') loadSystem(); }, 30000);
-    setInterval(function(){ document.getElementById('live-ts').textContent=new Date().toLocaleTimeString(); }, 1000);
   }
 })();
 
 // Persist session
+// Persist session token across page refreshes
 var _origLogin=doLogin;
 doLogin=async function(){
   await _origLogin();
-  if(TOKEN){sessionStorage.setItem('ii-cp-token',TOKEN);sessionStorage.setItem('ii-cp-user',USERNAME);}
+  if(TOKEN){
+    sessionStorage.setItem('ii-cp-token',TOKEN);
+    sessionStorage.setItem('ii-cp-user',USERNAME);
+    sessionStorage.setItem('ii-cp-role', document.getElementById('sb-role').textContent.toLowerCase());
+  }
 };
 var _origLogout=doLogout;
-doLogout=function(){ _origLogout(); sessionStorage.removeItem('ii-cp-token');sessionStorage.removeItem('ii-cp-user'); };
+doLogout=function(){
+  _origLogout();
+  sessionStorage.removeItem('ii-cp-token');
+  sessionStorage.removeItem('ii-cp-user');
+  sessionStorage.removeItem('ii-cp-role');
+};
 
 </script>
 </body>
