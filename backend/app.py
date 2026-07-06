@@ -49,7 +49,11 @@ except ImportError:
 
 # ── Password hashing ──────────────────────────────────────────────────────────
 try:
-    from werkzeug.security import generate_password_hash, check_password_hash
+    from werkzeug.security import generate_password_hash as _gph, check_password_hash
+    # scrypt (werkzeug default) takes 1-2s on low-CPU hosts like Render free tier.
+    # pbkdf2:sha256:150000 verifies ~10x faster while remaining a sound KDF.
+    def generate_password_hash(p):
+        return _gph(p, method='pbkdf2:sha256:150000')
     _WERKZEUG = True
 except ImportError:
     _WERKZEUG = False
@@ -108,6 +112,8 @@ def _db_init():
             health_score REAL, ai_diagnosis TEXT, automation_command TEXT,
             status TEXT DEFAULT 'open', assigned_to TEXT, resolved_by TEXT,
             notes TEXT, created_at TEXT);
+
+        CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status);
 
         CREATE TABLE IF NOT EXISTS specialists (
             id TEXT PRIMARY KEY, name TEXT UNIQUE,
@@ -774,10 +780,13 @@ def sanitize_metric(data: dict):
     if _mod not in ENABLED_MODULES:
         return {}, f'Device type not licensed in this edition ({EDITION_NAME}). Module required: {_mod}'
     cleaned = dict(data); cleaned['device_id'] = did
+    _SANE_DEFAULTS = {'cpu_load':50,'bandwidth_mbps':100,'latency_ms':10,
+                      'packet_loss':0,'connected_devices':10,'temperature':40,
+                      'signal_strength':80,'metric_value':0}
     for field,(lo,hi) in FIELD_BOUNDS.items():
         if field in cleaned:
             try: cleaned[field] = float(max(lo,min(hi,float(cleaned[field]))))
-            except: cleaned[field] = (lo+hi)/2
+            except: cleaned[field] = float(_SANE_DEFAULTS.get(field, lo))
     return cleaned, None
 
 def get_cached_data() -> list:
@@ -828,12 +837,12 @@ def process_single_metric(data: dict) -> dict:
     _train_buffer.append((list(features), heur))
     _sample_queue.append((json.dumps(features), heur))
 
-    _history_append(did, score)
-    reading_window.append(score)
+    dev_hist = _history_append(did, score)   # per-device history (was a global window
+    reading_window.append(score)             # mixing ALL devices' trends together)
     if len(reading_window) > 10: reading_window.pop(0)
 
-    predicted   = max(0,min(100,score+(reading_window[-1]-reading_window[0]))) \
-                  if len(reading_window)>=3 else score
+    predicted   = max(0,min(100,score+(dev_hist[-1]-dev_hist[0]))) \
+                  if len(dev_hist)>=3 else score
     fail_prob   = get_failure_probability(did, score)
     ettf        = get_ettf_minutes(did, score, dtype)
     fhi         = get_federated_health_index([_history_snapshot().get(d,50)
@@ -1171,22 +1180,34 @@ threading.Thread(target=_restore_nodes_from_db, daemon=True).start()
 # ROUTES — DASHBOARD
 # ════════════════════════════════════════════════════════════════════
 app_root = os.path.dirname(os.path.abspath(__file__))
+_page_cache: dict = {}   # path -> (mtime, content, etag)
+
+def _serve_page(fname, missing_msg):
+    """Serve an HTML file from memory with ETag — repeat visits get 304 (near-zero bytes)."""
+    path = os.path.join(app_root, fname)
+    try:
+        mtime = os.path.getmtime(path)
+        cached = _page_cache.get(fname)
+        if not cached or cached[0] != mtime:
+            with open(path, encoding='utf-8') as f:
+                content = f.read()
+            etag = f'"{fname}-{int(mtime)}-{len(content)}"'
+            _page_cache[fname] = (mtime, content, etag)
+        mtime, content, etag = _page_cache[fname]
+        if request.headers.get('If-None-Match') == etag:
+            return '', 304, {'ETag': etag, 'Cache-Control': 'no-cache'}
+        return content, 200, {'Content-Type': 'text/html; charset=utf-8',
+                              'ETag': etag, 'Cache-Control': 'no-cache'}
+    except FileNotFoundError:
+        return missing_msg, 404
 
 @app.route('/')
 def index():
-    try:
-        with open(os.path.join(app_root,'dashboard.html'),encoding='utf-8') as f:
-            return f.read(),200,{'Content-Type':'text/html; charset=utf-8'}
-    except FileNotFoundError:
-        return '<h1>dashboard.html not found</h1>',404
+    return _serve_page('dashboard.html', '<h1>dashboard.html not found</h1>')
 
 @app.route('/admin')
 def admin_panel():
-    try:
-        with open(os.path.join(app_root,'controlpanel.html'),encoding='utf-8') as f:
-            return f.read(),200,{'Content-Type':'text/html; charset=utf-8'}
-    except FileNotFoundError:
-        return '<h1>controlpanel.html not found — place it in the backend/ folder</h1>',404
+    return _serve_page('controlpanel.html', '<h1>controlpanel.html not found</h1>')
 
 @app.route('/health')
 def health_check():
@@ -1496,6 +1517,10 @@ def login():
             row = con.execute("SELECT * FROM specialists WHERE name=?", (name,)).fetchone()
             if not row or not check_password_hash(row['password_hash'] or '', pwd):
                 return jsonify({'success':False,'error':'Invalid credentials'}),401
+            if (row['password_hash'] or '').startswith('scrypt'):
+                # migrate legacy scrypt hash to fast pbkdf2 (next login is instant)
+                con.execute("UPDATE specialists SET password_hash=? WHERE id=?",
+                            (generate_password_hash(pwd), row['id']))
             token = row['token'] or secrets.token_hex(24)
             if not row['token']:
                 con.execute("UPDATE specialists SET token=? WHERE id=?", (token, row['id']))
@@ -1597,8 +1622,22 @@ def sse_stream():
         mimetype='text/event-stream',
         headers={'Cache-Control':'no-cache','X-Accel-Buffering':'no','Connection':'keep-alive'})
 
+_pdf_cache = {'bytes': None, 'ts': 0}
+def _prewarm_reportlab():
+    try:
+        import reportlab.platypus, reportlab.lib.pagesizes  # noqa — pay import cost at boot, not first click
+        print('[Boot] reportlab pre-warmed')
+    except Exception:
+        pass
+threading.Thread(target=_prewarm_reportlab, daemon=True).start()
+
 @app.route('/api/export-pdf')
 def export_pdf():
+    # 30s cache: repeat exports are instant
+    if _pdf_cache['bytes'] and time.time() - _pdf_cache['ts'] < 30:
+        return send_file(BytesIO(_pdf_cache['bytes']), as_attachment=True,
+            download_name=f'IISentinel_Report_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")}.pdf',
+            mimetype='application/pdf')
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -1686,6 +1725,8 @@ def export_pdf():
     story.append(Paragraph(f'IISentinel v3.3 Confidential — {now_s}',
         sty(fontName='Helvetica-Oblique',fontSize=7,textColor=MUTED)))
     doc.build(story); buf.seek(0)
+    _pdf_cache['bytes'] = buf.getvalue(); _pdf_cache['ts'] = time.time()
+    buf.seek(0)
     return send_file(buf,as_attachment=True,
         download_name=f'IISentinel_Report_{datetime.now(timezone.utc).strftime("%Y%m%d_%H%M")}.pdf',
         mimetype='application/pdf')

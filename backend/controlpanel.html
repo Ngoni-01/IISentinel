@@ -38,7 +38,10 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fo
   position:relative;z-index:10}
 #sidebar::-webkit-scrollbar{width:0}
 .sb-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--b1);flex-shrink:0}
-.sb-logo-ii{font-size:17px;font-weight:900;letter-spacing:-.07em;color:var(--cyn);text-shadow:0 0 16px rgba(0,212,255,.4)}
+.sb-logo-ii{font-size:17px;font-weight:900;letter-spacing:-.07em;
+  background:linear-gradient(180deg,#8feaff,#00d4ff 60%,#0aa4d6);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 10px rgba(0,212,255,.4))}
 .sb-logo-txt{font-size:11px;font-weight:700;color:var(--txt)}
 .sb-logo-sub{font-size:8.5px;color:var(--mut);letter-spacing:.04em}
 .sb-section{font-size:8px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.16em;

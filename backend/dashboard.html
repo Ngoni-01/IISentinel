@@ -557,6 +557,36 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
 .cas-body{border-radius:22px}
 .cas-canvas-wrap{background:rgba(4,10,22,.72);backdrop-filter:blur(10px)}
 #cas-canvas{cursor:default}
+
+/* ════════ PREMIUM LOGO ════════ */
+.logo{gap:9px;align-items:center}
+.logo-mark{width:30px;height:30px;border-radius:9px;flex-shrink:0;position:relative;
+  background:linear-gradient(135deg,#0a2438 0%,#071522 100%);
+  border:1px solid rgba(0,212,255,.28);
+  box-shadow:0 0 0 1px rgba(255,255,255,.04) inset,0 4px 18px -4px rgba(0,212,255,.45);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.logo-mark::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 48%,transparent 62%);
+  animation:sheen 4.5s ease-in-out infinite}
+@keyframes sheen{0%,70%,100%{transform:translateX(-110%)}35%{transform:translateX(110%)}}
+.logo-mark span{font-size:14px;font-weight:900;letter-spacing:-.09em;
+  background:linear-gradient(180deg,#7ee6ff 0%,#00d4ff 55%,#0091cc 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 6px rgba(0,212,255,.5))}
+.logo-word{display:flex;align-items:baseline}
+.logo-ii{background:linear-gradient(180deg,#8feaff 0%,#00d4ff 60%,#0aa4d6 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:none;filter:drop-shadow(0 0 12px rgba(0,212,255,.35))}
+.logo-s{background:linear-gradient(180deg,#ffffff 0%,#c9d8ee 55%,#8fa3c0 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  font-weight:650;letter-spacing:-.015em}
+.logo-v{color:var(--dim)}
+/* splash inherits the same premium gradients */
+.spl-i1,.spl-i2{background:linear-gradient(180deg,#8feaff,#00d4ff 60%,#0aa4d6);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:none;filter:drop-shadow(0 0 30px rgba(0,212,255,.45))}
+.spl-word{background:linear-gradient(180deg,#fff,#c9d8ee 55%,#8fa3c0);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 </style>
 </head>
 <body>
@@ -577,7 +607,8 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
 
 <header>
   <div class="logo">
-    <span class="logo-ii">II</span><span class="logo-s">Sentinel</span><span class="logo-v">&#x2122; 3.3</span>
+    <div class="logo-mark"><span>II</span></div>
+    <div class="logo-word"><span class="logo-ii" style="font-size:18px;font-weight:900;letter-spacing:-.07em">II</span><span class="logo-s" style="font-size:16px">Sentinel</span><span class="logo-v" style="font-size:9px;margin-left:3px;vertical-align:super;font-family:var(--mono)">&#x2122;</span></div>
   </div>
   <div class="sep" style="height:24px"></div>
   <span class="hd-title">Intelligent Infrastructure Sentinel</span>
@@ -1881,11 +1912,15 @@ async function loadWx() {
   wrap.innerHTML='<div style="color:var(--amb);padding:14px;font-size:11px">\u231B Loading weather\u2026</div>';
   var firstWind=null, firstPrecip=null;
   wrap.innerHTML='';
+  var results = await Promise.all(locs.map(function(l){
+    return fetch(B+'/api/weather?loc='+l.k,{signal:AbortSignal.timeout(10000)})
+      .then(function(r){return r.json();}).catch(function(){return null;});
+  }));
   for(var i=0;i<locs.length;i++){
     var loc=locs[i];
     try {
-      var r=await fetch(B+'/api/weather?loc='+loc.k,{signal:AbortSignal.timeout(10000)});
-      var d=await r.json();
+      var d=results[i];
+      if(!d) throw new Error('unavailable');
       var iconMap={0:'\u2600',1:'\uD83C\uDF24',2:'\u26C5',3:'\u2601',45:'\uD83C\uDF2B',51:'\uD83C\uDF26',61:'\uD83C\uDF27',80:'\uD83C\uDF26',95:'\u26C8'};
       var icon=iconMap[d.weather_code]||'\uD83C\uDF21';
       var tempCol=d.temperature>38?'var(--red)':d.temperature>30?'var(--amb)':'var(--txt)';
