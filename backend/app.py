@@ -36,6 +36,11 @@ import numpy as np
 import joblib
 import requests as req
 from flask import Flask, request, jsonify, send_file, Response, stream_with_context
+try:
+    from flask_compress import Compress as _Compress
+    _HAS_COMPRESS = True
+except ImportError:
+    _HAS_COMPRESS = False
 
 # ── Password hashing ──────────────────────────────────────────────────────────
 try:
@@ -91,6 +96,7 @@ def _db_init():
             ai_diagnosis TEXT, automation_command TEXT, created_at TEXT);
         CREATE INDEX IF NOT EXISTS idx_metrics_dev ON metrics(device_id);
         CREATE INDEX IF NOT EXISTS idx_metrics_ts  ON metrics(created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_metrics_dev_ts ON metrics(device_id, created_at DESC);
 
         CREATE TABLE IF NOT EXISTS incidents (
             id TEXT PRIMARY KEY, device_id TEXT, device_type TEXT,
@@ -139,6 +145,13 @@ def _db_init():
             ettf_crit_minutes INTEGER DEFAULT 30,
             updated_by TEXT, updated_at TEXT);
 
+        CREATE TABLE IF NOT EXISTS training_samples (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            features TEXT, score REAL, ts TEXT);
+
+        CREATE TABLE IF NOT EXISTS model_meta (
+            k TEXT PRIMARY KEY, v TEXT);
+
         CREATE TABLE IF NOT EXISTS dispatch_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ts TEXT, device_id TEXT, command_type TEXT,
@@ -178,6 +191,22 @@ def _db_init():
 
 _db_init()
 
+def _restore_training_state():
+    try:
+        with _db_conn() as con:
+            row = con.execute("SELECT v FROM model_meta WHERE k='source'").fetchone()
+            if row and row['v'] == 'ml-real-data':
+                _model_meta['source'] = 'ml-real-data'
+            rows = con.execute(
+                "SELECT features, score FROM training_samples ORDER BY id DESC LIMIT 3000"
+            ).fetchall()
+        for r in reversed(rows):
+            try: _train_buffer.append((json.loads(r['features']), float(r['score'])))
+            except Exception: pass
+        if rows: print(f"[Boot] Restored {len(rows)} real training samples "
+                       f"(model source: {_model_meta['source']})")
+    except Exception as e: print(f'[Boot] training restore: {e}')
+
 # ── Rate limiter ──────────────────────────────────────────────────────────────
 _rate_buckets: dict = {}
 _rate_lock = threading.Lock()
@@ -212,18 +241,47 @@ except Exception:
     rf_model, iso_model = _build_models()
 
 # ── Flask app ─────────────────────────────────────────────────────────────────
-app = Flask(__name__, template_folder='.', static_folder='static', static_url_path='/static')
+_static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+os.makedirs(_static_dir, exist_ok=True)
+app = Flask(__name__, template_folder='.', static_folder=_static_dir, static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 _apply_cors(app)
+if _HAS_COMPRESS:
+    _cx = _Compress(); _cx.init_app(app)
+    app.config['COMPRESS_MIMETYPES'] = ['application/json','text/html','text/css','application/javascript']
+    app.config['COMPRESS_LEVEL'] = 6
+    app.config['COMPRESS_MIN_SIZE'] = 500
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 NETWORK_TYPES = ['router','switch','firewall','wan_link','workstation']
 TELECOM_TYPES = ['base_station','network_tower','microwave_link']
 MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
 CBS_TYPES     = ['cbs_controller']
+_raw_modules = os.environ.get('ENABLED_MODULES', 'net,tc,mc,cbs')
+ENABLED_MODULES = {m.strip() for m in _raw_modules.split(',') if m.strip() in ('net','tc','mc','cbs')}
+if not ENABLED_MODULES: ENABLED_MODULES = {'net','tc','mc','cbs'}
+if 'cbs' in ENABLED_MODULES and 'mc' not in ENABLED_MODULES:
+    ENABLED_MODULES.add('mc')
+_EDITION_NAMES = {
+    frozenset({'net'}): 'Network Edition',
+    frozenset({'tc'}): 'Telecom Edition',
+    frozenset({'mc'}): 'Mining OT Edition',
+    frozenset({'mc','cbs'}): 'Mining OT + CBS Safety Edition',
+    frozenset({'net','tc'}): 'Network + Telecom Edition',
+    frozenset({'net','tc','mc','cbs'}): 'Enterprise Suite',
+}
+EDITION_NAME = _EDITION_NAMES.get(frozenset(ENABLED_MODULES),
+    'Custom Edition (' + '+'.join(sorted(ENABLED_MODULES)) + ')')
+
+def _module_of_dtype(dtype: str) -> str:
+    if dtype in CBS_TYPES: return 'cbs'
+    if dtype in MINING_TYPES: return 'mc'
+    if dtype in TELECOM_TYPES: return 'tc'
+    return 'net'
+
 CBS_SAFETY_THRESHOLD = 90.0
 RETRAIN_THRESHOLD    = 50
-CACHE_TTL            = 2
+CACHE_TTL            = 10
 WEATHER_CACHE_TTL    = 60
 
 COST_RATES = {
@@ -255,6 +313,15 @@ READING_INTERVALS_MIN = {
 metric_queue  = deque(maxlen=1000)
 queue_lock    = threading.Lock()
 _data_cache   = {'data': [], 'ts': 0}
+_intel_cache  = {'data': {}, 'ts': 0}
+INTEL_CACHE_TTL = 8
+_INTEL_LOCK = threading.Lock()
+_token_cache: dict = {}      # token -> (name, role, expiry) — avoids DB hit per admin request
+_TOKEN_TTL = 60
+_train_buffer = deque(maxlen=3000)   # (features, heuristic_score) — REAL telemetry only
+_sample_queue = deque(maxlen=2000)
+_model_meta   = {'source': 'heuristic-coldstart', 'real_retrains': 0}
+REAL_TRAIN_MIN = 500
 _weather_cache: dict = {}
 
 _history_lock  = threading.RLock()
@@ -478,6 +545,19 @@ def flush_worker():
         except Exception as e: print(f'[Flush] {e}')
         platform_stats['last_flush']  = datetime.now(timezone.utc).isoformat()
         platform_stats['queue_depth'] = len(metric_queue)
+        if _sample_queue:
+            try:
+                srows = []
+                while _sample_queue:
+                    f, s = _sample_queue.popleft()
+                    srows.append((f, s, datetime.now(timezone.utc).isoformat()))
+                with _db_conn() as con:
+                    con.executemany(
+                        "INSERT INTO training_samples (features,score,ts) VALUES (?,?,?)", srows)
+                    con.execute(
+                        "DELETE FROM training_samples WHERE id NOT IN "
+                        "(SELECT id FROM training_samples ORDER BY id DESC LIMIT 5000)")
+            except Exception as e: print(f'[Flush] samples: {e}')
 
 def scorer_worker():
     while True:
@@ -505,26 +585,25 @@ def retrain_worker():
         try:
             from sklearn.ensemble import RandomForestRegressor, IsolationForest
             platform_stats['last_retrain_attempt'] = datetime.now(timezone.utc).isoformat()
-            with _db_conn() as con:
-                rows = [dict(r) for r in
-                        con.execute("SELECT * FROM metrics ORDER BY created_at DESC LIMIT 2000")]
-            if len(rows) < 50: continue
-            X, y = [], []
-            for r in rows:
-                f = [r.get('cpu_load',50) or 50, r.get('bandwidth_mbps',100) or 100,
-                     r.get('latency_ms',10) or 10, r.get('packet_loss',0) or 0,
-                     r.get('connected_devices',10) or 10,
-                     r.get('temperature',40) or 40, r.get('signal_strength',80) or 80]
-                if None not in f and r.get('health_score') is not None:
-                    X.append(f); y.append(r['health_score'])
-            if len(X) < 50: continue
-            X = np.array(X); y = np.array(y)
+            # FIXED: retrain from live-captured feature vectors, not DB rows
+            # (metrics table has no cpu_load column — old code trained on constants)
+            buf = list(_train_buffer)
+            if len(buf) < REAL_TRAIN_MIN:
+                print(f'[Retrain] Only {len(buf)} real samples — need {REAL_TRAIN_MIN}+, skipping')
+                continue
+            X = np.array([b[0] for b in buf]); y = np.array([b[1] for b in buf])
             nrf  = RandomForestRegressor(n_estimators=100,max_depth=10,random_state=42)
             nrf.fit(X,y)
             niso = IsolationForest(n_estimators=100,contamination=0.08,random_state=42)
             niso.fit(X[y>=50])
             joblib.dump(nrf,'health_model.pkl'); joblib.dump(niso,'anomaly_model.pkl')
             rf_model = nrf; iso_model = niso; anomaly_count = 0
+            _model_meta['source'] = 'ml-real-data'
+            _model_meta['real_retrains'] = _model_meta.get('real_retrains',0) + 1
+            try:
+                with _db_conn() as con:
+                    con.execute("INSERT OR REPLACE INTO model_meta (k,v) VALUES ('source','ml-real-data')")
+            except Exception: pass
             platform_stats['last_retrain_success'] = datetime.now(timezone.utc).isoformat()
             platform_stats['retrain_count'] = platform_stats.get('retrain_count',0)+1
             print(f'[Retrain] Done — {len(X)} samples')
@@ -562,6 +641,22 @@ for _fn in (flush_worker, scorer_worker, retrain_worker, full_sync_worker, maint
     threading.Thread(target=_fn, daemon=True).start()
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+def heuristic_health_score(features: list, device_type: str = '') -> float:
+    """Explainable rule-based scorer: authoritative during cold start, and the
+    training label (teacher) — the ML model never learns from dummy values."""
+    cpu, bw, lat, loss, devs, temp, sig = features
+    score = 100.0
+    score -= max(0, cpu - 60) * 0.7
+    score -= max(0, lat - 50) * 0.08
+    score -= min(30, loss * 3.5)
+    score -= max(0, temp - 60) * 0.9
+    score -= max(0, 70 - sig) * 0.45
+    if device_type in MINING_TYPES:
+        score -= max(0, temp - 75) * 1.2
+    if device_type in CBS_TYPES:
+        score = min(score, sig)
+    return float(max(0.0, min(100.0, score)))
+
 def build_features(data: dict) -> list:
     return [float(data.get('cpu_load',50) or 50),
             float(data.get('bandwidth_mbps',100) or 100),
@@ -670,6 +765,9 @@ def sanitize_metric(data: dict):
         if not data.get(f): return {}, f'Missing: {f}'
     did = str(data['device_id'])
     if not re.match(r'^[a-zA-Z0-9_\-]{1,80}$', did): return {}, 'Invalid device_id'
+    _mod = _module_of_dtype(str(data.get('device_type','')))
+    if _mod not in ENABLED_MODULES:
+        return {}, f'Device type not licensed in this edition ({EDITION_NAME}). Module required: {_mod}'
     cleaned = dict(data); cleaned['device_id'] = did
     for field,(lo,hi) in FIELD_BOUNDS.items():
         if field in cleaned:
@@ -685,8 +783,12 @@ def get_cached_data() -> list:
     try:
         with _db_conn() as con:
             rows = con.execute(
-                "SELECT * FROM (SELECT * FROM metrics ORDER BY created_at DESC LIMIT 1000) "
-                "GROUP BY device_id ORDER BY created_at DESC").fetchall()
+                """SELECT m.* FROM metrics m
+                INNER JOIN (
+                    SELECT device_id, MAX(created_at) AS max_ts
+                    FROM metrics GROUP BY device_id
+                ) l ON m.device_id=l.device_id AND m.created_at=l.max_ts
+                ORDER BY m.created_at DESC LIMIT 500""").fetchall()
         data = [dict(r) for r in rows]
         for item in data:
             did = item.get('device_id','')
@@ -694,6 +796,7 @@ def get_cached_data() -> list:
                 item.update(_cbs_integrity_cache[did])
         _data_cache['data'] = data
         _data_cache['ts']   = now
+        _intel_cache['ts']  = 0
         return data
     except Exception as e:
         print(f'[Cache] {e}')
@@ -707,7 +810,9 @@ def process_single_metric(data: dict) -> dict:
 
     features = build_features(data)
     arr      = np.array([features])
-    score    = float(np.clip(rf_model.predict(arr)[0], 0, 100))
+    heur     = heuristic_health_score(features, dtype)
+    ml_score = float(np.clip(rf_model.predict(arr)[0], 0, 100))
+    score = ml_score if _model_meta['source'] == 'ml-real-data' else heur
     if dtype == 'cbs_controller':
         score = min(score, data.get('signal_strength', score))
     anom = bool(iso_model.predict(arr)[0] == -1)
@@ -715,6 +820,8 @@ def process_single_metric(data: dict) -> dict:
 
     with scoring_lock:
         scoring_queue.append({'features':features,'device_id':did})
+    _train_buffer.append((list(features), heur))
+    _sample_queue.append((json.dumps(features), heur))
 
     _history_append(did, score)
     reading_window.append(score)
@@ -814,14 +921,21 @@ def require_specialist(f):
     def decorated(*args,**kwargs):
         token = request.headers.get('X-Specialist-Token','').strip()
         if not token: return jsonify({'error':'Unauthorised'}),401
+        cached = _token_cache.get(token)
+        if cached and cached[2] > time.time():
+            request.specialist_name, request.specialist_role = cached[0], cached[1]
+            return f(*args,**kwargs)
         try:
             with _db_conn() as con:
                 row = con.execute(
                     "SELECT * FROM specialists WHERE token=?", (token,)
                 ).fetchone()
-                if not row: return jsonify({'error':'Invalid token'}),401
+                if not row:
+                    _token_cache.pop(token, None)
+                    return jsonify({'error':'Invalid token'}),401
                 request.specialist_name = row['name']
                 request.specialist_role = row['role'] or 'engineer'
+                _token_cache[token] = (row['name'], row['role'] or 'engineer', time.time()+_TOKEN_TTL)
         except Exception as e:
             return jsonify({'error':f'Auth error: {e}'}),401
         return f(*args,**kwargs)
@@ -833,14 +947,21 @@ def require_admin(f):
     def decorated(*args,**kwargs):
         token = request.headers.get('X-Specialist-Token','').strip()
         if not token: return jsonify({'error':'Unauthorised'}),401
+        cached = _token_cache.get(token)
+        if cached and cached[2] > time.time():
+            request.specialist_name, request.specialist_role = cached[0], cached[1]
+            return f(*args,**kwargs)
         try:
             with _db_conn() as con:
                 row = con.execute(
                     "SELECT * FROM specialists WHERE token=?", (token,)
                 ).fetchone()
-                if not row: return jsonify({'error':'Invalid token'}),401
+                if not row:
+                    _token_cache.pop(token, None)
+                    return jsonify({'error':'Invalid token'}),401
                 request.specialist_name = row['name']
                 request.specialist_role = row['role'] or 'engineer'
+                _token_cache[token] = (row['name'], row['role'] or 'engineer', time.time()+_TOKEN_TTL)
         except Exception as e:
             return jsonify({'error':f'Auth error: {e}'}),401
         return f(*args,**kwargs)
@@ -892,8 +1013,10 @@ def _demo_ingest(payload):
     process_single_metric(data)
 
 def demo_worker():
+    global DEMO_DEVICES
+    DEMO_DEVICES = [d for d in DEMO_DEVICES if _module_of_dtype(d['type']) in ENABLED_MODULES]
     in_event = {d['id']:0 for d in DEMO_DEVICES}
-    print('[Demo] Injection active — 15 devices, 4 sites')
+    print(f'[Demo] Injection active — {len(DEMO_DEVICES)} devices ({EDITION_NAME})')
     while True:
         for dev in DEMO_DEVICES:
             did = dev['id']; dtype = dev['type']
@@ -1216,14 +1339,18 @@ def platform_api():
         'devices_tracked':len(device_history),'anomaly_count':anomaly_count,
         'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
         'retrain_in_progress':_retrain_in_progress,
+        'model_source':_model_meta['source'],
+        'real_samples':len(_train_buffer),
+        'real_samples_needed':REAL_TRAIN_MIN,
+        'edition':EDITION_NAME,
+        'modules':sorted(ENABLED_MODULES),
         'platform_uptime_h':round(up/3600,2),'platform_stats':platform_stats,
         'demo_mode':os.environ.get('DEMO_MODE','false').lower()=='true',
         'notifications':{'email_enabled':NOTIFY['email_enabled'],
             'sms_enabled':NOTIFY['sms_enabled'],'whatsapp_enabled':NOTIFY['whatsapp_enabled'],
             'recent':list(notification_log)[:5]}})
 
-@app.route('/api/intelligence')
-def get_intelligence():
+def _compute_intel():
     snap      = _history_snapshot()
     all_d     = get_cached_data()
     dtype_map = {r['device_id']:r.get('device_type','') for r in all_d}
@@ -1231,7 +1358,7 @@ def get_intelligence():
     for d,score in snap.items():
         v = get_ettf_minutes(d,score,dtype_map.get(d,''))
         if v is not None: ttf_data[d]=v
-    return jsonify({
+    return {
         'federated_index'      : get_federated_health_index(list(snap.values())),
         'device_scores'        : snap,
         'uptime'               : {d:get_uptime_pct(d) for d in device_uptime},
@@ -1239,7 +1366,43 @@ def get_intelligence():
         'ttf_minutes'          : ttf_data,
         'retrain_needed'       : anomaly_count>=RETRAIN_THRESHOLD,
         'anomaly_count'        : anomaly_count,
-        'total_devices'        : len(device_history)})
+        'total_devices'        : len(device_history)}
+
+def _get_intel_cached():
+    now = time.time()
+    if now - _intel_cache['ts'] < INTEL_CACHE_TTL and _intel_cache['data']:
+        return _intel_cache['data']
+    with _INTEL_LOCK:
+        if now - _intel_cache['ts'] < INTEL_CACHE_TTL and _intel_cache['data']:
+            return _intel_cache['data']
+        result = _compute_intel()
+        _intel_cache['data'] = result
+        _intel_cache['ts']   = now
+        return result
+
+@app.route('/api/intelligence')
+def get_intelligence():
+    return jsonify(_get_intel_cached())
+
+@app.route('/api/config')
+def api_config():
+    return jsonify({
+        'edition': EDITION_NAME,
+        'modules': sorted(ENABLED_MODULES),
+        'version': '3.4',
+        'model_source': _model_meta.get('source','heuristic-coldstart'),
+        'real_samples': len(_train_buffer),
+    })
+
+@app.route('/api/ping')
+def api_ping():
+    return jsonify({'ok':True,'ts':time.time(),'devices':len(device_history)})
+
+@app.route('/api/snapshot')
+@optional_data_auth
+def get_snapshot():
+    platform_stats['requests_total'] += 1
+    return jsonify({'data':get_cached_data(),'intel':_get_intel_cached(),'ts':time.time()})
 
 @app.route('/api/twin/<device_id>')
 def digital_twin(device_id):
@@ -1316,7 +1479,7 @@ def get_weather():
 def login():
     if request.method=='OPTIONS': return '',204
     ip = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown')
-    if not _rate_ok(f'login:{ip}', max_calls=5, window=60):
+    if not _rate_ok(f'login:{ip}', max_calls=10, window=60):
         return jsonify({'success':False,'error':'Too many attempts — wait 60s'}),429
     data = request.get_json(silent=True) or {}
     name = str(data.get('name','')).strip()
@@ -1460,7 +1623,8 @@ def export_pdf():
     dtype_map = {r['device_id']:r.get('device_type','') for r in all_d}
     total_exp = sum(COST_RATES.get('sensor',8000)*(
         0.95 if s<20 else 0.6 if s<35 else 0.25 if s<50 else 0) for s in scores)
-    now_s = datetime.now(timezone.utc).strftime('%d %B %Y  %H:%M UTC')
+    _hre = timezone(__import__('datetime').timedelta(hours=2))
+    now_s = datetime.now(_hre).strftime('%d %B %Y  %H:%M CAT')
     story=[]
     story.append(Paragraph('IISentinel v3.3',
         sty(fontName='Helvetica-Bold',fontSize=22,textColor=DARK,spaceAfter=2)))
@@ -1712,6 +1876,11 @@ def admin_system():
             'anomaly_count'      : anomaly_count,
             'retrain_needed'     : anomaly_count>=RETRAIN_THRESHOLD,
             'retrain_active'     : _retrain_in_progress,
+            'model_source'       : _model_meta['source'],
+            'real_samples'       : len(_train_buffer),
+            'real_samples_needed': REAL_TRAIN_MIN,
+            'edition'            : EDITION_NAME,
+            'modules'            : sorted(ENABLED_MODULES),
             'sse_subscribers'    : len(_sse_subs),
             'cpu_pct'            : cpu_pct,
             'mem_used_mb'        : mem_used,
@@ -1968,6 +2137,7 @@ def admin_reset_password(uid):
     try:
         with _db_conn() as con:
             con.execute("UPDATE specialists SET password_hash=?,token=? WHERE id=?",(ph,tok,uid))
+        _token_cache.clear()
         _audit(actor,'RESET_PASSWORD',uid)
         return jsonify({'ok':True})
     except Exception as e: return jsonify({'error':str(e)}),500
@@ -2140,6 +2310,7 @@ def trigger_retrain():
 # ════════════════════════════════════════════════════════════════════
 if __name__=='__main__':
     _refresh_maintenance()   # load any active windows from DB at startup
+    _restore_training_state()
     demo = os.environ.get('DEMO_MODE','false').lower()=='true'
     try:
         with _db_conn() as con:

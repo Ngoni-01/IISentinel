@@ -1445,9 +1445,9 @@ function closeDetail(){ document.getElementById('detail-ov').classList.remove('o
 // DATA FETCH
 // ================================================================
 function keepAlive() {
-  fetch(B + '/api/platform', {method:'GET',cache:'no-store'}).catch(function(){});
+  fetch(B + '/api/ping', {method:'GET',cache:'no-store'}).catch(function(){});
 }
-setInterval(keepAlive, 8 * 60 * 1000);
+setInterval(keepAlive, 5 * 60 * 1000);
 
 async function fetchAll() {
   if(_fetchInFlight) return;
@@ -1455,14 +1455,11 @@ async function fetchAll() {
   _fetchInFlight = true;
   if(!_serverAwake) setConnState('connecting');
   try {
-    var results = await Promise.allSettled([
-      fetch(B+'/api/data',        {cache:'no-store',signal:AbortSignal.timeout(20000)}),
-      fetch(B+'/api/intelligence',{cache:'no-store',signal:AbortSignal.timeout(20000)})
-    ]);
-    if(results[0].status==='rejected'||results[1].status==='rejected') throw new Error('Network error');
-    if(!results[0].value.ok||!results[1].value.ok) throw new Error('Server error '+results[0].value.status);
-    var newData  = await results[0].value.json();
-    var newIntel = await results[1].value.json();
+    var _snap = await fetch(B+'/api/snapshot',{cache:'no-store',signal:AbortSignal.timeout(20000)});
+    if(!_snap.ok) throw new Error('Server error '+_snap.status);
+    var _sd = await _snap.json();
+    var newData  = _sd.data;
+    var newIntel = _sd.intel;
     if(!Array.isArray(newData)) throw new Error('Unexpected data format');
     var dataHash  = quickHash(newData);
     var intelHash = quickHash(newIntel);
@@ -1751,7 +1748,13 @@ async function fetchPlatform() {
     s('p-cache',(d.cache_age_seconds||0).toFixed(1)+'s');
     s('p-devs', d.devices_tracked||'0');
     s('p-uptime',(d.platform_uptime_h||0).toFixed(1)+'h');
-    s('p-retrain',d.retrain_in_progress?'Running...':d.retrain_needed?'Needed':'Optimal');
+    if(d.model_source==='heuristic-coldstart'){
+      s('p-retrain','Learning '+(d.real_samples||0)+'/'+(d.real_samples_needed||500));
+      var pr=document.getElementById('p-retrain'); if(pr){pr.className='iv cw';
+        pr.title='Explainable rule-based scoring active. ML model takes over once trained on '+(d.real_samples_needed||500)+' real readings from YOUR equipment.';}
+    } else {
+      s('p-retrain',d.retrain_in_progress?'Running...':d.retrain_needed?'Needed':'Optimal (real data)');
+    }
     var nc=d.notifications||{};
     function chip(id,on,lbl){ var e=document.getElementById(id); if(e){e.className='btn btn-sm '+(on?'btn-grn':'btn-ghost'); e.textContent=lbl;} }
     chip('nc-email',nc.email_enabled,'\u2709 Email');
@@ -2563,21 +2566,9 @@ async function assignInc(id){
   await fetch(B+'/api/incidents/'+id+'/assign',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({assigned_to:v,notes:''})}).catch(function(){});
   toast('Assigned','to '+v,'tw');loadInc();
 }
-async function resolveInc(id) {
-  await fetch(B + '/api/incidents/' + id + '/resolve', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Specialist-Token': spToken
-    },
-    body: JSON.stringify({
-      resolved_by: data.get('resolved_by', ''),
-      notes: data.get('notes', '')
-    })
-  }).catch(function () {});
-  
-  toast('Resolved', 'Incident closed', 'tg');
-  loadInc();
+async function resolveInc(id){
+  await fetch(B+'/api/incidents/'+id+'/resolve',{method:'POST',headers:{'Content-Type':'application/json','X-Specialist-Token':spToken},body:JSON.stringify({resolved_by:spName,notes:'Resolved via specialist panel'})}).catch(function(){});
+  toast('Resolved','By '+spName,'tg'); loadInc();
 }
 
 // ================================================================
@@ -2696,7 +2687,7 @@ async function toggleMaintenance(deviceId, enable){
   try {
     // We send a regular metric reading with in_maintenance=true/false.
     // The backend stores it and propagates via SSE.
-    var all=get_cached_data?get_cached_data():allData;
+    var all=allData;
     var dev=deviceIndex.get(deviceId)||{};
     var payload={
       device_id:deviceId,
@@ -2754,14 +2745,45 @@ window.addEventListener('resize', function(){
 // ================================================================
 // BOOT SEQUENCE
 // ================================================================
+var IIS_MODULES = ['net','tc','mc','cbs'];   // updated from /api/config
+var IIS_EDITION = 'Enterprise Suite';
+
+async function applyEdition(){
+  try {
+    var r = await fetch(B+'/api/config',{cache:'no-store',signal:AbortSignal.timeout(8000)});
+    var c = await r.json();
+    IIS_MODULES = c.modules || IIS_MODULES;
+    IIS_EDITION = c.edition || IIS_EDITION;
+  } catch(e) { return; }  // offline: show everything, degrade gracefully
+  // Hide sector tabs not in this edition
+  var tabMap = {net:'net', tc:'tc', mc:'mc', cbs:'cbs'};
+  Object.keys(tabMap).forEach(function(m){
+    if(IIS_MODULES.indexOf(m) === -1){
+      var t = document.querySelector('.nt[data-page="'+tabMap[m]+'"]');
+      if(t) t.style.display = 'none';
+      var s = document.getElementById('sub-'+tabMap[m]);
+      if(s) s.style.display = 'none';
+    }
+  });
+  // Cascade engine needs 2+ domains to mean anything
+  if(IIS_MODULES.length < 2){
+    var ct = document.querySelector('.nt[data-page="cascade"]');
+    if(ct) ct.style.display = 'none';
+  }
+  // Edition label in header
+  var hd = document.querySelector('.hd-title');
+  if(hd) hd.textContent = 'Intelligent Infrastructure Sentinel \u2014 ' + IIS_EDITION;
+}
+
 (function boot(){
+  applyEdition();
   // Initial data load
   fetchAll();
   fetchPlatform();
   nmRefresh();
 
   // Polling intervals
-  setInterval(fetchAll,    10000);   // 10 s full data refresh
+  setInterval(fetchAll, 15000);   // 10 s full data refresh
   setInterval(fetchPlatform,15000);  // 15 s platform stats
   setInterval(nmRefresh,   30000);   // 30 s node monitor
 
@@ -2796,14 +2818,13 @@ window.addEventListener('resize', function(){
 // UTILITY — seconds since last successful data fetch
 // ================================================================
 var _lastFetchTime = Date.now();
-var _origFetchAll  = fetchAll;
-fetchAll = async function(){
-  await _origFetchAll.apply(this,arguments);
-  _lastFetchTime = Date.now();
-};
-function time_since_last_update(){
-  return (Date.now()-_lastFetchTime)/1000;
-}
+(function(){
+  var _real = fetchAll;
+  fetchAll = async function(){
+    try{ await _real(); }finally{ _lastFetchTime = Date.now(); }
+  };
+})();
+function time_since_last_update(){ return (Date.now()-_lastFetchTime)/1000; }
 
 </script>
 </body>

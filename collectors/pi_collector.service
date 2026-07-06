@@ -1,0 +1,16 @@
+[Unit]
+Description=IISentinel Pi Edge Collector
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/iisentinel
+Environment=IIS_COLLECTOR_KEY=PASTE_YOUR_KEY_HERE
+ExecStart=/usr/bin/python3 /home/pi/iisentinel/pi_collector.py --server https://YOUR-APP.onrender.com --device mc-shaft1-pi-01 --type sensor
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

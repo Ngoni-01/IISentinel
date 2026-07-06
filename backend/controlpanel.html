@@ -664,6 +664,25 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fo
 // ════════════════════════════════════════════════════
 var B = window.location.origin;
 var TOKEN = null, USERNAME = null;
+var IIS_MODULES = ['net','tc','mc','cbs'], IIS_EDITION = 'Enterprise Suite';
+var MOD_OF_TYPE = {
+  router:'net',switch:'net',firewall:'net',wan_link:'net',workstation:'net',
+  base_station:'tc',network_tower:'tc',microwave_link:'tc',
+  pump:'mc',conveyor:'mc',ventilation:'mc',power_meter:'mc',sensor:'mc',plc:'mc',scada_node:'mc',
+  cbs_controller:'cbs'
+};
+(function loadEdition(){
+  fetch(B+'/api/config').then(function(r){return r.json();}).then(function(c){
+    IIS_MODULES = c.modules||IIS_MODULES; IIS_EDITION = c.edition||IIS_EDITION;
+    var sub = document.querySelector('.sb-logo-sub');
+    if(sub) sub.textContent = IIS_EDITION;
+    // Hide unlicensed device types from the Add Device dropdown
+    document.querySelectorAll('#dev-type option').forEach(function(o){
+      var m = MOD_OF_TYPE[o.value];
+      if(m && IIS_MODULES.indexOf(m)===-1) o.style.display='none';
+    });
+  }).catch(function(){});
+})();
 var currentPage = 'system';
 var auditPage = 1;
 var _sysData = {};
@@ -960,6 +979,8 @@ async function loadThresholds() {
     'CBS Safety':[]
   };
   rows.forEach(function(r){
+    var m = MOD_OF_TYPE[r.device_type] || 'net';
+    if(IIS_MODULES.indexOf(m) === -1) return;   // unlicensed module — hide
     if(['router','switch','firewall','wan_link','workstation'].includes(r.device_type)) sections['Network'].push(r);
     else if(['base_station','network_tower','microwave_link'].includes(r.device_type)) sections['TelecomCo'].push(r);
     else if(['cbs_controller'].includes(r.device_type)) sections['CBS Safety'].push(r);

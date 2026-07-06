@@ -2,12 +2,15 @@ services:
   - type: web
     name: iisentinel
     runtime: python
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    # CRITICAL: 1 worker + threads. Sync multi-worker breaks SSE (each SSE
+    # stream permanently occupies a sync worker -> total deadlock at 2 viewers)
+    startCommand: gunicorn app:app --workers 1 --threads 16 --timeout 120 --bind 0.0.0.0:$PORT
     envVars:
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_KEY
-        sync: false
+      - key: DEMO_MODE
+        value: "false"
       - key: SECRET_KEY
-        value: iisentinel-secret-2026
+        generateValue: true
+      - key: PRODUCTION
+        value: "true"
