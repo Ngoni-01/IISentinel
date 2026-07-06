@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23050d1a%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2734%27 font-weight=%27900%27 font-family=%27-apple-system,sans-serif%27 fill=%27%2300d4ff%27 text-anchor=%27middle%27%3EII%3C/text%3E%3C/svg%3E">
 <title>IISentinel&#x2122; v3.3 &mdash; Intelligent Infrastructure Sentinel</title>
 <script>
 // Load Chart.js asynchronously — page content renders immediately, charts fill in when ready
@@ -459,9 +460,117 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
   .cas-body{grid-template-columns:1fr}
   .reg-grid{grid-template-columns:1fr}
 }
+
+/* ════════ SPLASH — I · II · IISentinel ════════ */
+#ii-splash{position:fixed;inset:0;z-index:99999;background:#04080f;display:flex;
+  align-items:center;justify-content:center;flex-direction:column;
+  transition:opacity .6s cubic-bezier(.4,0,.2,1),visibility .6s}
+#ii-splash.gone{opacity:0;visibility:hidden;pointer-events:none}
+.spl-logo{display:flex;align-items:baseline;font-weight:900;letter-spacing:-.06em;
+  font-size:clamp(44px,9vw,84px);line-height:1}
+.spl-i1,.spl-i2{color:var(--cyn);opacity:0;transform:translateY(24px) scale(.85);
+  text-shadow:0 0 44px rgba(0,212,255,.55)}
+.spl-i1{animation:splIn .55s cubic-bezier(.34,1.56,.64,1) .25s forwards}
+.spl-i2{animation:splIn .55s cubic-bezier(.34,1.56,.64,1) .75s forwards}
+.spl-word{color:#f2f6ff;opacity:0;letter-spacing:-.04em;font-weight:700;
+  clip-path:inset(0 100% 0 0);animation:splWord .8s cubic-bezier(.16,1,.3,1) 1.35s forwards}
+@keyframes splIn{to{opacity:1;transform:none}}
+@keyframes splWord{0%{opacity:1;clip-path:inset(0 100% 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}
+.spl-sub{margin-top:14px;font-size:11px;color:var(--mut);letter-spacing:.32em;
+  text-transform:uppercase;opacity:0;animation:splFade .6s ease 2s forwards}
+@keyframes splFade{to{opacity:1}}
+.spl-skip{position:absolute;bottom:34px;font-size:11px;color:var(--dim);cursor:pointer;
+  padding:8px 22px;border-radius:30px;border:1px solid rgba(255,255,255,.08);
+  transition:all .25s;opacity:0;animation:splFade .5s ease 1s forwards}
+.spl-skip:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
+
+/* ════════ MODE SELECTOR — iOS launcher ════════ */
+#ii-select{position:fixed;inset:0;z-index:99998;display:none;flex-direction:column;
+  align-items:center;justify-content:center;padding:28px;
+  background:rgba(4,8,15,.82);backdrop-filter:blur(28px) saturate(1.5);
+  -webkit-backdrop-filter:blur(28px) saturate(1.5)}
+#ii-select.show{display:flex;animation:selIn .5s cubic-bezier(.16,1,.3,1)}
+#ii-select.gone{animation:selOut .4s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes selIn{from{opacity:0;transform:scale(1.04)}to{opacity:1;transform:none}}
+@keyframes selOut{to{opacity:0;transform:scale(.97);visibility:hidden}}
+.sel-title{font-size:clamp(20px,3.6vw,30px);font-weight:800;letter-spacing:-.045em;
+  color:#f2f6ff;margin-bottom:6px}
+.sel-sub{font-size:12px;color:var(--mut);margin-bottom:34px}
+.sel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,168px));
+  gap:14px;justify-content:center;max-width:760px;width:100%}
+.sel-card{position:relative;border-radius:24px;padding:22px 16px 18px;cursor:pointer;
+  background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);
+  text-align:center;transition:transform .35s cubic-bezier(.34,1.56,.64,1),
+  background .25s,border-color .25s;overflow:hidden;user-select:none}
+.sel-card:hover{transform:translateY(-5px) scale(1.03);background:rgba(255,255,255,.09);
+  border-color:rgba(255,255,255,.18)}
+.sel-card:active{transform:scale(.96)}
+.sel-orb{width:52px;height:52px;border-radius:16px;margin:0 auto 13px;display:flex;
+  align-items:center;justify-content:center;font-size:23px;
+  background:radial-gradient(circle at 32% 28%,var(--oc1),var(--oc2));
+  box-shadow:0 8px 26px -6px var(--oc2)}
+.sel-name{font-size:13.5px;font-weight:700;color:#eef3fc;letter-spacing:-.02em}
+.sel-desc{font-size:9.5px;color:var(--mut);margin-top:3px;line-height:1.45}
+.sel-enter{margin-top:32px;font-size:12px;color:var(--dim);cursor:pointer;
+  padding:10px 26px;border-radius:30px;border:1px solid rgba(255,255,255,.1);transition:all .25s}
+.sel-enter:hover{color:var(--txt);border-color:rgba(255,255,255,.25)}
+
+/* ════════ iOS POLISH OVERRIDES ════════ */
+header{backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);
+  background:rgba(5,13,26,.78) !important}
+nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgba(9,20,34,.8)}
+.nt{border-bottom:none !important;margin:5px 3px;height:28px;border-radius:20px;
+  padding:0 14px;transition:all .28s cubic-bezier(.34,1.56,.64,1)}
+.nt.active{background:rgba(0,212,255,.13)}
+.nt.t-cbs.active{background:rgba(255,23,68,.13)}
+.nt.t-sp.active{background:rgba(212,124,255,.13)}
+.card,.gc,.lcard,.icard,.fcard,.nm-wrap,.twin-wrap{border-radius:20px}
+.gc{transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s,border-color .3s}
+.gc:hover{transform:translateY(-4px) scale(1.015)}
+.btn{transition:all .28s cubic-bezier(.34,1.56,.64,1)}
+.btn:active{transform:scale(.92)}
+.dm-inner{border-radius:26px;backdrop-filter:blur(30px) saturate(1.5);
+  -webkit-backdrop-filter:blur(30px) saturate(1.5);background:rgba(8,16,32,.86) !important}
+
+/* ════════ PULSATING SECTION BANNERS (unique, no generic patterns) ════════ */
+.hero{--pulse:0,212,255;border-radius:24px}
+.hero-bg svg{display:none}   /* kill the generic grid/pattern art */
+.hero-bg::before,.hero-bg::after{content:'';position:absolute;border-radius:50%;
+  filter:blur(46px);opacity:.5;animation:orbPulse 5.5s ease-in-out infinite}
+.hero-bg::before{width:340px;height:340px;left:-70px;top:-140px;
+  background:radial-gradient(circle,rgba(var(--pulse),.5),transparent 68%)}
+.hero-bg::after{width:280px;height:280px;right:-40px;bottom:-140px;
+  background:radial-gradient(circle,rgba(var(--pulse),.34),transparent 70%);
+  animation-delay:2.7s}
+@keyframes orbPulse{0%,100%{transform:scale(1);opacity:.42}50%{transform:scale(1.22);opacity:.68}}
+.hero{animation:heroGlow 5.5s ease-in-out infinite}
+@keyframes heroGlow{0%,100%{box-shadow:0 0 0 1px rgba(var(--pulse),.14),0 14px 44px -18px rgba(var(--pulse),.28)}
+  50%{box-shadow:0 0 0 1px rgba(var(--pulse),.3),0 18px 62px -14px rgba(var(--pulse),.5)}}
+#page-net .hero{--pulse:0,188,212}
+#page-tc  .hero{--pulse:0,212,255}
+#page-mc  .hero{--pulse:255,193,7}
+#page-cbs .hero{--pulse:255,23,68}
+.hp{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+
+/* cascade glass panels */
+.cas-body{border-radius:22px}
+.cas-canvas-wrap{background:rgba(4,10,22,.72);backdrop-filter:blur(10px)}
+#cas-canvas{cursor:default}
 </style>
 </head>
 <body>
+<div id="ii-splash">
+  <div class="spl-logo"><span class="spl-i1">I</span><span class="spl-i2">I</span><span class="spl-word">Sentinel</span></div>
+  <div class="spl-sub">Intelligent Infrastructure Sentinel</div>
+  <div class="spl-skip" onclick="iiSkipSplash()">Skip</div>
+</div>
+<div id="ii-select">
+  <div class="sel-title">Where do you want to start?</div>
+  <div class="sel-sub" id="sel-edition">Enterprise Suite</div>
+  <div class="sel-grid" id="sel-grid"></div>
+  <div class="sel-enter" onclick="iiEnter('main')">Open full dashboard &rarr;</div>
+</div>
 <div id="app">
 
 <div class="ops-banner">&#x26A0; OPS FOCUS &mdash; CRITICAL ASSETS HIGHLIGHTED &mdash; PRESS F TO TOGGLE</div>
@@ -859,7 +968,7 @@ body.ops-focus .gc.g-r{transform:scale(1.09);animation:gcrit 1s ease-in-out infi
         </div>
         <canvas id="cas-canvas"></canvas>
         <div class="cas-zoom-info" id="cas-zoom-info">100%</div>
-        <div class="cas-hint" id="cas-hint-txt">Click node to inspect &middot; Shift+click to degrade &middot; Alt+click to restore &middot; Scroll to zoom &middot; Drag to pan</div>
+        <div class="cas-hint" id="cas-hint-txt">Click: inspect &amp; focus neighborhood &middot; Double-click: zoom to node &middot; Shift+click: degrade &middot; Alt+click: restore &middot; Scroll: zoom &middot; Drag: pan</div>
         <div id="cas-edit-panel" style="display:none;margin-top:10px;padding:10px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.18);border-radius:var(--r-sm)">
           <div style="font-size:10px;font-weight:700;color:var(--cyn);margin-bottom:7px">&#x270E; Topology editor &mdash; drag to reposition &middot; right-click two nodes to connect</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1910,6 +2019,8 @@ var nodes=[],edges=[],nodeMap={};
 var alpha=1.0,k=120,W=800,H=480;
 var viewX=0,viewY=0,viewScale=1;
 var selectedNode=null,hoveredNode=null,dragNode=null,dragOffset={x:0,y:0};
+var focusSet=null;                                   // neighborhood highlight on select
+var _viewTarget=null;                                // {x,y,s} smooth-zoom target
 var editMode=false,rightClickFirst=null;
 var liveHealth={};
 var cascadeActive=false,cascadeTimers=[];
@@ -1932,6 +2043,7 @@ function init(){
   resize();
   setNodes(JSON.parse(JSON.stringify(DEF_NODES)),JSON.parse(JSON.stringify(DEF_EDGES)));
   bindEvents(); loop(); loadTopologyQuiet(); inited=true;
+  setTimeout(fitView, 1600);   // settle then frame the graph
 }
 function resize(){
   if(!canvas) return;
@@ -2107,6 +2219,8 @@ function draw(){
   }
   edges.forEach(function(e){
     var es=e.source,et=e.target;if(!es||!et)return;
+    var edim = focusSet && !(focusSet.has(es.id)&&focusSet.has(et.id));
+    ctx.globalAlpha = edim ? 0.10 : 1;
     var hs=es.health!==undefined?es.health:100,ht=et.health!==undefined?et.health:100,hmin=Math.min(hs,ht);
     var col=hmin<35?'rgba(255,23,68,.7)':hmin<70?'rgba(255,171,0,.55)':'rgba(30,200,245,.22)';
     var mx=(es.x+et.x)/2,my=(es.y+et.y)/2-18;
@@ -2119,6 +2233,7 @@ function draw(){
     ctx.beginPath();
     ctx.moveTo(ex+ux*9-uy*5,ey+uy*9+ux*5);ctx.lineTo(ex+ux*15,ey+uy*15);ctx.lineTo(ex+ux*9+uy*5,ey+uy*9-ux*5);
     ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.stroke();
+    ctx.globalAlpha = 1;
   });
   var now2=performance.now();
   if(now2-lastParticle>650){
@@ -2142,6 +2257,8 @@ function draw(){
   });
   nodes.forEach(function(n){
     var h=n.health!==undefined?n.health:100,col=healthCol(h),dcol=DOM_COL[n.domain]||col,r=nodeR(n);
+    var dimmed = focusSet && !focusSet.has(n.id);
+    ctx.globalAlpha = dimmed ? 0.16 : 1;
     var sel=selectedNode&&selectedNode.id===n.id,hov=hoveredNode&&hoveredNode.id===n.id;
     if(h<35){
       var pulse=Math.sin(Date.now()/280)*.5+.5;
@@ -2170,6 +2287,7 @@ function draw(){
       ctx.beginPath();ctx.arc(n.x,n.y,r+7,0,Math.PI*2);
       ctx.strokeStyle='rgba(0,212,255,.8)';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.stroke();ctx.setLineDash([]);
     }
+    ctx.globalAlpha = 1;
   });
   ctx.restore();
   if(hoveredNode&&!dragNode){
@@ -2193,7 +2311,15 @@ function roundRect(c,x,y,w,h,r){
   c.lineTo(x+w,y+h-r);c.arcTo(x+w,y+h,x+w-r,y+h,r);c.lineTo(x+r,y+h);
   c.arcTo(x,y+h,x,y+h-r,r);c.lineTo(x,y+r);c.arcTo(x,y,x+r,y,r);c.closePath();
 }
-function loop(){tick();draw();animId=requestAnimationFrame(loop);}
+function loop(){
+  if(_viewTarget){
+    viewX += (_viewTarget.x - viewX)*0.14;
+    viewY += (_viewTarget.y - viewY)*0.14;
+    viewScale += (_viewTarget.s - viewScale)*0.14;
+    if(Math.abs(_viewTarget.x-viewX)<0.5 && Math.abs(_viewTarget.s-viewScale)<0.004) _viewTarget=null;
+  }
+  tick();draw();animId=requestAnimationFrame(loop);
+}
 function canvasXY(e){
   var rect=canvas.getBoundingClientRect();
   var src=e.touches?e.touches[0]:e;
@@ -2215,15 +2341,23 @@ function bindEvents(){
   canvas.addEventListener('mousemove',function(e){
     if(dragNode&&editMode){var p=canvasXY(e);dragNode.x=p.x-dragOffset.x;dragNode.y=p.y-dragOffset.y;dragNode.vx=0;dragNode.vy=0;reheat(0.05);}
     else if(isPanning){viewX=panOrigin.x+(e.clientX-panStart.x);viewY=panOrigin.y+(e.clientY-panStart.y);}
-    else{var p2=canvasXY(e);hoveredNode=nodeAt(p2.x,p2.y);}
+    else{var p2=canvasXY(e);hoveredNode=nodeAt(p2.x,p2.y);
+      canvas.style.cursor = hoveredNode?'pointer':(isPanning?'grabbing':'default');}
   });
   canvas.addEventListener('mouseup',function(){if(dragNode){dragNode.fixed=false;dragNode=null;}isPanning=false;});
   canvas.addEventListener('mouseleave',function(){hoveredNode=null;dragNode=null;isPanning=false;});
   canvas.addEventListener('click',function(e){
     if(isPanning)return;
     var p=canvasXY(e),n=nodeAt(p.x,p.y);
-    if(!n){selectedNode=null;showNodeDetail(null);return;}
+    if(!n){selectedNode=null;focusSet=null;showNodeDetail(null);return;}
     selectedNode=n;showNodeDetail(n);
+    focusSet=new Set([n.id]);
+    edges.forEach(function(e){
+      if(e.source&&e.target){
+        if(e.source.id===n.id)focusSet.add(e.target.id);
+        if(e.target.id===n.id)focusSet.add(e.source.id);
+      }
+    });
     if(!editMode){
       if(e.shiftKey){var deg=20+Math.random()*32;propagateCascade(n.id,deg);updateInsight(n.id);}
       else if(e.altKey){n.health=liveHealth[n.liveId]!==undefined?liveHealth[n.liveId]:100;logEvent('ok',n.label,'Restored to '+Math.round(n.health)+'%',new Date().toLocaleTimeString());reheat(0.15);}
@@ -2239,7 +2373,12 @@ function bindEvents(){
     }
   });
   canvas.addEventListener('dblclick',function(e){
-    if(!editMode)return;
+    if(!editMode){
+      var pz=canvasXY(e),nz=nodeAt(pz.x,pz.y);
+      if(nz){var s2=1.7;_viewTarget={x:W/2-nz.x*s2, y:H/2-nz.y*s2, s:s2};}
+      else resetView();
+      return;
+    }
     var p=canvasXY(e),removed=false;
     edges=edges.filter(function(edge){
       var es=edge.source,et=edge.target;if(!es||!et||removed)return true;
@@ -2273,10 +2412,10 @@ function fitView(){
   var minX=Math.min.apply(null,xs)-30,maxX=Math.max.apply(null,xs)+30;
   var minY=Math.min.apply(null,ys)-30,maxY=Math.max.apply(null,ys)+30;
   var scaleX=W/(maxX-minX),scaleY=H/(maxY-minY);
-  viewScale=Math.max(0.25,Math.min(2,Math.min(scaleX,scaleY)));
-  viewX=W/2-((minX+maxX)/2)*viewScale;viewY=H/2-((minY+maxY)/2)*viewScale;
+  var ts=Math.max(0.25,Math.min(2,Math.min(scaleX,scaleY)));
+  _viewTarget={x:W/2-((minX+maxX)/2)*ts, y:H/2-((minY+maxY)/2)*ts, s:ts};
 }
-function resetView(){viewX=0;viewY=0;viewScale=1;}
+function resetView(){_viewTarget={x:0,y:0,s:1};}
 function reheat(a){alpha=Math.max(alpha,a!==undefined?a:0.6);}
 function scenario(name){
   reset(true);cascadeActive=true;
@@ -2826,6 +2965,62 @@ var _lastFetchTime = Date.now();
 })();
 function time_since_last_update(){ return (Date.now()-_lastFetchTime)/1000; }
 
+
+// ════════ SPLASH + MODE SELECTOR CONTROLLER ════════
+var SEL_SECTIONS = [
+  {page:'main',   name:'Overview',    icon:'\u26A1', c1:'#28d9ff', c2:'#0669a8', desc:'Fleet health at a glance', mod:null},
+  {page:'net',    name:'Network',     icon:'\uD83C\uDF10', c1:'#22c9e8', c2:'#0a5f7a', desc:'Routers, switches, WAN',  mod:'net'},
+  {page:'tc',     name:'Telecom',     icon:'\uD83D\uDCE1', c1:'#37b6ff', c2:'#1246a8', desc:'Towers & backhaul',       mod:'tc'},
+  {page:'mc',     name:'Mining OT',   icon:'\u26CF',  c1:'#ffd34d', c2:'#a86a00', desc:'Pumps, PLCs, conveyors',  mod:'mc'},
+  {page:'cbs',    name:'CBS Safety',  icon:'\uD83D\uDEE1', c1:'#ff5470', c2:'#8f0f26', desc:'Blast interlock monitor', mod:'cbs'},
+  {page:'cascade',name:'Cascade',     icon:'\uD83D\uDD17', c1:'#c07cff', c2:'#5a18b8', desc:'Failure propagation map', mod:'_multi'},
+  {page:'intel',  name:'Intelligence',icon:'\uD83E\uDDE0', c1:'#4de8a0', c2:'#0a7a45', desc:'AI scores, ETTF, risk',   mod:null}
+];
+function iiBuildSelector(){
+  var g = document.getElementById('sel-grid'); if(!g) return;
+  var ed = document.getElementById('sel-edition');
+  if(ed) ed.textContent = IIS_EDITION;
+  g.innerHTML = SEL_SECTIONS.filter(function(s){
+    if(s.mod === '_multi') return IIS_MODULES.length >= 2;
+    return !s.mod || IIS_MODULES.indexOf(s.mod) !== -1;
+  }).map(function(s){
+    return '<div class="sel-card" onclick="iiEnter(\''+s.page+'\')" style="--oc1:'+s.c1+';--oc2:'+s.c2+'">'
+      +'<div class="sel-orb">'+s.icon+'</div>'
+      +'<div class="sel-name">'+s.name+'</div>'
+      +'<div class="sel-desc">'+s.desc+'</div></div>';
+  }).join('');
+}
+function iiEnter(page){
+  var sel = document.getElementById('ii-select');
+  if(sel){ sel.classList.add('gone'); setTimeout(function(){ sel.style.display='none'; },420); }
+  var tab = document.querySelector('.nt[data-page="'+page+'"]');
+  if(tab && page !== 'main') tab.click();
+}
+function iiSkipSplash(){
+  var sp = document.getElementById('ii-splash');
+  if(sp) sp.classList.add('gone');
+  iiShowSelector();
+}
+function iiShowSelector(){
+  iiBuildSelector();
+  var sel = document.getElementById('ii-select');
+  if(sel && sel.style.display !== 'none') sel.classList.add('show');
+}
+(function iiIntro(){
+  var sp = document.getElementById('ii-splash');
+  if(sessionStorage.getItem('ii-intro-seen')){
+    if(sp) sp.classList.add('gone');
+    // returning within the same session: land straight on the dashboard
+    var sel = document.getElementById('ii-select'); if(sel) sel.style.display='none';
+    return;
+  }
+  sessionStorage.setItem('ii-intro-seen','1');
+  setTimeout(function(){
+    if(sp && !sp.classList.contains('gone')){ sp.classList.add('gone'); iiShowSelector(); }
+  }, 2600);
+  // rebuild selector once edition config arrives
+  setTimeout(iiBuildSelector, 1200);
+})();
 </script>
 </body>
 </html>

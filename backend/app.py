@@ -20,6 +20,11 @@ Install: pip install flask flask-cors reportlab scikit-learn joblib \
                     numpy requests werkzeug psycopg2-binary psutil
 """
 import os, re, json, time, random, threading, smtplib, sqlite3
+try:
+    from dotenv import load_dotenv
+    load_dotenv()   # reads backend/.env if present — Render uses dashboard env vars instead
+except ImportError:
+    pass
 import uuid, secrets, hashlib
 from collections import deque
 from datetime import datetime, timezone
