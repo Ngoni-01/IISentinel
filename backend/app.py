@@ -329,6 +329,7 @@ INTEL_CACHE_TTL = 8
 _INTEL_LOCK = threading.Lock()
 _token_cache: dict = {}      # token -> (name, role, expiry) — avoids DB hit per admin request
 _TOKEN_TTL = 60
+_last_features: dict = {}   # device_id -> latest feature vector (for XAI)
 _train_buffer = deque(maxlen=3000)   # (features, heuristic_score) — REAL telemetry only
 _sample_queue = deque(maxlen=2000)
 _model_meta   = {'source': 'heuristic-coldstart', 'real_retrains': 0}
@@ -836,6 +837,7 @@ def process_single_metric(data: dict) -> dict:
         scoring_queue.append({'features':features,'device_id':did})
     _train_buffer.append((list(features), heur))
     _sample_queue.append((json.dumps(features), heur))
+    _last_features[did] = list(features)
 
     dev_hist = _history_append(did, score)   # per-device history (was a global window
     reading_window.append(score)             # mixing ALL devices' trends together)
@@ -1203,6 +1205,10 @@ def _serve_page(fname, missing_msg):
 
 @app.route('/')
 def index():
+    return _serve_page('sentinel-x.html', '<h1>sentinel-x.html not found</h1>')
+
+@app.route('/classic')
+def classic_dashboard():
     return _serve_page('dashboard.html', '<h1>dashboard.html not found</h1>')
 
 @app.route('/admin')
@@ -2350,6 +2356,179 @@ def trigger_retrain():
     anomaly_count = RETRAIN_THRESHOLD
     _audit(actor,'TRIGGER_RETRAIN','ml_model')
     return jsonify({'ok':True,'message':'Retrain scheduled for next cycle (~60s)'})
+
+
+# ════════════════════════════════════════════════════════════════════
+# ROUTES — v4 INNOVATION LAYER (brief · ask · explain · timeline · PWA)
+# ════════════════════════════════════════════════════════════════════
+_FEATURE_LABELS = ['CPU load','Bandwidth','Latency','Packet loss','Connected devices','Temperature','Signal strength']
+
+def _heuristic_breakdown(features, device_type=''):
+    """Exact per-factor contributions of the explainable scorer."""
+    cpu, bw, lat, loss, devs, temp, sig = features
+    parts = [
+        {'factor':'CPU pressure','penalty':round(max(0,cpu-60)*0.7,1),'value':f'{cpu:.0f}%'},
+        {'factor':'Latency','penalty':round(max(0,lat-50)*0.08,1),'value':f'{lat:.0f}ms'},
+        {'factor':'Packet loss','penalty':round(min(30,loss*3.5),1),'value':f'{loss:.1f}%'},
+        {'factor':'Thermal stress','penalty':round(max(0,temp-60)*0.9,1),'value':f'{temp:.0f}\u00b0C'},
+        {'factor':'Signal weakness','penalty':round(max(0,70-sig)*0.45,1),'value':f'{sig:.0f}%'},
+    ]
+    if device_type in MINING_TYPES:
+        parts.append({'factor':'Mining thermal (extra)','penalty':round(max(0,temp-75)*1.2,1),'value':f'{temp:.0f}\u00b0C'})
+    return sorted(parts, key=lambda p: -p['penalty'])
+
+def _build_brief():
+    snap = _history_snapshot()
+    data = get_cached_data()
+    intel = _get_intel_cached()
+    dmap = {r['device_id']: r for r in data}
+    crit = sorted([(d,s) for d,s in snap.items() if s < 35], key=lambda x: x[1])
+    warn = [(d,s) for d,s in snap.items() if 35 <= s < 70]
+    healthy = [(d,s) for d,s in snap.items() if s >= 70]
+    maint = [d for d,r in dmap.items() if r.get('in_maintenance')]
+    ttfs = sorted(intel.get('ttf_minutes',{}).items(), key=lambda x: x[1])[:3]
+    exposure = 0
+    for did, s in snap.items():
+        if did in maint: continue
+        rate = COST_RATES.get(dmap.get(did,{}).get('device_type','sensor'), 8000)
+        impact = .95 if s<20 else .6 if s<35 else .25 if s<50 else 0
+        exposure += rate * impact
+    cbs = [r for r in data if r.get('device_type')=='cbs_controller']
+    cbs_hold = any((r.get('integrity_score') or r.get('health_score',100)) < CBS_SAFETY_THRESHOLD for r in cbs)
+    text = f"{len(snap)} assets monitored. {len(healthy)} healthy, {len(warn)} warning, {len(crit)} critical."
+    if crit: text += f" Most urgent: {crit[0][0].split('-')[-2] if '-' in crit[0][0] else crit[0][0]} at {crit[0][1]:.0f} out of 100."
+    if ttfs: text += f" Earliest predicted failure in {ttfs[0][1]} minutes: {ttfs[0][0]}."
+    if cbs: text += " Blasting system " + ("ON HOLD — do not proceed." if cbs_hold else "armed and safe.")
+    if exposure > 0: text += f" Current risk exposure {int(exposure):,} dollars per hour."
+    if maint: text += f" {len(maint)} device{'s' if len(maint)!=1 else ''} in planned maintenance."
+    if not crit and not warn: text += " All systems nominal."
+    return {'total':len(snap),'healthy':len(healthy),'warning':len(warn),'critical':len(crit),
+            'critical_list':[{'id':d,'score':round(s,1)} for d,s in crit[:5]],
+            'soonest_failures':[{'id':d,'minutes':m} for d,m in ttfs],
+            'exposure_hr':int(exposure),'maintenance':len(maint),
+            'cbs_present':bool(cbs),'cbs_hold':cbs_hold,
+            'fhi':intel.get('federated_index',100),
+            'model_source':_model_meta['source'],'edition':EDITION_NAME,
+            'text':text,'ts':datetime.now(timezone.utc).isoformat()}
+
+@app.route('/api/v4/brief')
+def v4_brief():
+    return jsonify(_build_brief())
+
+@app.route('/api/v4/explain/<device_id>')
+def v4_explain(device_id):
+    feats = _last_features.get(device_id)
+    if not feats:
+        return jsonify({'error':'No readings for this device yet'}), 404
+    data = get_cached_data()
+    rec = next((r for r in data if r['device_id']==device_id), {})
+    dtype = rec.get('device_type','')
+    heur = heuristic_health_score(feats, dtype)
+    ml = float(np.clip(rf_model.predict(np.array([feats]))[0],0,100))
+    try: imps = [round(float(x),3) for x in rf_model.feature_importances_]
+    except Exception: imps = [0]*7
+    return jsonify({
+        'device_id':device_id,'device_type':dtype,
+        'score_in_use':round(ml if _model_meta['source']=='ml-real-data' else heur,1),
+        'heuristic_score':round(heur,1),'ml_score':round(ml,1),
+        'model_source':_model_meta['source'],
+        'penalties':_heuristic_breakdown(feats,dtype),
+        'features':{n:round(v,1) for n,v in zip(_FEATURE_LABELS,feats)},
+        'ml_feature_importance':dict(zip(_FEATURE_LABELS,imps)),
+        'anomaly':bool(rec.get('anomaly_flag')),
+        'ettf_minutes':get_ettf_minutes(device_id,_history_get(device_id)[-1] if _history_get(device_id) else 50,dtype),
+        'in_maintenance':bool(rec.get('in_maintenance')),
+    })
+
+@app.route('/api/v4/timeline')
+def v4_timeline():
+    minutes = min(int(request.args.get('minutes',120)), 720)
+    cutoff = datetime.now(timezone.utc).timestamp() - minutes*60
+    cutoff_iso = datetime.fromtimestamp(cutoff, tz=timezone.utc).isoformat()
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT device_id, health_score, created_at FROM metrics "
+                "WHERE created_at >= ? ORDER BY created_at ASC LIMIT 6000",
+                (cutoff_iso,)).fetchall()
+        series = {}
+        for r in rows:
+            try:
+                t = datetime.fromisoformat(r['created_at'].replace('Z','+00:00')).timestamp()
+                series.setdefault(r['device_id'], []).append([round(t), round(r['health_score'],1)])
+            except Exception: continue
+        return jsonify({'minutes':minutes,'now':time.time(),'series':series})
+    except Exception as e:
+        return jsonify({'error':str(e)}),500
+
+@app.route('/api/v4/ask', methods=['POST'])
+def v4_ask():
+    """Ask Sentinel — deterministic natural-language answers over live state.
+    Honest design: rule-based intelligence that works offline with zero external
+    dependencies; an LLM can be layered on later via the same contract."""
+    q = str((request.get_json(silent=True) or {}).get('q','')).lower().strip()
+    if not q: return jsonify({'answer':'Ask me about fleet health, risks, costs, or any device.','chips':['Fleet summary','What fails next?','Worst device','CBS status']})
+    b = _build_brief()
+    snap = _history_snapshot()
+    data = get_cached_data(); dmap = {r['device_id']:r for r in data}
+    intel = _get_intel_cached()
+    # device mention?
+    mentioned = next((d for d in snap if d.lower() in q), None)
+    if not mentioned:
+        toks = [t for t in re.split(r'[^a-z0-9\-]+', q) if len(t)>3]
+        for d in snap:
+            if any(t in d.lower() for t in toks): mentioned = d; break
+    def dev_answer(d):
+        s = snap[d]; r = dmap.get(d,{})
+        pen = _heuristic_breakdown(_last_features.get(d,[50,100,10,0,10,40,80]), r.get('device_type',''))
+        top = [p for p in pen if p['penalty']>0][:2]
+        why = ('; '.join(f"{p['factor']} ({p['value']}, -{p['penalty']})" for p in top)) if top else 'all factors nominal'
+        ettf = intel.get('ttf_minutes',{}).get(d)
+        extra = f" Predicted failure in ~{ettf} min." if ettf is not None else ''
+        return f"{d}: {s:.0f}/100. Main pressure: {why}.{extra}"
+    if mentioned and ('why' in q or 'explain' in q or 'what' in q or mentioned):
+        return jsonify({'answer':dev_answer(mentioned),'device':mentioned,
+                        'chips':[f'Explain {mentioned}','What fails next?','Fleet summary']})
+    if 'worst' in q or 'lowest' in q or 'weakest' in q:
+        d,s = min(snap.items(), key=lambda x:x[1]) if snap else (None,None)
+        return jsonify({'answer':dev_answer(d) if d else 'No devices yet.','device':d,'chips':['Why?','What fails next?']})
+    if 'best' in q or 'healthiest' in q:
+        d,s = max(snap.items(), key=lambda x:x[1]) if snap else (None,None)
+        return jsonify({'answer':f'Healthiest asset: {d} at {s:.0f}/100.' if d else 'No devices yet.','device':d,'chips':['Worst device','Fleet summary']})
+    if 'fail' in q or 'ettf' in q or 'next' in q or 'when' in q:
+        if b['soonest_failures']:
+            lines = ', '.join(f"{f['id']} in ~{f['minutes']}min" for f in b['soonest_failures'])
+            return jsonify({'answer':f"Predicted failures (trend-based): {lines}. These are extrapolations from declining health slopes — schedule intervention before the window closes.",'chips':['Worst device','Cost exposure']})
+        return jsonify({'answer':'No devices are currently on a declining failure trajectory. Trends are stable or improving.','chips':['Fleet summary','Any anomalies?']})
+    if 'cost' in q or 'exposure' in q or 'money' in q or '$' in q:
+        return jsonify({'answer':f"Current risk exposure: ${b['exposure_hr']:,}/hr across {b['critical']} critical and {b['warning']} warning assets. Exposure = downtime cost rate \u00d7 failure impact, excluding devices in maintenance.",'chips':['Worst device','What fails next?']})
+    if 'anomal' in q:
+        an = [d for d,r in dmap.items() if r.get('anomaly_flag')]
+        return jsonify({'answer':(f"{len(an)} active anomal{'ies' if len(an)!=1 else 'y'}: {', '.join(an[:5])}." if an else 'No statistical anomalies right now — all readings within learned normal envelope.'),'chips':['Fleet summary','Worst device']})
+    if 'cbs' in q or 'blast' in q or 'safety' in q:
+        if not b['cbs_present']: return jsonify({'answer':'No CBS controller in this edition/deployment.','chips':['Fleet summary']})
+        return jsonify({'answer':('CBS is ON HOLD — integrity below the 90% interlock threshold. Do not authorise blasting; inspect DNP3 link and vibration sensors.' if b['cbs_hold'] else 'CBS armed and safe — integrity above the 90% interlock threshold.'),'chips':['Why?','Fleet summary']})
+    if 'maint' in q:
+        return jsonify({'answer':f"{b['maintenance']} device(s) in active maintenance windows — their alerts are suppressed by design.",'chips':['Fleet summary']})
+    if 'model' in q or 'ai' in q or 'learn' in q:
+        ms = 'trained on real telemetry from this deployment' if b['model_source']=='ml-real-data' else f"in explainable cold-start (rule-based) while collecting real data ({len(_train_buffer)}/{REAL_TRAIN_MIN} samples)"
+        return jsonify({'answer':f'The scoring model is currently {ms}. Every score is decomposable — click any device for the factor breakdown.','chips':['Explain worst device','Fleet summary']})
+    # default: summary
+    return jsonify({'answer':b['text'],'chips':['Worst device','What fails next?','Cost exposure','CBS status']})
+
+@app.route('/manifest.json')
+def pwa_manifest():
+    return jsonify({'name':'IISentinel','short_name':'Sentinel','start_url':'/','display':'standalone',
+        'background_color':'#04080f','theme_color':'#04080f',
+        'icons':[{'src':'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%23050d1a%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-size=%2734%27 font-weight=%27900%27 font-family=%27sans-serif%27 fill=%27%2300d4ff%27 text-anchor=%27middle%27%3EII%3C/text%3E%3C/svg%3E','sizes':'any','type':'image/svg+xml'}]})
+
+@app.route('/sw.js')
+def pwa_sw():
+    return ("self.addEventListener('install',e=>self.skipWaiting());"
+            "self.addEventListener('fetch',e=>{if(e.request.mode==='navigate'){"
+            "e.respondWith(fetch(e.request).catch(()=>caches.match('/')))}else if(e.request.url.includes('/api/')){return}"
+            "});self.addEventListener('activate',e=>{caches.open('iis').then(c=>c.add('/'))});"
+    ), 200, {'Content-Type':'application/javascript'}
 
 # ════════════════════════════════════════════════════════════════════
 # BOOT
