@@ -268,6 +268,14 @@ def _beat(name): _heartbeats[name] = time.time()
 def _obs_start(): _g._t0 = time.time()
 
 @app.after_request
+def _static_cache(resp):
+    try:
+        if request.path.startswith('/static/'):
+            resp.headers['Cache-Control'] = 'public, max-age=86400, immutable'
+    except Exception: pass
+    return resp
+
+@app.after_request
 def _obs_end(resp):
     try:
         ms = (time.time() - getattr(_g,'_t0',time.time()))*1000
@@ -1125,47 +1133,46 @@ def _probe_host(host: str, timeout: float=1.5):
     except Exception:
         return False, None
 
-import subprocess, platform as _plat
-def _icmp_ping(host: str, timeout_s: float = 1.2):
-    """Real ICMP ping via the OS ping binary — works unprivileged on LAN.
-    Returns (reachable: bool, latency_ms: float|None)."""
+import subprocess, shutil, platform as _plat
+_PING_BIN = shutil.which('ping')          # detect ONCE — no per-call misses
+_IS_WIN   = _plat.system().lower().startswith('win')
+
+def _icmp_ping(host: str, timeout_s: float = 0.8):
+    """Real ICMP ping via the OS ping binary. Tight budget: never blocks long."""
+    if not _PING_BIN: return False, None
     try:
-        if _plat.system().lower().startswith('win'):
-            cmd = ['ping','-n','1','-w',str(int(timeout_s*1000)), host]
-        else:
-            cmd = ['ping','-c','1','-W',str(max(1,int(timeout_s))), host]
+        cmd = ([_PING_BIN,'-n','1','-w',str(int(timeout_s*1000)),host] if _IS_WIN
+               else [_PING_BIN,'-c','1','-W','1',host])
         t0 = time.time()
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s+1)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s+0.4)
         if r.returncode == 0:
-            out = r.stdout
-            m = re.search(r'time[=<]([\d.]+)', out)
+            m = re.search(r'time[=<]([\d.]+)', r.stdout)
             return True, float(m.group(1)) if m else round((time.time()-t0)*1000,1)
     except Exception:
         pass
     return False, None
 
-def _ping_or_probe(host: str, timeout_s: float = 1.5):
-    """ICMP first (true LAN reachability), TCP probe fallback (ICMP-blocked hosts)."""
+def _ping_or_probe(host: str, timeout_s: float = 0.8):
+    """ICMP first; single fast TCP probe fallback. Total budget ~1.4s worst case."""
     ok, lat = _icmp_ping(host, timeout_s)
     if ok: return True, lat, 'icmp'
-    ok2, lat2 = _probe_host(host, timeout_s)
+    ok2, lat2 = _probe_host(host, 0.6)
     return ok2, lat2, 'tcp'
 
 def _poll_node(node_id: str):
     with _nodes_lock:
         if node_id not in _nodes: return
         node = dict(_nodes[node_id])
-    future = _node_executor.submit(_ping_or_probe, node['host'], 1.5)
+    future = _node_executor.submit(_ping_or_probe, node['host'], 0.8)
     try:
-        reachable, latency, method = future.result(timeout=3.0)
+        reachable, latency, method = future.result(timeout=1.8)
     except Exception:
         reachable, latency, method = False, None, 'icmp'
     loss_pct = 0
     if reachable and method == 'icmp':
-        # true packet loss: 3 real pings
-        futs = [_node_executor.submit(_icmp_ping, node['host'], 1.0) for _ in range(3)]
-        failed = sum(1 for f in futs if not f.result(timeout=2.0)[0])
-        loss_pct = round((failed/3)*100)
+        futs = [_node_executor.submit(_icmp_ping, node['host'], 0.7) for _ in range(2)]
+        failed = sum(1 for f in futs if not f.result(timeout=1.4)[0])
+        loss_pct = round((failed/2)*100)
     elif reachable:
         futures = [_node_executor.submit(_probe_port, node['host'], _PROBE_PORTS[0], 0.8)
                    for _ in range(3)]
@@ -1814,7 +1821,7 @@ def export_pdf():
 def api_net_ping():
     host = re.sub(r'[^a-zA-Z0-9\.\-:]','', request.args.get('host','')).strip()[:80]
     if not host: return jsonify({'error':'host required'}),400
-    ok, lat, method = _ping_or_probe(host, 1.5)
+    ok, lat, method = _ping_or_probe(host, 0.8)
     return jsonify({'host':host,'reachable':ok,'latency_ms':lat,'method':method,'ts':time.time()})
 
 @app.route('/api/nodes')

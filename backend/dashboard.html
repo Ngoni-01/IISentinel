@@ -547,9 +547,9 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
 @keyframes heroGlow{0%,100%{box-shadow:0 0 0 1px rgba(var(--pulse),.14),0 14px 44px -18px rgba(var(--pulse),.28)}
   50%{box-shadow:0 0 0 1px rgba(var(--pulse),.3),0 18px 62px -14px rgba(var(--pulse),.5)}}
 #page-net .hero{--pulse:0,188,212}
-#page-net .hero{background-image:linear-gradient(100deg,rgba(4,10,20,.94) 22%,rgba(4,10,20,.55) 58%,rgba(4,10,20,.25)),url('/static/networkco.png');background-size:cover;background-position:center right}
-#page-tc .hero{background-image:linear-gradient(100deg,rgba(4,10,20,.94) 22%,rgba(4,10,20,.55) 58%,rgba(4,10,20,.25)),url('/static/telecomco.png');background-size:cover;background-position:center 30%}
-#page-mc .hero{background-image:linear-gradient(100deg,rgba(6,8,16,.94) 22%,rgba(6,8,16,.5) 58%,rgba(6,8,16,.2)),url('/static/miningco.png');background-size:cover;background-position:center}
+#page-net .hero{background-image:linear-gradient(100deg,rgba(4,10,20,.94) 22%,rgba(4,10,20,.55) 58%,rgba(4,10,20,.25)),url('/static/networkco.jpg');background-size:cover;background-position:center right}
+#page-tc .hero{background-image:linear-gradient(100deg,rgba(4,10,20,.94) 22%,rgba(4,10,20,.55) 58%,rgba(4,10,20,.25)),url('/static/telecomco.jpg');background-size:cover;background-position:center 30%}
+#page-mc .hero{background-image:linear-gradient(100deg,rgba(6,8,16,.94) 22%,rgba(6,8,16,.5) 58%,rgba(6,8,16,.2)),url('/static/miningco.jpg');background-size:cover;background-position:center}
 #page-tc  .hero{--pulse:0,212,255}
 #page-mc  .hero{--pulse:255,193,7}
 #page-cbs .hero{--pulse:255,23,68}
@@ -590,6 +590,30 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
   text-shadow:none;filter:drop-shadow(0 0 30px rgba(0,212,255,.45))}
 .spl-word{background:linear-gradient(180deg,#fff,#c9d8ee 55%,#8fa3c0);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ════════ v5.1 — cinematic heroes, zero vibecode ════════ */
+.hero-bg::before,.hero-bg::after{display:none !important}     /* side orbs: gone */
+.hero{animation:none !important;                              /* pulsing glow: gone */
+  box-shadow:0 1px 0 rgba(255,255,255,.05) inset, 0 20px 50px -30px rgba(0,0,0,.8) !important;
+  min-height:230px;display:flex;flex-direction:column;justify-content:center;
+  border-radius:26px;border:1px solid rgba(255,255,255,.07) !important;
+  background-color:#060b14}
+.hero{background-size:cover !important;
+  animation:heroPan 42s ease-in-out infinite alternate !important}
+@keyframes heroPan{from{background-position:48% center}to{background-position:52% center}}
+#page-net .hero{background-image:linear-gradient(95deg,rgba(4,9,18,.96) 26%,rgba(4,9,18,.62) 56%,rgba(4,9,18,.18)),url('/static/networkco.jpg') !important}
+#page-tc  .hero{background-image:linear-gradient(95deg,rgba(4,9,18,.96) 26%,rgba(4,9,18,.62) 56%,rgba(4,9,18,.18)),url('/static/telecomco.jpg') !important;background-position:center 28% !important;animation:none !important}
+#page-mc  .hero{background-image:linear-gradient(95deg,rgba(5,7,14,.96) 26%,rgba(5,7,14,.55) 56%,rgba(5,7,14,.12)),url('/static/miningco.jpg') !important}
+#page-cbs .hero{background-image:linear-gradient(95deg,rgba(16,4,8,.97) 30%,rgba(16,4,8,.7) 60%,rgba(16,4,8,.35)) !important}
+.hero .ht,.hero h1{font-size:26px !important;letter-spacing:-.035em}
+.hp{background:rgba(4,9,18,.55);backdrop-filter:blur(10px)}
+/* workspace chip */
+#ws-chip{display:none;align-items:center;gap:8px;height:30px;padding:0 8px 0 14px;
+  border-radius:20px;font-size:11px;font-weight:700;color:#9fe9ff;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3)}
+#ws-chip b{cursor:pointer;width:20px;height:20px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;background:rgba(255,255,255,.08);font-size:10px;color:#8b9cb8}
+#ws-chip b:hover{color:#ff8fa0}
 </style>
 </head>
 <body>
@@ -2950,6 +2974,7 @@ async function applyEdition(){
   // Edition label in header
   var hd = document.querySelector('.hd-title');
   if(hd) hd.textContent = 'Intelligent Infrastructure Sentinel \u2014 ' + IIS_EDITION;
+  applyWorkspace();
 }
 
 (function boot(){
@@ -3028,11 +3053,54 @@ function iiBuildSelector(){
       +'<div class="sel-desc">'+s.desc+'</div></div>';
   }).join('');
 }
+var SECTOR_PAGES = ['net','tc','mc','cbs'];
 function iiEnter(page){
   var sel = document.getElementById('ii-select');
   if(sel){ sel.classList.add('gone'); setTimeout(function(){ sel.style.display='none'; },420); }
+  if(SECTOR_PAGES.indexOf(page) !== -1){
+    sessionStorage.setItem('ii-workspace', page);   // focus: this sector IS the app now
+  } else {
+    sessionStorage.removeItem('ii-workspace');
+  }
+  applyWorkspace();
   var tab = document.querySelector('.nt[data-page="'+page+'"]');
   if(tab && page !== 'main') tab.click();
+}
+function applyWorkspace(){
+  var ws = sessionStorage.getItem('ii-workspace');
+  // reset all licensed tabs first
+  SECTOR_PAGES.forEach(function(m){
+    var t = document.querySelector('.nt[data-page="'+m+'"]');
+    if(t) t.style.display = (IIS_MODULES.indexOf(m)===-1) ? 'none' : '';
+  });
+  var cas = document.querySelector('.nt[data-page="cascade"]');
+  var chip = document.getElementById('ws-chip');
+  if(!chip){
+    chip = document.createElement('div'); chip.id='ws-chip';
+    chip.innerHTML='<span id="ws-name"></span><b onclick="clearWorkspace()" title="All sectors">&#x2715;</b>';
+    var hdr = document.querySelector('header');
+    if(hdr) hdr.insertBefore(chip, hdr.children[1]||null);
+  }
+  if(ws && IIS_MODULES.indexOf(ws) !== -1){
+    // hide every other sector — the chosen workspace is the whole product
+    SECTOR_PAGES.forEach(function(m){
+      if(m===ws) return;
+      var t = document.querySelector('.nt[data-page="'+m+'"]');
+      if(t) t.style.display='none';
+    });
+    if(cas) cas.style.display='none';   // cross-sector cascade is meaningless in single focus
+    var names={net:'NetworkCo workspace',tc:'TelecomCo workspace',mc:'MiningCo workspace',cbs:'CBS Safety workspace'};
+    document.getElementById('ws-name').textContent = names[ws]||ws;
+    chip.style.display='flex';
+  } else {
+    if(cas) cas.style.display = (IIS_MODULES.length<2) ? 'none' : '';
+    chip.style.display='none';
+  }
+}
+function clearWorkspace(){
+  sessionStorage.removeItem('ii-workspace');
+  applyWorkspace();
+  var t=document.querySelector('.nt[data-page="main"]'); if(t) t.click();
 }
 function iiSkipSplash(){
   var sp = document.getElementById('ii-splash');

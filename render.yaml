@@ -6,7 +6,7 @@ services:
     buildCommand: pip install -r requirements.txt
     # CRITICAL: 1 worker + threads. Sync multi-worker breaks SSE (each SSE
     # stream permanently occupies a sync worker -> total deadlock at 2 viewers)
-    startCommand: gunicorn app:app --workers 1 --threads 16 --timeout 120 --bind 0.0.0.0:$PORT
+    startCommand: gunicorn app:app --workers 1 --threads 32 --worker-tmp-dir /dev/shm --keep-alive 5 --timeout 120 --bind 0.0.0.0:$PORT
     envVars:
       - key: DEMO_MODE
         value: "false"
