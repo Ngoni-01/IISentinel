@@ -547,6 +547,9 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
 @keyframes heroGlow{0%,100%{box-shadow:0 0 0 1px rgba(var(--pulse),.14),0 14px 44px -18px rgba(var(--pulse),.28)}
   50%{box-shadow:0 0 0 1px rgba(var(--pulse),.3),0 18px 62px -14px rgba(var(--pulse),.5)}}
 #page-net .hero{--pulse:0,188,212}
+#page-net .hero{background-image:linear-gradient(100deg,rgba(4,10,20,.94) 22%,rgba(4,10,20,.55) 58%,rgba(4,10,20,.25)),url('/static/networkco.png');background-size:cover;background-position:center right}
+#page-tc .hero{background-image:linear-gradient(100deg,rgba(4,10,20,.94) 22%,rgba(4,10,20,.55) 58%,rgba(4,10,20,.25)),url('/static/telecomco.png');background-size:cover;background-position:center 30%}
+#page-mc .hero{background-image:linear-gradient(100deg,rgba(6,8,16,.94) 22%,rgba(6,8,16,.5) 58%,rgba(6,8,16,.2)),url('/static/miningco.png');background-size:cover;background-position:center}
 #page-tc  .hero{--pulse:0,212,255}
 #page-mc  .hero{--pulse:255,193,7}
 #page-cbs .hero{--pulse:255,23,68}
@@ -999,7 +1002,7 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
         </div>
         <canvas id="cas-canvas"></canvas>
         <div class="cas-zoom-info" id="cas-zoom-info">100%</div>
-        <div class="cas-hint" id="cas-hint-txt">Click: inspect &amp; focus neighborhood &middot; Double-click: zoom to node &middot; Shift+click: degrade &middot; Alt+click: restore &middot; Scroll: zoom &middot; Drag: pan</div>
+        <div class="cas-hint" id="cas-hint-txt"><button class='btn' onclick="window.open('/cascade','_blank')" style='margin-right:8px'>&#x2197; Open Cascade Studio</button>Click: inspect &amp; focus neighborhood &middot; Double-click: zoom to node &middot; Shift+click: degrade &middot; Alt+click: restore &middot; Scroll: zoom &middot; Drag: pan</div>
         <div id="cas-edit-panel" style="display:none;margin-top:10px;padding:10px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.18);border-radius:var(--r-sm)">
           <div style="font-size:10px;font-weight:700;color:var(--cyn);margin-bottom:7px">&#x270E; Topology editor &mdash; drag to reposition &middot; right-click two nodes to connect</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">

@@ -308,6 +308,29 @@ button{font-family:var(--font)}
   <div class="spl"><i>I</i><i>I</i><b>Sentinel</b></div>
   <div class="spl-tag">Intelligent Infrastructure Sentinel</div>
 </div>
+<script>
+/* Failsafe: even if the main app script crashes, never leave the user on a frozen logo. */
+(function(){
+  function force(){
+    var sp=document.getElementById('splash'),sh=document.getElementById('shell');
+    if(sp&&!sp.classList.contains('gone'))sp.classList.add('gone');
+    if(sh&&!sh.classList.contains('on'))sh.classList.add('on');
+  }
+  setTimeout(force, 4500);
+  window.addEventListener('error', function(e){
+    force();
+    try{
+      var d=document.createElement('div');
+      d.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;'
+        +'background:rgba(30,8,14,.95);border:1px solid rgba(255,77,106,.45);color:#ffb3c0;'
+        +'padding:10px 18px;border-radius:14px;font:600 11.5px -apple-system,sans-serif;max-width:86vw';
+      d.textContent='A script error occurred: '+(e.message||'unknown')+' — core view loaded in safe mode.';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},9000);
+    }catch(x){}
+  });
+})();
+</script>
 
 <div id="shell">
   <nav id="rail">
@@ -316,6 +339,7 @@ button{font-family:var(--font)}
     <button class="rl" data-p="fleet" onclick="go('fleet')">&#x25A6;<span class="rl-tip">Fleet</span></button>
     <button class="rl" data-p="intel" onclick="go('intel')">&#x2726;<span class="rl-tip">Intelligence</span></button>
     <button class="rl" data-p="timeline" onclick="go('timeline')">&#x23F1;<span class="rl-tip">Timeline</span></button>
+    <button class="rl" onclick="window.open('/cascade','_self')">&#x29D6;<span class="rl-tip">Cascade Studio</span></button>
     <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety">&#x26A0;<span class="rl-tip">CBS Safety</span></button>
     <div class="rail-spacer"></div>
     <button class="rl" onclick="window.open('/admin','_blank')">&#x2699;<span class="rl-tip">Admin</span></button>
@@ -326,6 +350,7 @@ button{font-family:var(--font)}
     <div id="topbar">
       <div class="tb-title" id="tb-title">Home</div>
       <div class="tb-edition" id="tb-edition">Enterprise Suite</div>
+      <div class="tb-edition" id="tb-demo" style="display:none;color:#ffb340;border-color:rgba(255,179,64,.4)">DEMO DATA</div>
       <div class="tb-search" onclick="palOpen()">
         <span>&#x2315;</span><span>Search devices, actions&hellip;</span><kbd>&#x2318;K</kbd>
       </div>
@@ -414,6 +439,14 @@ button{font-family:var(--font)}
               <div style="font-size:10.5px;color:var(--dim);margin-top:10px;line-height:1.6" id="m-note">
                 Explainable rules score your fleet while the model learns from real telemetry. No synthetic training data is ever authoritative.</div>
             </div>
+            <div class="card" style="margin-top:14px">
+              <div class="card-t"><span>Data lineage</span></div>
+              <div id="lineage-body" style="font-size:11.5px;color:var(--sub);line-height:1.65">Loading&hellip;</div>
+            </div>
+            <div class="card" style="margin-top:14px">
+              <div class="card-t"><span>System observability</span></div>
+              <div id="obs-body" style="font-size:11.5px;color:var(--sub)">Loading&hellip;</div>
+            </div>
           </div>
         </div>
       </div>
@@ -481,9 +514,13 @@ button{font-family:var(--font)}
 'use strict';
 // ═══════════════ SENTINEL X — application core ═══════════════
 var B = window.location.origin;
+function fT(ms){ // AbortSignal.timeout fallback for older browsers
+  try{ if(AbortSignal && AbortSignal.timeout) return AbortSignal.timeout(ms); }catch(e){}
+  try{ var c=new AbortController(); setTimeout(function(){c.abort();},ms); return c.signal; }catch(e){ return undefined; }
+}
 var MODULES = ['net','tc','mc','cbs'], EDITION = 'Enterprise Suite';
 var devices = new Map();          // id -> latest record
-var history = new Map();          // id -> [scores] (sparklines)
+var hist = new Map();          // id -> [scores] (sparklines)
 var intel = {};
 var curPage = 'home';
 var SECTOR = { net:{name:'Network',col:'#22c9e8'}, tc:{name:'Telecom',col:'#37b6ff'},
@@ -527,15 +564,15 @@ var _live=false;
 async function sync(){
   if(document.hidden) return;
   try{
-    var r=await fetch(B+'/api/snapshot',{cache:'no-store',signal:AbortSignal.timeout(15000)});
+    var r=await fetch(B+'/api/snapshot',{cache:'no-store',signal:fT(15000)});
     if(!r.ok)throw 0;
     var d=await r.json();
     intel=d.intel||{};
     (d.data||[]).forEach(function(rec){
       devices.set(rec.device_id,rec);
-      var h=history.get(rec.device_id)||[];
+      var h=hist.get(rec.device_id)||[];
       if(!h.length||h[h.length-1]!==rec.health_score){h.push(rec.health_score);if(h.length>40)h.shift();}
-      history.set(rec.device_id,h);
+      hist.set(rec.device_id,h);
     });
     setLive(true);
     if(curPage==='home'){renderMap();}
@@ -756,7 +793,7 @@ function renderFleet(){
   }).join('');
   requestAnimationFrame(function(){
     g.querySelectorAll('canvas[data-spark]').forEach(function(cv){
-      var h=history.get(cv.dataset.spark)||[];if(h.length<2)return;
+      var h=hist.get(cv.dataset.spark)||[];if(h.length<2)return;
       var w=cv.parentElement.clientWidth;cv.width=w*DPR;cv.height=30*DPR;
       var c=cv.getContext('2d');c.setTransform(DPR,0,0,DPR,0,0);
       var col=hcol(h[h.length-1]);
@@ -908,7 +945,7 @@ function palItems(){
     {t:'CBS Safety',ico:'\u26A0',fn:function(){go('safety');},k:'page'},
     {t:'Download shift report (PDF)',ico:'\u2193',fn:function(){exportPDF();},k:'action'},
     {t:'Open admin panel',ico:'\u2699',fn:function(){window.open('/admin','_blank');},k:'action'},
-    {t:'Voice briefing',ico:'\u{1F50A}',fn:speakBrief,k:'action'}
+    {t:'Voice briefing',ico:'\uD83D\uDD0A',fn:speakBrief,k:'action'}
   ];
   devices.forEach(function(r,id){
     items.push({t:id,ico:'\u25CF',col:hcol(r.health_score),k:Math.round(r.health_score)+'/100',
@@ -947,6 +984,34 @@ function exportPDF(btn){
   toast('Report','Shift report downloading\u2026','green');
 }
 
+async function loadLineage(){
+  try{
+    var d=await(await fetch(B+'/api/v4/lineage',{cache:'no-store'})).json();
+    var srcs=Object.keys(d.sources||{}).map(function(k){
+      var label={demo:'Demo simulator','lan-ping':'LAN ping (real)',collector:'Edge collectors',api:'Direct API'}[k]||k;
+      return '<div class="model-line"><span>'+label+'</span><b>'+d.sources[k]+' devices</b></div>';
+    }).join('');
+    var rts=(d.retrain_history||[]).slice(0,3).map(function(r){
+      return '<div class="model-line"><span>Retrained '+(r.at||'').slice(0,16).replace('T',' ')+'</span><b>'+r.samples+' samples</b></div>';
+    }).join('');
+    $('lineage-body').innerHTML=srcs
+      +(rts?'<div style="margin-top:8px;font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-weight:700">Training history</div>'+rts:'')
+      +'<div style="margin-top:10px;font-size:10.5px;color:var(--dim);line-height:1.6">'+d.note+'</div>';
+  }catch(e){ $('lineage-body').textContent='Lineage unavailable.'; }
+  try{
+    var o=await(await fetch(B+'/api/v4/observability',{cache:'no-store'})).json();
+    var wk=Object.keys(o.workers||{}).map(function(k){
+      var age=o.workers[k];var ok=age<120;
+      return '<div class="model-line"><span>'+k+'</span><b style="color:'+(ok?'var(--green)':'var(--red)')+'">'+(ok?'alive':'stale')+' \u00b7 '+Math.round(age)+'s</b></div>';
+    }).join('')||'<div class="model-line"><span>Workers</span><b>warming up</b></div>';
+    var rt=(o.routes||[]).slice(0,4).map(function(r){
+      return '<div class="model-line"><span>'+r.route+'</span><b>'+r.p50+'ms <span style="color:var(--dim)">p95 '+r.p95+'</span></b></div>';
+    }).join('');
+    $('obs-body').innerHTML='<div class="model-line"><span>Uptime</span><b>'+Math.floor(o.uptime_s/3600)+'h '+Math.floor(o.uptime_s%3600/60)+'m</b></div>'
+      +'<div class="model-line"><span>Queue depth</span><b>'+o.queue_depth+'</b></div>'+wk+rt;
+  }catch(e){ $('obs-body').textContent='—'; }
+}
+
 // ═══ SSE ═══
 function initSSE(){
   try{
@@ -969,10 +1034,11 @@ function initSSE(){
 // ═══ BOOT ═══
 (async function boot(){
   try{
-    var c=await(await fetch(B+'/api/config',{signal:AbortSignal.timeout(9000)})).json();
+    var c=await(await fetch(B+'/api/config',{signal:fT(9000)})).json();
     MODULES=c.modules||MODULES;EDITION=c.edition||EDITION;
     $('tb-edition').textContent=EDITION;
     if(MODULES.indexOf('cbs')<0)$('rl-safety').style.display='none';
+    if(c.demo_mode)$('tb-demo').style.display='';
   }catch(e){}
   var seen=sessionStorage.getItem('sx-intro');
   setTimeout(function(){
@@ -985,6 +1051,7 @@ function initSSE(){
   mapLoop();
   setInterval(sync,12000);
   setInterval(loadBrief,30000);
+  loadLineage(); setInterval(loadLineage, 45000);
   setInterval(function(){fetch(B+'/api/ping').catch(function(){});},5*60*1000);
   initSSE();
   window.addEventListener('resize',function(){if(curPage==='home')mapResize();if(curPage==='timeline')tlInit();});

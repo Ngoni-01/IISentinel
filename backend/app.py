@@ -255,6 +255,28 @@ except Exception:
 _static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 os.makedirs(_static_dir, exist_ok=True)
 app = Flask(__name__, template_folder='.', static_folder=_static_dir, static_url_path='/static')
+
+# ── observability: per-route latency + worker heartbeats ──
+from flask import g as _g
+_route_lat: dict = {}
+_heartbeats: dict = {}
+_OBS_LOCK = threading.Lock()
+_BOOT_TS = time.time()
+def _beat(name): _heartbeats[name] = time.time()
+
+@app.before_request
+def _obs_start(): _g._t0 = time.time()
+
+@app.after_request
+def _obs_end(resp):
+    try:
+        ms = (time.time() - getattr(_g,'_t0',time.time()))*1000
+        key = (request.endpoint or request.path or '?')
+        with _OBS_LOCK:
+            dq = _route_lat.setdefault(key, deque(maxlen=200))
+            dq.append(ms)
+    except Exception: pass
+    return resp
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 _apply_cors(app)
 if _HAS_COMPRESS:
@@ -268,6 +290,7 @@ NETWORK_TYPES = ['router','switch','firewall','wan_link','workstation']
 TELECOM_TYPES = ['base_station','network_tower','microwave_link']
 MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
 CBS_TYPES     = ['cbs_controller']
+DEMO_MODE = os.environ.get('DEMO_MODE','false').lower()=='true'
 _raw_modules = os.environ.get('ENABLED_MODULES', 'net,tc,mc,cbs')
 ENABLED_MODULES = {m.strip() for m in _raw_modules.split(',') if m.strip() in ('net','tc','mc','cbs')}
 if not ENABLED_MODULES: ENABLED_MODULES = {'net','tc','mc','cbs'}
@@ -555,6 +578,7 @@ def flush_worker():
                 con.executemany(
                     "INSERT OR IGNORE INTO metrics VALUES(?,?,?,?,?,?,?,?,?,?,?)", rows)
         except Exception as e: print(f'[Flush] {e}')
+        _beat('flush_worker')
         platform_stats['last_flush']  = datetime.now(timezone.utc).isoformat()
         platform_stats['queue_depth'] = len(metric_queue)
         if _sample_queue:
@@ -596,6 +620,7 @@ def retrain_worker():
             _retrain_in_progress = True
         try:
             from sklearn.ensemble import RandomForestRegressor, IsolationForest
+            _beat('retrain_worker')
             platform_stats['last_retrain_attempt'] = datetime.now(timezone.utc).isoformat()
             # FIXED: retrain from live-captured feature vectors, not DB rows
             # (metrics table has no cpu_load column — old code trained on constants)
@@ -612,6 +637,12 @@ def retrain_worker():
             rf_model = nrf; iso_model = niso; anomaly_count = 0
             _model_meta['source'] = 'ml-real-data'
             _model_meta['real_retrains'] = _model_meta.get('real_retrains',0) + 1
+            try:
+                with _db_conn() as con:
+                    con.execute("INSERT OR REPLACE INTO model_meta (k,v) VALUES (?,?)",
+                        ('retrain:'+datetime.now(timezone.utc).isoformat(),
+                         json.dumps({'samples':len(buf),'r2':round(float(getattr(nrf,'oob_score_',0) or 0),3)})))
+            except Exception: pass
             try:
                 with _db_conn() as con:
                     con.execute("INSERT OR REPLACE INTO model_meta (k,v) VALUES ('source','ml-real-data')")
@@ -822,6 +853,7 @@ def process_single_metric(data: dict) -> dict:
     did   = data['device_id']
     dtype = data['device_type']
     proto = data.get('protocol','Ethernet')
+    dsource = data.get('data_source','api')
 
     features = build_features(data)
     arr      = np.array([features])
@@ -927,7 +959,7 @@ def process_single_metric(data: dict) -> dict:
         'ai_diagnosis':ai_diag,'automation_command':auto_cmd,
         'federated_index':fhi,'uptime_pct':uptime_pct,'blast_hold':eff_hold,
         'integrity_score':integrity_score,'vibration_score':vibration_score,
-        'protocol':proto,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
+        'protocol':proto,'data_source':dsource,'retrain_needed':anomaly_count>=RETRAIN_THRESHOLD,
         'ettf_minutes':ettf,'in_maintenance':in_maint
     }
 
@@ -1054,7 +1086,7 @@ def demo_worker():
                      'Profinet/EtherNet-IP' if dtype in MINING_TYPES   else
                      'SNMP/Ethernet-802.3')
             try:
-                _demo_ingest({'device_id':did,'device_type':dtype,
+                _demo_ingest({ 'data_source':'demo', 'device_id':did,'device_type':dtype,
                     'metric_name':mn,'metric_value':mv,
                     'cpu_load':round(cpu,1),'bandwidth_mbps':round(bw,1),
                     'latency_ms':round(lat,1),'packet_loss':round(loss,2),
@@ -1093,17 +1125,48 @@ def _probe_host(host: str, timeout: float=1.5):
     except Exception:
         return False, None
 
+import subprocess, platform as _plat
+def _icmp_ping(host: str, timeout_s: float = 1.2):
+    """Real ICMP ping via the OS ping binary — works unprivileged on LAN.
+    Returns (reachable: bool, latency_ms: float|None)."""
+    try:
+        if _plat.system().lower().startswith('win'):
+            cmd = ['ping','-n','1','-w',str(int(timeout_s*1000)), host]
+        else:
+            cmd = ['ping','-c','1','-W',str(max(1,int(timeout_s))), host]
+        t0 = time.time()
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s+1)
+        if r.returncode == 0:
+            out = r.stdout
+            m = re.search(r'time[=<]([\d.]+)', out)
+            return True, float(m.group(1)) if m else round((time.time()-t0)*1000,1)
+    except Exception:
+        pass
+    return False, None
+
+def _ping_or_probe(host: str, timeout_s: float = 1.5):
+    """ICMP first (true LAN reachability), TCP probe fallback (ICMP-blocked hosts)."""
+    ok, lat = _icmp_ping(host, timeout_s)
+    if ok: return True, lat, 'icmp'
+    ok2, lat2 = _probe_host(host, timeout_s)
+    return ok2, lat2, 'tcp'
+
 def _poll_node(node_id: str):
     with _nodes_lock:
         if node_id not in _nodes: return
         node = dict(_nodes[node_id])
-    future = _node_executor.submit(_probe_host, node['host'], 1.5)
+    future = _node_executor.submit(_ping_or_probe, node['host'], 1.5)
     try:
-        reachable, latency = future.result(timeout=2.0)
+        reachable, latency, method = future.result(timeout=3.0)
     except Exception:
-        reachable, latency = False, None
+        reachable, latency, method = False, None, 'icmp'
     loss_pct = 0
-    if reachable:
+    if reachable and method == 'icmp':
+        # true packet loss: 3 real pings
+        futs = [_node_executor.submit(_icmp_ping, node['host'], 1.0) for _ in range(3)]
+        failed = sum(1 for f in futs if not f.result(timeout=2.0)[0])
+        loss_pct = round((failed/3)*100)
+    elif reachable:
         futures = [_node_executor.submit(_probe_port, node['host'], _PROBE_PORTS[0], 0.8)
                    for _ in range(3)]
         failed = sum(1 for f in futures if not f.result(timeout=1.5)[0])
@@ -1145,7 +1208,9 @@ def _poll_node(node_id: str):
             'ai_diagnosis'     : (f'Node {label} unreachable — packet loss 100%.' if not reachable
                                   else f'Elevated latency {latency}ms.' if (latency or 0)>120 else None),
             'automation_command': (f'ALERT: Node {label} ({node["host"]}) DOWN.'
-                                   if not reachable else None)
+                                   if not reachable else None),
+            'data_source'      : 'lan-ping',
+            'protocol'         : 'ICMP/LAN' if method=='icmp' else 'TCP-probe'
         }
         with queue_lock: metric_queue.append(rec)
     except Exception as e: print(f'[NodePoll ML] {e}')
@@ -1153,6 +1218,7 @@ def _poll_node(node_id: str):
 def _background_poller():
     while True:
         time.sleep(30)
+        _beat('node_poller')
         with _nodes_lock: ids = list(_nodes.keys())
         for nid in ids:
             _node_executor.submit(_poll_node, nid)
@@ -1207,6 +1273,10 @@ def _serve_page(fname, missing_msg):
 def index():
     return _serve_page('sentinel-x.html', '<h1>sentinel-x.html not found</h1>')
 
+@app.route('/cascade')
+def cascade_studio():
+    return _serve_page('cascade.html', '<h1>cascade.html not found</h1>')
+
 @app.route('/classic')
 def classic_dashboard():
     return _serve_page('dashboard.html', '<h1>dashboard.html not found</h1>')
@@ -1232,6 +1302,7 @@ def get_data():
     platform_stats['requests_total'] += 1
     return jsonify(get_cached_data())
 
+# entry points tag data_source for the lineage panel
 @app.route('/api/metrics', methods=['POST','OPTIONS'])
 def receive_metrics():
     if request.method=='OPTIONS': return '',204
@@ -1424,6 +1495,7 @@ def api_config():
         'version': '3.4',
         'model_source': _model_meta.get('source','heuristic-coldstart'),
         'real_samples': len(_train_buffer),
+        'demo_mode': DEMO_MODE,
     })
 
 @app.route('/api/ping')
@@ -1738,6 +1810,13 @@ def export_pdf():
         mimetype='application/pdf')
 
 # ── Node routes ───────────────────────────────────────────────────────────────
+@app.route('/api/net/ping')
+def api_net_ping():
+    host = re.sub(r'[^a-zA-Z0-9\.\-:]','', request.args.get('host','')).strip()[:80]
+    if not host: return jsonify({'error':'host required'}),400
+    ok, lat, method = _ping_or_probe(host, 1.5)
+    return jsonify({'host':host,'reachable':ok,'latency_ms':lat,'method':method,'ts':time.time()})
+
 @app.route('/api/nodes')
 def get_nodes():
     sector = request.args.get('sector',None)
@@ -2410,6 +2489,66 @@ def _build_brief():
             'fhi':intel.get('federated_index',100),
             'model_source':_model_meta['source'],'edition':EDITION_NAME,
             'text':text,'ts':datetime.now(timezone.utc).isoformat()}
+
+@app.route('/api/v4/observability')
+def v4_observability():
+    now = time.time()
+    with _OBS_LOCK:
+        routes = []
+        for k, dq in _route_lat.items():
+            if not dq: continue
+            vals = sorted(dq)
+            routes.append({'route':k,'count':len(dq),
+                'p50':round(vals[len(vals)//2],1),
+                'p95':round(vals[int(len(vals)*0.95)-1 if len(vals)>1 else 0],1)})
+        routes.sort(key=lambda r:-r['count'])
+    return jsonify({
+        'uptime_s': round(now - _BOOT_TS),
+        'queue_depth': len(metric_queue),
+        'sse_note': 'push via SSE; single-worker threaded model by design',
+        'workers': {k: round(now-v,1) for k,v in _heartbeats.items()},
+        'routes': routes[:12],
+        'cache': {'data_ttl_s':CACHE_TTL,'intel_ttl_s':INTEL_CACHE_TTL,
+                  'page_cache_entries':len(_page_cache),'pdf_cached':bool(_pdf_cache['bytes'])},
+    })
+
+@app.route('/api/v4/lineage')
+def v4_lineage():
+    """Full data-lineage transparency: where every reading comes from,
+    what the model trained on, and whether learning is continuous."""
+    data = get_cached_data()
+    sources = {}
+    devices_out = []
+    for r in data:
+        src = r.get('data_source') or ('lan-ping' if '-node-' in r.get('device_id','')
+              else 'demo' if DEMO_MODE else 'api')
+        sources[src] = sources.get(src,0)+1
+        devices_out.append({'id':r['device_id'],'source':src,
+                            'protocol':r.get('protocol',''),
+                            'last':r.get('created_at') or r.get('timestamp','')})
+    retrains = []
+    try:
+        with _db_conn() as con:
+            rows = con.execute("SELECT k,v FROM model_meta WHERE k LIKE 'retrain:%' ORDER BY k DESC LIMIT 10").fetchall()
+        for row in rows:
+            d = json.loads(row['v']); d['at']=row['k'][8:]; retrains.append(d)
+    except Exception: pass
+    return jsonify({
+        'demo_mode': DEMO_MODE,
+        'model_source': _model_meta['source'],
+        'continuous_learning': True,
+        'learning_pipeline': 'live telemetry -> feature vectors -> heuristic teacher labels -> persisted samples -> periodic Random Forest retrain (min %d real samples)' % REAL_TRAIN_MIN,
+        'real_samples': len(_train_buffer),
+        'real_samples_needed': REAL_TRAIN_MIN,
+        'synthetic_in_charge': _model_meta['source'] != 'ml-real-data' and False,
+        'sources': sources,
+        'devices': devices_out[:60],
+        'retrain_history': retrains,
+        'note': ('DEMO MODE: readings are generated by the built-in simulator and are labelled as such. '
+                 'Connect a collector or LAN nodes for real telemetry.') if DEMO_MODE else
+                ('All scoring inputs are live telemetry from the sources listed. '
+                 'No synthetic values enter the training set.')
+    })
 
 @app.route('/api/v4/brief')
 def v4_brief():
