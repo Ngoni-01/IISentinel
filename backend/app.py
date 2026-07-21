@@ -169,6 +169,14 @@ def _db_init():
             ettf_crit_minutes INTEGER DEFAULT 30,
             updated_by TEXT, updated_at TEXT);
 
+        CREATE TABLE IF NOT EXISTS net_scan (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            collector TEXT, segment TEXT, ts TEXT,
+            expected_dhcp TEXT, seen_dhcp TEXT,
+            rogue INTEGER DEFAULT 0, detail TEXT);
+
+        CREATE INDEX IF NOT EXISTS idx_netscan_ts ON net_scan(ts DESC);
+
         CREATE TABLE IF NOT EXISTS training_samples (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             features TEXT, score REAL, ts TEXT);
@@ -323,7 +331,7 @@ TELECOM_TYPES = ['base_station','network_tower','microwave_link','generator','fu
 MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
 CBS_TYPES     = ['cbs_controller']
 DEMO_MODE = os.environ.get('DEMO_MODE','false').lower()=='true'
-_raw_modules = os.environ.get('ENABLED_MODULES', 'net,tc,mc,cbs')
+_raw_modules = os.environ.get('ENABLED_MODULES', 'net,mc,cbs')
 ENABLED_MODULES = {m.strip() for m in _raw_modules.split(',') if m.strip() in ('net','tc','mc','cbs')}
 if not ENABLED_MODULES: ENABLED_MODULES = {'net','tc','mc','cbs'}
 if 'cbs' in ENABLED_MODULES and 'mc' not in ENABLED_MODULES:
@@ -1401,7 +1409,78 @@ def register_collector():
                     'header':f'X-Collector-Key: {api_key}',
                     'note':'Store this API key — it will not be shown again'})
 
+@app.route('/api/net/scan', methods=['POST','OPTIONS'])
+def net_scan_ingest():
+    """LAN sensor (Pi) reports DHCP offers + ARP seen on a segment.
+    Server flags rogue DHCP: any server offering leases that isn't the
+    sanctioned one. This is invisible to a cloud host and to tracert —
+    only an in-segment sensor sees it."""
+    if request.method=='OPTIONS': return '',204
+    key = request.headers.get('X-Collector-Key','').strip()
+    if not key: return jsonify({'error':'Missing X-Collector-Key'}),401
+    with _db_conn() as con:
+        row = con.execute("SELECT id,name FROM collectors WHERE api_key=? AND active=1",(key,)).fetchone()
+        if not row: return jsonify({'error':'Invalid key'}),401
+        cname = row['name']
+    d = request.get_json(silent=True) or {}
+    segment  = str(d.get('segment','default'))[:60]
+    expected = str(d.get('expected_dhcp','')).strip()      # sanctioned DHCP server IP
+    seen     = d.get('dhcp_servers',[])                     # [{ip,mac}] that answered DISCOVER
+    arp      = d.get('arp',[])                              # [{ip,mac}] optional inventory
+    if isinstance(seen,str): seen=[{'ip':seen}]
+    seen_ips = [s.get('ip') for s in seen if s.get('ip')]
+    rogues   = [s for s in seen if expected and s.get('ip') and s.get('ip')!=expected]
+    is_rogue = 1 if rogues else 0
+    detail = json.dumps({'rogues':rogues,'arp_count':len(arp),
+                         'seen':seen_ips,'expected':expected})
+    ts = datetime.now(timezone.utc).isoformat()
+    with _db_conn() as con:
+        con.execute("INSERT INTO net_scan (collector,segment,ts,expected_dhcp,seen_dhcp,rogue,detail) "
+                    "VALUES (?,?,?,?,?,?,?)",
+                    (cname,segment,ts,expected,json.dumps(seen_ips),is_rogue,detail))
+        con.execute("DELETE FROM net_scan WHERE id NOT IN (SELECT id FROM net_scan ORDER BY id DESC LIMIT 2000)")
+    if is_rogue:
+        rogue_ips = ', '.join(r.get('ip','?') for r in rogues)
+        _dispatch_alert('cbs' if False else 'network',
+            f'ROGUE DHCP on segment {segment}: {rogue_ips} is handing out leases '
+            f'(sanctioned: {expected or "unset"}). Isolate this device.', 'critical')
+        platform_stats['rogue_dhcp_events'] = platform_stats.get('rogue_dhcp_events',0)+1
+    return jsonify({'ok':True,'segment':segment,'rogue':bool(is_rogue),
+                    'rogue_servers':rogues,'collector':cname,'ts':ts})
+
+@app.route('/api/net/dhcp-status')
+def net_dhcp_status():
+    """Current DHCP health per segment — powers the Network dashboard card."""
+    try:
+        with _db_conn() as con:
+            rows = con.execute(
+                "SELECT n.* FROM net_scan n INNER JOIN "
+                "(SELECT segment, MAX(id) mid FROM net_scan GROUP BY segment) l "
+                "ON n.id=l.mid ORDER BY n.rogue DESC, n.segment").fetchall()
+        out=[]
+        for r in rows:
+            det = json.loads(r['detail'] or '{}')
+            out.append({'segment':r['segment'],'collector':r['collector'],
+                        'expected_dhcp':r['expected_dhcp'],
+                        'seen_dhcp':json.loads(r['seen_dhcp'] or '[]'),
+                        'rogue':bool(r['rogue']),'rogue_servers':det.get('rogues',[]),
+                        'devices_seen':det.get('arp_count',0),'ts':r['ts']})
+        return jsonify({'segments':out,
+                        'rogue_count':sum(1 for o in out if o['rogue']),
+                        'total_segments':len(out)})
+    except Exception as e:
+        return jsonify({'error':str(e),'segments':[]}),500
+
 @app.route('/api/collector/ingest', methods=['POST','OPTIONS'])
+def _dispatch_alert(kind, message, severity='warning'):
+    """Central alert fan-out stub — logs + counts; notification workers pick up."""
+    try:
+        platform_stats.setdefault('alerts_raised',0)
+        platform_stats['alerts_raised'] += 1
+        print(f'[ALERT/{severity}] {kind}: {message}')
+        _intel_cache['ts'] = 0
+    except Exception: pass
+
 def collector_ingest():
     if request.method=='OPTIONS': return '',204
     api_key = request.headers.get('X-Collector-Key','').strip()

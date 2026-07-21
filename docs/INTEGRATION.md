@@ -86,3 +86,24 @@ a physical edge tier — suitable for a single-site pilot of tens of devices
 today, with a defined scale-up path (Postgres, multiple collectors, per-sector
 models via iis_features.py). It is not a certified safety system and not yet
 a multi-tenant SaaS; those are the two boundaries to state up front.
+
+## Network Sensor — rogue DHCP detection (v9)
+The problem: a consumer router in access mode accidentally runs DHCP, poisons
+a floor with wrong gateways, and tracert can't find it (it only shows YOUR
+gateway). A cloud monitor can't see the LAN at all. Solution: an in-segment
+sensor.
+
+Deploy one Raspberry Pi (or any Linux box) per broadcast domain / VLAN:
+  # register once
+  python3 net_sensor.py --server https://your-sentinel --register "floor-3-pi"
+  # run (needs sudo for raw DHCP)
+  sudo python3 net_sensor.py --server https://your-sentinel --key <KEY> \
+       --segment "floor-3" --expected 192.168.3.1 --arp
+
+It broadcasts a DHCP DISCOVER, records every server that answers, and any
+responder that isn't --expected is flagged ROGUE — reported to Sentinel,
+which raises a critical alert and shows the offending IP on the Network card.
+Best accuracy with scapy (sudo pip install scapy); works without it too.
+
+The Pi's dual role: temperature/vibration sensing for mining OT (pi_collector.py)
+AND LAN watchdog for network segments (net_sensor.py). One $80 device, two jobs.

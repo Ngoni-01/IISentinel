@@ -233,9 +233,13 @@ var COST={router:12000,switch:8000,firewall:15000,wan_link:20000,workstation:150
   plc:60000,scada_node:45000,cbs_controller:450000};
 function hcol(s){return s>=70?'#31e98c':s>=35?'#ffb648':'#ff4b68';}
 function $(i){return document.getElementById(i);}
-function toast(m){var t=document.createElement('div');t.className='toast';t.textContent=m;
-  $('toasts').appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .4s';
-  setTimeout(function(){t.remove();},400);},3400);}
+function toast(m){
+  var box=$('toasts'); if(!box) return;
+  box.innerHTML='';  // only ever ONE toast — no stacking flood
+  var t=document.createElement('div');t.className='toast';t.textContent=m;
+  box.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .4s';
+    setTimeout(function(){t.remove();},400);},2600);}
 
 // ── state ──
 var nodes=[],edges=[],byId={};
@@ -577,10 +581,10 @@ function bind(){
         if(exists){
           var _rm=edges.find(function(ed){return (ed.a===edgeFirst.id&&ed.b===n.id)||(ed.a===n.id&&ed.b===edgeFirst.id);});
           edges=edges.filter(function(ed){return ed!==_rm;});
-          pushUndo({t:'del',e:_rm});toast('Link removed');
+          pushUndo({t:'del',e:_rm});
         } else {
           var _nw={a:edgeFirst.id,b:n.id};edges.push(_nw);
-          pushUndo({t:'add',e:_nw});toast('Link created');
+          pushUndo({t:'add',e:_nw});
         }
         edgeFirst=null;settle(60);$('hud-e').textContent=edges.length;
       }
@@ -723,8 +727,9 @@ function runScenario(key){
   $('stop-btn').disabled=false;
   $('hud-mode').textContent='SIMULATION — '+sc.name;
   $('live-dot').style.background=sc.color;$('live-dot').style.boxShadow='0 0 8px '+sc.color;
-  shakeT=0.5;
+  shakeT=0.45;
   logEv(sc.msg,sc.color,true);
+  sim._lastLoggedDepth=-1;
   // BFS wave scheduling
   var visited=new Set(seeds);
   var wave=seeds.slice();var depth=0;
@@ -769,10 +774,14 @@ function hit(id,depth){
     var rate=COST[n.type]||8000;
     var impact=ns<20?0.95:ns<35?0.6:0.25;
     sim.cost+=rate*impact;
-    if(ns<35)logEv('<b>'+n.label+'</b> degraded to '+ns+'/100 (depth '+depth+')',hcol(ns));
+    // only log the FIRST critical of each depth + interlock trips (no per-node spam)
+    if(ns<35 && depth!==sim._lastLoggedDepth){
+      sim._lastLoggedDepth=depth;
+      logEv('Wave '+depth+' reached '+n.label+' ('+ns+'/100)',hcol(ns));
+    }
     if(n.type==='cbs_controller'&&ns<90){
-      logEv('<b>CBS INTERLOCK TRIP</b> — blast authorisation suppressed','#ff4b68',true);
-      shakeT=0.7;
+      logEv('Blast interlock tripped — authorisation held','#ff4b68',true);
+      shakeT=0.6;
     }
   }
   settle(30);renderPanel();
@@ -790,7 +799,7 @@ function recover(){
       if(e)for(var k=0;k<2;k++)particles.push({e:e,t:-k*0.2,v:0.03,col:'#31e98c'});
       settle(10);renderPanel();
       if(i===ids.length-1){
-        logEv('All assets restored. Simulation complete.','#31e98c',true);
+        logEv('Recovery complete — all assets restored','#31e98c',true);
         setTimeout(function(){stopSim(true);},1600);
       }
     }, i*260);

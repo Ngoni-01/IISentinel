@@ -346,16 +346,21 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
    DESIGN SYSTEM v8 — light-first · imagery-led · human copy
    (iOS clarity × YouTube warmth. Dark = optional, content-only)
    ════════════════════════════════════════════════════════════ */
-body.light{
-  --bg:#F6F7F9;--bg2:#FFFFFF;--glass:#FFFFFF;--glass2:#F1F4F8;
-  --line:#E6EAF0;--line2:#D5DCE6;--txt:#0B1524;--sub:#5A6B84;--dim:#93A1B5;
-  --cyan:#0BA5EC;--green:#16A34A;--amber:#D97706;--red:#DC2626;--purple:#7C3AED;--gold:#B45309;
+/* iOS system greys — neutral, no blue/purple wash */
+:root{ /* DARK = Apple dark grey, not navy */
+  --bg:#1C1C1E;--bg2:#2C2C2E;--glass:#2C2C2E;--glass2:#3A3A3C;
+  --line:#3A3A3C;--line2:#48484A;--txt:#F5F5F7;--sub:#AEAEB2;--dim:#7C7C80;
+  --cyan:#0A84FF;--green:#30D158;--amber:#FF9F0A;--red:#FF453A;--purple:#BF5AF2;--gold:#FFD60A;
 }
-body.light,body.light #view{background:
-  radial-gradient(1200px 500px at 85% -10%,#EAF4FF 0%,transparent 60%),
-  radial-gradient(900px 420px at -10% 108%,#F3EEFF 0%,transparent 55%),#F6F7F9}
-body.light #rail,body.light #topbar{background:rgba(255,255,255,.86);
-  border-color:var(--line);backdrop-filter:blur(18px) saturate(1.2)}
+body.light{ /* LIGHT = iOS settings grey */
+  --bg:#F2F2F7;--bg2:#FFFFFF;--glass:#FFFFFF;--glass2:#EFEFF4;
+  --line:#E3E3E8;--line2:#D1D1D6;--txt:#1C1C1E;--sub:#6E6E73;--dim:#AEAEB2;
+  --cyan:#007AFF;--green:#28A745;--amber:#FF9500;--red:#FF3B30;--purple:#AF52DE;--gold:#B8860B;
+}
+body,body #view{background:var(--bg)}
+body.light,body.light #view{background:var(--bg)}
+#rail,#topbar{background:rgba(28,28,30,.8);backdrop-filter:blur(20px) saturate(1.4)}
+body.light #rail,body.light #topbar{background:rgba(255,255,255,.82);border-color:var(--line)}
 body.light .card{background:#fff;border:1px solid var(--line);
   box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 28px -14px rgba(16,24,40,.10)}
 body.light .card:hover{box-shadow:0 1px 2px rgba(16,24,40,.05),0 16px 40px -16px rgba(16,24,40,.14)}
@@ -497,15 +502,15 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
 <div id="shell">
   <nav id="rail">
     <div class="rail-logo" onclick="go('home')"><span>II</span></div>
-    <button class="rl on" data-p="home" onclick="go('home')">&#x2302;<span class="rl-tip">Home</span></button>
-    <button class="rl" data-p="fleet" onclick="go('fleet')">&#x25A6;<span class="rl-tip">Monitor</span></button>
-    <button class="rl" data-p="cascadepg" onclick="go('cascadepg')">&#x29D6;<span class="rl-tip">Cascade</span></button>
-    <button class="rl" data-p="intel" onclick="go('intel')">&#x2726;<span class="rl-tip">Insights</span></button>
-    <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety" style="display:none">&#x26A0;<span class="rl-tip">Safety</span></button>
-    <button class="rl" data-p="timeline" onclick="go('timeline')" style="display:none">&#x23F1;<span class="rl-tip">Timeline</span></button>
+    <button class="rl on" data-p="home" onclick="go('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg><span class="rl-tip">Home</span></button>
+    <button class="rl" data-p="fleet" onclick="go('fleet')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 20h8M12 17v3"/><path d="M7 11l2.5-2.5L12 11l3-3.5"/></svg><span class="rl-tip">Monitor</span></button>
+    <button class="rl" data-p="cascadepg" onclick="go('cascadepg')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="7" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.2 10.5 16M15.7 8.4 13.4 16.2M8 6.4h7.6"/></svg><span class="rl-tip">Cascade</span></button>
+    <button class="rl" data-p="intel" onclick="go('intel')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3Z"/><path d="M9.5 20h5M10 22h4"/></svg><span class="rl-tip">Insights</span></button>
+    <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety" style="display:none"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M12 8v4M12 15h.01"/></svg><span class="rl-tip">Safety</span></button>
+    <button class="rl" data-p="timeline" onclick="go('timeline')" style="display:none"><span class="rl-tip">Timeline</span></button>
     <div class="rail-spacer"></div>
-    <button class="rl" onclick="window.open('/admin','_blank')">&#x2699;<span class="rl-tip">Admin</span></button>
-    <button class="rl" onclick="window.open('/classic','_blank')">&#x25CD;<span class="rl-tip">Classic view</span></button>
+    <button class="rl" onclick="window.open('/admin','_blank')"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span class="rl-tip">Admin</span></button>
+    
   </nav>
 
   <div id="main">
@@ -518,8 +523,8 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
         <span>&#x2315;</span><span>Search devices, actions&hellip;</span><kbd>&#x2318;K</kbd>
       </div>
       <div class="tb-live" id="tb-live"><span class="dot"></span>LIVE</div>
-      <button class="tb-btn" id="theme-btn" onclick="toggleTheme()" title="Appearance">&#x263E;</button>
-      <button class="tb-btn" onclick="exportPDF(this)">&#x2193; Report</button>
+      <button class="tb-btn" id="theme-btn" onclick="toggleTheme()" title="Appearance"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg></button>
+      <button class="tb-btn" onclick="exportPDF(this)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M8 10l4 4 4-4M5 20h14"/></svg> Report</button>
     </div>
 
     <div id="view">
@@ -540,6 +545,11 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
           </div>
         </div>
         <div class="sec-strip" id="sec-strip"></div>
+        <div class="card" id="net-card" style="display:none;margin-bottom:18px">
+          <div class="card-t"><span>Network segments &amp; DHCP health</span><span class="fill"></span>
+            <span id="net-badge" style="font-size:11px;font-weight:700"></span></div>
+          <div id="net-segs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px"></div>
+        </div>
         <div class="home-grid">
           <div class="card" id="map-card">
             <div class="card-t" style="padding:6px 10px 0"><span>Living system map</span><span class="fill"></span>
@@ -724,7 +734,9 @@ function toast(t,m,cls){
 function toggleTheme(){
   var light=document.body.classList.toggle('light');
   try{localStorage.setItem('sx-theme',light?'light':'dark');}catch(e){}
-  $('theme-btn').innerHTML=light?'\u263E':'\u2600';
+  $('theme-btn').innerHTML=light
+  ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.1 5.1l1.4 1.4M17.5 17.5l1.4 1.4M5.1 18.9l1.4-1.4M17.5 6.5l1.4-1.4"/></svg>'
+  : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>';
 }
 // LIGHT is the default. Dark is the option.
 try{
@@ -733,10 +745,10 @@ try{
 
 // ═══ SECTOR FOCUS (compact access) ═══
 var SECTOR_FILTER = sessionStorage.getItem('sx-sector') || '';
-var SEC_IMG={mc:'/static/miningco.jpg',net:'/static/networkco.jpg',tc:'/static/telecomco.jpg'};
+var SEC_IMG={net:'/static/networkco.jpg',mc:'/static/miningco.jpg'};
 function buildSecStrip(){
   var el=$('sec-strip'); if(!el) return;
-  var order=[['mc','Mining'],['net','Network'],['tc','Telecom']]
+  var order=[['net','Network'],['mc','Mining']]
     .filter(function(o){return MODULES.indexOf(o[0])!==-1;});
   var counts={}; devices.forEach(function(r){var s=sectorOf(r);counts[s]=(counts[s]||0)+1;});
   var html='<div class="sec-chip all'+(SECTOR_FILTER===''?' on':'')+'" onclick="setSector(\'\')"><b>All assets</b>'
@@ -765,7 +777,7 @@ function buildSeg(){
 function setSector(s){
   SECTOR_FILTER=s;
   try{sessionStorage.setItem('sx-sector',s);}catch(e){}
-  buildSeg(); buildSecStrip(); renderFleet();
+  buildSeg(); buildSecStrip(); renderFleet(); loadNetHealth();
 }
 
 // ═══ NAV ═══
@@ -799,7 +811,7 @@ async function sync(){
       hist.set(rec.device_id,h);
     });
     setLive(true);
-    if(curPage==='home'){renderMap();buildSecStrip();}
+    if(curPage==='home'){renderMap();buildSecStrip();loadNetHealth();}
     if(curPage==='fleet')renderFleet();
     if(curPage==='safety')renderSafety();
   }catch(e){ setLive(false); }
@@ -1241,6 +1253,41 @@ async function loadLineage(){
   }catch(e){ $('obs-body').textContent='—'; }
 }
 
+async function loadNetHealth(){
+  if(MODULES.indexOf('net')===-1) return;
+  try{
+    var d=await(await fetch(B+'/api/net/dhcp-status',{cache:'no-store'})).json();
+    var card=$('net-card'), segs=$('net-segs'), badge=$('net-badge');
+    if(!card) return;
+    if(!d.segments || !d.segments.length){
+      // no sensors yet — show a gentle call to action, only on Network focus
+      if(SECTOR_FILTER==='net'){
+        card.style.display='';
+        badge.textContent='';
+        segs.innerHTML='<div style="grid-column:1/-1;padding:16px;color:var(--sub);font-size:12.5px;line-height:1.6">'
+          +'No LAN sensors reporting yet. Run <b>net_sensor.py</b> on each segment to detect rogue DHCP servers '
+          +'(a consumer router accidentally handing out leases) &mdash; something a cloud monitor and tracert cannot see.</div>';
+      } else { card.style.display='none'; }
+      return;
+    }
+    card.style.display='';
+    badge.textContent = d.rogue_count>0 ? (d.rogue_count+' rogue DHCP') : 'All clean';
+    badge.style.color = d.rogue_count>0 ? 'var(--red)' : 'var(--green)';
+    segs.innerHTML=d.segments.map(function(s){
+      var col=s.rogue?'var(--red)':'var(--green)';
+      var rogueLine=s.rogue
+        ? '<div style="color:var(--red);font-size:11px;font-weight:700;margin-top:6px">&#9888; Rogue: '
+          +s.rogue_servers.map(function(r){return r.ip;}).join(', ')+'</div>'
+        : '<div style="color:var(--green);font-size:11px;margin-top:6px">Only sanctioned server</div>';
+      return '<div style="padding:13px;border-radius:14px;background:var(--glass2);border:1px solid var(--line)">'
+        +'<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:'+col+'"></span>'
+        +'<b style="font-size:12.5px">'+s.segment+'</b></div>'
+        +'<div style="font-size:10.5px;color:var(--dim);margin-top:4px">DHCP: '+(s.expected_dhcp||'unset')+' &middot; '+s.devices_seen+' devices</div>'
+        +rogueLine+'</div>';
+    }).join('');
+  }catch(e){}
+}
+
 // ═══ SSE ═══
 function initSSE(){
   try{
@@ -1288,6 +1335,7 @@ function initSSE(){
   setInterval(sync,12000);
   setInterval(loadBrief,30000);
   loadLineage(); setInterval(loadLineage, 45000);
+  loadNetHealth(); setInterval(loadNetHealth, 20000);
   setInterval(function(){fetch(B+'/api/ping').catch(function(){});},5*60*1000);
   initSSE();
   window.addEventListener('resize',function(){if(curPage==='home')mapResize();if(curPage==='timeline')tlInit();});

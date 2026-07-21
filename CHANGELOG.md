@@ -1,4 +1,14 @@
 # Changelog
+## v9 — Apple-grey design + rogue DHCP detection (current)
+- True iOS system greys: dark=#1C1C1E/#2C2C2E, light=#F2F2F7 (no navy/warm tint)
+- All emoji icons replaced with clean SF-style SVG strokes (rail, buttons, toggles)
+- Cascade notifications: from per-node flood to milestone-only + single-toast policy
+- Telecom removed from default edition (Network + Mining wedge); NOCs own link mon
+- ROGUE DHCP DETECTION: net_sensor.py (Pi/Linux) finds consumer routers that
+  turn on DHCP and poison a LAN segment — invisible to cloud + tracert.
+  Backend /api/net/scan + /api/net/dhcp-status; live Network dashboard card
+- Pi reframed as dual sensor: mining telemetry + LAN watchdog, one device
+- Production-ready: demo mode off by default; empty states guide real setup
 ## v8 — the design release (current)
 - Light-first design system: white cards, soft shadows, warm gradient canvas,
   iOS tinted icon chips, human copy everywhere (jargon removed from screens)
