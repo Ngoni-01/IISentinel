@@ -158,7 +158,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
       <div class="ltxt">Cascade Studio<small>failure propagation twin</small></div>
     </div>
     <div class="bar-sp"></div>
-    <button class="btn" onclick="fitView()">&#x26F6; Fit</button>
+    <input id="nsearch" placeholder="&#x2315; find node&hellip;" 
+      style="height:34px;width:150px;padding:0 12px;border-radius:12px;border:1px solid var(--line);
+      background:rgba(255,255,255,.045);color:var(--txt);font-size:11.5px;outline:none;font-family:var(--font)"
+      oninput="searchNode(this.value)" onkeydown="if(event.key==='Enter')searchGo()">
+    <button class="btn" id="grid-btn" onclick="toggleGrid()" title="Grid & snap (G)">&#x229E;</button>
+    <button class="btn" onclick="exportPNG()" title="Export PNG">&#x2913; PNG</button>
+    <button class="btn" id="undo-btn" onclick="undoEdit()" title="Undo link edit (Ctrl+Z)" disabled>&#x21A9;</button>
+    <button class="btn" onclick="fitView()" title="Fit (F)">&#x26F6; Fit</button>
     <button class="btn" id="edit-btn" onclick="toggleEdit()">&#x270E; Edit</button>
     <button class="btn danger" id="stop-btn" onclick="stopSim()" disabled>&#x25A0; Stop</button>
     <button class="btn primary" onclick="location.href='/'">&larr; Sentinel</button>
@@ -183,6 +190,9 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
       <div class="hchip"><span class="live" id="live-dot"></span><span id="hud-mode">LIVE twin</span></div>
       <div class="hchip">Nodes <b id="hud-n">0</b> &middot; Links <b id="hud-e">0</b></div>
     </div>
+    <canvas id="minimap" width="150" height="100" style="position:absolute;left:14px;bottom:14px;
+  border-radius:12px;border:1px solid var(--line);background:rgba(6,11,20,.8);
+  backdrop-filter:blur(10px);cursor:pointer"></canvas>
     <div id="zc">
       <button class="zb" onclick="zoom(1.25)">+</button>
       <button class="zb" onclick="zoom(0.8)">&minus;</button>
@@ -201,7 +211,7 @@ var B=location.origin;
 var SECT={net:{n:'Network',c:'#22c9e8'},tc:{n:'Telecom',c:'#37b6ff'},
           mc:{n:'Mining',c:'#ffc94d'},cbs:{n:'CBS',c:'#ff4b68'}};
 var COST={router:12000,switch:8000,firewall:15000,wan_link:20000,workstation:1500,
-  base_station:25000,network_tower:30000,microwave_link:22000,
+  base_station:25000,network_tower:30000,microwave_link:22000,generator:18000,fuel_tank:6000,
   pump:150000,conveyor:80000,ventilation:120000,power_meter:10000,sensor:5000,
   plc:60000,scada_node:45000,cbs_controller:450000};
 function hcol(s){return s>=70?'#31e98c':s>=35?'#ffb648':'#ff4b68';}
@@ -218,6 +228,7 @@ var view={x:0,y:0,s:1,tx:null,ty:null,ts:null};
 var W=0,H=0,DPR=Math.min(devicePixelRatio||1,2);
 var cv,ctx,hoverN=null,dragN=null,selN=null,focusSet=null,panning=false,px=0,py=0;
 var editMode=false,edgeFirst=null;
+var showGrid=false,undoStack=[],searchHit=null;
 var particles=[];            // {e:edge, t:0..1, col}
 var shakeT=0;
 
@@ -263,7 +274,7 @@ function short(id){var p=String(id).split('-');return p.length>2?p.slice(-2).joi
 function sectorOfType(t){
   if(t==='cbs_controller')return 'cbs';
   if(['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node'].indexOf(t)>=0)return 'mc';
-  if(['base_station','network_tower','microwave_link'].indexOf(t)>=0)return 'tc';
+  if(['base_station','network_tower','microwave_link','generator','fuel_tank'].indexOf(t)>=0)return 'tc';
   return 'net';
 }
 function buildFromSnapshot(data){
@@ -352,6 +363,14 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   ctx.save();ctx.translate(sh,sh2);
 
+  // grid
+  if(showGrid){
+    var step=40*view.s, ox=((view.x+W/2)%step+step)%step, oy=((view.y+H/2)%step+step)%step;
+    ctx.strokeStyle='rgba(120,160,210,.06)';ctx.lineWidth=1;ctx.beginPath();
+    for(var gx=ox;gx<W;gx+=step){ctx.moveTo(gx,0);ctx.lineTo(gx,H);}
+    for(var gy=oy;gy<H;gy+=step){ctx.moveTo(0,gy);ctx.lineTo(W,gy);}
+    ctx.stroke();
+  }
   // WATERMARK — Sentinel logo, breathing
   ctx.save();
   var wa=0.045+Math.sin(T*0.6)*0.012;
@@ -421,6 +440,11 @@ function draw(){
     }
     var s=scoreOf(n.id);var col=s===null?'#4b5b78':hcol(s);
     var r3=11*view.s;var hov=hoverN===n||selN===n;
+    if(searchHit===n){
+      var sp=Math.sin(T*5)*.5+.5;
+      ctx.beginPath();ctx.arc(x,y,r3+8+sp*4,0,7);
+      ctx.strokeStyle='rgba(0,212,255,'+(0.3+sp*0.4)+')';ctx.lineWidth=2;ctx.stroke();
+    }
     if(s!==null&&s<35){
       var pu=Math.sin(T*4+n.x)*0.5+0.5;
       ctx.beginPath();ctx.arc(x,y,r3+5+pu*5,0,7);
@@ -449,7 +473,43 @@ function draw(){
   });
   ctx.restore();
 }
-function loop(){physics();draw();requestAnimationFrame(loop);}
+var _mmCtx=null,_mmT=0;
+function drawMinimap(){
+  if(!_mmCtx){var mc=document.getElementById('minimap');if(!mc)return;_mmCtx=mc.getContext('2d');}
+  _mmT++;if(_mmT%6)return;   // 10fps is plenty
+  var c=_mmCtx;c.clearRect(0,0,150,100);
+  var real=nodes.filter(function(n){return !n.core;});if(!real.length)return;
+  var minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  real.forEach(function(n){minX=Math.min(minX,n.x);maxX=Math.max(maxX,n.x);
+    minY=Math.min(minY,n.y);maxY=Math.max(maxY,n.y);});
+  var sc=Math.min(130/Math.max(60,maxX-minX),80/Math.max(60,maxY-minY));
+  var mx=function(x){return 75+(x-(minX+maxX)/2)*sc;},my=function(y){return 50+(y-(minY+maxY)/2)*sc;};
+  real.forEach(function(n){
+    var s=scoreOf(n.id);
+    c.beginPath();c.arc(mx(n.x),my(n.y),n.hub?2.5:1.8,0,7);
+    c.fillStyle=n.hub?((SECT[n.hub]||{}).c||'#8fa0bd'):(s===null?'#4b5b78':hcol(s));c.fill();
+  });
+  // viewport rect
+  var vx0=(0-W/2-view.x)/view.s, vy0=(0-H/2-view.y)/view.s;
+  var vx1=(W-W/2-view.x)/view.s, vy1=(H-H/2-view.y)/view.s;
+  c.strokeStyle='rgba(0,212,255,.55)';c.lineWidth=1;
+  c.strokeRect(mx(vx0),my(vy0),(vx1-vx0)*sc,(vy1-vy0)*sc);
+}
+(function(){
+  var mc=document.getElementById('minimap');if(!mc)return;
+  mc.addEventListener('click',function(e){
+    var r=mc.getBoundingClientRect();
+    var real=nodes.filter(function(n){return !n.core;});if(!real.length)return;
+    var minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+    real.forEach(function(n){minX=Math.min(minX,n.x);maxX=Math.max(maxX,n.x);
+      minY=Math.min(minY,n.y);maxY=Math.max(maxY,n.y);});
+    var sc=Math.min(130/Math.max(60,maxX-minX),80/Math.max(60,maxY-minY));
+    var wx=((e.clientX-r.left)-75)/sc+(minX+maxX)/2;
+    var wy=((e.clientY-r.top)-50)/sc+(minY+maxY)/2;
+    view.tx=-wx*view.s;view.ty=-wy*view.s;view.ts=view.s;
+  });
+})();
+function loop(){physics();draw();drawMinimap();requestAnimationFrame(loop);}
 
 // ── interactions ──
 function nodeAt(sx,sy){
@@ -468,7 +528,9 @@ function bind(){
   });
   cv.addEventListener('mousemove',function(e){
     var r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
-    if(dragN){var w=screen2world(mx,my);dragN.x=w[0];dragN.y=w[1];settle(8);return;}
+    if(dragN){var w=screen2world(mx,my);
+      if(showGrid){w[0]=Math.round(w[0]/40)*40;w[1]=Math.round(w[1]/40)*40;}
+      dragN.x=w[0];dragN.y=w[1];settle(8);return;}
     if(panning){view.x+=e.clientX-px;view.y+=e.clientY-py;px=e.clientX;py=e.clientY;view.tx=null;return;}
     hoverN=nodeAt(mx,my);
     cv.style.cursor=hoverN?'pointer':'default';
@@ -492,8 +554,14 @@ function bind(){
       if(!edgeFirst){edgeFirst=n;toast('Now click a second node to link');}
       else if(edgeFirst!==n){
         var exists=edges.some(function(ed){return (ed.a===edgeFirst.id&&ed.b===n.id)||(ed.a===n.id&&ed.b===edgeFirst.id);});
-        if(exists){edges=edges.filter(function(ed){return !((ed.a===edgeFirst.id&&ed.b===n.id)||(ed.a===n.id&&ed.b===edgeFirst.id));});toast('Link removed');}
-        else{edges.push({a:edgeFirst.id,b:n.id});toast('Link created');}
+        if(exists){
+          var _rm=edges.find(function(ed){return (ed.a===edgeFirst.id&&ed.b===n.id)||(ed.a===n.id&&ed.b===edgeFirst.id);});
+          edges=edges.filter(function(ed){return ed!==_rm;});
+          pushUndo({t:'del',e:_rm});toast('Link removed');
+        } else {
+          var _nw={a:edgeFirst.id,b:n.id};edges.push(_nw);
+          pushUndo({t:'add',e:_nw});toast('Link created');
+        }
         edgeFirst=null;settle(60);$('hud-e').textContent=edges.length;
       }
       return;
@@ -553,6 +621,45 @@ function select(n){
     if(e.b===n.id)focusSet.add(e.a);
   });
   renderPanel();
+}
+function searchNode(q){
+  q=(q||'').toLowerCase().trim();
+  searchHit=q?nodes.find(function(n){return !n.core&&!n.hub&&
+    (n.id.toLowerCase().indexOf(q)>=0||n.label.toLowerCase().indexOf(q)>=0);})||null:null;
+  if(searchHit)select(searchHit);
+}
+function searchGo(){
+  if(!searchHit)return;
+  view.ts=1.6;view.tx=-searchHit.x*1.6;view.ty=-searchHit.y*1.6;
+}
+function toggleGrid(){
+  showGrid=!showGrid;
+  document.getElementById('grid-btn').classList.toggle('primary',showGrid);
+  toast(showGrid?'Grid + snap on':'Grid off');
+}
+function exportPNG(){
+  try{
+    var off=document.createElement('canvas');off.width=W*2;off.height=H*2;
+    var oc=off.getContext('2d');oc.fillStyle='#04070d';oc.fillRect(0,0,off.width,off.height);
+    oc.scale(2,2);
+    var keep=ctx; ctx=oc; draw(); ctx=keep;
+    var a=document.createElement('a');
+    a.download='cascade-'+new Date().toISOString().slice(0,10)+'.png';
+    a.href=off.toDataURL('image/png');a.click();
+    toast('PNG exported');
+  }catch(e){toast('Export failed: '+e.message);}
+}
+function pushUndo(action){
+  undoStack.push(action);if(undoStack.length>30)undoStack.shift();
+  document.getElementById('undo-btn').disabled=false;
+}
+function undoEdit(){
+  var a=undoStack.pop();if(!a)return;
+  if(a.t==='add')edges=edges.filter(function(e){return !(e.a===a.e.a&&e.b===a.e.b);});
+  if(a.t==='del')edges.push(a.e);
+  settle(50);$('hud-e').textContent=edges.length;
+  document.getElementById('undo-btn').disabled=!undoStack.length;
+  toast('Undone');
 }
 function toggleEdit(){
   editMode=!editMode;edgeFirst=null;
@@ -715,7 +822,7 @@ function renderPanel(){
       +'</div></div>';
   }
   if(!html)html='<div class="pcard"><div class="pt">Cascade Studio</div>'
-    +'<div style="font-size:11.5px;color:var(--sub);line-height:1.7">Run a scenario above to watch failures propagate through real dependencies, or click any node to inspect and fail it manually. Scroll to zoom &middot; drag to pan &middot; double-click to focus.</div></div>';
+    +'<div style="font-size:11.5px;color:var(--sub);line-height:1.7">Run a scenario (keys 1&ndash;5) or click any node to inspect and fail it manually. F fit &middot; G grid+snap &middot; E edit links &middot; Ctrl+Z undo &middot; scroll zoom &middot; double-click focus &middot; minimap bottom-left.</div></div>';
   p.innerHTML=html;
 }
 function seedFrom(id){
@@ -756,6 +863,18 @@ async function refreshLive(){
     });
   }catch(e){}
 }
+
+// keyboard shortcuts
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT')return;
+  var k=e.key.toLowerCase();
+  if(k==='f')fitView();
+  else if(k==='g')toggleGrid();
+  else if(k==='e')toggleEdit();
+  else if(k==='escape'){select(null);if(sim)stopSim();}
+  else if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();undoEdit();}
+  else if(k>='1'&&k<='5'){var keys=['net','tc','mc','cbs','storm'];runScenario(keys[+k-1]);}
+});
 
 // ── boot ──
 (function(){

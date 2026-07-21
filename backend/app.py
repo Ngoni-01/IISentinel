@@ -19,6 +19,19 @@ Demo:    DEMO_MODE=true python app.py
 Install: pip install flask flask-cors reportlab scikit-learn joblib \
                     numpy requests werkzeug psycopg2-binary psutil
 """
+"""
+════════════════════════════════════════════════════════════════════════
+IISentinel backend — SECTION INDEX (grep the tag to jump)
+  [S01] Imports, env, editions config          [S07] Background workers
+  [S02] Database schema + connections          [S08] Core API routes
+  [S03] ML models, heuristic scorer            [S09] Node/LAN monitoring
+  [S04] Metric sanitize + scoring pipeline     [S10] Admin API routes
+  [S05] Caches (data/intel/page/token/pdf)     [S11] v4 innovation routes
+  [S06] Notifications + CBS interlock          [S12] Boot sequence
+Architecture, data flow, and fault-tracing map: ../ARCHITECTURE.md
+Every response carries X-Request-ID; 500s log it with a full traceback.
+════════════════════════════════════════════════════════════════════════
+"""
 import os, re, json, time, random, threading, smtplib, sqlite3
 try:
     from dotenv import load_dotenv
@@ -77,7 +90,7 @@ except ImportError:
             return r
 
 # ── Database ──────────────────────────────────────────────────────────────────
-_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'iisentinel.db')
+_DB_PATH = os.environ.get('DB_PATH') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'iisentinel.db')
 
 @contextmanager
 def _db_conn():
@@ -264,8 +277,18 @@ _OBS_LOCK = threading.Lock()
 _BOOT_TS = time.time()
 def _beat(name): _heartbeats[name] = time.time()
 
+import uuid as _uuid
 @app.before_request
-def _obs_start(): _g._t0 = time.time()
+def _obs_start():
+    _g._t0 = time.time()
+    _g.rid = request.headers.get('X-Request-ID') or _uuid.uuid4().hex[:8]
+
+@app.errorhandler(500)
+def _traced_500(e):
+    rid = getattr(_g, 'rid', '--------')
+    import traceback
+    print(f'[ERROR rid={rid}] {request.method} {request.path}\n{traceback.format_exc()}')
+    return jsonify({'error': 'internal error', 'request_id': rid}), 500
 
 @app.after_request
 def _static_cache(resp):
@@ -278,6 +301,7 @@ def _static_cache(resp):
 @app.after_request
 def _obs_end(resp):
     try:
+        resp.headers['X-Request-ID'] = getattr(_g, 'rid', '')
         ms = (time.time() - getattr(_g,'_t0',time.time()))*1000
         key = (request.endpoint or request.path or '?')
         with _OBS_LOCK:
@@ -295,7 +319,7 @@ if _HAS_COMPRESS:
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 NETWORK_TYPES = ['router','switch','firewall','wan_link','workstation']
-TELECOM_TYPES = ['base_station','network_tower','microwave_link']
+TELECOM_TYPES = ['base_station','network_tower','microwave_link','generator','fuel_tank']
 MINING_TYPES  = ['pump','conveyor','ventilation','power_meter','sensor','plc','scada_node']
 CBS_TYPES     = ['cbs_controller']
 DEMO_MODE = os.environ.get('DEMO_MODE','false').lower()=='true'
@@ -327,6 +351,8 @@ CACHE_TTL            = 10
 WEATHER_CACHE_TTL    = 60
 
 COST_RATES = {
+    'generator'        : 18000,
+    'fuel_tank'        : 6000,
     'pump':150000,'conveyor':120000,'ventilation':180000,'plc':80000,
     'scada_node':60000,'cbs_controller':450000,'power_meter':100000,
     'sensor':40000,'base_station':25000,'network_tower':35000,
@@ -1046,6 +1072,7 @@ def _audit(actor, action, target, detail='', result='ok', ip='system'):
 
 # ── Demo mode ─────────────────────────────────────────────────────────────────
 DEMO_DEVICES = [
+    {'id':'tc-site2-genset-01',    'type':'generator',      'bsig':84,'blat':12,'bbw':40, 'btemp':68},
     {'id':'net-byo-router-01',     'type':'router',         'bsig':90,'blat':35,'bbw':120,'btemp':42},
     {'id':'net-byo-switch-core',   'type':'switch',         'bsig':88,'blat':8, 'bbw':480,'btemp':38},
     {'id':'net-hre-router-01',     'type':'router',         'bsig':82,'blat':28,'bbw':95, 'btemp':45},
@@ -1216,6 +1243,11 @@ def _poll_node(node_id: str):
                                   else f'Elevated latency {latency}ms.' if (latency or 0)>120 else None),
             'automation_command': (f'ALERT: Node {label} ({node["host"]}) DOWN.'
                                    if not reachable else None),
+            'note'             : ('Private LAN IP — a cloud-hosted Sentinel cannot reach it. '
+                                  'Run collectors/lan_probe.py on your network to feed it in.'
+                                  if (not reachable and re.match(
+                                      r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)',
+                                      str(node.get('host','')))) else None),
             'data_source'      : 'lan-ping',
             'protocol'         : 'ICMP/LAN' if method=='icmp' else 'TCP-probe'
         }

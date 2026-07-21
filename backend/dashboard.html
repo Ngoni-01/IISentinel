@@ -614,6 +614,16 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
 #ws-chip b{cursor:pointer;width:20px;height:20px;border-radius:50%;display:flex;
   align-items:center;justify-content:center;background:rgba(255,255,255,.08);font-size:10px;color:#8b9cb8}
 #ws-chip b:hover{color:#ff8fa0}
+.hero-bg{display:none !important}   /* v5.2: no decorative layer survives */
+
+/* v7 — zero side accents anywhere; weather demoted */
+.nm-node,.nm-node.up,.nm-node.down,.nm-node.checking{border-left:1px solid var(--b1) !important}
+.nm-node .nm-name::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;background:var(--dim);vertical-align:1px}
+.nm-node.up .nm-name::before{background:var(--grn)}
+.nm-node.down .nm-name::before{background:var(--red)}
+.nm-node.checking .nm-name::before{background:var(--amb)}
+.col-card.active-coll,.col-card.idle-coll,.col-card.offline-coll{border-left:1px solid var(--b1) !important}
+.nt[data-page="wx"]{display:none !important}
 </style>
 </head>
 <body>
