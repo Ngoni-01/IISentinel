@@ -1,4 +1,13 @@
 # Changelog
+## v10 — in-app email alerts (current)
+- Email Alerts section in the control panel: enable/disable, SMTP host/port/
+  user/password, from address, recipient list — a Send-test-email button that
+  reports success or the exact SMTP error
+- Config persists in the database and loads at boot (no redeploy to change
+  where alerts go); passwords stored server-side, never sent back to the browser
+- _dispatch_alert now actually emails — rogue-DHCP, and other alerts reach the
+  inbox (critical also fires SMS/WhatsApp if those are configured)
+- Verified: save, persist-across-restart, graceful failure on bad SMTP creds
 ## v9 — Apple-grey design + rogue DHCP detection (current)
 - True iOS system greys: dark=#1C1C1E/#2C2C2E, light=#F2F2F7 (no navy/warm tint)
 - All emoji icons replaced with clean SF-style SVG strokes (rail, buttons, toggles)

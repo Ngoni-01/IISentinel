@@ -238,6 +238,7 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fo
     <div class="sb-section">Security</div>
     <div class="sb-item" data-page="users" onclick="nav(this)"><span class="sb-icon">&#x1F464;</span>User Management</div>
     <div class="sb-item" data-page="notify" onclick="nav(this)"><span class="sb-icon">&#x1F514;</span>Notifications</div>
+    <div class="sb-item" data-page="email" onclick="nav(this)"><span class="sb-icon">&#x2709;</span>Email Alerts</div>
 
     <div class="sb-section">Operations</div>
     <div class="sb-item" data-page="dispatch" onclick="nav(this)"><span class="sb-icon">&#x1F4E4;</span>Command Dispatch</div>
@@ -458,6 +459,42 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fo
 <!-- ══════════════════════════════════════════
      COMMAND DISPATCH
 ══════════════════════════════════════════ -->
+<div class="page" id="page-email">
+  <div class="page-hd"><h2>Email Alerts</h2><div class="sub">Send alerts to an inbox &mdash; effective immediately, saved to database</div></div>
+  <div class="hint">Critical health, rogue-DHCP, and blast-safety alerts are emailed here so the right person is notified even when nobody is watching the dashboard. Unlike the panel above, these settings persist in the database and apply without a redeploy.</div>
+
+  <div class="card">
+    <div class="card-title"><span>Status</span>
+      <span id="email-state" class="badge">&hellip;</span></div>
+    <div class="field-row" style="align-items:center">
+      <div class="field" style="flex:1"><div class="field-lbl">Enable email alerts</div></div>
+      <label class="toggle"><input type="checkbox" id="em-enabled"><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span>SMTP server</span></div>
+    <div class="field-row cols3">
+      <div class="field"><div class="field-lbl">SMTP host</div><input class="inp" id="em-host" placeholder="smtp.gmail.com"></div>
+      <div class="field"><div class="field-lbl">Port</div><input class="inp" id="em-port" type="number" placeholder="587"></div>
+      <div class="field"><div class="field-lbl">From address</div><input class="inp" id="em-from" placeholder="IISentinel &lt;alerts@yourco.com&gt;"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">SMTP username</div><input class="inp" id="em-user" placeholder="you@gmail.com"></div>
+      <div class="field"><div class="field-lbl">SMTP password / app password</div><input class="inp" id="em-pass" type="password" placeholder="app password"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><div class="field-lbl">Send alerts to (comma-separated)</div><input class="inp" id="em-to" placeholder="ops@yourco.com, you@yourco.com"></div>
+    </div>
+    <div class="hint" style="margin-top:4px"><b>Gmail:</b> use an <b>App Password</b> (Google Account &rarr; Security &rarr; 2-Step Verification &rarr; App passwords), not your normal password. Host <b>smtp.gmail.com</b>, port <b>587</b>.</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:14px">
+      <button class="btn btn-cyn btn-sm" onclick="saveEmail()">Save settings</button>
+      <button class="btn btn-ghost btn-sm" onclick="testEmail(this)">Send test email</button>
+      <span id="em-msg" style="font-size:12px;font-weight:600;margin-left:4px"></span>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-dispatch">
   <div class="page-hd"><h2>Command Dispatch</h2><div class="sub">Send webhooks, SMS, email or log commands</div></div>
   <div class="card">
@@ -801,13 +838,68 @@ var PAGE_TITLES = {
   system:'System Overview', devices:'Device Registry', thresholds:'Alert Thresholds',
   maintenance:'Maintenance Windows', collectors:'Collector Management',
   users:'User Management', notify:'Notification Config',
-  dispatch:'Command Dispatch', audit:'Audit Log', db:'Database Maintenance'
+  dispatch:'Command Dispatch', audit:'Audit Log', db:'Database Maintenance', email:'Email Alerts'
 };
 var PAGE_LOADERS = {
   system:loadSystem, devices:loadDevices, thresholds:loadThresholds,
   maintenance:loadMaint, collectors:loadCollectors, users:loadUsers,
-  notify:loadNotify, dispatch:loadDispatch, audit:function(){loadAudit(1);}, db:loadDb
+  notify:loadNotify, dispatch:loadDispatch, audit:function(){loadAudit(1);}, db:loadDb, email:loadEmail
 };
+
+async function loadEmail() {
+  try {
+    var d = await api('GET', '/api/admin/email');
+    document.getElementById('em-enabled').checked = !!d.email_enabled;
+    document.getElementById('em-host').value = d.smtp_host || '';
+    document.getElementById('em-port').value = d.smtp_port || 587;
+    document.getElementById('em-user').value = d.smtp_user || '';
+    document.getElementById('em-from').value = d.from_email || '';
+    document.getElementById('em-to').value   = d.to_emails || '';
+    document.getElementById('em-pass').placeholder = d.smtp_pass_set
+      ? '\u2022\u2022\u2022\u2022 (saved — leave blank to keep)' : 'app password';
+    var st = document.getElementById('email-state');
+    st.textContent = d.email_enabled ? 'ON' : 'OFF';
+    st.style.color = d.email_enabled ? 'var(--grn)' : 'var(--dim)';
+  } catch(e) { msg('em-msg', 'Load failed: '+e.message, true); }
+}
+
+async function saveEmail() {
+  var body = {
+    email_enabled: document.getElementById('em-enabled').checked,
+    smtp_host: document.getElementById('em-host').value.trim(),
+    smtp_port: parseInt(document.getElementById('em-port').value)||587,
+    smtp_user: document.getElementById('em-user').value.trim(),
+    from_email: document.getElementById('em-from').value.trim(),
+    to_emails: document.getElementById('em-to').value.trim(),
+  };
+  var pass = document.getElementById('em-pass').value;
+  if (pass) body.smtp_pass = pass;
+  try {
+    var r = await api('POST', '/api/admin/email', body);
+    document.getElementById('em-pass').value = '';
+    msg('em-msg', 'Saved \u2713  ('+(r.recipients||0)+' recipient'+(r.recipients===1?'':'s')+')', false);
+    loadEmail();
+  } catch(e) { msg('em-msg', 'Save failed: '+e.message, true); }
+}
+
+async function testEmail(btn) {
+  btn.disabled = true; var old = btn.textContent; btn.textContent = 'Sending\u2026';
+  try {
+    var r = await api('POST', '/api/admin/email/test');
+    msg('em-msg', r.ok ? ('Test sent to '+(r.sent_to||[]).join(', ')+' \u2713') : ('Failed: '+r.error), !r.ok);
+  } catch(e) {
+    var m = e.message||'send failed';
+    msg('em-msg', 'Failed: '+m, true);
+  }
+  btn.disabled = false; btn.textContent = old;
+}
+
+function msg(id, text, isErr) {
+  var el = document.getElementById(id); if(!el) return;
+  el.textContent = text;
+  el.style.color = isErr ? 'var(--red)' : 'var(--grn)';
+  setTimeout(function(){ if(el.textContent===text) el.textContent=''; }, 8000);
+}
 
 function nav(el) {
   document.querySelectorAll('.sb-item').forEach(function(i){i.classList.remove('active');});

@@ -181,6 +181,9 @@ def _db_init():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             features TEXT, score REAL, ts TEXT);
 
+        CREATE TABLE IF NOT EXISTS notify_config (
+            k TEXT PRIMARY KEY, v TEXT);
+
         CREATE TABLE IF NOT EXISTS model_meta (
             k TEXT PRIMARY KEY, v TEXT);
 
@@ -222,6 +225,25 @@ def _db_init():
                     (generate_password_hash('admin123'), row['id']))
 
 _db_init()
+
+def _load_notify_config():
+    """DB config overrides env vars, so email can be set up in-app without redeploy."""
+    try:
+        with _db_conn() as con:
+            rows = con.execute("SELECT k,v FROM notify_config").fetchall()
+        cfg = {r['k']: r['v'] for r in rows}
+        if 'email_enabled' in cfg: NOTIFY['email_enabled'] = cfg['email_enabled']=='true'
+        if 'smtp_host' in cfg: NOTIFY['smtp_host'] = cfg['smtp_host']
+        if 'smtp_port' in cfg and cfg['smtp_port'].isdigit(): NOTIFY['smtp_port'] = int(cfg['smtp_port'])
+        if 'smtp_user' in cfg: NOTIFY['smtp_user'] = cfg['smtp_user']
+        if 'smtp_pass' in cfg and cfg['smtp_pass']: NOTIFY['smtp_pass'] = cfg['smtp_pass']
+        if 'from_email' in cfg and cfg['from_email']: NOTIFY['from_email'] = cfg['from_email']
+        if 'to_emails' in cfg:
+            NOTIFY['to_emails'] = [e.strip() for e in cfg['to_emails'].split(',') if e.strip()]
+        if rows: print(f'[Boot] Email config loaded from DB ('
+                       f"{'ON' if NOTIFY['email_enabled'] else 'off'}, "
+                       f"{len(NOTIFY['to_emails'])} recipient(s))")
+    except Exception as e: print(f'[Boot] notify config: {e}')
 
 def _restore_training_state():
     try:
@@ -1409,6 +1431,67 @@ def register_collector():
                     'header':f'X-Collector-Key: {api_key}',
                     'note':'Store this API key — it will not be shown again'})
 
+@app.route('/api/admin/email', methods=['GET','POST'])
+@require_admin
+def admin_email():
+    if request.method == 'GET':
+        return jsonify({
+            'email_enabled': NOTIFY['email_enabled'],
+            'smtp_host': NOTIFY['smtp_host'], 'smtp_port': NOTIFY['smtp_port'],
+            'smtp_user': NOTIFY['smtp_user'],
+            'smtp_pass_set': bool(NOTIFY['smtp_pass']),
+            'from_email': NOTIFY['from_email'],
+            'to_emails': ', '.join(NOTIFY['to_emails']),
+        })
+    d = request.get_json(silent=True) or {}
+    updates = {}
+    if 'email_enabled' in d: updates['email_enabled'] = 'true' if d['email_enabled'] else 'false'
+    for k in ('smtp_host','smtp_user','from_email','to_emails'):
+        if k in d: updates[k] = str(d[k])
+    if 'smtp_port' in d: updates['smtp_port'] = str(d['smtp_port'])
+    if d.get('smtp_pass'): updates['smtp_pass'] = str(d['smtp_pass'])   # only overwrite if provided
+    try:
+        with _db_conn() as con:
+            for k,v in updates.items():
+                con.execute("INSERT OR REPLACE INTO notify_config (k,v) VALUES (?,?)",(k,v))
+        _load_notify_config()
+        return jsonify({'ok':True,'email_enabled':NOTIFY['email_enabled'],
+                        'recipients':len(NOTIFY['to_emails'])})
+    except Exception as e:
+        return jsonify({'error':str(e)}),500
+
+@app.route('/api/admin/email/test', methods=['POST'])
+@require_admin
+def admin_email_test():
+    if not NOTIFY['email_enabled']:
+        return jsonify({'ok':False,'error':'Email is turned off — enable and save first'}),400
+    if not NOTIFY['to_emails']:
+        return jsonify({'ok':False,'error':'No recipient email set'}),400
+    if not NOTIFY['smtp_user'] or not NOTIFY['smtp_pass']:
+        return jsonify({'ok':False,'error':'SMTP username/password not set'}),400
+    # send synchronously so we can report success/failure to the UI
+    try:
+        C = '#34c6f4'
+        html = (f'<html><body style="font-family:Arial;background:#f2f2f7;padding:30px">'
+                f'<table width="520" style="background:#fff;border-radius:14px;margin:auto">'
+                f'<tr><td style="background:{C};padding:18px 26px;border-radius:14px 14px 0 0">'
+                f'<b style="font-size:17px;color:#fff">IISentinel&#x2122;</b></td></tr>'
+                f'<tr><td style="padding:24px"><p style="font-size:15px;font-weight:700">Test alert</p>'
+                f'<p style="font-size:13px;color:#555">If you are reading this, email alerts are working. '
+                f'Sentinel will send critical health, rogue-DHCP, and blast-safety alerts here.</p>'
+                f'<p style="font-size:11px;color:#999">Sent {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}</p>'
+                f'</td></tr></table></body></html>')
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = '[IISentinel] Test alert — email is working'
+        msg['From'] = NOTIFY['from_email']; msg['To'] = ', '.join(NOTIFY['to_emails'])
+        msg.attach(MIMEText('IISentinel test alert. Email alerts are working.','plain'))
+        msg.attach(MIMEText(html,'html'))
+        with smtplib.SMTP(NOTIFY['smtp_host'], NOTIFY['smtp_port'], timeout=15) as s:
+            s.starttls(); s.login(NOTIFY['smtp_user'], NOTIFY['smtp_pass']); s.send_message(msg)
+        return jsonify({'ok':True,'sent_to':NOTIFY['to_emails']})
+    except Exception as e:
+        return jsonify({'ok':False,'error':str(e)}),500
+
 @app.route('/api/net/scan', methods=['POST','OPTIONS'])
 def net_scan_ingest():
     """LAN sensor (Pi) reports DHCP offers + ARP seen on a segment.
@@ -1473,13 +1556,18 @@ def net_dhcp_status():
 
 @app.route('/api/collector/ingest', methods=['POST','OPTIONS'])
 def _dispatch_alert(kind, message, severity='warning'):
-    """Central alert fan-out stub — logs + counts; notification workers pick up."""
+    """Central alert fan-out: log + count + email (and SMS/WhatsApp if critical)."""
     try:
         platform_stats.setdefault('alerts_raised',0)
         platform_stats['alerts_raised'] += 1
         print(f'[ALERT/{severity}] {kind}: {message}')
         _intel_cache['ts'] = 0
-    except Exception: pass
+        # actually notify — this is what makes email alerts real
+        notify_all(subject=f'{kind.upper()} alert', message=message,
+                   level=severity if severity in ('critical','cbs','warning','info') else 'warning',
+                   diagnosis=message)
+    except Exception as e:
+        print(f'[dispatch] {e}')
 
 def collector_ingest():
     if request.method=='OPTIONS': return '',204
@@ -2793,6 +2881,7 @@ def pwa_sw():
 if __name__=='__main__':
     _refresh_maintenance()   # load any active windows from DB at startup
     _restore_training_state()
+    _load_notify_config()
     demo = os.environ.get('DEMO_MODE','false').lower()=='true'
     try:
         with _db_conn() as con:
