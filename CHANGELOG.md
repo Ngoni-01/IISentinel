@@ -1,4 +1,15 @@
 # Changelog
+## v8 — the design release (current)
+- Light-first design system: white cards, soft shadows, warm gradient canvas,
+  iOS tinted icon chips, human copy everywhere (jargon removed from screens)
+- Navigation cut to 4: Home / Monitor / Cascade / Insights (Safety + Timeline
+  folded in; labeled YouTube-style sidebar on desktop, iOS bottom tabs on mobile)
+- Sector photo chips (Mining / Network / Telecom + live Blast-status chip)
+  replace tab sprawl — one tap filters fleet and dims the map
+- Cascade embedded in-app (iframe + full-screen button) — the dedicated-window
+  failure mode is gone; standalone /cascade gets light chrome over dark stage
+  and a friendly empty-state notice
+- Dark mode is now the toggle, not the default
 ## v7 — foundations + LAN truth (current)
 - lan_probe.py: LAN-side ping collector (fixes cloud-can't-ping-192.168.x)
 - /api/nodes now explains private-IP unreachability in a `note` field

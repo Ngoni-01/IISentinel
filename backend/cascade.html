@@ -147,6 +147,21 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
   #panel{width:min(260px,80vw)}
   .sc small{display:none}
 }
+
+/* v8: light chrome, dark stage — follows the app's appearance setting */
+body.lightc{--bg:#F6F7F9;--txt:#0B1524;--sub:#5A6B84;--dim:#93A1B5;
+  --line:#E6EAF0;--glass:rgba(255,255,255,.94)}
+body.lightc{background:#F6F7F9}
+body.lightc #ambient,body.lightc .grain{display:none}
+body.lightc #bar,body.lightc #scen{background:rgba(255,255,255,.9);border-color:var(--line)}
+body.lightc .btn,body.lightc .sc{background:#fff;border-color:var(--line);color:var(--sub)}
+body.lightc .btn:hover,body.lightc .sc:hover{color:var(--txt);border-color:#D5DCE6}
+body.lightc .btn.primary{background:#E7F5FE;border-color:#A9DDF8;color:#0369A1}
+body.lightc #nsearch{background:#fff;border-color:var(--line);color:var(--txt)}
+body.lightc #stage{background:#04070d;border-radius:0}
+body.lightc .pcard,body.lightc .hchip,body.lightc .zb,body.lightc #minimap
+ {background:rgba(10,17,30,.82);border-color:rgba(255,255,255,.1)}
+body.lightc .ltxt{color:var(--txt)}
 </style>
 </head>
 <body>
@@ -206,6 +221,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
 
 <script>
 'use strict';
+// follow the app's appearance: light chrome unless user chose dark
+try{ if(localStorage.getItem('sx-theme')!=='dark') document.body.classList.add('lightc'); }catch(e){ document.body.classList.add('lightc'); }
 // ═══════════ CASCADE STUDIO ENGINE — clean-room build ═══════════
 var B=location.origin;
 var SECT={net:{n:'Network',c:'#22c9e8'},tc:{n:'Telecom',c:'#37b6ff'},
@@ -267,6 +284,9 @@ async function loadTopology(){
     }
   });
   index();settle(240);fitView();
+  if(nodes.filter(function(n){return !n.core&&!n.hub;}).length===0){
+    toast('No devices yet — start the platform in demo mode or connect a collector, then reload.');
+  }
   $('hud-n').textContent=nodes.filter(function(n){return !n.hub&&!n.core;}).length;
   $('hud-e').textContent=edges.length;
 }

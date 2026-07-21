@@ -341,6 +341,125 @@ body.light .brief{background:rgba(13,27,46,.04) !important;border-color:rgba(13,
 .seg-b:hover{color:var(--sub)}
 .seg-b.on{background:rgba(0,212,255,.14);color:var(--cyan)}
 body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
+
+/* ════════════════════════════════════════════════════════════
+   DESIGN SYSTEM v8 — light-first · imagery-led · human copy
+   (iOS clarity × YouTube warmth. Dark = optional, content-only)
+   ════════════════════════════════════════════════════════════ */
+body.light{
+  --bg:#F6F7F9;--bg2:#FFFFFF;--glass:#FFFFFF;--glass2:#F1F4F8;
+  --line:#E6EAF0;--line2:#D5DCE6;--txt:#0B1524;--sub:#5A6B84;--dim:#93A1B5;
+  --cyan:#0BA5EC;--green:#16A34A;--amber:#D97706;--red:#DC2626;--purple:#7C3AED;--gold:#B45309;
+}
+body.light,body.light #view{background:
+  radial-gradient(1200px 500px at 85% -10%,#EAF4FF 0%,transparent 60%),
+  radial-gradient(900px 420px at -10% 108%,#F3EEFF 0%,transparent 55%),#F6F7F9}
+body.light #rail,body.light #topbar{background:rgba(255,255,255,.86);
+  border-color:var(--line);backdrop-filter:blur(18px) saturate(1.2)}
+body.light .card{background:#fff;border:1px solid var(--line);
+  box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 28px -14px rgba(16,24,40,.10)}
+body.light .card:hover{box-shadow:0 1px 2px rgba(16,24,40,.05),0 16px 40px -16px rgba(16,24,40,.14)}
+body.light .dev{background:#fff;border-color:var(--line);
+  box-shadow:0 1px 2px rgba(16,24,40,.04),0 8px 22px -14px rgba(16,24,40,.10)}
+body.light .dev:hover{border-color:var(--line2)}
+body.light .tb-btn,body.light .f-chip,body.light .f-input,body.light .tb-search
+ {background:#fff;border-color:var(--line);color:var(--sub)}
+body.light .tb-btn:hover{border-color:var(--line2);color:var(--txt)}
+body.light .f-chip.on{background:#E7F5FE;border-color:#A9DDF8;color:#0369A1}
+body.light #drawer{background:rgba(255,255,255,.97);border-left-color:var(--line2)}
+body.light #pal{background:#fff;border-color:var(--line2)}
+body.light #pal-in{border-bottom-color:var(--line)}
+body.light .pal-item.sel,body.light .pal-item:hover{background:#EAF4FF}
+body.light .toast{background:#fff;border-color:var(--line2);color:var(--txt);
+  box-shadow:0 12px 34px -8px rgba(16,24,40,.22)}
+body.light .msg.bot{background:#F1F4F8;border-color:var(--line);color:#243248}
+body.light .msg.user{background:#E7F5FE;border-color:#BFE7FB;color:#075985}
+body.light .ask-in{background:#fff;border-color:var(--line2);color:var(--txt)}
+body.light .kv{background:#F7F9FC;border-color:var(--line)}
+body.light .stat-pill{background:#fff;border-color:var(--line)}
+body.light .prog{background:#EDF1F6}
+body.light .brief{background:#fff !important;border:1px solid var(--line) !important;
+  border-top:1px solid var(--line) !important;
+  box-shadow:0 1px 2px rgba(16,24,40,.04),0 14px 36px -16px rgba(16,24,40,.12)}
+body.light ::-webkit-scrollbar-thumb{background:#CBD5E1}
+
+/* human, friendly type — kill the terminal voice */
+.card-t{letter-spacing:.02em;text-transform:none;font-size:13px;color:var(--sub);font-weight:700}
+.tb-title{font-size:17px}
+.brief-fhi{font-family:var(--font);font-weight:800}
+.stat-pill b{font-family:var(--font)}
+.dev-name{font-size:13px}
+.ring b,.dr-ring b{font-family:var(--font)}
+.kv b{font-family:var(--font)}
+.model-line b{font-family:var(--font);font-weight:700}
+
+/* iOS-style tinted icon chips (color as fills, never stripes) */
+.tint{width:38px;height:38px;border-radius:12px;display:inline-flex;align-items:center;
+  justify-content:center;font-size:17px;flex-shrink:0}
+.tint.blue{background:#E7F5FE;color:#0284C7}.tint.green{background:#E8F7EE;color:#15803D}
+.tint.amber{background:#FEF3E2;color:#B45309}.tint.red{background:#FEE9E9;color:#B91C1C}
+.tint.violet{background:#F1EAFE;color:#6D28D9}
+body:not(.light) .tint.blue{background:rgba(11,165,236,.14)}
+body:not(.light) .tint.green{background:rgba(22,163,74,.16)}
+body:not(.light) .tint.amber{background:rgba(217,119,6,.16)}
+body:not(.light) .tint.red{background:rgba(220,38,38,.16)}
+body:not(.light) .tint.violet{background:rgba(124,58,237,.16)}
+
+/* labeled sidebar (YouTube) → bottom tab bar on mobile (iOS) */
+:root{--rail:188px}
+#rail{width:var(--rail);align-items:stretch;padding:14px 10px;gap:3px}
+.rail-logo{margin:2px 6px 16px;width:auto;height:40px;border-radius:12px;
+  justify-content:flex-start;padding:0 10px;gap:9px;display:flex;align-items:center}
+.rail-logo::after{content:'Sentinel';font-size:15px;font-weight:800;letter-spacing:-.02em;
+  color:var(--txt)}
+.rl{width:100%;height:42px;border-radius:12px;justify-content:flex-start;
+  padding:0 12px;gap:11px;font-size:16px}
+.rl .rl-tip{position:static;opacity:1;transform:none;background:none;border:none;
+  padding:0;font-size:13px;font-weight:650;color:inherit;pointer-events:none;box-shadow:none}
+.rl:hover .rl-tip{transform:none}
+.rl.on{background:#E7F5FE;color:#0369A1}
+body:not(.light) .rl.on{background:rgba(11,165,236,.16);color:var(--cyan)}
+.rl[data-c=red].on{background:#FEE9E9;color:#B91C1C}
+@media(max-width:760px){
+  #shell.on{flex-direction:column-reverse}
+  #rail{width:100%;height:62px;flex-direction:row;justify-content:space-around;
+    align-items:center;padding:6px 8px;border-right:none;border-top:1px solid var(--line)}
+  .rail-logo{display:none}
+  .rl{width:auto;flex-direction:column;height:52px;gap:2px;padding:4px 10px;font-size:18px}
+  .rl .rl-tip{font-size:9px;font-weight:700}
+  .rail-spacer{display:none}
+}
+
+/* sector photo chips (YouTube thumbnail energy) */
+.sec-strip{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:16px}
+.sec-chip{position:relative;flex:0 0 148px;height:88px;border-radius:16px;overflow:hidden;
+  cursor:pointer;border:2px solid transparent;transition:transform .3s var(--spring),border-color .2s;
+  background-size:cover;background-position:center;box-shadow:0 6px 18px -8px rgba(16,24,40,.25)}
+.sec-chip:hover{transform:translateY(-3px)}
+.sec-chip.on{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(11,165,236,.18),0 8px 22px -8px rgba(16,24,40,.3)}
+.sec-chip::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 34%,rgba(6,12,22,.82))}
+.sec-chip b{position:absolute;left:11px;bottom:9px;z-index:1;color:#fff;font-size:12.5px;
+  font-weight:750;letter-spacing:-.01em;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.sec-chip.all{background:linear-gradient(135deg,#0BA5EC,#7C3AED)}
+.sec-chip small{position:absolute;right:9px;top:8px;z-index:1;background:rgba(255,255,255,.92);
+  color:#0B1524;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px}
+
+/* attention list rows (grouped-list, iOS) */
+.att{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:16px;
+  background:var(--glass);border:1px solid var(--line);cursor:pointer;
+  transition:transform .25s var(--spring),box-shadow .25s;margin-bottom:10px}
+body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.att:hover{transform:translateY(-2px)}
+.att-t{font-size:13.5px;font-weight:700}
+.att-d{font-size:12px;color:var(--sub);margin-top:2px;line-height:1.45}
+.att-go{margin-left:auto;color:var(--dim);font-size:16px}
+
+/* splash + cascade stage remain dark by design (content, not chrome) */
+#splash{background:#04080f !important}
+.cas-embed{border-radius:20px;overflow:hidden;border:1px solid var(--line);
+  background:#04070d;box-shadow:0 14px 40px -18px rgba(16,24,40,.35)}
+.cas-embed iframe{display:block;width:100%;height:calc(100vh - 210px);min-height:480px;border:0}
 </style>
 </head>
 <body>
@@ -379,11 +498,11 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
   <nav id="rail">
     <div class="rail-logo" onclick="go('home')"><span>II</span></div>
     <button class="rl on" data-p="home" onclick="go('home')">&#x2302;<span class="rl-tip">Home</span></button>
-    <button class="rl" data-p="fleet" onclick="go('fleet')">&#x25A6;<span class="rl-tip">Fleet</span></button>
-    <button class="rl" data-p="intel" onclick="go('intel')">&#x2726;<span class="rl-tip">Intelligence</span></button>
-    <button class="rl" data-p="timeline" onclick="go('timeline')">&#x23F1;<span class="rl-tip">Timeline</span></button>
-    <button class="rl" onclick="window.open('/cascade','_self')">&#x29D6;<span class="rl-tip">Cascade Studio</span></button>
-    <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety">&#x26A0;<span class="rl-tip">CBS Safety</span></button>
+    <button class="rl" data-p="fleet" onclick="go('fleet')">&#x25A6;<span class="rl-tip">Monitor</span></button>
+    <button class="rl" data-p="cascadepg" onclick="go('cascadepg')">&#x29D6;<span class="rl-tip">Cascade</span></button>
+    <button class="rl" data-p="intel" onclick="go('intel')">&#x2726;<span class="rl-tip">Insights</span></button>
+    <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety" style="display:none">&#x26A0;<span class="rl-tip">Safety</span></button>
+    <button class="rl" data-p="timeline" onclick="go('timeline')" style="display:none">&#x23F1;<span class="rl-tip">Timeline</span></button>
     <div class="rail-spacer"></div>
     <button class="rl" onclick="window.open('/admin','_blank')">&#x2699;<span class="rl-tip">Admin</span></button>
     <button class="rl" onclick="window.open('/classic','_blank')">&#x25CD;<span class="rl-tip">Classic view</span></button>
@@ -393,13 +512,13 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
     <div id="topbar">
       <div class="tb-title" id="tb-title">Home</div>
       <div class="tb-edition" id="tb-edition">Enterprise Suite</div>
-      <div id="sector-seg" style="display:flex;gap:4px;padding:3px;border-radius:14px;background:var(--glass);border:1px solid var(--line)"></div>
+      <div id="sector-seg" style="display:none;gap:4px;padding:3px;border-radius:14px;background:var(--glass);border:1px solid var(--line)"></div>
       <div class="tb-edition" id="tb-demo" style="display:none;color:#ffb340;border-color:rgba(255,179,64,.4)">DEMO DATA</div>
       <div class="tb-search" onclick="palOpen()">
         <span>&#x2315;</span><span>Search devices, actions&hellip;</span><kbd>&#x2318;K</kbd>
       </div>
       <div class="tb-live" id="tb-live"><span class="dot"></span>LIVE</div>
-      <button class="tb-btn" id="theme-btn" onclick="toggleTheme()" title="Projector mode">&#x2600;</button>
+      <button class="tb-btn" id="theme-btn" onclick="toggleTheme()" title="Appearance">&#x263E;</button>
       <button class="tb-btn" onclick="exportPDF(this)">&#x2193; Report</button>
     </div>
 
@@ -409,7 +528,7 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
       <div class="page on" id="p-home">
         <div class="brief" id="brief">
           <button class="voice-btn" id="voice-btn" onclick="speakBrief()" title="Voice briefing">&#x1F50A;</button>
-          <div class="brief-hi" id="brief-hi">Good day</div>
+          <div class="brief-hi" id="brief-hi" style="font-size:14px">Good day</div>
           <div class="brief-fhi"><span id="b-fhi">&mdash;</span><small>/100 fleet health</small></div>
           <div class="brief-txt" id="brief-txt">Connecting to platform&hellip;</div>
           <div class="brief-row">
@@ -420,6 +539,7 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
             <div class="stat-pill"><b id="b-exp" style="color:var(--gold)">$0</b><span>Exposure/hr</span></div>
           </div>
         </div>
+        <div class="sec-strip" id="sec-strip"></div>
         <div class="home-grid">
           <div class="card" id="map-card">
             <div class="card-t" style="padding:6px 10px 0"><span>Living system map</span><span class="fill"></span>
@@ -433,7 +553,7 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
             </div>
           </div>
           <div>
-            <div class="card-t" style="margin:4px 0 12px"><span>Insight feed</span></div>
+            <div class="card-t" style="margin:4px 0 12px"><span>Needs your attention</span></div>
             <div class="feed" id="feed"><div class="empty">Gathering intelligence&hellip;</div></div>
           </div>
         </div>
@@ -456,8 +576,8 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
       <div class="page" id="p-intel">
         <div class="intel-grid">
           <div class="card">
-            <div class="card-t"><span>Ask Sentinel</span><span class="fill"></span>
-              <span style="font-size:9px;color:var(--dim);text-transform:none;letter-spacing:0">deterministic AI &middot; works offline</span></div>
+            <div class="card-t"><span>Ask anything</span><span class="fill"></span>
+              <span style="font-size:9px;color:var(--dim);text-transform:none;letter-spacing:0">answers from your live data</span></div>
             <div id="ask-log">
               <div class="msg bot">I watch every asset in real time. Ask me anything about fleet health, failure predictions, costs, or a specific device.</div>
             </div>
@@ -475,7 +595,7 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
           </div>
           <div>
             <div class="card">
-              <div class="card-t"><span>Model transparency</span></div>
+              <div class="card-t"><span>How the AI thinks</span></div>
               <div class="model-line"><span>Scoring engine</span><b id="m-src" style="color:var(--amber)">&mdash;</b></div>
               <div class="model-line"><span>Real samples collected</span><b id="m-samples">&mdash;</b></div>
               <div class="model-line"><span>Anomaly detector</span><b>Isolation Forest</b></div>
@@ -485,11 +605,11 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
                 IISentinel learns your plant's normal and flags deviation days before static thresholds trip. Scoring starts as auditable rules; the anomaly detector learns your equipment's baseline from day one. No synthetic data is ever authoritative.</div>
             </div>
             <div class="card" style="margin-top:14px">
-              <div class="card-t"><span>Data lineage</span></div>
+              <div class="card-t"><span>Where your data comes from</span></div>
               <div id="lineage-body" style="font-size:11.5px;color:var(--sub);line-height:1.65">Loading&hellip;</div>
             </div>
             <div class="card" style="margin-top:14px">
-              <div class="card-t"><span>System observability</span></div>
+              <div class="card-t"><span>System health</span></div>
               <div id="obs-body" style="font-size:11.5px;color:var(--sub)">Loading&hellip;</div>
             </div>
           </div>
@@ -508,6 +628,16 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
           </div>
           <canvas id="tl-map" style="width:100%;border-radius:16px;display:block"></canvas>
         </div>
+      </div>
+
+      <!-- CASCADE (embedded) -->
+      <div class="page" id="p-cascadepg">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <div style="font-size:14px;color:var(--sub)">Simulate how one failure spreads through your operation.</div>
+          <span style="flex:1"></span>
+          <button class="tb-btn" onclick="window.open('/cascade','_blank')">&#x2197; Full screen</button>
+        </div>
+        <div class="cas-embed"><iframe id="cas-frame" loading="lazy" title="Cascade Studio"></iframe></div>
       </div>
 
       <!-- SAFETY -->
@@ -596,10 +726,33 @@ function toggleTheme(){
   try{localStorage.setItem('sx-theme',light?'light':'dark');}catch(e){}
   $('theme-btn').innerHTML=light?'\u263E':'\u2600';
 }
-try{if(localStorage.getItem('sx-theme')==='light'){document.body.classList.add('light');}}catch(e){}
+// LIGHT is the default. Dark is the option.
+try{
+  if(localStorage.getItem('sx-theme')!=='dark'){document.body.classList.add('light');}
+}catch(e){document.body.classList.add('light');}
 
 // ═══ SECTOR FOCUS (compact access) ═══
 var SECTOR_FILTER = sessionStorage.getItem('sx-sector') || '';
+var SEC_IMG={mc:'/static/miningco.jpg',net:'/static/networkco.jpg',tc:'/static/telecomco.jpg'};
+function buildSecStrip(){
+  var el=$('sec-strip'); if(!el) return;
+  var order=[['mc','Mining'],['net','Network'],['tc','Telecom']]
+    .filter(function(o){return MODULES.indexOf(o[0])!==-1;});
+  var counts={}; devices.forEach(function(r){var s=sectorOf(r);counts[s]=(counts[s]||0)+1;});
+  var html='<div class="sec-chip all'+(SECTOR_FILTER===''?' on':'')+'" onclick="setSector(\'\')"><b>All assets</b>'
+    +'<small>'+(devices.size||0)+'</small></div>';
+  order.forEach(function(o){
+    html+='<div class="sec-chip'+(SECTOR_FILTER===o[0]?' on':'')+'" onclick="setSector(\''+o[0]+'\')" '
+      +'style="background-image:url('+SEC_IMG[o[0]]+')"><b>'+o[1]+'</b><small>'+(counts[o[0]]||0)+'</small></div>';
+  });
+  if(MODULES.indexOf('cbs')!==-1){
+    var hold=false; devices.forEach(function(r){if(r.device_type==='cbs_controller'&&
+      (r.integrity_score!==undefined?r.integrity_score:r.health_score)<90)hold=true;});
+    html+='<div class="sec-chip" onclick="go(\'safety\')" style="background:linear-gradient(135deg,'
+      +(hold?'#DC2626,#7F1D1D':'#16A34A,#065F46')+')"><b>'+(hold?'Blast: HOLD':'Blast: safe')+'</b></div>';
+  }
+  el.innerHTML=html;
+}
 function buildSeg(){
   var seg=$('sector-seg'); if(!seg) return;
   var opts=[['','All']].concat([['net','Net'],['tc','Tel'],['mc','Min'],['cbs','CBS']]
@@ -612,11 +765,11 @@ function buildSeg(){
 function setSector(s){
   SECTOR_FILTER=s;
   try{sessionStorage.setItem('sx-sector',s);}catch(e){}
-  buildSeg(); renderFleet();
+  buildSeg(); buildSecStrip(); renderFleet();
 }
 
 // ═══ NAV ═══
-var TITLES = {home:'Home',fleet:'Fleet',intel:'Intelligence',timeline:'Timeline',safety:'CBS Safety'};
+var TITLES = {home:'Home',fleet:'Monitor',intel:'Insights',timeline:'Replay',safety:'Blast safety',cascadepg:'Cascade'};
 function go(p){
   curPage=p;
   document.querySelectorAll('.rl[data-p]').forEach(function(b){b.classList.toggle('on',b.dataset.p===p);});
@@ -625,6 +778,7 @@ function go(p){
   $('tb-title').textContent=TITLES[p]||p;
   if(p==='fleet')renderFleet();
   if(p==='timeline')tlInit();
+  if(p==='cascadepg'){var f=$('cas-frame');if(f&&!f.src)f.src='/cascade';}
   if(p==='safety')renderSafety();
   if(p==='home')requestAnimationFrame(mapResize);
 }
@@ -645,7 +799,7 @@ async function sync(){
       hist.set(rec.device_id,h);
     });
     setLive(true);
-    if(curPage==='home'){renderMap();}
+    if(curPage==='home'){renderMap();buildSecStrip();}
     if(curPage==='fleet')renderFleet();
     if(curPage==='safety')renderSafety();
   }catch(e){ setLive(false); }
@@ -671,7 +825,7 @@ async function loadBrief(){
     renderFeed(b);
     // model card
     var real=b.model_source==='ml-real-data';
-    $('m-src').textContent=real?'ML (your data)':'Explainable rules';
+    $('m-src').textContent=real?'Trained on your equipment':'Learning — clear rules for now';
     $('m-src').style.color=real?'#30e88a':'#ffb340';
   }catch(e){}
   try{
