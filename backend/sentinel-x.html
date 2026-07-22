@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#04080f">
 <link rel="manifest" href="/manifest.json">
@@ -13,12 +15,12 @@
   --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.13);
   --txt:#e8eefb;--sub:#8b9cb8;--dim:#4a5a75;
   --cyan:#00d4ff;--green:#30e88a;--amber:#ffb340;--red:#ff4d6a;--purple:#b07cff;--gold:#ffc94d;
-  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
   --mono:'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
   --spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.16,1,.3,1);
   --rail:64px;
 }
-*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--font);
   font-size:14px;overflow:hidden;letter-spacing:-.011em}
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -32,17 +34,17 @@ button{font-family:var(--font)}
   transition:opacity .55s var(--ease),visibility .55s}
 #splash.gone{opacity:0;visibility:hidden;pointer-events:none}
 .spl{display:flex;align-items:baseline;font-size:clamp(46px,8vw,76px);font-weight:900;letter-spacing:-.04em}
-.spl i{font-style:normal;opacity:0;transform:scale(.05);display:inline-block;color:var(--cyan);
-  text-shadow:0 0 40px rgba(0,212,255,.6);
+.spl i{font-style:normal;opacity:0;transform:scale(.05);display:inline-block;color:#34c6f4;
+  text-shadow:0 0 40px rgba(52,198,244,.55);
   animation:llZoom .5s cubic-bezier(.2,.8,.3,1.2) forwards}
 .spl i:nth-child(2){animation-delay:.28s}
-.spl b{font-weight:700;font-size:.72em;opacity:0;transform:translateX(40px);margin-left:.08em;
-  background:linear-gradient(90deg,#00d4ff,#30e88a,#00d4ff);background-size:200% auto;
+.spl b{font-weight:700;font-size:.72em;opacity:0;transform:translateX(40px);margin-left:.08em;letter-spacing:.5px;
+  background:linear-gradient(90deg,#34c6f4,#20e07a,#34c6f4);background-size:200% auto;
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   animation:llSlide .55s cubic-bezier(.2,.8,.3,1.1) .7s forwards,llShimmer 3s linear 1.3s infinite}
 @keyframes llZoom{0%{opacity:0;transform:scale(.05)}70%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
 @keyframes llSlide{to{opacity:1;transform:none}}
-@keyframes llShimmer{to{background-position:200% center}}
+@keyframes llShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
 .spl-bar{width:220px;height:2px;margin-top:26px;border-radius:2px;overflow:hidden;
   background:rgba(255,255,255,.06);opacity:0;animation:fade .4s ease 1.2s forwards}
 .spl-bar i{display:block;height:100%;width:0;border-radius:2px;
@@ -156,7 +158,7 @@ button{font-family:var(--font)}
 
 .feed{display:flex;flex-direction:column;gap:10px}
 .ins{padding:13px 15px;border-radius:16px;background:var(--glass);border:1px solid var(--line);
-  border-left:3px solid var(--cyan);animation:pageIn .4s var(--ease);transition:all .25s}
+  animation:pageIn .4s var(--ease);transition:all .25s}
 .ins:hover{background:var(--glass2)}
 .ins.red{border-left-color:var(--red)}.ins.amber{border-left-color:var(--amber)}
 .ins.green{border-left-color:var(--green)}.ins.purple{border-left-color:var(--purple)}
@@ -293,7 +295,7 @@ button{font-family:var(--font)}
 /* ═══ TOASTS ═══ */
 #toasts{position:fixed;top:66px;right:18px;z-index:95;width:300px;display:flex;flex-direction:column;gap:8px}
 .toast{padding:13px 16px;border-radius:16px;background:rgba(9,16,30,.95);border:1px solid var(--line2);
-  border-left:3px solid var(--cyan);box-shadow:0 14px 44px rgba(0,0,0,.5);animation:toastIn .4s var(--spring);
+  box-shadow:0 14px 44px rgba(0,0,0,.5);animation:toastIn .4s var(--spring);
   font-size:12px}
 .toast.red{border-left-color:var(--red)}.toast.green{border-left-color:var(--green)}.toast.amber{border-left-color:var(--amber)}
 .toast b{display:block;font-size:12.5px;margin-bottom:2px}
@@ -415,8 +417,11 @@ body:not(.light) .tint.violet{background:rgba(124,58,237,.16)}
 #rail{width:var(--rail);align-items:stretch;padding:14px 10px;gap:3px}
 .rail-logo{margin:2px 6px 16px;width:auto;height:40px;border-radius:12px;
   justify-content:flex-start;padding:0 10px;gap:9px;display:flex;align-items:center}
-.rail-logo::after{content:'Sentinel';font-size:15px;font-weight:800;letter-spacing:-.02em;
-  color:var(--txt)}
+.rail-logo::after{content:'Sentinel';font-size:16px;font-weight:800;letter-spacing:.3px;
+  background:linear-gradient(90deg,#34c6f4,#20e07a,#34c6f4);background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:logoFlow 5s linear infinite}
+@keyframes logoFlow{0%{background-position:0% center}100%{background-position:200% center}}
 .rl{width:100%;height:42px;border-radius:12px;justify-content:flex-start;
   padding:0 12px;gap:11px;font-size:16px}
 .rl .rl-tip{position:static;opacity:1;transform:none;background:none;border:none;
@@ -465,6 +470,88 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
 .cas-embed{border-radius:20px;overflow:hidden;border:1px solid var(--line);
   background:#04070d;box-shadow:0 14px 40px -18px rgba(16,24,40,.35)}
 .cas-embed iframe{display:block;width:100%;height:calc(100vh - 210px);min-height:480px;border:0}
+
+/* ════════════════════════════════════════════════════════════
+   PREMIUM MULTI-COLOR SYSTEM v11
+   Distinct accent per domain · soft gradient depth · YouTube ambiance
+   (Not monotone. Not template. Each surface earns its color.)
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --acc-net:#34c6f4; --acc-net2:#5b8dff;    /* network = cyan→indigo */
+  --acc-mine:#ffa93d; --acc-mine2:#ff7847;  /* mining  = amber→coral */
+  --acc-safe:#20e07a; --acc-safe2:#12b866;  /* safety  = green       */
+  --acc-ai:#b07cff;   --acc-ai2:#7c5cff;    /* AI/insight = violet    */
+  --grad-hero:linear-gradient(135deg,#34c6f4 0%,#5b8dff 40%,#b07cff 100%);
+}
+/* soft ambient wash behind content — YouTube ambiance, theme-aware */
+#view::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(760px 420px at 82% -8%,rgba(52,198,244,.10),transparent 60%),
+    radial-gradient(680px 400px at -6% 12%,rgba(176,124,255,.09),transparent 58%),
+    radial-gradient(720px 500px at 50% 116%,rgba(255,169,61,.07),transparent 60%);
+  transition:opacity .6s}
+body.light #view::before{background:
+    radial-gradient(760px 420px at 82% -8%,rgba(52,198,244,.13),transparent 60%),
+    radial-gradient(680px 400px at -6% 12%,rgba(124,92,255,.10),transparent 58%),
+    radial-gradient(720px 500px at 50% 116%,rgba(255,133,71,.08),transparent 60%)}
+
+/* KPI stat pills — each its own color, gradient number, soft ring */
+.stat-pill{position:relative;overflow:hidden}
+.stat-pill::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+.stat-pill:nth-child(1)::after{background:linear-gradient(var(--acc-net),var(--acc-net2))}
+.stat-pill:nth-child(2)::after{background:linear-gradient(var(--acc-safe),var(--acc-safe2))}
+.stat-pill:nth-child(3)::after{background:linear-gradient(var(--acc-mine),var(--acc-mine2))}
+.stat-pill:nth-child(4)::after{background:linear-gradient(var(--acc-ai),var(--acc-ai2))}
+
+/* section header accents — colored dot + gradient underline on hover */
+.card-t>span:first-child{position:relative;padding-left:15px}
+.card-t>span:first-child::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:7px;height:7px;border-radius:50%;background:var(--acc-net);
+  box-shadow:0 0 10px var(--acc-net)}
+#map-card .card-t>span:first-child::before{background:var(--acc-net);box-shadow:0 0 10px var(--acc-net)}
+#net-card .card-t>span:first-child::before{background:var(--acc-net);box-shadow:0 0 10px var(--acc-net)}
+
+/* tinted icon chips get real gradients now */
+.tint.blue{background:linear-gradient(135deg,rgba(52,198,244,.22),rgba(91,141,255,.14));color:#34c6f4}
+.tint.green{background:linear-gradient(135deg,rgba(32,224,122,.22),rgba(18,184,102,.14));color:#20e07a}
+.tint.amber{background:linear-gradient(135deg,rgba(255,169,61,.24),rgba(255,120,71,.15));color:#ffa93d}
+.tint.violet{background:linear-gradient(135deg,rgba(176,124,255,.22),rgba(124,92,255,.14));color:#b07cff}
+.tint.red{background:linear-gradient(135deg,rgba(255,69,58,.22),rgba(200,40,40,.14));color:#ff5a5a}
+
+/* sector chips — richer gradient scrims per domain */
+.sec-chip.all{background:var(--grad-hero) !important}
+.sec-chip[onclick*="net"]::after{background:linear-gradient(180deg,transparent 30%,rgba(20,50,90,.85))}
+.sec-chip[onclick*="mc"]::after{background:linear-gradient(180deg,transparent 30%,rgba(90,45,10,.85))}
+
+/* brief FHI ring — gradient stroke feel */
+.brief-fhi{background:var(--grad-hero);-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent}
+
+/* buttons: primary gets the hero gradient */
+.tb-btn.primary,.ask-send{background:var(--grad-hero);color:#fff;border:none}
+.tb-btn.primary:hover{filter:brightness(1.08)}
+
+/* active nav item — gradient tint, not flat */
+.rl.on{background:linear-gradient(135deg,rgba(52,198,244,.20),rgba(176,124,255,.12)) !important;
+  color:var(--acc-net) !important}
+body.light .rl.on{background:linear-gradient(135deg,rgba(52,198,244,.16),rgba(124,92,255,.10)) !important;
+  color:#0284c7 !important}
+
+/* cards get a subtle top-edge highlight — depth without borders */
+.card,.dev{position:relative}
+.card::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 40%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;opacity:.7}
+body.light .card::before{background:linear-gradient(135deg,rgba(255,255,255,.9),transparent 42%)}
+
+.net-l{display:block;font-size:11px;font-weight:600;color:var(--sub);margin-bottom:5px}
+.nn-row{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;
+  background:var(--glass);border:1px solid var(--line)}
+body.light .nn-row{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.nn-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.nn-x{margin-left:auto;color:var(--dim);cursor:pointer;font-size:15px;padding:4px}
+.nn-x:hover{color:var(--red)}
 </style>
 </head>
 <body>
@@ -504,6 +591,7 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
     <div class="rail-logo" onclick="go('home')"><span>II</span></div>
     <button class="rl on" data-p="home" onclick="go('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg><span class="rl-tip">Home</span></button>
     <button class="rl" data-p="fleet" onclick="go('fleet')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 20h8M12 17v3"/><path d="M7 11l2.5-2.5L12 11l3-3.5"/></svg><span class="rl-tip">Monitor</span></button>
+    <button class="rl" data-p="network" onclick="go('network')" id="rl-network"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M12 12H5v4M12 12h7v4"/></svg><span class="rl-tip">Network</span></button>
     <button class="rl" data-p="cascadepg" onclick="go('cascadepg')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="7" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.2 10.5 16M15.7 8.4 13.4 16.2M8 6.4h7.6"/></svg><span class="rl-tip">Cascade</span></button>
     <button class="rl" data-p="intel" onclick="go('intel')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3Z"/><path d="M9.5 20h5M10 22h4"/></svg><span class="rl-tip">Insights</span></button>
     <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety" style="display:none"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M12 8v4M12 15h.01"/></svg><span class="rl-tip">Safety</span></button>
@@ -641,6 +729,59 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
       </div>
 
       <!-- CASCADE (embedded) -->
+      <div class="page" id="p-network">
+        <div style="font-size:13.5px;color:var(--sub);margin-bottom:16px;line-height:1.6">
+          Watch link health for any router, switch, or gateway by IP &mdash; and catch rogue DHCP
+          servers that poison a segment. Add a device below; Sentinel pings it continuously.</div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-t"><span>Add a device by IP</span></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;align-items:flex-end">
+            <div style="flex:1;min-width:150px"><label class="net-l">IP or hostname</label>
+              <input class="ask-in" id="nn-host" placeholder="192.168.1.1" style="width:100%"></div>
+            <div style="flex:1;min-width:130px"><label class="net-l">Label</label>
+              <input class="ask-in" id="nn-label" placeholder="Core router" style="width:100%"></div>
+            <div style="min-width:120px"><label class="net-l">Type</label>
+              <select class="ask-in" id="nn-sector" style="width:100%">
+                <option value="net">Network</option><option value="mc">Mining</option></select></div>
+            <button class="tb-btn primary" style="height:42px;padding:0 20px" onclick="addNode()">Add &amp; monitor</button>
+          </div>
+          <div id="nn-msg" style="font-size:12px;margin-top:10px;font-weight:600"></div>
+          <div style="font-size:11px;color:var(--dim);margin-top:8px;line-height:1.5">
+            Note: a cloud-hosted Sentinel can only reach public IPs directly. For private LAN addresses
+            (192.168.x, 10.x), run the bundled <b>lan_probe.py</b> on any machine on that network &mdash;
+            it pushes real ping results up here. See the Setup card below.</div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-t"><span>Monitored devices</span><span class="fill"></span>
+            <span id="nn-count" style="font-size:11px;color:var(--dim)"></span></div>
+          <div id="nn-list" style="margin-top:12px;display:grid;gap:10px"></div>
+        </div>
+
+        <div class="card" id="net-card2" style="margin-bottom:18px">
+          <div class="card-t"><span>DHCP health &amp; rogue detection</span><span class="fill"></span>
+            <span id="net-badge2" style="font-size:11px;font-weight:700"></span></div>
+          <div id="net-segs2" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-t"><span>Set up LAN &amp; rogue-DHCP sensing</span></div>
+          <div style="font-size:12.5px;color:var(--sub);line-height:1.7;margin-top:10px">
+            On any always-on machine or Raspberry Pi <b>inside your network</b>, run:
+            <pre style="background:var(--glass2);border-radius:10px;padding:12px;margin:10px 0;font-size:11.5px;overflow-x:auto;color:var(--txt)">python lan_probe.py --server <span id="nn-url">this-server</span> \
+   --register "office"        # once, saves a key
+python lan_probe.py --server <span id="nn-url2">this-server</span> --key KEY \
+   --targets 192.168.1.1,192.168.1.10</pre>
+            For rogue-DHCP detection (finds a consumer router illegally handing out leases &mdash;
+            invisible to tracert): <br>
+            <pre style="background:var(--glass2);border-radius:10px;padding:12px;margin:10px 0;font-size:11.5px;overflow-x:auto;color:var(--txt)">sudo python net_sensor.py --server <span id="nn-url3">this-server</span> --key KEY \
+   --segment "floor-3" --expected 192.168.3.1</pre>
+            Both scripts are in the <b>collectors/</b> folder of your deployment.
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="p-cascadepg">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <div style="font-size:14px;color:var(--sub)">Simulate how one failure spreads through your operation.</div>
@@ -781,7 +922,7 @@ function setSector(s){
 }
 
 // ═══ NAV ═══
-var TITLES = {home:'Home',fleet:'Monitor',intel:'Insights',timeline:'Replay',safety:'Blast safety',cascadepg:'Cascade'};
+var TITLES = {home:'Home',fleet:'Monitor',network:'Network',intel:'Insights',timeline:'Replay',safety:'Blast safety',cascadepg:'Cascade'};
 function go(p){
   curPage=p;
   document.querySelectorAll('.rl[data-p]').forEach(function(b){b.classList.toggle('on',b.dataset.p===p);});
@@ -791,6 +932,7 @@ function go(p){
   if(p==='fleet')renderFleet();
   if(p==='timeline')tlInit();
   if(p==='cascadepg'){var f=$('cas-frame');if(f&&!f.src)f.src='/cascade';}
+  if(p==='network'){initNetPage();}
   if(p==='safety')renderSafety();
   if(p==='home')requestAnimationFrame(mapResize);
 }
@@ -1286,6 +1428,73 @@ async function loadNetHealth(){
         +rogueLine+'</div>';
     }).join('');
   }catch(e){}
+}
+
+// ═══ NETWORK PAGE ═══
+async function loadNodes(){
+  try{
+    var r=await fetch(B+'/api/nodes',{cache:'no-store'});
+    var d=await r.json();
+    var nodes=d.nodes||d||[];
+    var list=$('nn-list'), cnt=$('nn-count');
+    if(cnt) cnt.textContent=nodes.length?(nodes.length+' device'+(nodes.length>1?'s':'')):'';
+    if(!list) return;
+    if(!nodes.length){
+      list.innerHTML='<div style="padding:16px;color:var(--sub);font-size:12.5px">No devices yet. Add a router or gateway by IP above to start monitoring its link health.</div>';
+      return;
+    }
+    list.innerHTML=nodes.map(function(n){
+      var st=n.status||'checking';
+      var col=st==='up'?'var(--acc-safe)':st==='down'?'var(--red)':'var(--acc-mine)';
+      var lat=n.latency_ms!=null?(n.latency_ms+' ms'):'—';
+      var loss=(n.loss_pct!=null?n.loss_pct:0)+'% loss';
+      var note=n.note?('<div style="font-size:11px;color:var(--acc-mine);margin-top:3px">'+n.note+'</div>'):'';
+      return '<div class="nn-row"><span class="nn-dot" style="background:'+col+'"></span>'
+        +'<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">'+(n.label||n.host)+'</div>'
+        +'<div style="font-size:11px;color:var(--dim)">'+n.host+' &middot; '+st+' &middot; '+lat+' &middot; '+loss+'</div>'+note+'</div>'
+        +'<span class="nn-x" onclick="delNode(\''+n.id+'\')" title="Remove">&#x2715;</span></div>';
+    }).join('');
+  }catch(e){}
+}
+async function addNode(){
+  var host=$('nn-host').value.trim(), label=$('nn-label').value.trim(), sector=$('nn-sector').value;
+  var msg=$('nn-msg');
+  if(!host){msg.textContent='Enter an IP or hostname';msg.style.color='var(--red)';return;}
+  try{
+    var r=await fetch(B+'/api/nodes',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({host:host,label:label||host,sector:sector})});
+    var d=await r.json();
+    if(d.error){msg.textContent=d.error;msg.style.color='var(--red)';}
+    else{msg.textContent='Added — pinging '+host+'\u2026';msg.style.color='var(--acc-safe)';
+      $('nn-host').value='';$('nn-label').value='';
+      setTimeout(loadNodes,600);setTimeout(loadNodes,2500);}
+  }catch(e){msg.textContent='Failed: '+e.message;msg.style.color='var(--red)';}
+}
+async function delNode(id){
+  try{await fetch(B+'/api/nodes/'+id,{method:'DELETE'});loadNodes();}catch(e){}
+}
+async function loadDhcp2(){
+  try{
+    var d=await(await fetch(B+'/api/net/dhcp-status',{cache:'no-store'})).json();
+    var card=$('net-card2'),segs=$('net-segs2'),badge=$('net-badge2');
+    if(!card)return;
+    if(!d.segments||!d.segments.length){
+      segs.innerHTML='<div style="grid-column:1/-1;padding:14px;color:var(--sub);font-size:12px;line-height:1.6">No LAN sensors reporting yet. Run <b>net_sensor.py</b> (see setup below) to detect rogue DHCP servers on each segment.</div>';
+      badge.textContent='';return;
+    }
+    badge.textContent=d.rogue_count>0?(d.rogue_count+' rogue'):'All clean';
+    badge.style.color=d.rogue_count>0?'var(--red)':'var(--acc-safe)';
+    segs.innerHTML=d.segments.map(function(s){
+      var col=s.rogue?'var(--red)':'var(--acc-safe)';
+      var line=s.rogue?'<div style="color:var(--red);font-size:11px;font-weight:700;margin-top:6px">&#9888; Rogue: '+s.rogue_servers.map(function(r){return r.ip;}).join(', ')+'</div>':'<div style="color:var(--acc-safe);font-size:11px;margin-top:6px">Only sanctioned server</div>';
+      return '<div style="padding:13px;border-radius:14px;background:var(--glass2);border:1px solid var(--line)"><div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:'+col+'"></span><b style="font-size:12.5px">'+s.segment+'</b></div><div style="font-size:10.5px;color:var(--dim);margin-top:4px">DHCP: '+(s.expected_dhcp||'unset')+' &middot; '+s.devices_seen+' devices</div>'+line+'</div>';
+    }).join('');
+  }catch(e){}
+}
+function initNetPage(){
+  var u=location.origin;
+  ['nn-url','nn-url2','nn-url3'].forEach(function(id){var e=$(id);if(e)e.textContent=u;});
+  loadNodes(); loadDhcp2();
 }
 
 // ═══ SSE ═══

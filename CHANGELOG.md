@@ -1,4 +1,22 @@
 # Changelog
+## v11 — premium design + in-app network tools (current)
+- Inter font (Apple-adjacent) replaces blocky system font; -apple-system first
+- Logo shimmer now matches reference: cyan->green->cyan flowing gradient on
+  splash wordmark + header (logoFlow), I-I glyphs in matching cyan
+- Multi-color design system: distinct accent per domain (network cyan/indigo,
+  mining amber/coral, safety green, AI violet), soft ambient gradient wash
+  (YouTube ambiance), gradient KPI rails, colored section dots, gradient
+  primary buttons + active nav — no longer monotone
+- Removed vibecode border-left stripes from pages/toasts (kept logo + loading only)
+- Removed on-screen dollar figures (cost commentary stays in docs, not the UI):
+  cascade shows 'Operational impact: Severe/Significant/Contained' instead of $X/hr
+- NEW in-app Network page: add any router/gateway by IP and watch link health
+  live (no admin panel, no Pi needed to start); DHCP health card; setup guide
+  with copy-paste commands showing THIS server's URL
+- Intelligent rogue detection beyond DHCP: IP-conflict (one IP, multiple MACs)
+  and gateway-MAC-spoof (gateway IP answered by an unexpected MAC) — both
+  verified, both alert + email
+- net_sensor.py gains --gateway / --gateway-mac for spoof detection
 ## v10 — in-app email alerts (current)
 - Email Alerts section in the control panel: enable/disable, SMTP host/port/
   user/password, from address, recipient list — a Send-test-email button that

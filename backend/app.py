@@ -1513,9 +1513,27 @@ def net_scan_ingest():
     if isinstance(seen,str): seen=[{'ip':seen}]
     seen_ips = [s.get('ip') for s in seen if s.get('ip')]
     rogues   = [s for s in seen if expected and s.get('ip') and s.get('ip')!=expected]
-    is_rogue = 1 if rogues else 0
+    # ── intelligent gateway/IP anomaly checks (beyond DHCP) ──
+    anomalies = []
+    gw = str(d.get('gateway','')).strip()          # sanctioned gateway IP
+    gw_mac = str(d.get('gateway_mac','')).strip()   # its known-good MAC
+    # 1. duplicate-IP / ARP conflict: same IP advertised by 2+ MACs
+    ip_macs = {}
+    for a in arp:
+        if a.get('ip') and a.get('mac'):
+            ip_macs.setdefault(a['ip'], set()).add(a['mac'].lower())
+    for ip, macs in ip_macs.items():
+        if len(macs) > 1:
+            anomalies.append({'type':'ip_conflict','ip':ip,'macs':list(macs)})
+    # 2. gateway MAC changed = possible spoof/rogue taking over the gateway IP
+    if gw and gw_mac:
+        for a in arp:
+            if a.get('ip')==gw and a.get('mac','').lower()!=gw_mac.lower():
+                anomalies.append({'type':'gateway_mac_changed','ip':gw,
+                                  'expected_mac':gw_mac,'seen_mac':a.get('mac')})
+    is_rogue = 1 if (rogues or anomalies) else 0
     detail = json.dumps({'rogues':rogues,'arp_count':len(arp),
-                         'seen':seen_ips,'expected':expected})
+                         'seen':seen_ips,'expected':expected,'anomalies':anomalies})
     ts = datetime.now(timezone.utc).isoformat()
     with _db_conn() as con:
         con.execute("INSERT INTO net_scan (collector,segment,ts,expected_dhcp,seen_dhcp,rogue,detail) "
@@ -1523,13 +1541,21 @@ def net_scan_ingest():
                     (cname,segment,ts,expected,json.dumps(seen_ips),is_rogue,detail))
         con.execute("DELETE FROM net_scan WHERE id NOT IN (SELECT id FROM net_scan ORDER BY id DESC LIMIT 2000)")
     if is_rogue:
-        rogue_ips = ', '.join(r.get('ip','?') for r in rogues)
-        _dispatch_alert('cbs' if False else 'network',
-            f'ROGUE DHCP on segment {segment}: {rogue_ips} is handing out leases '
-            f'(sanctioned: {expected or "unset"}). Isolate this device.', 'critical')
+        parts = []
+        if rogues:
+            parts.append(f"Rogue DHCP: {', '.join(r.get('ip','?') for r in rogues)} "
+                         f"handing out leases (sanctioned: {expected or 'unset'})")
+        for an in anomalies:
+            if an['type']=='ip_conflict':
+                parts.append(f"IP conflict: {an['ip']} claimed by {len(an['macs'])} MACs")
+            elif an['type']=='gateway_mac_changed':
+                parts.append(f"Gateway {an['ip']} MAC changed "
+                             f"({an['expected_mac']} -> {an['seen_mac']}) — possible spoof")
+        _dispatch_alert('network',
+            f"Segment {segment}: " + '; '.join(parts) + ". Investigate immediately.", 'critical')
         platform_stats['rogue_dhcp_events'] = platform_stats.get('rogue_dhcp_events',0)+1
     return jsonify({'ok':True,'segment':segment,'rogue':bool(is_rogue),
-                    'rogue_servers':rogues,'collector':cname,'ts':ts})
+                    'rogue_servers':rogues,'anomalies':anomalies,'collector':cname,'ts':ts})
 
 @app.route('/api/net/dhcp-status')
 def net_dhcp_status():
@@ -1547,6 +1573,7 @@ def net_dhcp_status():
                         'expected_dhcp':r['expected_dhcp'],
                         'seen_dhcp':json.loads(r['seen_dhcp'] or '[]'),
                         'rogue':bool(r['rogue']),'rogue_servers':det.get('rogues',[]),
+                        'anomalies':det.get('anomalies',[]),
                         'devices_seen':det.get('arp_count',0),'ts':r['ts']})
         return jsonify({'segments':out,
                         'rogue_count':sum(1 for o in out if o['rogue']),

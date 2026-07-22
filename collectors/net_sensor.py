@@ -164,6 +164,8 @@ def main():
     ap.add_argument('--expected', default='', help='sanctioned DHCP server IP')
     ap.add_argument('--interval', type=float, default=60.0)
     ap.add_argument('--arp', action='store_true', help='also report ARP inventory')
+    ap.add_argument('--gateway', default='', help='sanctioned gateway IP (for spoof detection)')
+    ap.add_argument('--gateway-mac', default='', help='known-good gateway MAC')
     ap.add_argument('--register', metavar='NAME')
     a = ap.parse_args()
 
@@ -179,8 +181,9 @@ def main():
 
     while True:
         servers = discover_dhcp_scapy() if _HAS_SCAPY else discover_dhcp_raw()
-        arp = arp_sweep() if a.arp else []
+        arp = arp_sweep() if (a.arp or a.gateway) else []
         payload = {'segment': a.segment, 'expected_dhcp': a.expected,
+                   'gateway': a.gateway, 'gateway_mac': getattr(a, 'gateway_mac', ''),
                    'dhcp_servers': servers, 'arp': arp}
         try:
             r = requests.post(f'{a.server}/api/net/scan',
