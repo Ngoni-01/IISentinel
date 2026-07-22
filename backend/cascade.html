@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#04070d">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050d1a'/%3E%3Ctext x='32' y='44' font-size='34' font-weight='900' font-family='-apple-system,sans-serif' fill='%2300d4ff' text-anchor='middle'%3EII%3C/text%3E%3C/svg%3E">
@@ -229,7 +227,6 @@ try{ if(localStorage.getItem('sx-theme')!=='dark') document.body.classList.add('
 var B=location.origin;
 var SECT={net:{n:'Network',c:'#22c9e8'},tc:{n:'Telecom',c:'#37b6ff'},
           mc:{n:'Mining',c:'#ffc94d'},cbs:{n:'CBS',c:'#ff4b68'}};
-function impactLabel(n){return n>=8?'Severe':n>=4?'Significant':n>=1?'Contained':'None';}
 var COST={router:12000,switch:8000,firewall:15000,wan_link:20000,workstation:1500,
   base_station:25000,network_tower:30000,microwave_link:22000,generator:18000,fuel_tank:6000,
   pump:150000,conveyor:80000,ventilation:120000,power_meter:10000,sensor:5000,
@@ -833,7 +830,7 @@ function renderPanel(){
     html+='<div class="pcard"><div class="pt" style="color:'+sim.color+'">'+sim.name
       +'<span class="x" onclick="stopSim()">stop &#x2715;</span></div>'
       +'<div class="imp-row"><span>Assets impacted</span><b style="color:'+sim.color+'">'+sim.affected.size+'</b></div>'
-      +'<div class="imp-row"><span>Operational impact</span><b style="color:#ffc94d">'+impactLabel(sim.affected.size)+'</b></div>'
+      +'<div class="imp-row"><span>Assets affected</span><b style="color:#ffc94d">'+sim.affected.size+'</b></div>'
       +'<div class="imp-row"><span>Phase</span><b>'+sim.phase+'</b></div></div>';
     html+='<div class="pcard"><div class="pt">Event stream</div><div id="evlog">'
       +sim.events.map(function(e){return '<div class="ev" style="--c:'+e.col+'"><time>'+e.t+'</time>'+(e.strong?'<b>':'')+e.html+(e.strong?'</b>':'')+'</div>';}).join('')
@@ -847,7 +844,7 @@ function renderPanel(){
       +'<div class="nd-kv"><span>Type</span><b>'+(selN.type||'device')+'</b></div>'
       +'<div class="nd-kv"><span>Sector</span><b>'+((SECT[selN.sector]||{}).n||selN.sector||'—')+'</b></div>'
       +'<div class="nd-kv"><span>Health</span><b style="color:'+(s===null?'#4b5b78':hcol(s))+'">'+(s===null?'—':Math.round(s)+'/100')+'</b></div>'
-      +'<div class="nd-kv"><span>Downtime rate</span><b>$'+((COST[selN.type]||8000)).toLocaleString()+'/hr</b></div>'
+      +'<div class="nd-kv"><span>Criticality</span><b>'+(({router:'High',switch:'High',firewall:'Critical',wan_link:'Critical',pump:'High',conveyor:'High',ventilation:'Critical',plc:'Critical',cbs_controller:'Safety'})[selN.type]||'Medium')+'</b></div>'
       +'<div class="nd-kv"><span>Direct dependencies</span><b>'+deps.length+'</b></div>'
       +'<div style="margin-top:10px;display:flex;gap:8px">'
       +'<button class="btn" style="height:30px;font-size:10.5px" onclick="seedFrom(\''+selN.id+'\')">&#x26A1; Fail this node</button>'

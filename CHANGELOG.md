@@ -1,22 +1,20 @@
 # Changelog
-## v11 — premium design + in-app network tools (current)
-- Inter font (Apple-adjacent) replaces blocky system font; -apple-system first
-- Logo shimmer now matches reference: cyan->green->cyan flowing gradient on
-  splash wordmark + header (logoFlow), I-I glyphs in matching cyan
-- Multi-color design system: distinct accent per domain (network cyan/indigo,
-  mining amber/coral, safety green, AI violet), soft ambient gradient wash
-  (YouTube ambiance), gradient KPI rails, colored section dots, gradient
-  primary buttons + active nav — no longer monotone
-- Removed vibecode border-left stripes from pages/toasts (kept logo + loading only)
-- Removed on-screen dollar figures (cost commentary stays in docs, not the UI):
-  cascade shows 'Operational impact: Severe/Significant/Contained' instead of $X/hr
-- NEW in-app Network page: add any router/gateway by IP and watch link health
-  live (no admin panel, no Pi needed to start); DHCP health card; setup guide
-  with copy-paste commands showing THIS server's URL
-- Intelligent rogue detection beyond DHCP: IP-conflict (one IP, multiple MACs)
-  and gateway-MAC-spoof (gateway IP answered by an unexpected MAC) — both
-  verified, both alert + email
-- net_sensor.py gains --gateway / --gateway-mac for spoof detection
+## v11 — reference design language + rogue-router fingerprinting (current)
+- Logo replaced with the reference shimmer wordmark (II in blue + Sentinel in
+  animated blue-green-blue gradient flow) on splash and rail; Apple system font
+  stack (SF Pro / Segoe / Inter) — no more blocky type
+- Sector environment theming (from reference): choosing Network tints the whole
+  app teal with a grid ambiance; Mining goes warm amber/ember — YouTube-style
+  ambient mode, accent colors follow the sector
+- ALL vibecode colored borders removed: insight cards, toasts, rail indicators
+  now use clean leading dots and neutral hairlines, no colored left-stripes or glows
+- Removed every dollar/cost figure from the UI (exposure, downtime rates) — those
+  stay as private pitch talking points, never shown on the platform
+- Rogue DHCP now fingerprints the offender: MAC vendor lookup (OUI) identifies
+  consumer-grade brands (TP-Link, Netgear, Asus, etc.), alert names the device,
+  MAC, and tells the engineer to find its switch port
+- net_sensor.py: auto-detects gateway as sanctioned DHCP, optional /24 ping-sweep
+  to build device inventory
 ## v10 — in-app email alerts (current)
 - Email Alerts section in the control panel: enable/disable, SMTP host/port/
   user/password, from address, recipient list — a Send-test-email button that
