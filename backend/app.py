@@ -1492,6 +1492,30 @@ def admin_email_test():
     except Exception as e:
         return jsonify({'ok':False,'error':str(e)}),500
 
+_OUI_DB = {
+    'c0:56:27':'Belkin','ec:08:6b':'TP-Link','50:c7:bf':'TP-Link','a4:2b:b0':'TP-Link',
+    '00:1d:0f':'TP-Link','14:cc:20':'TP-Link','98:da:c4':'TP-Link','60:38:e0':'Belkin',
+    '00:24:b2':'Netgear','2c:b0:5d':'Netgear','a0:63:91':'Netgear','9c:3d:cf':'Netgear',
+    '00:14:6c':'Netgear','20:e5:2a':'Netgear','c4:04:15':'Netgear','48:f8:b3':'Cisco-Linksys',
+    '00:0f:66':'Cisco-Linksys','00:1a:70':'Cisco-Linksys','00:25:9c':'Cisco-Linksys',
+    '58:6d:8f':'Cisco-Linksys','ac:22:0b':'ASUS','2c:56:dc':'ASUS','04:d4:c4':'ASUS',
+    '38:d5:47':'ASUS','30:5a:3a':'ASUS','1c:b7:2c':'ASUS','d8:50:e6':'ASUS','40:16:7e':'ASUS',
+    'f4:f2:6d':'TP-Link','b0:48:7a':'TP-Link','00:27:19':'TP-Link','54:a0:50':'Zyxel',
+    '5c:f4:ab':'Zyxel','00:23:f8':'Zyxel','40:4a:03':'Zyxel','a0:e4:cb':'Zyxel',
+    'dc:9f:db':'Ubiquiti','24:a4:3c':'Ubiquiti','fc:ec:da':'Ubiquiti','78:8a:20':'Ubiquiti',
+    '00:50:ba':'D-Link','00:1b:11':'D-Link','1c:bd:b9':'D-Link','c8:be:19':'D-Link',
+    '84:c9:b2':'D-Link','00:26:5a':'D-Link','14:d6:4d':'D-Link','fc:75:16':'D-Link',
+    'b8:a3:86':'D-Link','90:94:e4':'D-Link','00:22:b0':'D-Link','ac:f1:df':'D-Link',
+    '52:54:00':'QEMU/VM','08:00:27':'VirtualBox','00:15:5d':'Hyper-V','00:e0:4c':'Realtek',
+}
+def _oui_vendor(mac):
+    """Best-effort vendor from MAC OUI prefix — identifies the likely rogue device brand."""
+    try:
+        pfx = ':'.join(mac.split(':')[:3])
+        return _OUI_DB.get(pfx, 'unknown')
+    except Exception:
+        return 'unknown'
+
 @app.route('/api/net/scan', methods=['POST','OPTIONS'])
 def net_scan_ingest():
     """LAN sensor (Pi) reports DHCP offers + ARP seen on a segment.
@@ -1513,21 +1537,16 @@ def net_scan_ingest():
     if isinstance(seen,str): seen=[{'ip':seen}]
     seen_ips = [s.get('ip') for s in seen if s.get('ip')]
     rogues   = [s for s in seen if expected and s.get('ip') and s.get('ip')!=expected]
-    # fingerprint each rogue: MAC vendor (OUI) hints at consumer-grade gear
-    OUI = {'00:1a:11':'Google','f4:f5:e8':'Google','00:18:4d':'Netgear','a0:63:91':'Netgear',
-           '00:14:bf':'Cisco-Linksys','00:25:9c':'Cisco-Linksys','c0:56:27':'Belkin',
-           '00:1d:7e':'Cisco-Linksys','ec:08:6b':'TP-Link','50:c7:bf':'TP-Link',
-           'd8:07:b6':'TP-Link','00:0f:66':'Cisco-Linksys','60:38:e0':'Belkin',
-           '2c:56:dc':'Asus','ac:9e:17':'Asus','04:d4:c4':'Asus','88:d7:f6':'Asus',
-           'c8:3a:35':'Tenda','00:1f:c6':'Asus','98:de:d0':'TP-Link'}
-    for r in rogues:
-        mac = (r.get('mac') or '').lower()
-        pfx = mac[:8]
-        r['vendor'] = OUI.get(pfx, 'Unknown vendor')
-        r['likely_consumer'] = pfx in OUI
+    for rg in rogues:
+        mac = (rg.get('mac') or '').lower().replace('-',':')
+        rg['vendor'] = _oui_vendor(mac) if mac else 'unknown'
+        parts = ['IP '+str(rg.get('ip','?'))]
+        if mac: parts.append('MAC '+mac)
+        if rg['vendor'] not in (None,'unknown'): parts.append('likely '+rg['vendor'])
+        rg['locate'] = ' \u00b7 '.join(parts)
     is_rogue = 1 if rogues else 0
-    detail = json.dumps({'rogues':rogues,'arp_count':len(arp),
-                         'seen':seen_ips,'expected':expected})
+    detail = json.dumps({'rogues':rogues,'arp_count':len(arp),'seen':seen_ips,
+                         'expected':expected,'locate':[r.get('locate') for r in rogues]})
     ts = datetime.now(timezone.utc).isoformat()
     with _db_conn() as con:
         con.execute("INSERT INTO net_scan (collector,segment,ts,expected_dhcp,seen_dhcp,rogue,detail) "
@@ -1535,15 +1554,10 @@ def net_scan_ingest():
                     (cname,segment,ts,expected,json.dumps(seen_ips),is_rogue,detail))
         con.execute("DELETE FROM net_scan WHERE id NOT IN (SELECT id FROM net_scan ORDER BY id DESC LIMIT 2000)")
     if is_rogue:
-        parts = []
-        for r in rogues:
-            v = r.get('vendor','?'); mac = r.get('mac','?')
-            parts.append(f"{r.get('ip','?')} [{v}, MAC {mac}]")
-        rogue_desc = '; '.join(parts)
+        locate = '; '.join(r.get('locate') or r.get('ip','?') for r in rogues)
         _dispatch_alert('network',
-            f'ROGUE DHCP on {segment}: {rogue_desc} is handing out IP leases '
-            f'(only {expected or "the sanctioned server"} should). This poisons the segment — '
-            f'find the switch port for that MAC and disable it, or unplug the device.', 'critical')
+            f'ROGUE DHCP on segment "{segment}": {locate} is handing out leases '
+            f'(sanctioned server is {expected or "unset"}). Locate and isolate this device.', 'critical')
         platform_stats['rogue_dhcp_events'] = platform_stats.get('rogue_dhcp_events',0)+1
     return jsonify({'ok':True,'segment':segment,'rogue':bool(is_rogue),
                     'rogue_servers':rogues,'collector':cname,'ts':ts})

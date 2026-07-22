@@ -8,23 +8,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#04080f">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050d1a'/%3E%3Ctext x='32' y='44' font-size='34' font-weight='900' font-family='-apple-system,sans-serif' fill='%2300d4ff' text-anchor='middle'%3EII%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23050d1a'/%3E%3Ctext x='32' y='44' font-size='34' font-weight='900' font-family='-apple-system,sans-serif' fill='%2334c6f4' text-anchor='middle'%3EII%3C/text%3E%3C/svg%3E">
 <title>IISentinel</title>
 <style>
 :root{
-  --blu:#34c6f4;--blua:rgba(52,198,244,.11);
-  --grn:#20e07a;--grna:rgba(32,224,122,.13);
-  --amb:#f5a020;--amba:rgba(245,160,32,.13);
-  --red:#ff3e50;--reda:rgba(255,62,80,.13);
-  --pur:#b088fa;--pura:rgba(176,136,250,.13);
-  --tel:#00e5d4;--tela:rgba(0,229,212,.11);
-  --font:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Segoe UI',Inter,system-ui,sans-serif;
-  --font-num:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Inter,system-ui,sans-serif;
   --bg:#04080f;--bg2:#070d18;--glass:rgba(255,255,255,.045);--glass2:rgba(255,255,255,.07);
   --line:rgba(255,255,255,.07);--line2:rgba(255,255,255,.13);
   --txt:#e8eefb;--sub:#8b9cb8;--dim:#4a5a75;
   --cyan:#00d4ff;--green:#30e88a;--amber:#ffb340;--red:#ff4d6a;--purple:#b07cff;--gold:#ffc94d;
-  --font-OLD:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',system-ui,sans-serif;
   --mono:'SF Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
   --spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.16,1,.3,1);
   --rail:64px;
@@ -37,33 +29,34 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--fo
 ::selection{background:rgba(0,212,255,.25)}
 button{font-family:var(--font)}
 
-/* ═══ SPLASH ═══ */
-#splash{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;
+/* ═══ SPLASH — from reference dashboard ═══ */
+#splash{position:fixed;inset:0;z-index:99999;background:#05060e;display:flex;
   align-items:center;justify-content:center;flex-direction:column;
-  transition:opacity .55s var(--ease),visibility .55s}
+  transition:opacity .7s ease}
 #splash.gone{opacity:0;visibility:hidden;pointer-events:none}
-.spl{display:flex;align-items:baseline;gap:0}
-.spl i{font-style:normal;font-size:72px;font-weight:800;color:var(--blu);opacity:0;transform:scale(.05);
-  letter-spacing:-2px;text-shadow:0 0 40px rgba(52,198,244,.6);
+.spl{display:flex;align-items:baseline;gap:0;margin-bottom:18px}
+.spl i{font-style:normal;font-size:72px;font-weight:800;color:var(--cyan);
+  opacity:0;transform:scale(.05);letter-spacing:-2px;
+  text-shadow:0 0 40px rgba(52,198,244,.6);
   animation:llZoom .5s cubic-bezier(.2,.8,.3,1.2) forwards}
 .spl i:nth-child(2){animation-delay:.28s}
-.spl b{font-size:52px;font-weight:700;letter-spacing:.5px;
-  background:linear-gradient(90deg,var(--blu),var(--grn),var(--blu));background-size:200% auto;
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  opacity:0;transform:translateX(40px);
+.spl b{font-weight:700;font-size:52px;letter-spacing:.5px;
+  background:linear-gradient(90deg,var(--cyan),var(--green),var(--cyan));
+  background-size:200% auto;-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;opacity:0;transform:translateX(40px);
   animation:llSlide .55s cubic-bezier(.2,.8,.3,1.1) .7s forwards,llShimmer 3s linear 1.3s infinite}
-.spl sup{font-size:16px;font-weight:400;color:var(--dim);-webkit-text-fill-color:var(--dim);
-  vertical-align:super;opacity:0;animation:fade .4s ease 1.1s forwards}
+.spl sup{font-size:15px;color:var(--dim);vertical-align:super;-webkit-text-fill-color:var(--dim);margin-left:2px}
 @keyframes llZoom{0%{opacity:0;transform:scale(.05)}70%{transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
 @keyframes llSlide{0%{opacity:0;transform:translateX(40px)}100%{opacity:1;transform:translateX(0)}}
 @keyframes llShimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-.spl-bar{width:220px;height:2px;margin-top:26px;border-radius:2px;overflow:hidden;
-  background:rgba(255,255,255,.06);opacity:0;animation:fade .4s ease 1.2s forwards}
+@keyframes llBar{0%{width:0}100%{width:100%}}
+@keyframes llFade{0%{opacity:0}100%{opacity:1}}
+.spl-bar{width:220px;height:2px;margin-top:8px;background:rgba(255,255,255,.05);
+  border-radius:2px;overflow:hidden;opacity:0;animation:llFade .4s ease 1.2s forwards}
 .spl-bar i{display:block;height:100%;width:0;border-radius:2px;
-  background:linear-gradient(90deg,var(--cyan),var(--green));animation:llBar 1.4s ease 1.3s forwards}
-@keyframes llBar{to{width:100%}}
+  background:linear-gradient(90deg,var(--cyan),var(--green));animation:llBar 1.5s ease 1.3s forwards}
 .spl-status{font-size:10px;color:var(--dim);letter-spacing:.12em;margin-top:13px;min-height:15px;
-  opacity:0;animation:fade .5s ease 1.5s forwards}
+  opacity:0;animation:llFade .5s ease 1.5s forwards}
 .spl-tag{margin-top:16px;font-size:10px;letter-spacing:.34em;text-transform:uppercase;
   color:var(--dim);opacity:0;animation:fade .5s ease 1.9s forwards}
 @keyframes fade{to{opacity:1}}
@@ -74,24 +67,26 @@ button{font-family:var(--font)}
 #rail{width:var(--rail);flex-shrink:0;display:flex;flex-direction:column;align-items:center;
   padding:14px 0;gap:6px;border-right:1px solid var(--line);background:rgba(4,8,15,.72);
   backdrop-filter:blur(24px) saturate(1.5);z-index:40}
-.rail-logo{display:flex;align-items:baseline;gap:0;margin:2px 4px 18px;padding:0 8px;
-  cursor:pointer;user-select:none;height:auto;width:auto;background:none;border:none;box-shadow:none;overflow:visible}
-.rail-logo .lg-ii{font-size:19px;font-weight:800;color:var(--blu);letter-spacing:-1px;
-  text-shadow:0 0 20px var(--blua)}
-.rail-logo .lg-sent{font-size:16px;font-weight:700;letter-spacing:.3px;
-  background:linear-gradient(90deg,var(--blu),var(--grn),var(--blu));background-size:200% auto;
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-  animation:llShimmer 5s linear infinite}
-.rail-logo .lg-tm{font-size:8px;color:var(--dim);vertical-align:super;-webkit-text-fill-color:var(--dim);margin-left:1px}
+.rail-logo{width:38px;height:38px;border-radius:11px;margin-bottom:14px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#0a2438,#071522);border:1px solid rgba(0,212,255,.3);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 4px 20px -4px rgba(0,212,255,.45)}
+.rail-logo::before{content:'';position:absolute;inset:0;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.16) 48%,transparent 62%);
+  animation:sheen 5s ease-in-out infinite}
+@keyframes sheen{0%,72%,100%{transform:translateX(-120%)}36%{transform:translateX(120%)}}
+.rail-logo span{font-size:16px;font-weight:900;letter-spacing:-.09em;
+  background:linear-gradient(180deg,#8feaff,#00d4ff 58%,#0899c9);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .rl{width:44px;height:44px;border-radius:13px;border:none;background:transparent;cursor:pointer;
   display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--dim);
   transition:all .3s var(--spring);position:relative}
 .rl:hover{background:var(--glass);color:var(--sub);transform:scale(1.06)}
 .rl.on{background:rgba(0,212,255,.13);color:var(--cyan)}
 .rl.on::before{content:'';position:absolute;left:-13px;width:3px;height:20px;border-radius:2px;
-  background:var(--acc)}
+  background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
 .rl[data-c=red].on{background:rgba(255,77,106,.13);color:var(--red)}
-.rl[data-c=red].on::before{background:var(--red)}
+
 .rail-spacer{flex:1}
 .rl-tip{position:absolute;left:56px;background:rgba(10,18,32,.95);border:1px solid var(--line2);
   padding:5px 11px;border-radius:9px;font-size:11px;font-weight:600;white-space:nowrap;color:var(--txt);
@@ -146,7 +141,7 @@ button{font-family:var(--font)}
   animation:orb 6s ease-in-out infinite}
 @keyframes orb{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.25);opacity:.85}}
 .brief-hi{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:6px}
-.brief-fhi{font-size:52px;font-weight:900;letter-spacing:-.05em;line-height:1;font-family:var(--mono)}
+.brief-fhi{font-size:52px;font-weight:800;letter-spacing:-.055em;line-height:1;font-family:var(--font);font-variant-numeric:tabular-nums}
 .brief-fhi small{font-size:16px;color:var(--dim);font-weight:600}
 .brief-txt{font-size:13px;color:var(--sub);line-height:1.65;margin-top:12px;max-width:560px;position:relative}
 .brief-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;position:relative}
@@ -167,13 +162,12 @@ button{font-family:var(--font)}
 .leg i{width:8px;height:8px;border-radius:50%;font-style:normal}
 
 .feed{display:flex;flex-direction:column;gap:10px}
-.ins{padding:13px 15px 13px 16px;border-radius:16px;background:var(--glass);border:1px solid var(--line);
-  animation:pageIn .4s var(--ease);transition:all .25s}
-.ins .ins-t{display:flex;align-items:center;gap:8px}
-.ins .ins-t::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--acc);flex-shrink:0}
+.ins{padding:13px 15px;border-radius:16px;background:var(--glass);border:1px solid var(--line);
+  border:1px solid var(--line);animation:pageIn .4s var(--ease);transition:all .25s}
 .ins:hover{background:var(--glass2)}
-.ins.red .ins-t::before{background:var(--red)}.ins.amber .ins-t::before{background:var(--amber)}
-.ins.green .ins-t::before{background:var(--grn)}.ins.purple .ins-t::before{background:var(--pur)}
+.ins .ins-t::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:8px;background:var(--dot,var(--cyan));vertical-align:1px}
+.ins.red{--dot:var(--red)}.ins.amber{--dot:var(--amber)}
+.ins.green{--dot:var(--green)}.ins.purple{--dot:var(--purple)}
 .ins-t{font-size:12.5px;font-weight:700;margin-bottom:3px}
 .ins-d{font-size:11.5px;color:var(--sub);line-height:1.55}
 .ins-time{font-size:9px;color:var(--dim);font-family:var(--mono);margin-top:5px}
@@ -306,11 +300,11 @@ button{font-family:var(--font)}
 
 /* ═══ TOASTS ═══ */
 #toasts{position:fixed;top:66px;right:18px;z-index:95;width:300px;display:flex;flex-direction:column;gap:8px}
-.toast{padding:13px 16px 13px 15px;border-radius:16px;background:rgba(9,16,30,.95);border:1px solid var(--line2);
-  box-shadow:0 14px 44px rgba(0,0,0,.5);animation:toastIn .4s var(--spring);display:flex;align-items:flex-start;gap:10px;
+.toast{padding:13px 16px;border-radius:16px;background:rgba(9,16,30,.95);border:1px solid var(--line2);
+  border:1px solid var(--line2);box-shadow:0 14px 44px rgba(0,0,0,.5);animation:toastIn .4s var(--spring);
   font-size:12px}
-.toast::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--acc);margin-top:5px;flex-shrink:0}
-.toast.red::before{background:var(--red)}.toast.green::before{background:var(--grn)}.toast.amber::before{background:var(--amber)}
+.toast b::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:7px;background:var(--tdot,var(--cyan));vertical-align:1px}
+.toast.red{--tdot:var(--red)}.toast.green{--tdot:var(--green)}.toast.amber{--tdot:var(--amber)}
 .toast b{display:block;font-size:12.5px;margin-bottom:2px}
 .toast span{color:var(--sub);font-size:11px;line-height:1.5}
 @keyframes toastIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
@@ -331,13 +325,15 @@ button{font-family:var(--font)}
 .rl.on{background:rgba(255,255,255,.09) !important;color:#eaf2ff !important}
 .rl[data-c=red].on{background:rgba(255,77,106,.14) !important;color:var(--red) !important}
 
+.ins .ins-t::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+  margin-right:8px;background:var(--dot,#00d4ff);vertical-align:1px}
+.ins.red .ins-t::before{--dot:#ff4d6a}.ins.amber .ins-t::before{--dot:#ffb340}
+.ins.green .ins-t::before{--dot:#30e88a}.ins.purple .ins-t::before{--dot:#b07cff}
 
-
-
-
-
-
-
+.toast b::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+  margin-right:7px;background:#00d4ff;vertical-align:1px}
+.toast.red b::before{background:#ff4d6a}.toast.green b::before{background:#30e88a}
+.toast.amber b::before{background:#ffb340}
 
 /* ═══ PROJECTOR / LIGHT MODE ═══ */
 body.light{--bg:#eef2f8;--bg2:#e5ebf4;--glass:rgba(13,27,46,.05);--glass2:rgba(13,27,46,.09);
@@ -360,18 +356,36 @@ body.light .seg-b.on{background:rgba(2,132,199,.14);color:#0369a1}
    (iOS clarity × YouTube warmth. Dark = optional, content-only)
    ════════════════════════════════════════════════════════════ */
 /* iOS system greys — neutral, no blue/purple wash */
-:root{ /* DARK = Apple dark grey, not navy */
-  --bg:#1C1C1E;--bg2:#2C2C2E;--glass:#2C2C2E;--glass2:#3A3A3C;
-  --line:#3A3A3C;--line2:#48484A;--txt:#F5F5F7;--sub:#AEAEB2;--dim:#7C7C80;
-  --cyan:#0A84FF;--green:#30D158;--amber:#FF9F0A;--red:#FF453A;--purple:#BF5AF2;--gold:#FFD60A;
+/* Rich premium system — deep space dark, refined light. Multi-accent. */
+:root{
+  --bg:#080d18;--bg2:#0c1122;--glass:rgba(20,28,48,.55);--glass2:rgba(28,38,64,.5);
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.11);
+  --txt:#e6ecf7;--sub:#8592a8;--dim:#54607e;
+  --cyan:#34c6f4;--green:#20e07a;--amber:#f5a020;--red:#ff3e50;--purple:#b088fa;--teal:#00e5d4;
+  --cyana:rgba(52,198,244,.11);--greena:rgba(32,224,122,.13);--ambera:rgba(245,160,32,.13);
+  --reda:rgba(255,62,80,.13);--pura:rgba(176,136,250,.13);
+  --acc:var(--cyan);--acca:var(--cyana);
 }
-body.light{ /* LIGHT = iOS settings grey */
-  --bg:#F2F2F7;--bg2:#FFFFFF;--glass:#FFFFFF;--glass2:#EFEFF4;
-  --line:#E3E3E8;--line2:#D1D1D6;--txt:#1C1C1E;--sub:#6E6E73;--dim:#AEAEB2;
-  --cyan:#007AFF;--green:#28A745;--amber:#FF9500;--red:#FF3B30;--purple:#AF52DE;--gold:#B8860B;
+body.light{
+  --bg:#eef1f8;--bg2:#ffffff;--glass:rgba(255,255,255,.72);--glass2:rgba(255,255,255,.6);
+  --line:rgba(10,20,40,.07);--line2:rgba(10,20,40,.13);
+  --txt:#141a28;--sub:#4a5270;--dim:#8592a8;
+  --cyan:#0a86c4;--green:#12a058;--amber:#c07800;--red:#d42030;--purple:#7040cc;--teal:#009a90;
+  --cyana:rgba(10,134,196,.1);--greena:rgba(18,160,88,.1);--ambera:rgba(192,120,0,.1);
+  --reda:rgba(212,32,48,.1);--pura:rgba(112,64,204,.1);
 }
-body,body #view{background:var(--bg)}
-body.light,body.light #view{background:var(--bg)}
+/* ambient depth gradient — the 'YouTube ambiance' glow, sector-tinted */
+body,body #view{background:var(--bg);
+  background-image:radial-gradient(ellipse 1400px 700px at 50% 118%,var(--acca) 0,transparent 66%);
+  transition:background-color .8s,background-image .8s}
+body.sec-net{--acc:var(--teal);--acca:var(--cyana);
+  background-image:radial-gradient(ellipse 1200px 600px at 50% 116%,rgba(0,229,212,.09) 0,transparent 68%)}
+body.sec-mc{--acc:var(--amber);--acca:var(--ambera);
+  background-image:radial-gradient(ellipse 1100px 560px at 50% 116%,rgba(245,160,32,.11) 0,transparent 66%)}
+body.light.sec-net{background-color:#e6f4f3;
+  background-image:radial-gradient(ellipse 1000px 500px at 50% 114%,rgba(0,136,128,.08) 0,transparent 70%)}
+body.light.sec-mc{background-color:#f6efe2;
+  background-image:radial-gradient(ellipse 900px 460px at 50% 112%,rgba(180,90,10,.08) 0,transparent 68%)}
 #rail,#topbar{background:rgba(28,28,30,.8);backdrop-filter:blur(20px) saturate(1.4)}
 body.light #rail,body.light #topbar{background:rgba(255,255,255,.82);border-color:var(--line)}
 body.light .card{background:#fff;border:1px solid var(--line);
@@ -428,8 +442,12 @@ body:not(.light) .tint.violet{background:rgba(124,58,237,.16)}
 #rail{width:var(--rail);align-items:stretch;padding:14px 10px;gap:3px}
 .rail-logo{margin:2px 6px 16px;width:auto;height:40px;border-radius:12px;
   justify-content:flex-start;padding:0 10px;gap:9px;display:flex;align-items:center}
-.rail-logo::after{content:'Sentinel';font-size:15px;font-weight:800;letter-spacing:-.02em;
-  color:var(--txt)}
+@keyframes logoFlow{0%{background-position:200% center}100%{background-position:-200% center}}
+.rail-logo::after{content:'Sentinel';font-size:15px;font-weight:700;letter-spacing:.3px;
+  background:linear-gradient(90deg,var(--acc),var(--green),var(--acc));background-size:200% auto;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  animation:logoFlow 5s linear infinite}
+.rail-logo span{color:var(--acc);text-shadow:0 0 18px var(--acca)}
 .rl{width:100%;height:42px;border-radius:12px;justify-content:flex-start;
   padding:0 12px;gap:11px;font-size:16px}
 .rl .rl-tip{position:static;opacity:1;transform:none;background:none;border:none;
@@ -479,29 +497,11 @@ body.light .att{background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04)}
   background:#04070d;box-shadow:0 14px 40px -18px rgba(16,24,40,.35)}
 .cas-embed iframe{display:block;width:100%;height:calc(100vh - 210px);min-height:480px;border:0}
 
-/* ═══ SECTOR ENVIRONMENT THEMING (from reference) — YouTube-style ambient ═══ */
-body{--acc:var(--blu);--acca:var(--blua);
-  transition:background-color .8s,background-image .8s}
-/* NETWORK = teal/cyan grid ambiance */
-body.e-net{--acc:var(--tel);--acca:var(--tela)}
-body.e-net:not(.light){background-color:#03100f;
-  background-image:radial-gradient(ellipse 1100px 560px at 50% 112%,rgba(0,229,212,.08) 0,transparent 70%),
-    linear-gradient(rgba(0,229,212,.03) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(0,229,212,.03) 1px,transparent 1px);
-  background-size:auto,40px 40px,40px 40px}
-body.e-net.light{background-color:#e9f6f5;
-  background-image:radial-gradient(ellipse 900px 440px at 50% 112%,rgba(0,150,140,.07) 0,transparent 70%)}
-/* MINING = warm amber/ember ambiance */
-body.e-mc{--acc:var(--amb);--acca:var(--amba)}
-body.e-mc:not(.light){background-color:#0d0702;
-  background-image:radial-gradient(ellipse 950px 520px at 50% 114%,rgba(200,90,10,.13) 0,transparent 70%),
-    repeating-linear-gradient(38deg,transparent,transparent 22px,rgba(200,100,20,.02) 22px,rgba(200,100,20,.02) 23px)}
-body.e-mc.light{background-color:#f6ecdb;
-  background-image:radial-gradient(ellipse 850px 420px at 50% 112%,rgba(180,90,10,.07) 0,transparent 70%)}
-/* accent-driven elements follow the sector */
-.rl.on{background:var(--acca) !important;color:var(--acc) !important}
-.f-chip.on{background:var(--acca) !important;border-color:var(--acc) !important;color:var(--acc) !important}
-.seg-b.on{background:var(--acca) !important;color:var(--acc) !important}
+.ncard{text-align:center;padding:20px 14px}
+.ncard-v{font-size:34px;font-weight:800;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.ncard-l{font-size:11px;color:var(--sub);margin-top:8px;font-weight:600}
+.nw-seg{padding:14px;border-radius:14px;background:var(--glass2);border:1px solid var(--line)}
+.nw-seg.rogue{border-color:var(--reda);background:var(--reda)}
 </style>
 </head>
 <body>
@@ -538,9 +538,10 @@ body.e-mc.light{background-color:#f6ecdb;
 
 <div id="shell">
   <nav id="rail">
-    <div class="rail-logo" onclick="go('home')"><span class="lg-ii">II</span><span class="lg-sent">Sentinel</span><span class="lg-tm">&#8482;</span></div>
+    <div class="rail-logo" onclick="go('home')"><span>II</span></div>
     <button class="rl on" data-p="home" onclick="go('home')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></svg><span class="rl-tip">Home</span></button>
     <button class="rl" data-p="fleet" onclick="go('fleet')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 20h8M12 17v3"/><path d="M7 11l2.5-2.5L12 11l3-3.5"/></svg><span class="rl-tip">Monitor</span></button>
+    <button class="rl" data-p="network" onclick="go('network')" id="rl-network"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-2h12v2M12 12v2"/></svg><span class="rl-tip">Network</span></button>
     <button class="rl" data-p="cascadepg" onclick="go('cascadepg')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="7" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M8 7.2 10.5 16M15.7 8.4 13.4 16.2M8 6.4h7.6"/></svg><span class="rl-tip">Cascade</span></button>
     <button class="rl" data-p="intel" onclick="go('intel')"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-3 11.2V17h6v-2.8A6 6 0 0 0 12 3Z"/><path d="M9.5 20h5M10 22h4"/></svg><span class="rl-tip">Insights</span></button>
     <button class="rl" data-p="safety" data-c="red" onclick="go('safety')" id="rl-safety" style="display:none"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8-7 10-4-2-7-5.6-7-10V6z"/><path d="M12 8v4M12 15h.01"/></svg><span class="rl-tip">Safety</span></button>
@@ -578,7 +579,7 @@ body.e-mc.light{background-color:#f6ecdb;
             <div class="stat-pill"><b id="b-healthy" style="color:var(--green)">&mdash;</b><span>Healthy</span></div>
             <div class="stat-pill"><b id="b-warn" style="color:var(--amber)">&mdash;</b><span>Warning</span></div>
             <div class="stat-pill"><b id="b-crit" style="color:var(--red)">&mdash;</b><span>Critical</span></div>
-            <div class="stat-pill"><b id="b-exp" style="color:var(--gold)">&mdash;</b><span>At-risk assets</span></div>
+            <div class="stat-pill"><b id="b-exp" style="color:var(--gold)">$0</b><span>Exposure/hr</span></div>
           </div>
         </div>
         <div class="sec-strip" id="sec-strip"></div>
@@ -632,7 +633,7 @@ body.e-mc.light{background-color:#f6ecdb;
               <span class="chip" onclick="ask('Fleet summary')">Fleet summary</span>
               <span class="chip" onclick="ask('What fails next?')">What fails next?</span>
               <span class="chip" onclick="ask('Worst device')">Worst device</span>
-              <span class="chip" onclick="ask('What is most at risk')">At-risk assets</span>
+              <span class="chip" onclick="ask('Cost exposure')">Cost exposure</span>
             </div>
             <div class="ask-row">
               <input class="ask-in" id="ask-in" placeholder="Ask about your infrastructure&hellip;"
@@ -688,6 +689,40 @@ body.e-mc.light{background-color:#f6ecdb;
       </div>
 
       <!-- SAFETY -->
+      <!-- NETWORK -->
+      <div class="page" id="p-network">
+        <div style="font-size:14px;color:var(--sub);margin-bottom:16px">
+          Live LAN health and rogue-device detection across your segments.</div>
+
+        <div class="ncards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px">
+          <div class="card ncard"><div class="ncard-v" id="nw-segments">0</div><div class="ncard-l">Segments watched</div></div>
+          <div class="card ncard"><div class="ncard-v" id="nw-devices">0</div><div class="ncard-l">Devices seen</div></div>
+          <div class="card ncard"><div class="ncard-v" id="nw-rogue" style="color:var(--green)">0</div><div class="ncard-l">Rogue DHCP</div></div>
+          <div class="card ncard"><div class="ncard-v" id="nw-latency">&mdash;</div><div class="ncard-l">Avg link latency</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-t"><span>DHCP integrity by segment</span><span class="fill"></span>
+            <span id="nw-badge" style="font-size:11px;font-weight:700"></span></div>
+          <div id="nw-segs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:6px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-t"><span>How rogue-device detection works</span></div>
+          <div style="font-size:12.5px;color:var(--sub);line-height:1.7;margin-top:8px">
+            A consumer router left in the wrong mode can start handing out addresses on a floor and quietly
+            break connectivity for everyone on it. Standard tools only show the gateway <i>you</i> received &mdash;
+            they cannot see the offender. Sentinel places a small sensor inside each segment that watches which
+            devices answer address requests, and flags any that is not the sanctioned one by its exact IP and
+            hardware address &mdash; so you can walk straight to the port and unplug it.
+          </div>
+          <div style="margin-top:14px;padding:13px 15px;border-radius:12px;background:var(--glass2);border:1px solid var(--line);font-size:12px;color:var(--sub);line-height:1.6">
+            <b style="color:var(--txt)">To activate on a segment:</b> run the network sensor on any Linux box or
+            Raspberry Pi on that VLAN. It reports here automatically &mdash; no inbound access required.
+          </div>
+        </div>
+      </div>
+
       <div class="page" id="p-safety">
         <div class="cbs-hero">
           <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--red);font-weight:800;margin-bottom:10px">Centralised Blasting System</div>
@@ -782,7 +817,8 @@ try{
 
 // ═══ SECTOR FOCUS (compact access) ═══
 var SECTOR_FILTER = sessionStorage.getItem('sx-sector') || '';
-(function(){var s=SECTOR_FILTER;if(s==='net')document.body.classList.add('e-net');else if(s==='mc')document.body.classList.add('e-mc');})();
+(function(){var s=SECTOR_FILTER;if(s==='net')document.body.classList.add('sec-net');
+ else if(s==='mc')document.body.classList.add('sec-mc');})();
 var SEC_IMG={net:'/static/networkco.jpg',mc:'/static/miningco.jpg'};
 function buildSecStrip(){
   var el=$('sec-strip'); if(!el) return;
@@ -815,14 +851,14 @@ function buildSeg(){
 function setSector(s){
   SECTOR_FILTER=s;
   try{sessionStorage.setItem('sx-sector',s);}catch(e){}
-  document.body.classList.remove('e-net','e-mc','e-tc','e-cbs');
-  if(s==='net')document.body.classList.add('e-net');
-  else if(s==='mc')document.body.classList.add('e-mc');
+  document.body.classList.remove('sec-net','sec-mc');
+  if(s==='net')document.body.classList.add('sec-net');
+  else if(s==='mc')document.body.classList.add('sec-mc');
   buildSeg(); buildSecStrip(); renderFleet(); loadNetHealth();
 }
 
 // ═══ NAV ═══
-var TITLES = {home:'Home',fleet:'Monitor',intel:'Insights',timeline:'Replay',safety:'Blast safety',cascadepg:'Cascade'};
+var TITLES = {home:'Home',fleet:'Monitor',network:'Network',intel:'Insights',timeline:'Replay',safety:'Blast safety',cascadepg:'Cascade'};
 function go(p){
   curPage=p;
   document.querySelectorAll('.rl[data-p]').forEach(function(b){b.classList.toggle('on',b.dataset.p===p);});
@@ -832,6 +868,7 @@ function go(p){
   if(p==='fleet')renderFleet();
   if(p==='timeline')tlInit();
   if(p==='cascadepg'){var f=$('cas-frame');if(f&&!f.src)f.src='/cascade';}
+  if(p==='network')loadNetworkPage();
   if(p==='safety')renderSafety();
   if(p==='home')requestAnimationFrame(mapResize);
 }
@@ -874,7 +911,7 @@ async function loadBrief(){
     $('brief-txt').textContent=b.text;
     $('b-total').textContent=b.total; $('b-healthy').textContent=b.healthy;
     $('b-warn').textContent=b.warning; $('b-crit').textContent=b.critical;
-    $('b-exp').textContent=(b.critical||0)+(b.warning||0);
+    $('b-exp').textContent='$'+(b.exposure_hr||0).toLocaleString();
     renderFeed(b);
     // model card
     var real=b.model_source==='ml-real-data';
@@ -1294,6 +1331,43 @@ async function loadLineage(){
   }catch(e){ $('obs-body').textContent='—'; }
 }
 
+async function loadNetworkPage(){
+  // hide Network nav item if net module not licensed
+  if(MODULES.indexOf('net')===-1){ var r=$('rl-network'); if(r)r.style.display='none'; return; }
+  try{
+    var d=await(await fetch(B+'/api/net/dhcp-status',{cache:'no-store'})).json();
+    var segs=d.segments||[];
+    $('nw-segments').textContent=d.total_segments||0;
+    $('nw-rogue').textContent=d.rogue_count||0;
+    $('nw-rogue').style.color=(d.rogue_count>0)?'var(--red)':'var(--green)';
+    var totalDev=segs.reduce(function(a,s){return a+(s.devices_seen||0);},0);
+    $('nw-devices').textContent=totalDev;
+    // link latency from live network devices in fleet
+    var netDevs=[]; devices.forEach(function(r){ if(sectorOf(r)==='net' && r.latency_ms!=null) netDevs.push(r.latency_ms); });
+    $('nw-latency').textContent = netDevs.length ? (Math.round(netDevs.reduce(function(a,b){return a+b;},0)/netDevs.length)+' ms') : '\u2014';
+    var badge=$('nw-badge');
+    badge.textContent = d.rogue_count>0 ? (d.rogue_count+' rogue detected') : (segs.length? 'All segments clean':'');
+    badge.style.color = d.rogue_count>0 ? 'var(--red)' : 'var(--green)';
+    var box=$('nw-segs');
+    if(!segs.length){
+      box.innerHTML='<div style="grid-column:1/-1;padding:18px;color:var(--sub);font-size:12.5px;line-height:1.7">'
+        +'No LAN sensors reporting yet. Run the network sensor on a segment and it appears here within seconds.</div>';
+      return;
+    }
+    box.innerHTML=segs.map(function(s){
+      var rogueLine = s.rogue
+        ? '<div style="margin-top:8px;font-size:11.5px;font-weight:700;color:var(--red)">Rogue: '
+          +(s.rogue_servers||[]).map(function(r){return r.locate||r.ip;}).join('; ')+'</div>'
+        : '<div style="margin-top:8px;font-size:11.5px;color:var(--green)">Only sanctioned server responding</div>';
+      return '<div class="nw-seg'+(s.rogue?' rogue':'')+'">'
+        +'<div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:'+(s.rogue?'var(--red)':'var(--green)')+'"></span>'
+        +'<b style="font-size:13px">'+s.segment+'</b></div>'
+        +'<div style="font-size:11px;color:var(--dim);margin-top:5px">Sanctioned DHCP: '+(s.expected_dhcp||'unset')+' &middot; '+(s.devices_seen||0)+' devices</div>'
+        +rogueLine+'</div>';
+    }).join('');
+  }catch(e){}
+}
+
 async function loadNetHealth(){
   if(MODULES.indexOf('net')===-1) return;
   try{
@@ -1317,9 +1391,8 @@ async function loadNetHealth(){
     segs.innerHTML=d.segments.map(function(s){
       var col=s.rogue?'var(--red)':'var(--green)';
       var rogueLine=s.rogue
-        ? '<div style="color:var(--red);font-size:11px;font-weight:700;margin-top:6px">&#9888; Rogue DHCP<br>'
-          +s.rogue_servers.map(function(r){return '<span style=\"font-weight:600\">'+r.ip
-            +(r.vendor?' &middot; '+r.vendor:'')+(r.mac?'<br><span style=\"color:var(--dim);font-weight:400;font-size:10px\">'+r.mac+'</span>':'')+'</span>';}).join('<br>')+'</div>'
+        ? '<div style="color:var(--red);font-size:11px;font-weight:700;margin-top:6px">&#9888; Rogue: '
+          +s.rogue_servers.map(function(r){return r.ip;}).join(', ')+'</div>'
         : '<div style="color:var(--green);font-size:11px;margin-top:6px">Only sanctioned server</div>';
       return '<div style="padding:13px;border-radius:14px;background:var(--glass2);border:1px solid var(--line)">'
         +'<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:'+col+'"></span>'

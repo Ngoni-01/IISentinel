@@ -1087,7 +1087,7 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
       </div>
     </div>
     <div class="cas-footnote">
-      <div><div class="cas-fn-v">$450k</div><div class="cas-fn-l">Per blast if CBS misfires</div></div>
+      <div><div class="cas-fn-v">Critical</div><div class="cas-fn-l">Blast integrity priority</div></div>
       <div><div class="cas-fn-v">&lt;60s</div><div class="cas-fn-l">Event to automated command</div></div>
       <div><div class="cas-fn-v">3</div><div class="cas-fn-l">Domains unified in one model</div></div>
       <div><div class="cas-fn-v" id="cas-fn-devs">0</div><div class="cas-fn-l">Live devices in cascade model</div></div>
@@ -1108,7 +1108,7 @@ nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:rgb
     </div>
     <div class="hero-body">
       <div>
-        <div class="hero-eyebrow" style="color:var(--red)">Safety Critical &middot; DNP3 &middot; $450,000/blast</div>
+        <div class="hero-eyebrow" style="color:var(--red)">Safety Critical &middot; DNP3 &middot; Blast integrity</div>
         <div class="hero-h">Centralised Blasting System</div>
         <div class="hero-sub">Multi-factor integrity monitor &middot; Below 90% = auto-interlock</div>
       </div>
@@ -1717,7 +1717,7 @@ function updateKPIs() {
 
   if(hold && !window._cbsAlerted){
     window._cbsAlerted=true;
-    toast('CBS BLAST HOLD','DNP3 link degraded \u2014 $450,000/hr exposure','tc');
+    toast('CBS BLAST HOLD','DNP3 link degraded \u2014 high exposure','tc');
   }
   if(!hold) window._cbsAlerted=false;
 }
@@ -1824,7 +1824,7 @@ function renderCbs() {
       +(d.integrity_score!==undefined?'<div style="font-size:10px;color:var(--dim);margin-top:2px">Integrity: <span style="color:'+ic+';font-weight:700">'+d.integrity_score+'%</span></div>':'')
       +(d.vibration_score!==undefined?'<div style="font-size:8.5px;color:var(--dim);margin-top:1px">Stability: '+d.vibration_score+'%</div>':'')
       +'<div class="'+(isHold&&!inMaint?'cbs-hold':'cbs-safe')+'" style="margin-top:6px">'+(inMaint?'MAINTENANCE \u2014 ALERTS SUPPRESSED':isHold?'BLAST HOLD ACTIVE':'ARMED \u2014 SAFE')+'</div>'
-      +(isHold&&!inMaint?'<div style="font-size:9px;color:var(--red);margin-top:3px">Exposure: $450,000/hr</div>':'')
+      +(isHold&&!inMaint?'<div style="font-size:9px;color:var(--red);margin-top:3px">Blast hold active</div>':'')
       +(d.ai_diagnosis&&!inMaint?'<div style="font-size:9px;color:var(--dim);margin-top:4px">'+d.ai_diagnosis.slice(0,100)+'</div>':'')
       +'</div>';
   }).join('');
@@ -2101,8 +2101,8 @@ var animId=null,inited=false,viewMode='force';
 var DPR=Math.min(window.devicePixelRatio||1,2);
 var canvas,ctx;
 var SCENARIO_INSIGHTS={
-  wan:'<strong>Causal chain:</strong> WAN degradation &rarr; SCADA loses remote comms &rarr; CBS controller heartbeat fails &rarr; Blast hold triggers &rarr; $450k/hr exposure. <strong>Predicted 18 minutes before CBS hold fired.</strong>',
-  cbs:'<strong>Safety cascade:</strong> CBS integrity drop &rarr; blast hold &rarr; SCADA alarm storm &rarr; NOC overwhelmed. <strong>Economic impact: $450k direct + $280k lost production/hr.</strong>',
+  wan:'<strong>Causal chain:</strong> WAN degradation &rarr; SCADA loses remote comms &rarr; CBS controller heartbeat fails &rarr; Blast hold triggers. <strong>Predicted 18 minutes before CBS hold fired.</strong>',
+  cbs:'<strong>Safety cascade:</strong> CBS integrity drop &rarr; blast hold &rarr; SCADA alarm storm &rarr; control room overwhelmed. <strong>High-severity safety and production impact.</strong>',
   power:'<strong>Power fault cascade:</strong> Power meter anomaly &rarr; PLC I/O instability &rarr; Conveyor e-stop &rarr; Plant ore-starved. <strong>Acoustic signature was detectable 6+ hours prior.</strong>',
   storm:'<strong>Weather-correlated cascade:</strong> Tower at wind limit &rarr; MW backhaul fails &rarr; NOC blind &rarr; CBS alerts undelivered. <strong>IISentinel pre-routed CBS alerts via SMS 22 minutes before failure.</strong>',
   compound:'<strong>Compound cascade &mdash; all domains simultaneous.</strong> Inter-domain amplification: 30% WAN degradation &rarr; 100% production loss. <strong>Total exposure: $1.2M/hr. IISentinel detected compound risk 34 minutes ahead.</strong>',
@@ -2221,7 +2221,7 @@ function propagateCascade(originId,initialDeg){
           var cls=tn.health<35?'crit':tn.health<70?'warn':'ok';
           logEvent(cls,tn.label,cascadeMsg(tn,nodeMap[srcId],prop),ts);
           if(tn.domain==='cbs'&&tn.health<90){
-            logEvent('cbs','CBS Controller','&#x26A0; BLAST HOLD ISSUED - DNP3 integrity below 90%. Exposure: $450,000/hr',ts);
+            logEvent('cbs','CBS Controller','&#x26A0; BLAST HOLD ISSUED - DNP3 integrity below 90%.',ts);
             var hp=document.getElementById('cas-hold-pill');if(hp)hp.classList.add('on');
           }
           updateCascadeKPIs();reheat(0.12);

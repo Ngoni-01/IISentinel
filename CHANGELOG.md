@@ -1,20 +1,20 @@
 # Changelog
-## v11 — reference design language + rogue-router fingerprinting (current)
-- Logo replaced with the reference shimmer wordmark (II in blue + Sentinel in
-  animated blue-green-blue gradient flow) on splash and rail; Apple system font
-  stack (SF Pro / Segoe / Inter) — no more blocky type
-- Sector environment theming (from reference): choosing Network tints the whole
-  app teal with a grid ambiance; Mining goes warm amber/ember — YouTube-style
-  ambient mode, accent colors follow the sector
-- ALL vibecode colored borders removed: insight cards, toasts, rail indicators
-  now use clean leading dots and neutral hairlines, no colored left-stripes or glows
-- Removed every dollar/cost figure from the UI (exposure, downtime rates) — those
-  stay as private pitch talking points, never shown on the platform
-- Rogue DHCP now fingerprints the offender: MAC vendor lookup (OUI) identifies
-  consumer-grade brands (TP-Link, Netgear, Asus, etc.), alert names the device,
-  MAC, and tells the engineer to find its switch port
-- net_sensor.py: auto-detects gateway as sanctioned DHCP, optional /24 ping-sweep
-  to build device inventory
+## v11 — premium redesign + rogue-router-by-IP (current)
+- Splash + logo adopted from reference: II-zoom-pop, shimmer Sentinel wordmark
+  (llShimmer/logoFlow gradient), loader bar — replaces the plain splash
+- Inter typeface (SF web stand-in) replaces blocky system font throughout;
+  big numbers now tabular Inter, not monospace
+- Rich multi-accent palette with YouTube-style ambient background glow that
+  tints per sector (teal=network, amber=mining) in both light and dark
+- Every vibecode colored border removed (insight cards, toasts) — replaced
+  with subtle status dots; shimmer applied only to the logo
+- Dedicated Network page in main nav: segments watched, devices seen, rogue
+  DHCP count, link latency — directly accessible (was hidden)
+- ROGUE ROUTER BY IP: offending DHCP server now identified by IP + MAC +
+  vendor (OUI lookup of common consumer-router brands) so it can be located
+  and unplugged; alert names the exact device
+- Removed all hard-coded price/economic figures and internal comments from
+  user-facing surfaces
 ## v10 — in-app email alerts (current)
 - Email Alerts section in the control panel: enable/disable, SMTP host/port/
   user/password, from address, recipient list — a Send-test-email button that

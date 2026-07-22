@@ -126,32 +126,6 @@ def mac_bytes(macstr):
         return b"\x02\x00\x00\x00\x00\x01"
 
 
-def detect_gateway():
-    """Find this host's default gateway — the natural 'sanctioned' DHCP server guess."""
-    try:
-        out = subprocess.run(['ip','route'], capture_output=True, text=True, timeout=4).stdout
-        m = re.search(r'default via (\d+\.\d+\.\d+\.\d+)', out)
-        if m: return m.group(1)
-    except Exception:
-        try:
-            out = subprocess.run(['route','-n','get','default'], capture_output=True, text=True, timeout=4).stdout
-            m = re.search(r'gateway:\s*(\d+\.\d+\.\d+\.\d+)', out)
-            if m: return m.group(1)
-        except Exception: pass
-    return ''
-
-def ping_sweep_subnet(base):
-    """Lightweight /24 sweep to populate ARP so we can inventory + match MACs."""
-    import concurrent.futures
-    def _p(ip):
-        try:
-            subprocess.run(['ping','-c','1','-W','1',ip] if os.name!='nt' else ['ping','-n','1','-w','800',ip],
-                           capture_output=True, timeout=2)
-        except Exception: pass
-    hosts = [f'{base}.{i}' for i in range(1,255)]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=64) as ex:
-        list(ex.map(_p, hosts))
-
 def arp_sweep():
     """Read the OS ARP table for a quick device inventory. [{ip,mac}]."""
     out = []
@@ -190,8 +164,6 @@ def main():
     ap.add_argument('--expected', default='', help='sanctioned DHCP server IP')
     ap.add_argument('--interval', type=float, default=60.0)
     ap.add_argument('--arp', action='store_true', help='also report ARP inventory')
-    ap.add_argument('--sweep', metavar='BASE', default='',
-                    help='ping-sweep a /24 (e.g. 192.168.1) to build device inventory before scan')
     ap.add_argument('--register', metavar='NAME')
     a = ap.parse_args()
 
@@ -201,21 +173,13 @@ def main():
         print('Need --key (register first with --register "seg-pi")'); sys.exit(1)
 
     mode = "scapy" if _HAS_SCAPY else "raw-socket"
-    if not a.expected:
-        gw = detect_gateway()
-        if gw:
-            a.expected = gw
-            print(f"  Auto-detected gateway as sanctioned DHCP: {gw}")
     print(f"IISentinel Network Sensor — segment '{a.segment}'  ({mode})")
     print(f"  Sanctioned DHCP: {a.expected or '(unset — will report all servers)'}")
     print(f"  Reporting to:    {a.server}  every {a.interval}s\n")
 
     while True:
-        if a.sweep:
-            print(f"  Sweeping {a.sweep}.0/24 for inventory...")
-            ping_sweep_subnet(a.sweep)
         servers = discover_dhcp_scapy() if _HAS_SCAPY else discover_dhcp_raw()
-        arp = arp_sweep() if (a.arp or a.sweep) else []
+        arp = arp_sweep() if a.arp else []
         payload = {'segment': a.segment, 'expected_dhcp': a.expected,
                    'dhcp_servers': servers, 'arp': arp}
         try:
