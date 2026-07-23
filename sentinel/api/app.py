@@ -36,6 +36,30 @@ WEB_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 app = Flask(__name__, static_folder=None)
 
 
+# ── boot ──────────────────────────────────────────────────────────────
+# The schema and the admin account are created when this module is
+# imported, which covers BOTH entry points: `python3 run.py` in
+# development and `gunicorn sentinel.api.app:app` in production. Doing
+# this only in run.py would leave a gunicorn deployment with no tables
+# and no way to sign in.
+def _boot():
+    boot = db.init_db()
+    if boot["first_boot"]:
+        # Printed to stdout so it lands in the platform log (Render, Fly,
+        # journalctl). It is shown exactly once and never stored in clear.
+        banner = (
+            "\n" + "=" * 62 +
+            "\n  FIRST BOOT - admin credentials (shown once)"
+            "\n    username: admin"
+            f"\n    password: {boot['password']}"
+            "\n  You will be required to change this at first sign-in."
+            "\n" + "=" * 62 + "\n")
+        print(banner, flush=True)
+
+
+_boot()
+
+
 # ── observability: a request ID on every response, traced 500s ────────
 
 @app.before_request

@@ -13,6 +13,11 @@ it, locates it to a switch port, and shows what depends on it.
     python3 run.py
 First boot prints a one-time admin password. There is no default password.
 
+## Deploying
+The app lives at the **repository root** — there is no `backend` directory.
+Start command: `gunicorn sentinel.api.app:app`. Full instructions, including
+how to fix an existing Render service, are in `docs/DEPLOY.md`.
+
 ## Structure
     sentinel/
       api/         HTTP surface (Flask) — 14 routes, each with a trust level

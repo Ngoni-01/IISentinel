@@ -1,8 +1,16 @@
+# Render blueprint.
+#
+# IMPORTANT: this application lives at the REPOSITORY ROOT. There is no
+# "backend" directory. If you are updating an existing Render service that
+# was created against the old layout, clear its "Root Directory" field in
+# Settings — leaving it set to "backend" produces:
+#     Root directory 'backend' does not exist, please check
 services:
   - type: web
     name: sentinel
     env: python
     plan: starter
+    rootDir: .
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn sentinel.api.app:app --workers 1 --threads 16 --worker-tmp-dir /dev/shm --timeout 120 --bind 0.0.0.0:$PORT
     disk:
@@ -12,3 +20,5 @@ services:
     envVars:
       - key: DB_PATH
         value: /var/data/sentinel.db
+      - key: PYTHON_VERSION
+        value: "3.11"

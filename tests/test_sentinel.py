@@ -30,20 +30,22 @@ def server(tmp_path_factory):
     db = tmp_path_factory.mktemp("db") / "test.db"
     env = {**os.environ, "DB_PATH": str(db), "PORT": "5001"}
     # capture the first-boot password from stdout
+    # importing sentinel.api.app performs first boot and prints the banner
     proc = subprocess.Popen(
         [sys.executable, "-c",
-         "from sentinel.storage import db; "
          "from sentinel.api.app import app; "
-         "b=db.init_db(); print('PW=' + (b['password'] or ''), flush=True); "
          "app.run(host='0.0.0.0', port=5001, threaded=True)"],
         cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 
+    # read the one-time password out of the first-boot banner
     password = None
     t0 = time.time()
     while time.time() - t0 < 30:
         line = proc.stdout.readline()
-        if line.startswith("PW="):
-            password = line[3:].strip()
+        if not line:
+            break
+        if "password:" in line:
+            password = line.split("password:", 1)[1].strip()
             break
     for _ in range(40):
         try:
