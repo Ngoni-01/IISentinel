@@ -1,8 +1,7 @@
 __pycache__/
 *.pyc
+*.db
+*.db-wal
+*.db-shm
+boot.log
 .env
-iisentinel.db
-iisentinel.db-wal
-iisentinel.db-shm
-pi_buffer.jsonl
-health_model_v*.pkl

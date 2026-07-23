@@ -1,71 +1,56 @@
 # Changelog
-## v11 — premium redesign + rogue-router-by-IP (current)
-- Splash + logo adopted from reference: II-zoom-pop, shimmer Sentinel wordmark
-  (llShimmer/logoFlow gradient), loader bar — replaces the plain splash
-- Inter typeface (SF web stand-in) replaces blocky system font throughout;
-  big numbers now tabular Inter, not monospace
-- Rich multi-accent palette with YouTube-style ambient background glow that
-  tints per sector (teal=network, amber=mining) in both light and dark
-- Every vibecode colored border removed (insight cards, toasts) — replaced
-  with subtle status dots; shimmer applied only to the logo
-- Dedicated Network page in main nav: segments watched, devices seen, rogue
-  DHCP count, link latency — directly accessible (was hidden)
-- ROGUE ROUTER BY IP: offending DHCP server now identified by IP + MAC +
-  vendor (OUI lookup of common consumer-router brands) so it can be located
-  and unplugged; alert names the exact device
-- Removed all hard-coded price/economic figures and internal comments from
-  user-facing surfaces
-## v10 — in-app email alerts (current)
-- Email Alerts section in the control panel: enable/disable, SMTP host/port/
-  user/password, from address, recipient list — a Send-test-email button that
-  reports success or the exact SMTP error
-- Config persists in the database and loads at boot (no redeploy to change
-  where alerts go); passwords stored server-side, never sent back to the browser
-- _dispatch_alert now actually emails — rogue-DHCP, and other alerts reach the
-  inbox (critical also fires SMS/WhatsApp if those are configured)
-- Verified: save, persist-across-restart, graceful failure on bad SMTP creds
-## v9 — Apple-grey design + rogue DHCP detection (current)
-- True iOS system greys: dark=#1C1C1E/#2C2C2E, light=#F2F2F7 (no navy/warm tint)
-- All emoji icons replaced with clean SF-style SVG strokes (rail, buttons, toggles)
-- Cascade notifications: from per-node flood to milestone-only + single-toast policy
-- Telecom removed from default edition (Network + Mining wedge); NOCs own link mon
-- ROGUE DHCP DETECTION: net_sensor.py (Pi/Linux) finds consumer routers that
-  turn on DHCP and poison a LAN segment — invisible to cloud + tracert.
-  Backend /api/net/scan + /api/net/dhcp-status; live Network dashboard card
-- Pi reframed as dual sensor: mining telemetry + LAN watchdog, one device
-- Production-ready: demo mode off by default; empty states guide real setup
-## v8 — the design release (current)
-- Light-first design system: white cards, soft shadows, warm gradient canvas,
-  iOS tinted icon chips, human copy everywhere (jargon removed from screens)
-- Navigation cut to 4: Home / Monitor / Cascade / Insights (Safety + Timeline
-  folded in; labeled YouTube-style sidebar on desktop, iOS bottom tabs on mobile)
-- Sector photo chips (Mining / Network / Telecom + live Blast-status chip)
-  replace tab sprawl — one tap filters fleet and dims the map
-- Cascade embedded in-app (iframe + full-screen button) — the dedicated-window
-  failure mode is gone; standalone /cascade gets light chrome over dark stage
-  and a friendly empty-state notice
-- Dark mode is now the toggle, not the default
-## v7 — foundations + LAN truth (current)
-- lan_probe.py: LAN-side ping collector (fixes cloud-can't-ping-192.168.x)
-- /api/nodes now explains private-IP unreachability in a `note` field
-- Sentinel X: reference splash animation (zoom-pop I·I, shimmer wordmark,
-  loader bar + status), compact sector segmented control (filters fleet,
-  dims map), remaining side-accent borders removed platform-wide
-- Cascade Studio: node search + zoom, minimap with viewport + click-to-jump,
-  grid + snap, PNG export, undo for link edits, keyboard shortcuts (F/G/E/1-5/Ctrl+Z)
-- Engineering: X-Request-ID on every response, traced 500s, [S01-S12]
-  section index in app.py, ARCHITECTURE.md, smoke test suite
-- Classic: weather tab demoted (API kept for risk alerts)
-## v6 — pitch-ready
-- Tower-power asset types (generator, fuel_tank) end-to-end; demo genset
-- Projector/light mode; CBS advisory line; honest-AI copy; pitch deck +
-  one-pager; PITCH.md
-## v5.x — speed + permanence
-- Real ICMP ping engine (budgeted); banner JPEG optimization + immutable
-  caching; gunicorn thread tuning; workspace focus; VPS deploy kit; DB_PATH
-## v4.x — Sentinel X
-- New experience layer: living map, Ask Sentinel, XAI drawer, timeline,
-  voice briefing, command palette, PWA; history-global crash fix + failsafe
-## v3.x — engine hardening
-- Fixed GROUP-BY random-row SQL, retrain-on-constants bug, gzip, snapshot
-  endpoint, intel/auth caches, editions system, honest cold-start AI
+
+## Rebuild — network integrity monitor
+
+A ground-up restructure. The product is now one thing: a network integrity
+monitor that finds devices which should not be on a segment, explains them,
+locates them, and shows what depends on them.
+
+### Added
+- **Authenticated enrolment.** Admin mints a single-use, segment-scoped,
+  15-minute code; the sensor redeems it for a scoped key. No unauthenticated
+  path to a credential exists.
+- **Network blast-radius analysis** (`sentinel/detection/blast_radius.py`).
+  A dependency model built entirely from what sensors observed, with
+  time-to-impact derived from observed DHCP lease timers. Every node, edge
+  and timing is labelled observed / derived / assumed; assumptions are
+  surfaced, not hidden.
+- **Single frontend** on one design system. Finding-as-hero, light default,
+  guided empty-state onboarding, methodology panel.
+- **Four docs**: SECURITY, METHODOLOGY, SETUP, and a rewritten ARCHITECTURE
+  with ADRs (including the reasoning for every deletion) and a fault-tracing
+  map that resolves to real code locations.
+- **20-test suite** covering security boundaries, detection correctness and
+  its refusal to guess, and blast-radius honesty.
+
+### Changed
+- Backend restructured from a single ~2,975-line file into
+  `sentinel/{api,detection,storage,web}` + `sensors/`.
+- Collector authentication is now O(1): a truncated one-way key lookup
+  narrows to a single candidate row, so PBKDF2 is verified once per request
+  rather than against every collector. (Found by the load test — see below.)
+- First boot mints a random admin password and forces a change. No default
+  credential exists anywhere.
+- Rate limits on login, enrolment and ingest.
+
+### Removed
+- Blast-safety / CBS interlock (functional-safety liability).
+- Mining OT sector, device types, demo devices; the mining cascade simulator
+  (replaced by network blast-radius).
+- Voice briefing, command palette, timeline replay, natural-language ask.
+- PWA manifest / service worker; the `/classic` dashboard; demo-mode default.
+- The unauthenticated collector-registration endpoint that returned a working
+  key — the single most serious flaw in the prior build.
+
+Route surface fell from ~65 to 14. Backend Python roughly halved.
+
+### Load test / measured ceiling
+`tests/load_test.py` ramps concurrent sensors and measures finding-write
+latency. Its first run exposed an O(n) PBKDF2-per-collector auth cost, now
+fixed. Absolute latencies depend heavily on host CPU (PBKDF2 is intentionally
+expensive); the ceiling should be re-measured on the target instance and the
+number recorded here. The workload is periodic per-segment findings, not
+per-device high-frequency telemetry, so a modest instance serves a large
+sensor fleet at realistic reporting intervals. When a real deployment
+approaches the measured p95>50ms point, revisit ADR-003 (separate
+time-series store).

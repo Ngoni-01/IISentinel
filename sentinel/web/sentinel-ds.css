@@ -1,0 +1,429 @@
+/* ============================================================
+   IISentinel Design System
+   Single source of truth for typography, colour, elevation,
+   motion and the brand mark. Loaded by every surface.
+   ------------------------------------------------------------
+   S01  Typography
+   S02  Colour tokens (dark / light)
+   S03  Sector accents + ambient washes
+   S04  Brand mark
+   S05  Elevation, radius, motion
+   S06  Primitives (cards, chips, pills, buttons, inputs)
+   S07  Status language (dots, tints — never border stripes)
+   S08  Stripe suppression
+   ============================================================ */
+
+/* ---------- S01 Typography ------------------------------- */
+:root{
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+          "Helvetica Neue", Inter, system-ui, "Segoe UI", sans-serif;
+  --font-num: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+
+  --t-hero: 700 28px/1.16 var(--font);
+  --t-h1:   700 21px/1.22 var(--font);
+  --t-h2:   650 16px/1.3  var(--font);
+  --t-h3:   650 13.5px/1.35 var(--font);
+  --t-body: 400 13.5px/1.55 var(--font);
+  --t-sub:  400 12.5px/1.5  var(--font);
+  --t-cap:  500 11px/1.4   var(--font);
+
+  --ls-hero: -0.028em;
+  --ls-h1:   -0.022em;
+  --ls-h2:   -0.014em;
+  --ls-body: -0.006em;
+}
+
+html, body{
+  font-family: var(--font);
+  letter-spacing: var(--ls-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis-weight: none;
+}
+
+/* Numerals align in columns — the detail that reads as considered */
+.num, .metric, .kpi, .stat, .val, [data-num]{
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.02em;
+}
+
+h1,h2,h3,h4{ letter-spacing: var(--ls-h1); font-weight: 700; }
+h1{ font-size: 21px; }
+h2{ font-size: 17px; letter-spacing: var(--ls-h2); }
+h3{ font-size: 14px; letter-spacing: var(--ls-h2); font-weight: 650; }
+
+/* Section labels: sentence case, never shouted */
+.card-t, .card-title, .sec-label, .page-hd .sub{
+  font: var(--t-h3);
+  letter-spacing: -0.008em;
+  text-transform: none;
+}
+
+/* ---------- S02 Colour tokens ---------------------------- */
+/* Dark: light-dark grey. Neutral, never navy. */
+:root{
+  --bg:        #161719;
+  --bg-elev:   #1C1E21;
+  --surface:   #1E2024;
+  --surface-2: #26282D;
+  --surface-3: #2E3137;
+  --line:      rgba(255,255,255,.075);
+  --line-2:    rgba(255,255,255,.13);
+  --line-3:    rgba(255,255,255,.2);
+  --txt:       #F2F3F5;
+  --sub:       #A4AAB6;
+  --dim:       #71787F;
+  --scrim:     rgba(0,0,0,.55);
+
+  --blu:#3B9EFF;  --blu-a:rgba(59,158,255,.14);  --blu-g:rgba(59,158,255,.30);
+  --grn:#2ED573;  --grn-a:rgba(46,213,115,.14);  --grn-g:rgba(46,213,115,.30);
+  --amb:#FFA733;  --amb-a:rgba(255,167,51,.14);  --amb-g:rgba(255,167,51,.30);
+  --red:#FF4757;  --red-a:rgba(255,71,87,.14);   --red-g:rgba(255,71,87,.30);
+  --pur:#A76BFF;  --pur-a:rgba(167,107,255,.14); --pur-g:rgba(167,107,255,.30);
+  --tel:#00D9C0;  --tel-a:rgba(0,217,192,.14);   --tel-g:rgba(0,217,192,.30);
+  --gold:#FFC542; --gold-a:rgba(255,197,66,.14); --gold-g:rgba(255,197,66,.30);
+
+  --acc: var(--blu);
+  --acc-a: var(--blu-a);
+}
+
+/* Light: mid-light grey. Not white — the page has weight. */
+body.light{
+  --bg:        #EDEFF3;
+  --bg-elev:   #F4F5F8;
+  --surface:   #FFFFFF;
+  --surface-2: #F5F6F9;
+  --surface-3: #EBEDF2;
+  --line:      rgba(17,21,28,.085);
+  --line-2:    rgba(17,21,28,.14);
+  --line-3:    rgba(17,21,28,.22);
+  --txt:       #14171C;
+  --sub:       #59616E;
+  --dim:       #939BA8;
+  --scrim:     rgba(255,255,255,.6);
+
+  --blu:#0A75E0;  --blu-a:rgba(10,117,224,.10);  --blu-g:rgba(10,117,224,.22);
+  --grn:#12A150;  --grn-a:rgba(18,161,80,.10);   --grn-g:rgba(18,161,80,.22);
+  --amb:#C77A00;  --amb-a:rgba(199,122,0,.10);   --amb-g:rgba(199,122,0,.22);
+  --red:#DE2B3F;  --red-a:rgba(222,43,63,.10);   --red-g:rgba(222,43,63,.22);
+  --pur:#7B44D8;  --pur-a:rgba(123,68,216,.10);  --pur-g:rgba(123,68,216,.22);
+  --tel:#00867A;  --tel-a:rgba(0,134,122,.10);   --tel-g:rgba(0,134,122,.22);
+  --gold:#B8860B; --gold-a:rgba(184,134,11,.10); --gold-g:rgba(184,134,11,.22);
+}
+
+/* ---------- S03 Sector accents + ambient washes ---------- */
+/* Each domain owns a hue. Colour carries meaning, not decoration. */
+:root{
+  --sector-net:  var(--blu);
+  --sector-mine: var(--gold);
+  --sector-cbs:  var(--red);
+  --sector-insight:   var(--pur);
+  --sector-flow: var(--tel);
+}
+
+/* Ambient wash — the room takes on the colour of what you're viewing.
+   Soft, slow, never a hard edge. */
+.ambient{
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  transition: opacity 1.1s cubic-bezier(.32,.72,0,1), background 1.1s ease;
+  opacity: .85;
+}
+.ambient::before,
+.ambient::after{
+  content:''; position:absolute; border-radius:50%;
+  filter: blur(90px);
+  transition: background 1.2s ease;
+}
+.ambient::before{
+  width: 46vw; height: 42vw; top: -14vw; right: -8vw;
+  background: var(--wash-1, transparent);
+}
+.ambient::after{
+  width: 40vw; height: 38vw; bottom: -16vw; left: -10vw;
+  background: var(--wash-2, transparent);
+}
+body[data-sector="net"]  { --wash-1: var(--blu-g);  --wash-2: var(--tel-g); }
+body[data-sector="mc"]   { --wash-1: var(--gold-g); --wash-2: var(--amb-g); }
+body[data-sector="cbs"]  { --wash-1: var(--red-g);  --wash-2: var(--amb-g); }
+body[data-sector="insight"]   { --wash-1: var(--pur-g);  --wash-2: var(--blu-g); }
+body[data-sector=""],
+body:not([data-sector]){   --wash-1: var(--blu-g);  --wash-2: var(--pur-g); }
+body.light .ambient{ opacity: .5; }
+
+/* ---------- S04 Brand mark ------------------------------- */
+@keyframes logoFlow{
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.logo, .brandmark{
+  display: inline-flex; align-items: baseline; gap: 1px;
+  cursor: pointer; user-select: none; text-decoration: none;
+}
+.logo-ii{
+  font-size: 18px; font-weight: 800; letter-spacing: -0.055em;
+  color: var(--acc);
+  text-shadow: 0 0 22px var(--acc-a);
+  transition: color .5s ease;
+}
+.logo-sent{
+  font-size: 16px; font-weight: 700; letter-spacing: .01em;
+  background: linear-gradient(90deg, var(--blu), var(--grn), var(--blu));
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: logoFlow 5s linear infinite;
+}
+.logo-tm{
+  font-size: 9px; font-weight: 400; color: var(--dim);
+  -webkit-text-fill-color: var(--dim);
+  vertical-align: super; margin-left: 1px;
+}
+.logo:hover .logo-ii{ color: var(--grn); }
+
+/* Size variants */
+.logo--sm .logo-ii{ font-size: 15px; }
+.logo--sm .logo-sent{ font-size: 13.5px; }
+.logo--sm .logo-tm{ font-size: 7.5px; }
+.logo--lg .logo-ii{ font-size: 26px; }
+.logo--lg .logo-sent{ font-size: 23px; }
+.logo--lg .logo-tm{ font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce){
+  .logo-sent{ animation: none; background-position: 0 center; }
+  .ambient{ transition: none; }
+}
+
+/* ---------- S05 Elevation, radius, motion ---------------- */
+:root{
+  --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 22px; --r-full: 999px;
+
+  --sh-1: 0 1px 2px rgba(8,11,16,.06), 0 1px 1px rgba(8,11,16,.04);
+  --sh-2: 0 2px 4px rgba(8,11,16,.07), 0 8px 20px -10px rgba(8,11,16,.14);
+  --sh-3: 0 4px 8px rgba(8,11,16,.09), 0 18px 40px -16px rgba(8,11,16,.22);
+  --sh-4: 0 8px 16px rgba(8,11,16,.12), 0 30px 60px -22px rgba(8,11,16,.34);
+
+  --ease: cubic-bezier(.32,.72,0,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --dur-1: .16s; --dur-2: .26s; --dur-3: .42s;
+}
+body:not(.light){
+  --sh-1: 0 1px 2px rgba(0,0,0,.3);
+  --sh-2: 0 2px 6px rgba(0,0,0,.34), 0 10px 24px -12px rgba(0,0,0,.5);
+  --sh-3: 0 4px 12px rgba(0,0,0,.4),  0 20px 44px -18px rgba(0,0,0,.6);
+  --sh-4: 0 10px 24px rgba(0,0,0,.46), 0 34px 70px -24px rgba(0,0,0,.7);
+}
+
+/* ---------- S06 Primitives ------------------------------- */
+.ds-card{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+  padding: 18px;
+  transition: box-shadow var(--dur-2) var(--ease),
+              transform var(--dur-2) var(--ease),
+              border-color var(--dur-2) var(--ease);
+}
+.ds-card:hover{ box-shadow: var(--sh-3); border-color: var(--line-2); }
+
+.ds-chip{
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 11px;
+  border-radius: var(--r-full);
+  font: var(--t-cap); font-weight: 600;
+  background: var(--surface-2);
+  color: var(--sub);
+  border: 1px solid var(--line);
+  transition: all var(--dur-1) var(--ease);
+}
+.ds-chip--blu { background: var(--blu-a);  color: var(--blu);  border-color: transparent; }
+.ds-chip--grn { background: var(--grn-a);  color: var(--grn);  border-color: transparent; }
+.ds-chip--amb { background: var(--amb-a);  color: var(--amb);  border-color: transparent; }
+.ds-chip--red { background: var(--red-a);  color: var(--red);  border-color: transparent; }
+.ds-chip--pur { background: var(--pur-a);  color: var(--pur);  border-color: transparent; }
+.ds-chip--tel { background: var(--tel-a);  color: var(--tel);  border-color: transparent; }
+.ds-chip--gold{ background: var(--gold-a); color: var(--gold); border-color: transparent; }
+
+/* Tinted icon tile — colour as a filled surface, the iOS way */
+.ds-tile{
+  width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.ds-tile--blu { background: var(--blu-a);  color: var(--blu); }
+.ds-tile--grn { background: var(--grn-a);  color: var(--grn); }
+.ds-tile--amb { background: var(--amb-a);  color: var(--amb); }
+.ds-tile--red { background: var(--red-a);  color: var(--red); }
+.ds-tile--pur { background: var(--pur-a);  color: var(--pur); }
+.ds-tile--tel { background: var(--tel-a);  color: var(--tel); }
+.ds-tile--gold{ background: var(--gold-a); color: var(--gold); }
+
+.ds-btn{
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 34px; padding: 0 15px;
+  border-radius: var(--r-md); border: 1px solid var(--line);
+  background: var(--surface); color: var(--sub);
+  font: var(--t-cap); font-weight: 600; font-size: 12px;
+  cursor: pointer;
+  transition: all var(--dur-1) var(--ease);
+}
+.ds-btn:hover{ color: var(--txt); border-color: var(--line-2); box-shadow: var(--sh-1); }
+.ds-btn:active{ transform: scale(.97); }
+.ds-btn--primary{
+  background: var(--acc); border-color: transparent; color: #fff;
+  box-shadow: 0 2px 10px -2px var(--acc-a);
+}
+.ds-btn--primary:hover{ color: #fff; filter: brightness(1.08); }
+
+.ds-input{
+  height: 36px; padding: 0 13px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--txt); font: var(--t-body); font-size: 13px;
+  outline: none;
+  transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.ds-input:focus{
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3.5px var(--acc-a);
+}
+.ds-input::placeholder{ color: var(--dim); }
+
+/* ---------- S07 Status language -------------------------- */
+/* State is a dot or a tint. Never a coloured edge. */
+.ds-dot{
+  width: 7px; height: 7px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+  background: var(--dim);
+}
+.ds-dot--ok   { background: var(--grn); }
+.ds-dot--warn { background: var(--amb); }
+.ds-dot--crit { background: var(--red); }
+.ds-dot--info { background: var(--blu); }
+.ds-dot--idle { background: var(--dim); }
+
+@keyframes dsPulse{
+  0%,100%{ box-shadow: 0 0 0 0 var(--red-a); }
+  60%    { box-shadow: 0 0 0 7px transparent; }
+}
+.ds-dot--crit.is-live{ animation: dsPulse 2s ease-out infinite; }
+
+.ds-lead-dot::before{
+  content:''; display:inline-block;
+  width: 7px; height: 7px; border-radius: 50%;
+  margin-right: 8px; vertical-align: 1px;
+  background: var(--dot, var(--dim));
+}
+
+/* ---------- S08 Stripe suppression ----------------------- */
+/* Coloured left edges are removed globally. Status is carried by
+   dots and tints (S07). This rule is deliberate and load-bearing. */
+[class*="card"], [class*="item"], [class*="row"],
+[class*="toast"], [class*="alert"], [class*="notif"],
+[class*="node"], [class*="feed"], [class*="ins"],
+[class*="att"], [class*="msg"], [class*="col-"],
+[class*="event"], [class*="log"]{
+  border-left-width: 1px;
+  border-left-style: solid;
+  border-left-color: var(--line);
+}
+.no-stripe, .ds-card, .ds-chip{
+  border-left-color: var(--line) !important;
+}
+
+/* Scrollbars: quiet */
+::-webkit-scrollbar{ width: 9px; height: 9px; }
+::-webkit-scrollbar-track{ background: transparent; }
+::-webkit-scrollbar-thumb{
+  background: var(--line-3); border-radius: var(--r-full);
+  border: 2px solid transparent; background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover{ background: var(--dim); background-clip: content-box; }
+
+/* Focus ring: visible, never ugly */
+:focus-visible{
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   S09  Surface compatibility map
+   Each surface was authored with its own token names. This maps
+   the design system onto them so colour, type and elevation are
+   driven from one place. Adding a surface = adding a column here.
+   ============================================================ */
+:root{
+  /* type + motion (shared by every surface) */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+          "Helvetica Neue", Inter, system-ui, "Segoe UI", sans-serif;
+  --mono: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, system-ui, sans-serif;
+  --ease: cubic-bezier(.32,.72,0,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+
+  /* ---- sentinel-x / cascade token names ---- */
+  --bg2:    #1C1E21;
+  --glass:  #1E2024;
+  --glass2: #26282D;
+  --line:   rgba(255,255,255,.075);
+  --line2:  rgba(255,255,255,.13);
+  --cyan:   #3B9EFF;
+  --green:  #2ED573;
+  --amber:  #FFA733;
+  --purple: #A76BFF;
+  --gold:   #FFC542;
+
+  /* ---- controlpanel / dashboard token names ---- */
+  --s1: #1C1E21;  --s2: #1E2024;  --s3: #26282D;  --s4: #2E3137;
+  --b1: rgba(255,255,255,.075);
+  --b2: rgba(255,255,255,.13);
+  --b3: rgba(255,255,255,.20);
+  --mut:  #A4AAB6;
+  --cyn:  #3B9EFF;  --cyna: rgba(59,158,255,.14);
+  --grn:  #2ED573;  --grna: rgba(46,213,115,.14);
+  --amb:  #FFA733;  --amba: rgba(255,167,51,.14);
+  --reda: rgba(255,71,87,.14);
+  --pur:  #A76BFF;  --pura: rgba(167,107,255,.14);
+  --gld:  #FFC542;  --glda: rgba(255,197,66,.14);
+  --tel:  #00D9C0;  --tela: rgba(0,217,192,.14);
+  --acc:  #3B9EFF;  --acca: rgba(59,158,255,.14);
+
+  --sh-sm: var(--sh-1);
+  --sh-md: var(--sh-2);
+  --sh-lg: var(--sh-3);
+}
+
+/* Light theme across every surface (.light for app/classic, .lightc for cascade) */
+body.light, body.lightc{
+  --bg2:    #F4F5F8;
+  --glass:  #FFFFFF;
+  --glass2: #F5F6F9;
+  --line:   rgba(17,21,28,.085);
+  --line2:  rgba(17,21,28,.14);
+  --cyan:   #0A75E0;
+  --green:  #12A150;
+  --amber:  #C77A00;
+  --purple: #7B44D8;
+  --gold:   #B8860B;
+
+  --s1: #F4F5F8;  --s2: #FFFFFF;  --s3: #F5F6F9;  --s4: #EBEDF2;
+  --b1: rgba(17,21,28,.085);
+  --b2: rgba(17,21,28,.14);
+  --b3: rgba(17,21,28,.22);
+  --mut:  #59616E;
+  --cyn:  #0A75E0;  --cyna: rgba(10,117,224,.10);
+  --grn:  #12A150;  --grna: rgba(18,161,80,.10);
+  --amb:  #C77A00;  --amba: rgba(199,122,0,.10);
+  --reda: rgba(222,43,63,.10);
+  --pur:  #7B44D8;  --pura: rgba(123,68,216,.10);
+  --gld:  #B8860B;  --glda: rgba(184,134,11,.10);
+  --tel:  #00867A;  --tela: rgba(0,134,122,.10);
+  --acc:  #0A75E0;  --acca: rgba(10,117,224,.10);
+}
+body.lightc{
+  --bg: #EDEFF3; --txt: #14171C; --sub: #59616E; --dim: #939BA8;
+  --red: #DE2B3F;
+}

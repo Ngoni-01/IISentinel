@@ -1,6 +1,0 @@
-DOMAIN {
-    encode zstd gzip
-    reverse_proxy 127.0.0.1:8000 {
-        flush_interval -1   # required: streams SSE instantly
-    }
-}

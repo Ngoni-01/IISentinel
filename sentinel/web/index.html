@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sentinel — Network Integrity</title>
+<link rel="stylesheet" href="/static/sentinel-ds.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:var(--t-body);min-height:100vh}
+
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+  height:58px;padding:0 20px;background:var(--surface);
+  border-bottom:1px solid var(--line);backdrop-filter:blur(18px) saturate(1.3)}
+.top .logo{margin-right:auto}
+.top-act{display:flex;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;
+  border-radius:var(--r-full);font:var(--t-cap);font-weight:600;
+  background:var(--surface-2);color:var(--sub);border:1px solid var(--line)}
+.pill .ds-dot{margin:0}
+
+.wrap{max-width:1080px;margin:0 auto;padding:26px 20px 80px}
+.hd{margin:6px 2px 20px}
+.hd h1{font:var(--t-h1);letter-spacing:var(--ls-h1)}
+.hd p{color:var(--sub);font:var(--t-sub);margin-top:5px;max-width:60ch;line-height:1.55}
+
+.finding{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-xl);box-shadow:var(--sh-3);overflow:hidden;margin-bottom:18px}
+.finding.crit{box-shadow:0 0 0 1px var(--red-a),var(--sh-3)}
+.f-top{display:flex;align-items:flex-start;gap:16px;padding:22px 24px}
+.f-sev{width:74px;height:74px;border-radius:20px;flex-shrink:0;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;
+  background:var(--red-a);color:var(--red)}
+.f-sev .n{font:var(--font-num);font-weight:800;font-size:26px;line-height:1;letter-spacing:-.03em}
+.f-sev .l{font-size:9px;font-weight:700;letter-spacing:.1em;margin-top:3px;opacity:.85}
+.f-sev.warn{background:var(--amb-a);color:var(--amb)}
+.f-sev.ok{background:var(--grn-a);color:var(--grn)}
+.f-head{flex:1;min-width:0}
+.f-ip{font:var(--font-num);font-weight:750;font-size:22px;letter-spacing:-.02em;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.f-meta{margin-top:8px;display:flex;flex-wrap:wrap;gap:7px}
+.f-where{margin-top:12px;display:flex;align-items:center;gap:8px;font:var(--t-sub);color:var(--tel)}
+.f-where svg{flex-shrink:0}
+.f-affect{margin-top:6px;font:var(--t-sub);color:var(--amb)}
+.f-diffs{border-top:1px solid var(--line);padding:16px 24px;display:flex;flex-direction:column;gap:9px}
+.f-diff{display:flex;gap:10px;align-items:baseline;font-size:12.5px;line-height:1.5}
+.f-diff .k{text-transform:uppercase;font-size:9.5px;letter-spacing:.07em;color:var(--dim);min-width:64px;font-weight:700}
+.f-diff .v-old{font:var(--font-num);color:var(--sub)}
+.f-diff .arr{color:var(--dim)}
+.f-diff .v-new{font:var(--font-num);color:var(--red);font-weight:600}
+.f-act{border-top:1px solid var(--line);padding:14px 24px;display:flex;gap:9px;flex-wrap:wrap}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;
+  padding:0 16px;border-radius:var(--r-md);border:1px solid var(--line);
+  background:var(--surface);color:var(--sub);font:var(--t-cap);font-weight:600;
+  font-size:12.5px;cursor:pointer;transition:all var(--dur-1) var(--ease)}
+.btn:hover{color:var(--txt);border-color:var(--line-2);box-shadow:var(--sh-1)}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--acc);border-color:transparent;color:#fff}
+.btn-p:hover{color:#fff;filter:brightness(1.08)}
+
+.section-t{font:var(--t-h3);color:var(--sub);margin:26px 2px 12px;letter-spacing:-.008em}
+.tl{margin-top:16px;position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:5px;top:6px;bottom:6px;width:2px;background:var(--line-2)}
+.tl-row{position:relative;padding:0 0 16px 16px}
+.tl-row:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-19px;top:3px;width:12px;height:12px;border-radius:50%;
+  background:var(--surface);border:2px solid var(--dim)}
+.tl-row.immediate .tl-dot{border-color:var(--red)}
+.tl-when{font:var(--font-num);font-weight:700;font-size:14px;letter-spacing:-.01em}
+.tl-what{font-size:12.5px;color:var(--sub);margin-top:2px;line-height:1.5}
+.tl-note{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.5}
+.basis{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:1px}
+.basis-observed{background:var(--grn-a);color:var(--grn)}
+.basis-derived{background:var(--blu-a);color:var(--blu)}
+.basis-assumed{background:var(--amb-a);color:var(--amb)}
+.recovery{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:12px;color:var(--sub);line-height:1.55}
+.assumptions{background:var(--amb-a);border-radius:var(--r-md);padding:12px 14px;margin-top:14px;font-size:11.5px;color:var(--amb);line-height:1.55}
+
+.empty{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);
+  box-shadow:var(--sh-2);padding:30px;max-width:640px;margin:10px auto}
+.empty h2{font:var(--t-h1);letter-spacing:var(--ls-h1);margin-bottom:8px}
+.empty p{color:var(--sub);line-height:1.6;margin-bottom:20px}
+.step{display:flex;gap:14px;margin-bottom:18px}
+.step-n{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;background:var(--acc);color:#fff;font-weight:700;font-size:12px}
+.step-b{flex:1;min-width:0}
+.step-b .st-t{font-weight:650;font-size:13.5px;margin-bottom:6px}
+.code{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:12px 14px;font-family:var(--font-num);font-size:11.5px;line-height:1.7;
+  color:var(--txt);overflow-x:auto;white-space:nowrap}
+.code .c-dim{color:var(--dim)}
+.copy{margin-top:8px}
+.waiting{display:flex;align-items:center;gap:9px;margin-top:8px;font-size:12px;color:var(--sub)}
+.spin{width:14px;height:14px;border:2px solid var(--line-2);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.login-ov{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.login{width:min(380px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--sh-4);padding:30px}
+.login .logo{margin-bottom:6px}
+.login .sub{color:var(--sub);font-size:12px;margin-bottom:22px;line-height:1.5}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.inp{width:100%;height:40px;padding:0 13px;border-radius:var(--r-md);border:1px solid var(--line-2);
+  background:var(--surface);color:var(--txt);font-size:14px;outline:none;transition:border-color var(--dur-1),box-shadow var(--dur-1)}
+.inp:focus{border-color:var(--acc);box-shadow:0 0 0 3.5px var(--acc-a)}
+.err{color:var(--red);font-size:12px;margin-top:10px;min-height:16px}
+.modal-ov{position:fixed;inset:0;z-index:60;background:rgba(10,14,20,.5);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:24px}
+.modal-ov.open{display:flex}
+.modal{width:min(460px,100%);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--sh-4);padding:26px}
+.modal h3{font:var(--t-h2);margin-bottom:6px}
+.modal p{color:var(--sub);font-size:12.5px;line-height:1.55;margin-bottom:18px}
+.hide{display:none!important}
+@media(max-width:560px){.f-top{flex-wrap:wrap}.wrap{padding:18px 14px 60px}}
+</style>
+</head>
+<body>
+
+<div class="login-ov" id="login">
+  <div class="login">
+    <div class="logo logo--lg"><span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">&#8482;</span></div>
+    <div class="sub">Network integrity monitor</div>
+    <div class="fld"><label>Username</label><input class="inp" id="lg-user" value="admin" autocomplete="username"></div>
+    <div class="fld"><label>Password</label><input class="inp" id="lg-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-p" style="width:100%;height:40px" onclick="doLogin()">Sign in</button>
+    <div class="err" id="lg-err"></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="pw-modal">
+  <div class="modal">
+    <h3>Set your password</h3>
+    <p>This is the first sign-in. Choose a password of at least 10 characters. The one-time password printed at first boot will stop working.</p>
+    <div class="fld"><label>New password</label><input class="inp" id="pw-new" type="password" onkeydown="if(event.key==='Enter')changePw()"></div>
+    <button class="btn btn-p" style="width:100%" onclick="changePw()">Set password</button>
+    <div class="err" id="pw-err"></div>
+  </div>
+</div>
+
+<div class="modal-ov" id="enrol-modal">
+  <div class="modal">
+    <h3>Add a sensor</h3>
+    <p>Name the network segment this sensor watches. You'll get a one-time code to paste into the sensor &mdash; it can only enrol that one segment.</p>
+    <div class="fld"><label>Segment name</label><input class="inp" id="en-seg" placeholder="floor-3" onkeydown="if(event.key==='Enter')mintCode()"></div>
+    <div id="en-result" class="hide">
+      <div class="fld"><label>Run this on the sensor</label>
+        <div class="code" id="en-cmd"></div>
+        <button class="btn copy" onclick="copyCmd()">Copy command</button>
+      </div>
+      <div class="waiting"><span class="spin"></span><span>Waiting for this sensor to report&hellip;</span></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="btn btn-p" id="en-mint" onclick="mintCode()">Generate code</button>
+      <button class="btn" onclick="closeEnrol()">Done</button>
+    </div>
+    <div class="err" id="en-err"></div>
+  </div>
+</div>
+
+<div class="top hide" id="top">
+  <div class="logo"><span class="logo-ii">II</span><span class="logo-sent">Sentinel</span><span class="logo-tm">&#8482;</span></div>
+  <div class="top-act">
+    <span class="pill" id="status-pill"><span class="ds-dot"></span><span id="status-txt">&mdash;</span></span>
+    <button class="btn" onclick="openEnrol()">Add sensor</button>
+    <button class="btn" onclick="showMethodology()">Methodology</button>
+    <button class="btn" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div class="wrap hide" id="main">
+  <div class="hd">
+    <h1 id="page-h">Network integrity</h1>
+    <p id="page-p">Findings from your sensors. Each one traces to something a sensor observed on the wire.</p>
+  </div>
+  <div id="content"></div>
+</div>
+
+<div class="modal-ov" id="method-modal">
+  <div class="modal" style="max-width:560px;max-height:82vh;overflow-y:auto" id="method-body"></div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = v => v==null ? '' : String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let TOKEN = sessionStorage.getItem('sentinel-token') || '';
+let POLL = null, LAST_CMD = '';
+
+async function api(method, path, body){
+  const opt = {method, headers:{'Content-Type':'application/json'}};
+  if(TOKEN) opt.headers['X-Admin-Token'] = TOKEN;
+  if(body) opt.body = JSON.stringify(body);
+  const r = await fetch(path, opt);
+  const d = await r.json().catch(()=>({}));
+  if(!r.ok) throw Object.assign(new Error(d.error||('HTTP '+r.status)), {status:r.status});
+  return d;
+}
+
+async function doLogin(){
+  $('lg-err').textContent='';
+  try{
+    const d = await api('POST','/api/login',{username:$('lg-user').value,password:$('lg-pass').value});
+    TOKEN = d.token; sessionStorage.setItem('sentinel-token',TOKEN);
+    if(d.must_change){ $('login').classList.add('hide'); $('pw-modal').classList.add('open'); $('pw-new').focus(); }
+    else enterApp();
+  }catch(e){ $('lg-err').textContent = e.status===401 ? 'Incorrect username or password.' : e.message; }
+}
+async function changePw(){
+  $('pw-err').textContent='';
+  const pw = $('pw-new').value;
+  if(pw.length<10){ $('pw-err').textContent='At least 10 characters.'; return; }
+  try{
+    const d = await api('POST','/api/admin/password',{password:pw});
+    TOKEN = d.token; sessionStorage.setItem('sentinel-token',TOKEN);
+    $('pw-modal').classList.remove('open'); enterApp();
+  }catch(e){ $('pw-err').textContent = e.message; }
+}
+function logout(){ sessionStorage.removeItem('sentinel-token'); location.reload(); }
+
+function enterApp(){
+  $('login').classList.add('hide'); $('top').classList.remove('hide'); $('main').classList.remove('hide');
+  refresh(); if(POLL) clearInterval(POLL); POLL = setInterval(refresh, 8000);
+}
+
+async function refresh(){
+  try{
+    const d = await api('GET','/api/findings');
+    renderStatus(d);
+    if(!d.total_segments){ renderEmpty(); return; }
+    renderFindings(d);
+  }catch(e){
+    if(e.status===401){ logout(); return; }
+    $('content').innerHTML = '<div class="empty"><p>Could not load findings: '+esc(e.message)+'</p></div>';
+  }
+}
+
+function renderStatus(d){
+  const pill=$('status-pill'), dot=pill.querySelector('.ds-dot'), txt=$('status-txt');
+  if(!d.total_segments){ dot.style.background='var(--dim)'; txt.textContent='No sensors yet'; return; }
+  if(d.rogue_count){ dot.style.background='var(--red)'; dot.classList.add('is-live');
+    txt.textContent = d.rogue_count+' segment'+(d.rogue_count>1?'s':'')+' need attention'; }
+  else { dot.style.background='var(--grn)'; dot.classList.remove('is-live'); txt.textContent='All segments clean'; }
+}
+
+function renderEmpty(){
+  $('page-h').textContent = 'Get your first finding';
+  $('page-p').textContent = 'Sentinel runs in the cloud and cannot see inside your LAN. Put a sensor on a segment and it reports what it hears.';
+  $('content').innerHTML =
+    '<div class="empty"><h2>Watch your first segment</h2>'
+    +'<p>Around five minutes from here to a real device appearing on this screen. The sensor is one Python file on any machine on the segment &mdash; a Raspberry Pi, a spare laptop, anything.</p>'
+    +'<div class="step"><div class="step-n">1</div><div class="step-b"><div class="st-t">Add the sensor here</div>'
+    +'<div style="font-size:12.5px;color:var(--sub);line-height:1.55">Click <b>Add sensor</b>, name the segment, and you get a one-time enrolment code with a ready-to-run command.</div>'
+    +'<button class="btn btn-p copy" onclick="openEnrol()">Add sensor</button></div></div>'
+    +'<div class="step"><div class="step-n">2</div><div class="step-b"><div class="st-t">Run it on the segment</div>'
+    +'<div style="font-size:12.5px;color:var(--sub);line-height:1.55">Paste the command on any machine on that network. It listens for who is answering DHCP and reports back.</div></div></div>'
+    +'<div class="step"><div class="step-n">3</div><div class="step-b"><div class="st-t">The finding appears here</div>'
+    +'<div style="font-size:12.5px;color:var(--sub);line-height:1.55">If anything is handing out leases that should not be, it shows up on this screen with who it is, where it is plugged in, and what depends on it.</div></div></div>'
+    +'</div>';
+}
+
+function renderFindings(d){
+  $('page-h').textContent = 'Network integrity';
+  $('page-p').textContent = 'Findings from your sensors. Each one traces to something a sensor observed on the wire.';
+  let html='';
+  d.segments.forEach(seg=>{
+    if(seg.rogue && seg.rogues.length){ seg.rogues.forEach(r=> html += findingCard(seg, r)); }
+    else { html += cleanCard(seg); }
+  });
+  $('content').innerHTML = html;
+}
+
+function sevClass(s){ return s>=70?'crit':s>=40?'warn':'ok'; }
+function sevBadge(s){ return s>=70?'':(s>=40?'warn':'ok'); }
+
+function findingCard(seg, r){
+  const loc = r.location_hint || seg.location_hint;
+  let diffs='';
+  (r.differences||[]).forEach(df=>{
+    diffs += '<div class="f-diff"><span class="k">'+esc(df.option)+'</span>'
+      +'<span class="v-old">'+esc(df.expected)+'</span><span class="arr">&rarr;</span><span class="v-new">'+esc(df.observed)+'</span></div>';
+  });
+  return '<div class="finding '+sevClass(r.severity)+'"><div class="f-top">'
+    +'<div class="f-sev '+sevBadge(r.severity)+'"><span class="n">'+r.severity+'</span><span class="l">SEVERITY</span></div>'
+    +'<div class="f-head"><div class="f-ip">'+esc(r.ip)
+    +'<span class="ds-chip '+(r.vendor_category==='consumer'?'ds-chip--amb':'ds-chip--blu')+'">'+esc(r.vendor||'Unknown')+'</span>'
+    +(r.randomised_mac?'<span class="ds-chip ds-chip--pur">randomised MAC</span>':'')+'</div>'
+    +'<div class="f-meta"><span class="ds-chip">segment '+esc(seg.segment)+'</span>'
+    +(r.mac?'<span class="ds-chip" style="font-family:var(--font-num)">'+esc(r.mac)+'</span>':'')+'</div>'
+    +(loc&&loc.switch?'<div class="f-where"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>switch '+esc(loc.switch)+' &middot; port '+esc(loc.port||'?')+'</div>':'')
+    +(r.devices_affected>0?'<div class="f-affect">'+r.devices_affected+' host'+(r.devices_affected>1?'s':'')+' already using this gateway</div>':'')
+    +'</div></div>'
+    +(diffs?'<div class="f-diffs">'+diffs+'</div>':'')
+    +'<div class="f-act"><button class="btn" onclick=\'showWhy('+JSON.stringify(JSON.stringify(r))+')\'>Why this score</button>'
+    +'<button class="btn btn-p" onclick="showBlast(\''+esc(seg.segment)+'\')">Blast radius</button></div></div>';
+}
+
+function cleanCard(seg){
+  return '<div class="finding"><div class="f-top">'
+    +'<div class="f-sev ok"><span class="n">&#10003;</span><span class="l">CLEAN</span></div>'
+    +'<div class="f-head"><div class="f-ip" style="font-size:17px">Segment '+esc(seg.segment)+'</div>'
+    +'<div class="f-meta"><span class="ds-chip ds-chip--grn">only the sanctioned server</span>'
+    +'<span class="ds-chip">'+(seg.devices_on_segment||0)+' devices seen</span></div></div></div></div>';
+}
+
+function showWhy(json){
+  let r; try{ r=JSON.parse(json); }catch(e){ return; }
+  let h='<h3>Why '+esc(r.ip)+' scored '+r.severity+'/100</h3>'
+    +'<p>'+esc(r.vendor||'Unknown vendor')+(r.oui?' &middot; OUI '+esc(r.oui):'')
+    +(r.observations?' &middot; seen '+r.observations+' time'+(r.observations>1?'s':''):'')+'</p>'
+    +'<div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px">';
+  (r.why||[]).forEach(w=> h+='<div style="display:flex;gap:9px;font-size:12.5px;line-height:1.5;color:var(--sub)"><span class="ds-dot" style="margin-top:6px;background:var(--red)"></span><span>'+esc(w)+'</span></div>');
+  h+='</div><div style="font-weight:650;font-size:13px;margin-bottom:10px">What to do</div>';
+  (r.actions||[]).forEach((a,i)=> h+='<div style="display:flex;gap:9px;font-size:12.5px;line-height:1.5;color:var(--sub);margin-bottom:8px"><span style="color:var(--acc);font-weight:700">'+(i+1)+'</span><span>'+esc(a)+'</span></div>');
+  h+='<button class="btn btn-p" style="width:100%;margin-top:12px" onclick="closeModal()">Close</button>';
+  $('method-body').innerHTML=h; $('method-modal').classList.add('open');
+}
+
+async function showBlast(segment){
+  try{
+    const d = await api('GET','/api/blast-radius/'+encodeURIComponent(segment));
+    let h='<h3>Blast radius &mdash; '+esc(segment)+'</h3>'
+      +'<p>What depends on what, and how long until it bites. '+d.node_count+' nodes, '+d.edge_count+' edges &mdash; all from what the sensor observed.</p>';
+    d.scenarios.forEach(s=>{
+      h+='<div style="margin-bottom:18px"><div style="font-weight:650;font-size:14px">'+esc(s.title)+'</div>'
+        +'<div style="color:var(--sub);font-size:12px;margin:2px 0 12px">'+esc(s.question)+'</div><div class="tl">';
+      s.timeline.forEach(e=>{
+        h+='<div class="tl-row '+(e.at_seconds===0?'immediate':'')+'"><span class="tl-dot"></span>'
+          +'<div class="tl-when">'+esc(e.at_label)+'<span class="basis basis-'+e.basis+'">'+e.basis+'</span></div>'
+          +'<div class="tl-what">'+esc(e.dependency)+' &middot; '+esc(e.affects)+'</div>'
+          +'<div class="tl-note">'+esc(e.note)+'</div></div>';
+      });
+      h+='</div><div class="recovery">'+esc(s.recovery)+'</div></div>';
+    });
+    if(d.assumptions && d.assumptions.length){
+      h+='<div class="assumptions"><b>Assumptions in this view:</b><br>'+d.assumptions.map(esc).join('<br>')+'</div>';
+    }
+    h+='<button class="btn btn-p" style="width:100%;margin-top:16px" onclick="closeModal()">Close</button>';
+    $('method-body').innerHTML=h; $('method-modal').classList.add('open');
+  }catch(e){ alert('Could not load blast radius: '+e.message); }
+}
+
+function openEnrol(){ $('enrol-modal').classList.add('open'); $('en-seg').focus(); }
+function closeEnrol(){ $('enrol-modal').classList.remove('open'); resetEnrol(); }
+function resetEnrol(){ $('en-result').classList.add('hide'); $('en-mint').classList.remove('hide'); $('en-seg').value=''; $('en-err').textContent=''; }
+async function mintCode(){
+  $('en-err').textContent='';
+  const seg = $('en-seg').value.trim();
+  if(!seg){ $('en-err').textContent='Name the segment first.'; return; }
+  try{
+    const d = await api('POST','/api/admin/enrol-code',{segment:seg});
+    const origin = window.location.origin;
+    LAST_CMD = 'python3 net_sensor.py --server '+origin+' \\\n    --enrol '+d.code+' --segment "'+seg+'" \\\n    --expected YOUR_GATEWAY_IP --arp --lldp';
+    $('en-cmd').innerHTML = esc(LAST_CMD).replace(/\n/g,'<br>').replace('YOUR_GATEWAY_IP','<span class="c-dim">YOUR_GATEWAY_IP</span>');
+    $('en-result').classList.remove('hide'); $('en-mint').classList.add('hide');
+  }catch(e){ $('en-err').textContent = e.message; }
+}
+function copyCmd(){ if(navigator.clipboard) navigator.clipboard.writeText(LAST_CMD).catch(()=>{}); }
+
+function methodologyHtml(){
+  return '<h3>How to read these findings</h3>'
+    +'<p>Every number in Sentinel is labelled by where it comes from. Nothing is asserted that a sensor did not see.</p>'
+    +'<div style="display:flex;flex-direction:column;gap:14px;margin-bottom:20px">'
+    +'<div><span class="basis basis-observed">observed</span><div style="font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.55">The sensor saw this directly on the wire.</div></div>'
+    +'<div><span class="basis basis-derived">derived</span><div style="font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.55">Computed from an observed value &mdash; e.g. renewal at half the observed lease.</div></div>'
+    +'<div><span class="basis basis-assumed">assumed</span><div style="font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.55">A stated default for something not observable from a DHCP scan. Surfaced so you can discount it.</div></div>'
+    +'</div><p style="font-size:12px">Severity scoring is rule-based. Vendor lookup returns <b>Unknown</b> rather than guessing. Full detail in <b>METHODOLOGY.md</b>.</p>'
+    +'<button class="btn btn-p" style="width:100%;margin-top:8px" onclick="closeModal()">Close</button>';
+}
+function showMethodology(){ $('method-body').innerHTML=methodologyHtml(); $('method-modal').classList.add('open'); }
+function closeModal(){ $('method-modal').classList.remove('open'); }
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-ov.open').forEach(m=>m.classList.remove('open')); });
+document.querySelectorAll('.modal-ov').forEach(ov=> ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('open'); }));
+
+(function(){
+  document.body.classList.add('light');
+  if(TOKEN){ api('GET','/api/findings').then(()=>enterApp()).catch(()=>{ TOKEN=''; sessionStorage.removeItem('sentinel-token'); $('lg-pass').focus(); }); }
+  else { $('lg-pass').focus(); }
+})();
+</script>
+</body>
+</html>
